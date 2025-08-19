@@ -14,19 +14,19 @@ interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case 'approved':
-      return 'bg-green-100 text-green-800 border-green-200';
+      return 'bg-green-50 text-green-800 border-green-300 ring-1 ring-green-200';
     case 'pending':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      return 'bg-amber-50 text-amber-800 border-amber-300 ring-1 ring-amber-200';
     case 'rejected':
-      return 'bg-red-100 text-red-800 border-red-200';
+      return 'bg-red-50 text-red-800 border-red-300 ring-1 ring-red-200';
     case 'under review':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
+      return 'bg-blue-50 text-blue-800 border-blue-300 ring-1 ring-blue-200';
     case 'postponed':
-      return 'bg-gray-100 text-gray-800 border-gray-200';
+      return 'bg-slate-50 text-slate-800 border-slate-300 ring-1 ring-slate-200';
     case 'completed':
-      return 'bg-purple-100 text-purple-800 border-purple-200';
+      return 'bg-violet-50 text-violet-800 border-violet-300 ring-1 ring-violet-200';
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
+      return 'bg-gray-50 text-gray-800 border-gray-300 ring-1 ring-gray-200';
   }
 };
 
@@ -95,37 +95,45 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
           <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
         </div>
       ) : ideas && ideas.length > 0 ? (
-        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-5 sm:gap-7 md:grid-cols-2 xl:grid-cols-3">
           {ideas.map((idea) => (
-            <Card key={idea.id} className="hover:shadow-lg transition-shadow duration-300">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
-                  <h3 className="font-bold text-base sm:text-lg text-gray-800 line-clamp-2 flex-1">{idea.title}</h3>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full border whitespace-nowrap ${getStatusColor(idea.status)}`}>
+            <Card key={idea.id} className="bg-white border-2 border-gray-100 hover:border-cjd-green/30 hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] overflow-hidden">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+                  <h3 className="font-bold text-lg sm:text-xl text-gray-900 line-clamp-2 flex-1 leading-tight">
+                    {idea.title}
+                  </h3>
+                  <span className={`px-3 py-1.5 text-xs font-semibold rounded-full border whitespace-nowrap shadow-sm ${getStatusColor(idea.status)}`}>
                     {getStatusLabel(idea.status)}
                   </span>
                 </div>
                 {idea.description && (
-                  <p className="text-gray-600 text-xs sm:text-sm mb-4 line-clamp-3">{idea.description}</p>
+                  <p className="text-gray-700 text-sm sm:text-base mb-5 line-clamp-3 leading-relaxed">
+                    {idea.description}
+                  </p>
                 )}
-                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 xs:gap-2">
-                  <div className="flex items-center space-x-2">
-                    <ThumbsUp className="w-4 h-4 text-cjd-green flex-shrink-0" />
-                    <span className="font-medium text-gray-700 text-sm">
-                      {idea.voteCount} vote{idea.voteCount !== 1 ? 's' : ''}
-                    </span>
+                <div className="border-t border-gray-100 pt-4">
+                  <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 xs:gap-2 mb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="bg-cjd-green/10 p-1.5 rounded-full">
+                        <ThumbsUp className="w-4 h-4 text-cjd-green flex-shrink-0" />
+                      </div>
+                      <span className="font-semibold text-gray-800 text-sm">
+                        {idea.voteCount} vote{idea.voteCount !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <Button
+                      onClick={() => handleVoteClick(idea)}
+                      className="bg-gradient-to-r from-cjd-green to-green-600 text-white hover:from-green-600 hover:to-cjd-green shadow-md hover:shadow-lg transition-all duration-200 text-sm font-semibold w-full xs:w-auto transform hover:scale-105"
+                      size="sm"
+                    >
+                      <Vote className="w-4 h-4 mr-2" />
+                      Voter
+                    </Button>
                   </div>
-                  <Button
-                    onClick={() => handleVoteClick(idea)}
-                    className="bg-cjd-green text-white hover:bg-cjd-green-dark transition-colors duration-200 text-xs sm:text-sm w-full xs:w-auto"
-                    size="sm"
-                  >
-                    <Vote className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                    Voter
-                  </Button>
-                </div>
-                <div className="mt-3 sm:mt-4 text-xs text-gray-500">
-                  Proposée par {idea.proposedBy}
+                  <div className="text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+                    <span className="font-medium">Proposée par</span> {idea.proposedBy}
+                  </div>
                 </div>
               </CardContent>
             </Card>
