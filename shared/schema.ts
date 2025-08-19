@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, boolean, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, boolean, unique, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -11,20 +11,40 @@ export const admins = pgTable("admins", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Ideas table
+// Status constants for ideas and events
+export const IDEA_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved", 
+  REJECTED: "rejected",
+  UNDER_REVIEW: "under_review",
+  POSTPONED: "postponed",
+  COMPLETED: "completed"
+} as const;
+
+export const EVENT_STATUS = {
+  DRAFT: "draft",
+  PUBLISHED: "published",
+  CANCELLED: "cancelled", 
+  POSTPONED: "postponed",
+  COMPLETED: "completed"
+} as const;
+
+// Ideas table - Flexible status workflow management
 export const ideas = pgTable("ideas", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   description: text("description"),
   proposedBy: text("proposed_by").notNull(),
   proposedByEmail: text("proposed_by_email").notNull(),
-  status: text("status").default("open").notNull(), // open, closed, realized
-  approved: boolean("approved").default(true).notNull(), // Auto-approve by default, admin can moderate
+  status: text("status").default(IDEA_STATUS.PENDING).notNull(), // pending, approved, rejected, under_review, postponed, completed
   deadline: timestamp("deadline"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   updatedBy: text("updated_by"),
-});
+}, (table) => ({
+  statusIdx: index("ideas_status_idx").on(table.status),
+  emailIdx: index("ideas_email_idx").on(table.proposedByEmail),
+}));
 
 // Votes table
 export const votes = pgTable("votes", {
@@ -38,7 +58,7 @@ export const votes = pgTable("votes", {
   uniqueVotePerEmail: unique().on(table.ideaId, table.voterEmail),
 }));
 
-// Events table
+// Events table - Flexible status workflow management  
 export const events = pgTable("events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
@@ -47,10 +67,14 @@ export const events = pgTable("events", {
   location: text("location"), // Lieu de l'événement
   maxParticipants: integer("max_participants"), // Limite de participants (optionnel)
   helloAssoLink: text("hello_asso_link"),
+  status: text("status").default(EVENT_STATUS.PUBLISHED).notNull(), // draft, published, cancelled, postponed, completed
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   updatedBy: text("updated_by"),
-});
+}, (table) => ({
+  statusIdx: index("events_status_idx").on(table.status),
+  dateIdx: index("events_date_idx").on(table.date),
+}));
 
 // Inscriptions table  
 export const inscriptions = pgTable("inscriptions", {
@@ -145,6 +169,17 @@ export const insertIdeaSchema = createInsertSchema(ideas).pick({
     .refine(isValidDomain, "Domaine email non autorisé")
     .transform(sanitizeText),
   deadline: z.string().datetime().optional(),
+});
+
+export const updateIdeaStatusSchema = z.object({
+  status: z.enum([
+    IDEA_STATUS.PENDING,
+    IDEA_STATUS.APPROVED,
+    IDEA_STATUS.REJECTED,
+    IDEA_STATUS.UNDER_REVIEW,
+    IDEA_STATUS.POSTPONED,
+    IDEA_STATUS.COMPLETED
+  ]),
 });
 
 export const insertVoteSchema = createInsertSchema(votes).pick({
@@ -245,11 +280,15 @@ export const users = admins;
 export const insertUserSchema = insertAdminSchema;
 export type InsertUser = InsertAdmin;
 
-// Additional validation schemas for API routes
-export const updateIdeaStatusSchema = z.object({
-  status: z.enum(["open", "closed", "realized"], {
-    errorMap: () => ({ message: "Statut invalide (open, closed, realized)" })
-  }),
+// Additional validation schemas for API routes - using new status system
+export const updateEventStatusSchema = z.object({
+  status: z.enum([
+    EVENT_STATUS.DRAFT,
+    EVENT_STATUS.PUBLISHED,
+    EVENT_STATUS.CANCELLED,
+    EVENT_STATUS.POSTPONED,
+    EVENT_STATUS.COMPLETED
+  ]),
 });
 
 export const updateEventSchema = insertEventSchema.partial();

@@ -29,12 +29,20 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import EventAdminModal from "./event-admin-modal";
 import EventDetailModal from "./event-detail-modal";
 import IdeaDetailModal from "./idea-detail-modal";
 import InscriptionExportModal from "./inscription-export-modal";
 import AdminLogin from "./admin-login";
 import type { Idea, Event } from "@shared/schema";
+import { IDEA_STATUS, EVENT_STATUS } from "@shared/schema";
 
 interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
   voteCount: number;
@@ -159,18 +167,18 @@ export default function AdminSection() {
     }
   };
 
-  // Idea approval mutations
-  const approveIdeaMutation = useMutation({
-    mutationFn: async ({ id, approved }: { id: string; approved: boolean }) => {
-      await apiRequest("PATCH", `/api/admin/ideas/${id}/approve`, { approved });
+  // Status update mutations
+  const updateIdeaStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      await apiRequest("PATCH", `/api/admin/ideas/${id}/status`, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ideas"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/ideas"] }); // Also invalidate public ideas
+      queryClient.invalidateQueries({ queryKey: ["/api/ideas"] }); 
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({
         title: "Statut mis à jour",
-        description: "Le statut d'approbation de l'idée a été mis à jour",
+        description: "Le statut de l'idée a été mis à jour",
       });
     },
     onError: () => {
@@ -182,8 +190,33 @@ export default function AdminSection() {
     },
   });
 
-  const handleApproveIdea = (id: string, approved: boolean) => {
-    approveIdeaMutation.mutate({ id, approved });
+  const updateEventStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      await apiRequest("PATCH", `/api/admin/events/${id}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      toast({
+        title: "Statut mis à jour",
+        description: "Le statut de l'événement a été mis à jour",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le statut de l'événement",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleIdeaStatusChange = (id: string, status: string) => {
+    updateIdeaStatusMutation.mutate({ id, status });
+  };
+
+  const handleEventStatusChange = (id: string, status: string) => {
+    updateEventStatusMutation.mutate({ id, status });
   };
 
   const formatDate = (dateString: string) => {
@@ -192,6 +225,42 @@ export default function AdminSection() {
       month: "2-digit",
       year: "numeric",
     });
+  };
+
+  const getIdeaStatusInfo = (status: string) => {
+    switch (status) {
+      case IDEA_STATUS.PENDING:
+        return { label: "En attente", class: "bg-orange-100 text-orange-800" };
+      case IDEA_STATUS.APPROVED:
+        return { label: "Approuvée", class: "bg-green-100 text-green-800" };
+      case IDEA_STATUS.REJECTED:
+        return { label: "Rejetée", class: "bg-red-100 text-red-800" };
+      case IDEA_STATUS.UNDER_REVIEW:
+        return { label: "En cours d'étude", class: "bg-blue-100 text-blue-800" };
+      case IDEA_STATUS.POSTPONED:
+        return { label: "Reportée", class: "bg-gray-100 text-gray-800" };
+      case IDEA_STATUS.COMPLETED:
+        return { label: "Réalisée", class: "bg-purple-100 text-purple-800" };
+      default:
+        return { label: "Inconnu", class: "bg-gray-100 text-gray-800" };
+    }
+  };
+
+  const getEventStatusInfo = (status: string) => {
+    switch (status) {
+      case EVENT_STATUS.DRAFT:
+        return { label: "Brouillon", class: "bg-gray-100 text-gray-800" };
+      case EVENT_STATUS.PUBLISHED:
+        return { label: "Publié", class: "bg-green-100 text-green-800" };
+      case EVENT_STATUS.CANCELLED:
+        return { label: "Annulé", class: "bg-red-100 text-red-800" };
+      case EVENT_STATUS.POSTPONED:
+        return { label: "Reporté", class: "bg-orange-100 text-orange-800" };
+      case EVENT_STATUS.COMPLETED:
+        return { label: "Terminé", class: "bg-blue-100 text-blue-800" };
+      default:
+        return { label: "Inconnu", class: "bg-gray-100 text-gray-800" };
+    }
   };
 
   if (!user) {
@@ -340,13 +409,27 @@ export default function AdminSection() {
                           </TableCell>
                           <TableCell>{idea.proposedBy}</TableCell>
                           <TableCell className="text-center">
-                            <div className={`inline-block px-2 py-1 text-xs rounded-full ${
-                              idea.approved 
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-orange-100 text-orange-800'
-                            }`}>
-                              {idea.approved ? 'Approuvée' : 'En attente'}
-                            </div>
+                            <Select 
+                              value={idea.status} 
+                              onValueChange={(status) => handleIdeaStatusChange(idea.id, status)}
+                              disabled={updateIdeaStatusMutation.isPending}
+                            >
+                              <SelectTrigger className="w-36">
+                                <SelectValue>
+                                  <div className={`inline-block px-2 py-1 text-xs rounded-full ${getIdeaStatusInfo(idea.status).class}`}>
+                                    {getIdeaStatusInfo(idea.status).label}
+                                  </div>
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={IDEA_STATUS.PENDING}>En attente</SelectItem>
+                                <SelectItem value={IDEA_STATUS.APPROVED}>Approuvée</SelectItem>
+                                <SelectItem value={IDEA_STATUS.REJECTED}>Rejetée</SelectItem>
+                                <SelectItem value={IDEA_STATUS.UNDER_REVIEW}>En cours d'étude</SelectItem>
+                                <SelectItem value={IDEA_STATUS.POSTPONED}>Reportée</SelectItem>
+                                <SelectItem value={IDEA_STATUS.COMPLETED}>Réalisée</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell className="text-center">{idea.voteCount}</TableCell>
                           <TableCell className="text-center">
@@ -354,30 +437,6 @@ export default function AdminSection() {
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex justify-center space-x-1">
-                              {!idea.approved && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleApproveIdea(idea.id, true)}
-                                  disabled={approveIdeaMutation.isPending}
-                                  className="text-green-600 hover:text-green-800 hover:bg-green-50"
-                                  title="Approuver cette idée"
-                                >
-                                  ✓
-                                </Button>
-                              )}
-                              {idea.approved && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleApproveIdea(idea.id, false)}
-                                  disabled={approveIdeaMutation.isPending}
-                                  className="text-orange-600 hover:text-orange-800 hover:bg-orange-50"
-                                  title="Remettre en attente"
-                                >
-                                  ⏸
-                                </Button>
-                              )}
                               <Button
                                 size="sm"
                                 variant="ghost"

@@ -8,7 +8,9 @@ import {
   insertIdeaSchema,
   insertVoteSchema,
   insertEventSchema,
-  insertInscriptionSchema 
+  insertInscriptionSchema,
+  updateIdeaStatusSchema,
+  updateEventStatusSchema 
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -215,10 +217,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/ideas/:id/approve", requireAuth, async (req, res, next) => {
+  app.patch("/api/admin/ideas/:id/status", requireAuth, async (req, res, next) => {
     try {
-      const { approved } = req.body;
-      const result = await storage.approveIdea(req.params.id, approved);
+      const validatedData = updateIdeaStatusSchema.parse(req.body);
+      const result = await storage.updateIdeaStatus(req.params.id, validatedData.status);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.sendStatus(200);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/admin/events/:id/status", requireAuth, async (req, res, next) => {
+    try {
+      const validatedData = updateEventStatusSchema.parse(req.body);
+      const result = await storage.updateEventStatus(req.params.id, validatedData.status);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }

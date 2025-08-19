@@ -45,6 +45,7 @@ export interface IStorage {
   deleteIdea(id: string): Promise<Result<void>>;
   updateIdeaStatus(id: string, status: string): Promise<Result<void>>;
   isDuplicateIdea(title: string): Promise<boolean>;
+  getAllIdeas(): Promise<Result<(Idea & { voteCount: number })[]>>;
   
   // Votes - Ultra-robust with duplicate protection
   getVotesByIdea(ideaId: string): Promise<Result<Vote[]>>;
@@ -57,7 +58,9 @@ export interface IStorage {
   createEvent(event: InsertEvent): Promise<Result<Event>>;
   updateEvent(id: string, event: Partial<InsertEvent>): Promise<Result<Event>>;
   deleteEvent(id: string): Promise<Result<void>>;
+  updateEventStatus(id: string, status: string): Promise<Result<void>>;
   isDuplicateEvent(title: string, date: Date): Promise<boolean>;
+  getAllEvents(): Promise<Result<(Event & { inscriptionCount: number })[]>>;
   
   // Inscriptions - Ultra-robust with duplicate protection
   getEventInscriptions(eventId: string): Promise<Result<Inscription[]>>;
@@ -138,7 +141,6 @@ export class DatabaseStorage implements IStorage {
           proposedBy: ideas.proposedBy,
           proposedByEmail: ideas.proposedByEmail,
           status: ideas.status,
-          approved: ideas.approved,
           deadline: ideas.deadline,
           createdAt: ideas.createdAt,
           updatedAt: ideas.updatedAt,
@@ -147,7 +149,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(ideas)
         .leftJoin(votes, eq(ideas.id, votes.ideaId))
-        .where(eq(ideas.approved, true)) // Only show approved ideas to public
+        .where(eq(ideas.status, 'approved')) // Only show approved ideas to public
         .groupBy(ideas.id)
         .orderBy(desc(ideas.createdAt));
       
@@ -240,39 +242,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateIdeaStatus(id: string, status: string): Promise<Result<void>> {
-    try {
-      // Validate status
-      const validStatuses = ["open", "closed", "realized"];
-      if (!validStatuses.includes(status)) {
-        return { success: false, error: new ValidationError("Statut invalide") };
-      }
 
-      // Check if idea exists
-      const ideaResult = await this.getIdea(id);
-      if (!ideaResult.success) {
-        return { success: false, error: ideaResult.error };
-      }
-      if (!ideaResult.data) {
-        return { success: false, error: new NotFoundError("Idée introuvable") };
-      }
-
-      await db.transaction(async (tx) => {
-        await tx
-          .update(ideas)
-          .set({ 
-            status, 
-            updatedAt: sql`NOW()`,
-            updatedBy: "admin" // Could be improved with actual user
-          })
-          .where(eq(ideas.id, id));
-      });
-
-      return { success: true, data: undefined };
-    } catch (error) {
-      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du statut: ${error}`) };
-    }
-  }
 
   // Ultra-robust Votes methods with Result pattern
   async getVotesByIdea(ideaId: string): Promise<Result<Vote[]>> {
@@ -336,6 +306,7 @@ export class DatabaseStorage implements IStorage {
           location: events.location,
           maxParticipants: events.maxParticipants,
           helloAssoLink: events.helloAssoLink,
+          status: events.status,
           createdAt: events.createdAt,
           updatedAt: events.updatedAt,
           updatedBy: events.updatedBy,
@@ -565,7 +536,6 @@ export class DatabaseStorage implements IStorage {
           proposedBy: ideas.proposedBy,
           proposedByEmail: ideas.proposedByEmail,
           status: ideas.status,
-          approved: ideas.approved,
           deadline: ideas.deadline,
           createdAt: ideas.createdAt,
           updatedAt: ideas.updatedAt,
@@ -599,6 +569,7 @@ export class DatabaseStorage implements IStorage {
           location: events.location,
           maxParticipants: events.maxParticipants,
           helloAssoLink: events.helloAssoLink,
+          status: events.status,
           createdAt: events.createdAt,
           updatedAt: events.updatedAt,
           updatedBy: events.updatedBy,
@@ -620,7 +591,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async approveIdea(id: string, approved: boolean): Promise<Result<void>> {
+  async updateIdeaStatus(id: string, status: string): Promise<Result<void>> {
     try {
       // Check if idea exists
       const ideaResult = await this.getIdea(id);
@@ -635,18 +606,48 @@ export class DatabaseStorage implements IStorage {
         await tx
           .update(ideas)
           .set({ 
-            approved,
+            status,
             updatedAt: sql`NOW()`,
             updatedBy: "admin"
           })
           .where(eq(ideas.id, id));
         
-        console.log(`[Storage] Idée ${approved ? 'approuvée' : 'rejetée'}: ${id}`);
+        console.log(`[Storage] Statut de l'idée mis à jour: ${id} -> ${status}`);
       });
 
       return { success: true, data: undefined };
     } catch (error) {
-      return { success: false, error: new DatabaseError(`Erreur lors de l'approbation de l'idée: ${error}`) };
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du statut de l'idée: ${error}`) };
+    }
+  }
+
+  async updateEventStatus(id: string, status: string): Promise<Result<void>> {
+    try {
+      // Check if event exists
+      const eventResult = await this.getEvent(id);
+      if (!eventResult.success) {
+        return { success: false, error: eventResult.error };
+      }
+      if (!eventResult.data) {
+        return { success: false, error: new NotFoundError("Événement introuvable") };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(events)
+          .set({ 
+            status,
+            updatedAt: sql`NOW()`,
+            updatedBy: "admin"
+          })
+          .where(eq(events.id, id));
+        
+        console.log(`[Storage] Statut de l'événement mis à jour: ${id} -> ${status}`);
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du statut de l'événement: ${error}`) };
     }
   }
 
