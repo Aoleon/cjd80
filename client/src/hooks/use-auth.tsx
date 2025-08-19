@@ -38,10 +38,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      if (!res.ok) {
+        throw new Error("Identifiants incorrects");
+      }
+      const result = await res.json();
+      return result;
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Connexion réussie",
         description: "Vous êtes maintenant connecté à l'administration",
@@ -50,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onError: (error: Error) => {
       toast({
         title: "Erreur de connexion",
-        description: "Nom d'utilisateur ou mot de passe incorrect",
+        description: error.message || "Identifiants incorrects",
         variant: "destructive",
       });
     },
