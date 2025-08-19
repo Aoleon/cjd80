@@ -29,7 +29,7 @@ export const PWAUtils = {
           resolve(event.data || {});
         };
         
-        navigator.serviceWorker.controller.postMessage(
+        navigator.serviceWorker.controller!.postMessage(
           { type: 'GET_CACHE_STATUS' },
           [messageChannel.port2]
         );
@@ -151,7 +151,6 @@ export const PWAUtils = {
           icon: '/icon-192.svg',
           badge: '/icon-192.svg',
           tag: 'cjd-amiens-notification',
-          renotify: true,
           ...options
         });
       });

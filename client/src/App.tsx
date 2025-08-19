@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
-import { PWAControls } from "@/components/pwa-controls";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import ProposePage from "@/pages/propose-page";
@@ -31,7 +30,6 @@ function App() {
         <AuthProvider>
           <Toaster />
           <Router />
-          <PWAControls />
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
