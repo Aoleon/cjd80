@@ -1,0 +1,118 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Calendar, MapPin, Users, CalendarPlus, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import EventRegistrationModal from "./event-registration-modal";
+import type { Event } from "@shared/schema";
+
+interface EventWithRegistrations extends Omit<Event, "registrationCount"> {
+  registrationCount: number;
+}
+
+export default function EventsSection() {
+  const [selectedEvent, setSelectedEvent] = useState<EventWithRegistrations | null>(null);
+  const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
+
+  const { data: events, isLoading, error } = useQuery<EventWithRegistrations[]>({
+    queryKey: ["/api/events"],
+  });
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-600">Erreur lors du chargement des événements</p>
+      </div>
+    );
+  }
+
+  const handleRegisterClick = (event: EventWithRegistrations) => {
+    setSelectedEvent(event);
+    setRegistrationModalOpen(true);
+  };
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString("fr-FR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  return (
+    <section className="space-y-8">
+      {/* Welcome Message */}
+      <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-cjd-green">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Événements à venir</h2>
+        <p className="text-gray-600">
+          Découvrez les prochains événements de la section CJD Amiens et inscrivez-vous
+        </p>
+      </div>
+
+      {/* Events List */}
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
+        </div>
+      ) : events && events.length > 0 ? (
+        <div className="space-y-6">
+          {events.map((event) => (
+            <Card key={event.id} className="hover:shadow-lg transition-shadow duration-300">
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-bold text-xl text-gray-800 mb-2">{event.title}</h3>
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center text-gray-600">
+                        <Calendar className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0" />
+                        <span>{formatDate(event.date)}</span>
+                      </div>
+                      <div className="flex items-center text-gray-600">
+                        <MapPin className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0" />
+                        <span>{event.location}</span>
+                      </div>
+                    </div>
+                    {event.description && (
+                      <p className="text-gray-600 mb-4">{event.description}</p>
+                    )}
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Users className="w-4 h-4 mr-1" />
+                      <span>
+                        {event.registrationCount} inscrit{event.registrationCount !== 1 ? 's' : ''}
+                        {event.maxAttendees && ` / ${event.maxAttendees}`}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-4 lg:mt-0 lg:ml-6">
+                    <Button
+                      onClick={() => handleRegisterClick(event)}
+                      className="w-full lg:w-auto bg-cjd-green text-white hover:bg-cjd-green-dark transition-colors duration-200"
+                    >
+                      <CalendarPlus className="w-4 h-4 mr-2" />
+                      S'inscrire
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-600 mb-2">Aucun événement prévu</h3>
+          <p className="text-gray-500">Les prochains événements seront bientôt disponibles</p>
+        </div>
+      )}
+
+      <EventRegistrationModal
+        open={registrationModalOpen}
+        onOpenChange={setRegistrationModalOpen}
+        event={selectedEvent}
+      />
+    </section>
+  );
+}
