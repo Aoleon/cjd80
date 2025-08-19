@@ -32,6 +32,7 @@ import { apiRequest } from "@/lib/queryClient";
 import AdminDbMonitor from "./admin-db-monitor";
 import EventAdminModal from "./event-admin-modal";
 import InscriptionExportModal from "./inscription-export-modal";
+import AdminLogin from "./admin-login";
 import type { Idea, Event } from "@shared/schema";
 
 interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
@@ -187,11 +188,7 @@ export default function AdminSection() {
   };
 
   if (!user) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-600">Veuillez vous connecter pour accéder à l'administration</p>
-      </div>
-    );
+    return <AdminLogin />;
   }
 
   return (
