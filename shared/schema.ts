@@ -119,7 +119,7 @@ export const insertIdeaSchema = createInsertSchema(ideas).pick({
   title: z.string()
     .min(3, "Titre trop court (min 3 caractères)")
     .max(200, "Titre trop long (max 200 caractères)")
-    .regex(/^[a-zA-Z0-9\s\-_.\&():!?,:àâäéèêëïîôöùûüÿñç]+$/, "Titre contient des caractères non autorisés")
+    .regex(/^[a-zA-Z0-9\s\-_.&():!?,:àâäéèêëïîôöùûüÿñç]+$/, "Titre contient des caractères non autorisés")
     .transform(sanitizeText),
   description: z.string()
     .max(1000, "Description trop longue (max 1000 caractères)")
@@ -165,7 +165,7 @@ export const insertEventSchema = createInsertSchema(events).pick({
   title: z.string()
     .min(3, "Titre trop court (min 3 caractères)")
     .max(200, "Titre trop long")
-    .regex(/^[a-zA-Z0-9\s\-_.\&():!?,:àâäéèêëïîôöùûüÿñç]+$/, "Titre contient des caractères non autorisés")
+    .regex(/^[a-zA-Z0-9\s\-_.&():!?,:àâäéèêëïîôöùûüÿñç]+$/, "Titre contient des caractères non autorisés")
     .transform(sanitizeText),
   description: z.string()
     .max(1000, "Description trop longue")
