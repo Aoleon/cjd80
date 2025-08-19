@@ -114,7 +114,7 @@ export default function EventsSection() {
                   <div className="mt-4 lg:mt-0 lg:ml-6">
                     <Button
                       onClick={() => handleRegisterClick(event)}
-                      disabled={event.maxParticipants && event.inscriptionCount >= event.maxParticipants}
+                      disabled={Boolean(event.maxParticipants && event.inscriptionCount >= event.maxParticipants)}
                       className={`w-full lg:w-auto transition-colors duration-200 ${
                         event.maxParticipants && event.inscriptionCount >= event.maxParticipants
                           ? 'bg-gray-400 cursor-not-allowed'
