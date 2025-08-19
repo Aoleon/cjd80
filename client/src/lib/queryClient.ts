@@ -38,7 +38,14 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    const json = await res.json();
+    
+    // Handle backend response format {success: true, data: [...]}
+    if (json && typeof json === 'object' && 'success' in json && 'data' in json) {
+      return json.data;
+    }
+    
+    return json;
   };
 
 export const queryClient = new QueryClient({
