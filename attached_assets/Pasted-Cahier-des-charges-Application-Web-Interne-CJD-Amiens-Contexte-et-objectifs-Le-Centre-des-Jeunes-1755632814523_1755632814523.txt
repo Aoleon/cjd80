@@ -1,0 +1,116 @@
+Cahier des charges – Application Web Interne CJD Amiens
+
+Contexte et objectifs
+
+Le Centre des Jeunes Dirigeants d’Amiens (CJD Amiens) dispose actuellement d’un outil interne sur cjd80.fr permettant à ses membres de partager et soutenir des idées, ainsi que de consulter les événements de la section. Cette application web, surnommée « Boîte à idées » ou « Boîte à Kiffs », sert de plateforme de communication interne où chacun peut proposer des idées, voter pour celles des autres et s’inscrire aux événements à venir ￼ ￼.
+
+L’objectif du présent projet est de reproduire à l’identique les fonctionnalités existantes de ce site, en créant une nouvelle application web hébergée sur Replit. Le design actuel devra être préservé dans un premier temps, afin de ne pas perturber les usagers habituels. Cette application comportera également un back-office administrateur sécurisé pour gérer le contenu (idées, votes, événements, utilisateurs administrateurs).
+
+En résumé, l’outil devra répondre aux besoins suivants :
+	•	Communication interne : faciliter le partage d’idées et d’informations au sein des membres du CJD Amiens.
+	•	Boîte à idées participative : recueillir les suggestions (“idées”) des membres et permettre à chacun de voter pour les idées qu’il souhaite voir réalisées ￼.
+	•	Gestion des événements de la section : afficher la liste des événements prévus et permettre aux membres de s’y inscrire facilement.
+	•	Administration : offrir aux responsables un espace de gestion pour modérer les idées, suivre les votes, gérer les événements et, au besoin, administrer les utilisateurs.
+
+Fonctionnalités pour les membres (front-office)
+
+Le front-office est la partie de l’application accessible à tous les membres du CJD Amiens (via un simple navigateur, sans nécessiter de compte utilisateur dédié). Les fonctionnalités suivantes doivent être disponibles :
+	•	Consultation et vote d’idées (« Boîte à idées ») : La page principale présente la boîte à idées, c’est-à-dire la liste des idées déjà proposées par les membres ￼. Pour chaque idée listée, l’utilisateur doit pouvoir voir :
+	•	Le titre de l’idée (et éventuellement une brève description).
+	•	Le nombre de votes déjà reçus (mise à jour en temps réel ou à chaque chargement de page).
+	•	Un bouton ou lien « Voter pour cette idée ». Lorsque le membre souhaite soutenir une idée, il clique ce bouton. Le site actuel demande alors au membre de renseigner son nom et email avant de valider son vote ￼. De même, la nouvelle application demandera ces informations d’identification pour enregistrer le vote (afin d’éviter les doublons et de savoir qui vote). Une fois le formulaire de vote soumis, le vote est comptabilisé pour l’idée sélectionnée. Chaque membre ne devrait pouvoir voter qu’une seule fois par idée (la base email servant d’identifiant unique pour contrôler l’unicité du vote).
+	•	Message de confirmation : après un vote, un accusé visuel (et/ou email de confirmation) peut informer l’utilisateur que son vote a bien été pris en compte. En cas d’erreur (ex: email déjà utilisé pour ce vote), un message d’avertissement sera affiché.
+	•	Proposer une nouvelle idée : Via le menu principal, un lien « Proposer une idée » est disponible ￼, menant à un formulaire de soumission d’une idée. Ce formulaire comprendra :
+	•	Un champ Titre de l’idée (court et explicite).
+	•	Un champ Description plus détaillée pour permettre au membre d’expliquer son idée, ses bénéfices, etc. (ce champ peut être facultatif ou limité en nombre de caractères pour garder des idées concises).
+	•	Les champs Nom et Email du porteur d’idée, afin de savoir qui soumet l’idée (et éventuellement permettre à l’administrateur de le contacter pour suivi). Si l’utilisateur a déjà fourni ces informations lors de la session (par exemple en votant ou en se inscrivant à un événement), l’application peut les pré-remplir pour plus de confort.
+	•	Un bouton Valider l’idée pour soumettre. Une fois l’idée proposée, elle apparaît dans la liste des idées de la boîte à idées pour être soumise aux votes de tous, soit immédiatement, soit après validation par un administrateur (voir section back-office). À confirmer : sur le site actuel, les idées semblent publiées directement sans modération préalable (aucune indication contraire n’a été trouvée), on conservera donc ce fonctionnement sauf demande contraire.
+	•	Un message de confirmation de prise en compte de l’idée proposée. Si un workflow de validation admin est mis en place à l’avenir, le message indiquera que l’idée sera publiée après approbation.
+	•	Liste des événements : Un menu « Événements » est proposé dans l’interface ￼, permettant d’accéder à la liste des événements internes prévus pour la section CJD Amiens. Sur la page des événements, chaque événement doit être présenté avec les informations suivantes :
+	•	Titre de l’événement (ex : intitulé de la soirée, de la réunion, etc.).
+	•	Date et horaire.
+	•	Lieu (adresse, ou précision si en visioconférence, etc.).
+	•	Description de l’événement (quelques phrases sur le contenu ou l’intervenant, par exemple).
+	•	Optionnellement, un nombre de places disponibles ou attendues si pertinent (sinon, tous les membres peuvent s’inscrire sans limite a priori).
+	•	Inscription à un événement : Pour chaque événement listé, les membres doivent pouvoir s’inscrire facilement. Le site actuel offre vraisemblablement un bouton « S’inscrire » ou « Je participe » sur chaque événement (d’après la description du besoin). La nouvelle application implémentera une fonctionnalité d’inscription avec les modalités suivantes :
+	•	Clic sur « S’inscrire » ouvre un formulaire demandant le Nom et Email du participant (si pas déjà renseignés durant la session). Ces informations permettent d’identifier le membre inscrit et de le contacter si nécessaire (par exemple en cas de changement de programme).
+	•	Possibilité d’ajouter éventuellement des commentaires lors de l’inscription (par ex. nombre d’accompagnants, régimes alimentaires pour un dîner, etc.) – cette option est à confirmer selon les besoins de la section.
+	•	Après validation, un message de confirmation s’affiche (et/ou un email est envoyé au participant) pour confirmer son inscription.
+	•	Le système doit enregistrer l’inscription dans la base de données. Un même email ne devrait pas pouvoir s’inscrire plusieurs fois au même événement (sauf si l’inscrit se désinscrit d’abord, fonctionnalité de désinscription non spécifiée a priori).
+	•	Consultation des informations générales : Le site devra afficher en pied de page ou en page d’accueil les informations de base sur le CJD Amiens (logo, intitulé « Centre des Jeunes Dirigeants d’Amiens », mentions légales). Par exemple, le site actuel affiche le nom de la section et la mention de droits réservés ￼. Ces informations seront reprises dans la nouvelle application.
+	•	Boîte à Kiffs : Le terme « Boîte à Kiffs » semble utilisé dans l’interface actuelle pour désigner la boîte à idées ou un espace de retours positifs ￼. Il conviendra de préserver cette dénomination si elle fait partie de l’identité locale du projet. Si Boîte à Kiffs correspond simplement au titre de la page des idées, on veillera à l’afficher clairement (par ex. en en-tête de la page d’idées, comme actuellement « Boite à Kiffs – CJD Amiens » ￼). S’il s’agit d’une rubrique distincte (par exemple un mur de compliments/réussites), cela devra être éclairci et intégré en plus. D’après l’analyse, il est probable que Boîte à Kiffs soit juste le surnom de la boîte à idées participative.
+
+Note sur l’authentification des membres : l’application ne requiert pas de création de compte individuel pour chaque membre (conformément à l’existant). L’accès est libre via un simple lien, et l’identification des utilisateurs se fait au moment des actions (vote, proposition d’idée, inscription) par la saisie du nom et de l’email. Cela vise à rester simple et à encourager la participation sans friction. Néanmoins, on présume que seuls les membres de la section connaissent l’existence de l’application, ce qui limite les abus extérieurs. En cas de besoin futur, on pourra envisager la mise en place d’une authentification plus stricte (comptes protégés par mot de passe, ou restriction aux emails de domaine particulier), mais ce n’est pas requis dans la reprise iso-fonctionnelle actuelle.
+
+Interface et design
+
+L’interface utilisateur devra reprendre le design existant du site cjd80.fr. Cela implique notamment :
+	•	Conserver la charte graphique actuelle : couleurs, logo du CJD Amiens, typographie et mise en page générale. Par exemple, le logo CJD (ou son texte) apparait en en-tête du site actuel ￼ – cet élément visuel devra être présent de même.
+	•	Disposition des menus : garder la barre de navigation supérieure avec les mêmes libellés de menu et dans le même ordre : Voter pour des idées, Proposer une idée, Événements, Administration ￼. Cette navigation doit être visible sur toutes les pages de l’application pour un accès rapide aux différentes sections.
+	•	Responsivité : Assurer que le design est utilisable aussi bien sur écran d’ordinateur que sur mobile. Les membres doivent pouvoir voter ou s’inscrire depuis leur smartphone lors des réunions, par exemple. Si le design actuel n’est pas responsive, il serait tout de même pertinent d’en prévoir l’adaptation minimale sans le dénaturer.
+	•	Clarté et simplicité : L’ergonomie doit rester simple et épurée, comme l’actuelle. De courts textes introductifs expliquent la finalité de chaque page (ex: le texte « Découvrez les idées proposées par la section et votez pour celles que vous souhaitez voir réalisées » en introduction de la page Boîte à idées ￼ sera conservé). Les boutons d’action sont clairement identifiés (ex: Voter, Proposer, S’inscrire) et suffisamment visibles.
+	•	Messages et feedback utilisateur : Intégrer dans l’interface des messages clairs en cas d’erreur (champs manquants, format d’email invalide, etc.) ou de succès (confirmation qu’une idée a été soumise, qu’un vote est pris en compte, qu’une inscription est enregistrée). Ces messages doivent s’harmoniser avec le style du site (même police, couleurs cohérentes, etc.).
+	•	Langue : L’interface sera en français (comme actuellement) et utilisera le ton adapté à un contexte associatif professionnel mais convivial.
+	•	Accessibilité : Veiller à des bonnes pratiques HTML/CSS pour l’accessibilité (contraste de couleurs, labels sur les formulaires, etc.) dans la mesure du possible, même si cela n’était pas explicitement mentionné, c’est un plus pour les utilisateurs.
+
+Fonctionnalités du back-office (administration)
+
+Une section Administration est prévue dans le menu ￼, protégée par authentification, pour les administrateurs de l’application (probablement les membres du bureau CJD Amiens ou les responsables de la communication). Ce back-office permettra de gérer le contenu et superviser les interactions. Les exigences pour cet espace administrateur sont les suivantes :
+	•	Sécurisation de l’accès : L’accès à /admin (ou équivalent) doit être protégé par un login/mot de passe. Un système simple d’authentification est suffisant (par exemple un seul compte admin commun initialement, avec possibilité d’en ajouter d’autres). Les mots de passe seront stockés de façon sécurisée (hachés en base de données).
+	•	Tableau de bord : Après connexion, l’admin arrive sur un tableau de bord synthétique (facultatif mais utile) affichant les informations clés : nombre total d’idées soumises, nombre de votes totaux, nombre d’événements à venir, éventuellement derniers inscrits récents, etc. Ceci donne une vue d’ensemble rapide de l’activité.
+	•	Gestion des idées : L’administrateur doit pouvoir consulter et manager toutes les idées proposées par les membres. Concrètement, l’interface admin offrira :
+	•	La liste des idées avec leurs détails principaux (titre, nombre de votes actuels, nom du proposant, date de soumission).
+	•	La possibilité de trier ou filtrer les idées (par nombre de votes, par date, etc., optionnel).
+	•	Moderation : possibilité de supprimer une idée inappropriée ou hors-sujet. Une confirmation sera demandée avant suppression. Optionnellement, possibilité d’éditer une idée (corriger une faute, clarifier un titre) pourrait être utile, mais à utiliser avec transparence vis-à-vis du proposant.
+	•	Si le processus le nécessite, l’admin peut avoir un système pour valider manuellement une idée avant qu’elle n’apparaisse aux membres. (Si dans le fonctionnement actuel les idées apparaissent immédiatement, on peut garder une validation automatique par défaut. Mais pour le futur, prévoir un champ “validé : oui/non” pour chaque idée, avec visibilité côté membres uniquement pour celles validées).
+	•	Visualisation des votes : en sélectionnant une idée, l’administrateur peut voir la liste des personnes qui ont voté pour (nom + email, et éventuellement date du vote). Ceci permet de contrôler la bonne utilisation (et détecter d’éventuelles duplications ou abus). Ces données étant sensibles, elles restent accessibles uniquement aux administrateurs.
+	•	Clôture d’une idée : Option à considérer – marquer une idée comme « Réalisée » ou « Fermée » une fois qu’elle a été traitée. Cela pourrait simplement être un label visible côté membres (par ex. « Idée réalisée ») et éventuellement empêcher de nouveaux votes dessus.
+	•	Gestion des événements : L’admin doit pouvoir créer et mettre à jour les événements affichés aux membres :
+	•	Créer un événement : via un formulaire d’ajout comprenant les champs titre, date/heure, lieu, description, nombre limite de participants (optionnel). Une fois créé, l’événement apparaît sur la page Événements du front-office, classé par date (les plus à venir en premier).
+	•	Éditer un événement : modifier les détails (par exemple changer la date ou la description, ou clôturer les inscriptions). Si un événement est passé, il pourrait être automatiquement ou manuellement archivé (ne plus s’afficher aux membres).
+	•	Supprimer un événement : possible également (avec confirmation) en cas d’annulation ou erreur, ce qui le retire de la liste publique.
+	•	Suivi des inscriptions : pour chaque événement, l’admin voit la liste des inscrits (nom, email, éventuellement leurs commentaires s’ils en ont laissé). Idéalement, afficher aussi le nombre total d’inscrits par événement. L’admin doit pouvoir exporter ces listes (par exemple en CSV) ou au moins les copier facilement, afin de gérer l’événement hors-ligne (imprimer une liste de présence, etc.).
+	•	Optionnel : Permettre à l’admin d’ajouter manuellement un participant (par exemple s’il reçoit une demande d’inscription par un autre canal).
+	•	Optionnel : Fonctionnalité de mailing depuis l’admin – par exemple, un bouton pour envoyer un email groupé à tous les inscrits d’un événement (utile si changement de dernière minute). Ceci pourrait toutefois être réalisé en dehors de l’application si non trivial à implémenter immédiatement.
+	•	Gestion des utilisateurs admin : Étant donné qu’il s’agit d’un outil interne, on peut avoir un ou quelques comptes administrateurs. Le back-office devra permettre de changer le mot de passe du compte admin principal. Si plusieurs comptes admin sont nécessaires, une interface pour en ajouter/supprimer des comptes (nom d’utilisateur + mot de passe) serait à prévoir. Les droits de chaque admin sont identiques (pas besoin de rôles finement distincts à ce stade, sauf si souhaité plus tard).
+	•	Logs et suivi : Il serait utile que l’application enregistre certaines actions admin critiques (suppression d’idée, suppression d’événement, etc.) dans un log interne, pour garder une trace en cas de besoin. Ce n’est pas forcément visible dans l’interface, mais stocké en base ou fichier.
+	•	Ergonomie du back-office : L’interface d’administration n’a pas besoin d’être aussi stylée que la partie membre, mais doit rester cohérente et simple d’utilisation. On peut réutiliser la charte graphique de l’application publique pour les en-têtes et boutons, afin de conserver une unité visuelle. Les tableaux de liste (idées, événements) doivent être lisibles et compatibles avec un affichage desktop principalement (le back-office sera surtout utilisé depuis un ordinateur).
+
+Contraintes techniques et outils
+	•	Plateforme : L’application sera développée et hébergée sur Replit. Cela signifie qu’elle doit fonctionner dans l’environnement cloud de Replit, accessible via un navigateur web à une URL fournie par Replit. On laisse le choix de la stack technique aux développeurs de Replit, du moment que l’application remplit les fonctionnalités. Par exemple, une implémentation typique pourrait être :
+	•	Front-end en HTML/CSS/JavaScript (possiblement un framework léger type React/Vue ou simplement du JS natif vu la simplicité).
+	•	Back-end en JavaScript (Node.js/Express) ou Python (Flask/FastAPI) – Replit supporte ces environnements – avec une API pour les opérations (vote, soumission, inscription, admin).
+	•	Base de données pour stocker les informations (voir point suivant).
+	•	Base de données : Les données à stocker sont les idées, les votes, les événements, les inscriptions, et les comptes admin. Replit propose soit son propre petit store (Replit DB), soit on peut embarquer une base SQLite, ou utiliser une petite base NoSQL selon la préférence. Dans le cahier des charges, on exige simplement que les données soient persistantes (ne pas se réinitialiser à chaque déploiement) et sécurisées. Chaque élément doit avoir un identifiant unique :
+	•	Idées : id, titre, description, auteur (nom, email), date soumise, statut (ouverte/fermée), compteur de votes (ou liens vers les votes).
+	•	Votes : id, idée associée (id), votant (nom, email), date.
+	•	Événements : id, titre, description, date/heure, lieu, limite participants (optionnel), statut (ouvert/clos).
+	•	Inscriptions : id, événement associé, nom, email, commentaires éventuels, date d’inscription.
+	•	Admin users : id, nom (ou email) d’utilisateur, hash de mot de passe.
+	•	Performances et charge : Le nombre d’utilisateurs étant limité aux membres de la section (quelques dizaines de personnes), l’application n’a pas de contrainte de scalabilité majeure. Néanmoins, elle doit pouvoir supporter sans lenteur excessive le cas où tous les membres se connectent en même temps pour voter, par exemple lors d’une réunion (une cinquantaine de personnes). Les opérations de vote et d’inscription doivent être suffisamment optimisées pour fournir une réponse quasi-immédiate. Le choix d’une base de données légère et d’opérations simples y contribue.
+	•	Sécurité des données : Même s’il s’agit d’un outil interne, les données collectées (idées parfois confidentielles, noms/emails des membres) doivent être protégées :
+	•	La communication devra idéalement se faire en HTTPS (ce qui est le cas par défaut avec Replit qui fournit un domaine en HTTPS).
+	•	Les données sensibles (mots de passe admin) stockées de façon chiffrée (hachage + sel pour les mots de passe).
+	•	On veillera à empêcher les injections (SQL, XSS) en nettoyant bien les entrées utilisateurs côté serveur.
+	•	Les listings de données admin ne doivent pas être accessibles sans authentification (vérification de session côté serveur pour chaque route /admin).
+	•	Éviter de stocker en clair les adresses email dans des pages publiques. Par exemple, ne pas afficher les emails des votants ou des inscrits aux autres membres sur le front-office. Ces infos ne sont visibles que par les admins via le back-office.
+	•	Conformité RGPD : informer que les données collectées sont à usage interne CJD. Éventuellement, prévoir une petite mention légale ou case d’acceptation lors de la soumission d’une idée ou inscription à un événement (« J’accepte que mes données soient utilisées dans le cadre de l’organisation des activités du CJD Amiens »).
+	•	Tests et fiabilité : Avant déploiement final, réaliser des tests internes avec quelques membres pour vérifier que :
+	•	Les votes s’enregistrent correctement et qu’un même membre ne peut pas voter deux fois pour la même idée (du moins pas avec la même adresse email).
+	•	La soumission d’idée fonctionne et l’idée apparaît bien dans la liste.
+	•	L’inscription à un événement ajoute bien le participant dans la liste admin, et éventuellement empêcher les doubles inscriptions.
+	•	Le login admin fonctionne et les actions d’ajout/édition/suppression aboutissent comme prévu.
+	•	Aucune donnée n’est visible de tous alors qu’elle devrait rester interne (ex: vérifier qu’en inspectant le code source public, on ne trouve pas la liste des emails de votants, etc.).
+	•	Maintenance et évolutivité : Le code de l’application doit être écrit de manière claire et modulaire pour en faciliter la maintenance. Hébergée sur Replit, l’application pourra être mise à jour facilement par les développeurs. Il faudra documenter dans un README ou un guide :
+	•	Comment déployer l’application sur Replit (si des étapes manuelles sont nécessaires).
+	•	Comment configurer d’éventuelles variables (par ex, si on utilise des secrets pour le login admin initial).
+	•	Des suggestions pour de futures évolutions (facultatif, mais par exemple : possibilité d’envoi de notifications par email, ajout d’un forum de discussion, etc., qui ne sont pas dans le périmètre actuel mais pourraient être envisagées).
+
+Conclusion
+
+Ce cahier des charges décrit la refonte de l’application web interne du CJD Amiens en conservant à l’identique les fonctions existantes de la plateforme actuelle cjd80.fr. Le nouveau développement sur Replit devra permettre aux membres de continuer à proposer des idées, voter et s’inscrire aux événements de manière intuitive, tout en offrant aux administrateurs les outils pour piloter ces activités. En respectant le design d’origine ￼ et en assurant la sécurité des données, cette web app renouvelée renforcera la communication interne du CJD Amiens et pourra évoluer selon les futurs besoins de la section, le tout sur une base technique moderne et maintenable.
+
+Les sources ci-dessous reprennent certains éléments observés sur le site actuel, garantissant que la solution proposée est en phase avec l’existant et les attentes exprimées.
+
+Sources :
+	1.	CJD Amiens – Boîte à idées (extraits du site actuel) ￼ ￼ ￼
