@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Loader2, Calendar, Users } from "lucide-react";
+import { UserPlus, Loader2, Calendar, Users, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,7 +108,7 @@ export default function EventRegistrationModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-full max-w-2xl mx-3 sm:mx-auto">
         <DialogHeader className="text-left">
           <DialogTitle className="text-xl font-bold text-gray-800 mb-2">
             S'inscrire à l'événement

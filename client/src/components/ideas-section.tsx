@@ -32,11 +32,11 @@ export default function IdeasSection() {
   };
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6 sm:space-y-8">
       {/* Welcome Message */}
-      <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-cjd-green">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Boîte à Kiffs</h2>
-        <p className="text-gray-600">
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 border-l-4 border-cjd-green">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Boîte à Kiffs</h2>
+        <p className="text-sm sm:text-base text-gray-600">
           Découvrez les idées proposées par la section et votez pour celles que vous souhaitez voir réalisées
         </p>
       </div>
@@ -47,31 +47,31 @@ export default function IdeasSection() {
           <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
         </div>
       ) : ideas && ideas.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3">
           {ideas.map((idea) => (
             <Card key={idea.id} className="hover:shadow-lg transition-shadow duration-300">
-              <CardContent className="p-6">
-                <h3 className="font-bold text-lg text-gray-800 mb-2">{idea.title}</h3>
+              <CardContent className="p-4 sm:p-6">
+                <h3 className="font-bold text-base sm:text-lg text-gray-800 mb-2 line-clamp-2">{idea.title}</h3>
                 {idea.description && (
-                  <p className="text-gray-600 text-sm mb-4">{idea.description}</p>
+                  <p className="text-gray-600 text-xs sm:text-sm mb-4 line-clamp-3">{idea.description}</p>
                 )}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 xs:gap-2">
                   <div className="flex items-center space-x-2">
-                    <ThumbsUp className="w-4 h-4 text-cjd-green" />
-                    <span className="font-medium text-gray-700">
+                    <ThumbsUp className="w-4 h-4 text-cjd-green flex-shrink-0" />
+                    <span className="font-medium text-gray-700 text-sm">
                       {idea.voteCount} vote{idea.voteCount !== 1 ? 's' : ''}
                     </span>
                   </div>
                   <Button
                     onClick={() => handleVoteClick(idea)}
-                    className="bg-cjd-green text-white hover:bg-cjd-green-dark transition-colors duration-200 text-sm"
+                    className="bg-cjd-green text-white hover:bg-cjd-green-dark transition-colors duration-200 text-xs sm:text-sm w-full xs:w-auto"
                     size="sm"
                   >
-                    <Vote className="w-4 h-4 mr-1" />
+                    <Vote className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                     Voter
                   </Button>
                 </div>
-                <div className="mt-4 text-xs text-gray-500">
+                <div className="mt-3 sm:mt-4 text-xs text-gray-500">
                   Proposée par {idea.proposedBy}
                 </div>
               </CardContent>

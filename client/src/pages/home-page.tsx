@@ -14,28 +14,29 @@ export default function HomePage() {
     <div className="font-lato bg-gray-50 min-h-screen">
       <Header activeSection={activeSection} setActiveSection={setActiveSection} />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
         {activeSection === "ideas" && <IdeasSection />}
         {activeSection === "propose" && <ProposeSection />}
         {activeSection === "events" && <EventsSection />}
         {activeSection === "admin" && <AdminSection />}
       </main>
 
-      <footer className="bg-gray-800 text-white py-8 mt-16">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-4 mb-4 md:mb-0">
-              <div className="w-10 h-10 bg-cjd-green rounded-full flex items-center justify-center">
-                <span className="text-white font-bold">CJD</span>
+      <footer className="bg-gray-800 text-white py-6 sm:py-8 mt-12 sm:mt-16">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center space-x-3 sm:space-x-4 text-center sm:text-left">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cjd-green rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm sm:text-base">CJD</span>
               </div>
               <div>
-                <p className="font-medium">Centre des Jeunes Dirigeants d'Amiens</p>
-                <p className="text-sm text-gray-400">© 2024 - Tous droits réservés</p>
+                <p className="font-medium text-sm sm:text-base">Centre des Jeunes Dirigeants d'Amiens</p>
+                <p className="text-xs sm:text-sm text-gray-400">© 2024 - Tous droits réservés</p>
               </div>
             </div>
-            <div className="text-sm text-gray-400">
-              <a href="#" className="hover:text-white">Mentions légales</a> | 
-              <a href="#" className="hover:text-white"> Contact</a>
+            <div className="text-xs sm:text-sm text-gray-400 flex flex-col sm:flex-row gap-2 sm:gap-1">
+              <a href="#" className="hover:text-white transition-colors">Mentions légales</a>
+              <span className="hidden sm:inline"> | </span>
+              <a href="#" className="hover:text-white transition-colors">Contact</a>
             </div>
           </div>
         </div>

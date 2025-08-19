@@ -54,13 +54,13 @@ export default function ProposeSection() {
   const remainingChars = 500 - (formData.description?.length || 0);
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6 sm:space-y-8">
       <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl text-gray-800">Proposer une nouvelle idée</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-xl sm:text-2xl text-gray-800">Proposer une nouvelle idée</CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <CardContent className="p-4 sm:p-6 pt-0">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             <div>
               <Label htmlFor="idea-title" className="text-sm font-medium text-gray-700">
                 Titre de l'idée *
@@ -94,7 +94,7 @@ export default function ProposeSection() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="proposer-name" className="text-sm font-medium text-gray-700">
                   Votre nom *
@@ -125,11 +125,11 @@ export default function ProposeSection() {
               </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
               <Button
                 type="submit"
                 disabled={createIdeaMutation.isPending}
-                className="bg-cjd-green text-white hover:bg-cjd-green-dark transition-colors duration-200"
+                className="bg-cjd-green text-white hover:bg-cjd-green-dark transition-colors duration-200 w-full sm:w-auto"
               >
                 {createIdeaMutation.isPending ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

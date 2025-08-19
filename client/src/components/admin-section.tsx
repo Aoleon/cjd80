@@ -195,17 +195,17 @@ export default function AdminSection() {
   }
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6 sm:space-y-8">
       {/* Admin Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Administration</h2>
-          <p className="text-gray-600">Bienvenue, {user.email}</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Administration</h2>
+          <p className="text-sm sm:text-base text-gray-600">Bienvenue, {user.email}</p>
         </div>
         <Button
           onClick={() => logoutMutation.mutate()}
           variant="outline"
-          className="text-gray-600 hover:text-gray-800"
+          className="text-gray-600 hover:text-gray-800 w-full sm:w-auto"
         >
           <LogOut className="w-4 h-4 mr-2" />
           Se déconnecter
@@ -218,51 +218,55 @@ export default function AdminSection() {
           <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
         </div>
       ) : stats ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl font-bold text-cjd-green mb-2">
+            <CardContent className="p-4 sm:p-6 text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-cjd-green mb-2">
                 {stats.totalIdeas}
               </div>
-              <div className="text-sm text-gray-600 flex items-center justify-center">
-                <Lightbulb className="w-4 h-4 mr-1" />
-                Idées proposées
+              <div className="text-xs sm:text-sm text-gray-600 flex items-center justify-center">
+                <Lightbulb className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <span className="hidden sm:inline">Idées proposées</span>
+                <span className="sm:hidden">Idées</span>
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl font-bold text-cjd-green mb-2">
+            <CardContent className="p-4 sm:p-6 text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-cjd-green mb-2">
                 {stats.totalVotes}
               </div>
-              <div className="text-sm text-gray-600 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 mr-1" />
-                Votes totaux
+              <div className="text-xs sm:text-sm text-gray-600 flex items-center justify-center">
+                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <span className="hidden sm:inline">Votes totaux</span>
+                <span className="sm:hidden">Votes</span>
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl font-bold text-cjd-green mb-2">
+            <CardContent className="p-4 sm:p-6 text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-cjd-green mb-2">
                 {stats.upcomingEvents}
               </div>
-              <div className="text-sm text-gray-600 flex items-center justify-center">
-                <Calendar className="w-4 h-4 mr-1" />
-                Événements à venir
+              <div className="text-xs sm:text-sm text-gray-600 flex items-center justify-center">
+                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <span className="hidden sm:inline">Événements à venir</span>
+                <span className="sm:hidden">Événements</span>
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl font-bold text-cjd-green mb-2">
+            <CardContent className="p-4 sm:p-6 text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-cjd-green mb-2">
                 {stats.totalInscriptions}
               </div>
-              <div className="text-sm text-gray-600 flex items-center justify-center">
-                <Users className="w-4 h-4 mr-1" />
-                Inscriptions totales
+              <div className="text-xs sm:text-sm text-gray-600 flex items-center justify-center">
+                <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <span className="hidden sm:inline">Inscriptions totales</span>
+                <span className="sm:hidden">Inscriptions</span>
               </div>
             </CardContent>
           </Card>
@@ -272,20 +276,27 @@ export default function AdminSection() {
       {/* Admin Tabs */}
       <Card>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full">
-            <TabsTrigger value="ideas" className="flex-1">Gestion des idées</TabsTrigger>
-            <TabsTrigger value="events" className="flex-1">Gestion des événements</TabsTrigger>
-            <TabsTrigger value="monitoring" className="flex-1">
-              <Database className="w-4 h-4 mr-2" />
-              Monitoring DB
+          <TabsList className="w-full grid grid-cols-3 lg:grid-cols-4">
+            <TabsTrigger value="ideas" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Gestion des idées</span>
+              <span className="sm:hidden">Idées</span>
+            </TabsTrigger>
+            <TabsTrigger value="events" className="text-xs sm:text-sm">
+              <span className="hidden sm:inline">Gestion des événements</span>
+              <span className="sm:hidden">Événements</span>
+            </TabsTrigger>
+            <TabsTrigger value="monitoring" className="text-xs sm:text-sm">
+              <Database className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Monitoring DB</span>
+              <span className="sm:hidden">DB</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Ideas Management Tab */}
-          <TabsContent value="ideas" className="p-6">
+          <TabsContent value="ideas" className="p-3 sm:p-6">
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Toutes les idées</h3>
+                <h3 className="text-base sm:text-lg font-semibold">Toutes les idées</h3>
               </div>
 
               {ideasLoading ? (
@@ -386,13 +397,13 @@ export default function AdminSection() {
           </TabsContent>
 
           {/* Events Management Tab */}
-          <TabsContent value="events" className="p-6">
+          <TabsContent value="events" className="p-3 sm:p-6">
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Tous les événements</h3>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <h3 className="text-base sm:text-lg font-semibold">Tous les événements</h3>
                 <Button
                   onClick={handleCreateEvent}
-                  className="bg-cjd-green hover:bg-green-700 text-white"
+                  className="bg-cjd-green hover:bg-green-700 text-white w-full sm:w-auto"
                 >
                   <CalendarPlus className="w-4 h-4 mr-2" />
                   Nouvel événement

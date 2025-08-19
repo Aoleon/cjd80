@@ -68,7 +68,7 @@ export default function VoteModal({ open, onOpenChange, idea }: VoteModalProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-full max-w-md mx-3 sm:mx-auto">
         <DialogHeader>
           <DialogTitle>Voter pour cette idée</DialogTitle>
         </DialogHeader>

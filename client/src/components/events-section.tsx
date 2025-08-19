@@ -43,11 +43,11 @@ export default function EventsSection() {
   };
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6 sm:space-y-8">
       {/* Welcome Message */}
-      <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-cjd-green">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Événements à venir</h2>
-        <p className="text-gray-600">
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 border-l-4 border-cjd-green">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Événements à venir</h2>
+        <p className="text-sm sm:text-base text-gray-600">
           Découvrez les prochains événements de la section CJD Amiens et inscrivez-vous
         </p>
       </div>
@@ -58,22 +58,22 @@ export default function EventsSection() {
           <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
         </div>
       ) : events && events.length > 0 ? (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {events.map((event) => (
             <Card key={event.id} className="hover:shadow-lg transition-shadow duration-300">
-              <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-xl text-gray-800 mb-2">{event.title}</h3>
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center text-gray-600">
-                        <Calendar className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0" />
-                        <span>{formatDate(event.date.toString())}</span>
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-lg sm:text-xl text-gray-800 mb-3">{event.title}</h3>
+                    <div className="space-y-2 sm:space-y-3 mb-4">
+                      <div className="flex items-start text-gray-600">
+                        <Calendar className="w-4 h-4 mr-2 mt-0.5 text-cjd-green flex-shrink-0" />
+                        <span className="text-sm sm:text-base break-words">{formatDate(event.date.toString())}</span>
                       </div>
                       {event.location && (
-                        <div className="flex items-center text-gray-600">
-                          <MapPin className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0" />
-                          <span>{event.location}</span>
+                        <div className="flex items-start text-gray-600">
+                          <MapPin className="w-4 h-4 mr-2 mt-0.5 text-cjd-green flex-shrink-0" />
+                          <span className="text-sm sm:text-base break-words">{event.location}</span>
                         </div>
                       )}
                       {event.helloAssoLink && (
@@ -86,16 +86,18 @@ export default function EventsSection() {
                       )}
                     </div>
                     {event.description && (
-                      <p className="text-gray-600 mb-4">{event.description}</p>
+                      <p className="text-gray-600 mb-4 text-sm sm:text-base">{event.description}</p>
                     )}
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Users className="w-4 h-4 mr-1" />
-                      <span>
-                        {event.inscriptionCount} inscrit{event.inscriptionCount !== 1 ? 's' : ''}
-                        {event.maxParticipants && ` / ${event.maxParticipants} places`}
-                      </span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs sm:text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <Users className="w-4 h-4 mr-1 flex-shrink-0" />
+                        <span>
+                          {event.inscriptionCount} inscrit{event.inscriptionCount !== 1 ? 's' : ''}
+                          {event.maxParticipants && ` / ${event.maxParticipants} places`}
+                        </span>
+                      </div>
                       {event.maxParticipants && (
-                        <div className="ml-2">
+                        <div className="flex-shrink-0">
                           <div className={`inline-block px-2 py-1 text-xs rounded-full ${
                             event.inscriptionCount >= event.maxParticipants 
                               ? 'bg-red-100 text-red-800'
@@ -111,11 +113,11 @@ export default function EventsSection() {
                       )}
                     </div>
                   </div>
-                  <div className="mt-4 lg:mt-0 lg:ml-6">
+                  <div className="flex-shrink-0 xl:ml-6">
                     <Button
                       onClick={() => handleRegisterClick(event)}
                       disabled={Boolean(event.maxParticipants && event.inscriptionCount >= event.maxParticipants)}
-                      className={`w-full lg:w-auto transition-colors duration-200 ${
+                      className={`w-full xl:w-auto transition-colors duration-200 ${
                         event.maxParticipants && event.inscriptionCount >= event.maxParticipants
                           ? 'bg-gray-400 cursor-not-allowed'
                           : 'bg-cjd-green text-white hover:bg-cjd-green-dark'
