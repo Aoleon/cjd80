@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import { dbMonitoringMiddleware, getPoolStatsEndpoint } from "./middleware/db-monitoring";
+import { checkDatabaseHealth } from "./utils/db-health";
 import { 
   insertIdeaSchema,
   insertVoteSchema,
@@ -17,6 +19,9 @@ function requireAuth(req: any, res: any, next: any) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Middleware de monitoring de la base de données
+  app.use('/api', dbMonitoringMiddleware);
+  
   // Setup authentication
   setupAuth(app);
 
@@ -160,6 +165,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const stats = await storage.getStats();
       res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Pool de connexions stats (admin seulement)
+  app.get("/api/admin/pool-stats", requireAuth, getPoolStatsEndpoint);
+
+  // Health check de la base de données (admin seulement)
+  app.get("/api/admin/db-health", requireAuth, async (req, res, next) => {
+    try {
+      const health = await checkDatabaseHealth();
+      res.json(health);
     } catch (error) {
       next(error);
     }

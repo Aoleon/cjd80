@@ -70,9 +70,20 @@ export class DatabaseStorage implements IStorage {
   public sessionStore: session.Store;
 
   constructor() {
+    // Configuration optimisée du store de sessions
     this.sessionStore = new PostgresSessionStore({ 
       pool, 
-      createTableIfMissing: true 
+      createTableIfMissing: true,
+      // Optimisations pour les sessions
+      tableName: 'user_sessions',
+      pruneSessionInterval: 900, // 15 minutes - nettoyage automatique
+      errorLog: (error) => {
+        console.error('[Session Store] Erreur:', error.message);
+      },
+      // Configuration du schéma
+      schemaName: 'public',
+      // TTL pour les sessions expirées  
+      ttl: 30 * 24 * 60 * 60 // 30 jours
     });
   }
 

@@ -75,9 +75,10 @@ Authentication features:
 - PostCSS with Tailwind CSS for styling
 
 **Database and ORM:**
-- Neon Database (serverless PostgreSQL) for data persistence
+- Neon Database (serverless PostgreSQL) with optimized connection pooling
 - Drizzle ORM for type-safe database operations
-- connect-pg-simple for PostgreSQL session storage
+- connect-pg-simple for PostgreSQL session storage with automatic cleanup
+- Connection pool monitoring and health checks for performance optimization
 
 **UI and Component Libraries:**
 - Radix UI primitives for accessible component foundations

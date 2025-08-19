@@ -11,6 +11,7 @@ import {
   LogOut,
   Loader2,
   Plus,
+  Database,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import AdminDbMonitor from "./admin-db-monitor";
 import type { Idea, Event } from "@shared/schema";
 
 interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
@@ -214,6 +216,10 @@ export default function AdminSection() {
           <TabsList className="w-full">
             <TabsTrigger value="ideas" className="flex-1">Gestion des idées</TabsTrigger>
             <TabsTrigger value="events" className="flex-1">Gestion des événements</TabsTrigger>
+            <TabsTrigger value="monitoring" className="flex-1">
+              <Database className="w-4 h-4 mr-2" />
+              Monitoring DB
+            </TabsTrigger>
           </TabsList>
 
           {/* Ideas Management Tab */}
@@ -362,6 +368,11 @@ export default function AdminSection() {
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          {/* Database Monitoring Tab */}
+          <TabsContent value="monitoring" className="p-6">
+            <AdminDbMonitor />
           </TabsContent>
         </Tabs>
       </Card>

@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { startPoolMonitoring } from "./utils/db-health";
 
 const app = express();
 app.use(express.json());
@@ -67,5 +68,9 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    log(`DB pool monitoring activé`);
+    
+    // Démarrer le monitoring du pool de connexions
+    startPoolMonitoring(30000); // Check toutes les 30 secondes
   });
 })();
