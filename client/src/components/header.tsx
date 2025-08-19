@@ -28,6 +28,7 @@ export default function Header({ activeSection, setActiveSection }: HeaderProps)
               alt="CJD - Centre des Jeunes Dirigeants Amiens" 
               className="h-10 sm:h-12 w-auto object-contain bg-white rounded-lg p-1"
             />
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">Amiens</h1>
           </div>
           
           <nav className="hidden lg:flex space-x-4 xl:space-x-6">
