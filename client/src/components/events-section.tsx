@@ -70,6 +70,12 @@ export default function EventsSection() {
                         <Calendar className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0" />
                         <span>{formatDate(event.date.toString())}</span>
                       </div>
+                      {event.location && (
+                        <div className="flex items-center text-gray-600">
+                          <MapPin className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0" />
+                          <span>{event.location}</span>
+                        </div>
+                      )}
                       {event.helloAssoLink && (
                         <div className="flex items-center text-gray-600">
                           <MapPin className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0" />
@@ -86,16 +92,39 @@ export default function EventsSection() {
                       <Users className="w-4 h-4 mr-1" />
                       <span>
                         {event.inscriptionCount} inscrit{event.inscriptionCount !== 1 ? 's' : ''}
+                        {event.maxParticipants && ` / ${event.maxParticipants} places`}
                       </span>
+                      {event.maxParticipants && (
+                        <div className="ml-2">
+                          <div className={`inline-block px-2 py-1 text-xs rounded-full ${
+                            event.inscriptionCount >= event.maxParticipants 
+                              ? 'bg-red-100 text-red-800'
+                              : event.inscriptionCount / event.maxParticipants > 0.8 
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-green-100 text-green-800'
+                          }`}>
+                            {event.inscriptionCount >= event.maxParticipants 
+                              ? 'Complet' 
+                              : `${Math.round((event.inscriptionCount / event.maxParticipants) * 100)}% rempli`}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="mt-4 lg:mt-0 lg:ml-6">
                     <Button
                       onClick={() => handleRegisterClick(event)}
-                      className="w-full lg:w-auto bg-cjd-green text-white hover:bg-cjd-green-dark transition-colors duration-200"
+                      disabled={event.maxParticipants && event.inscriptionCount >= event.maxParticipants}
+                      className={`w-full lg:w-auto transition-colors duration-200 ${
+                        event.maxParticipants && event.inscriptionCount >= event.maxParticipants
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-cjd-green text-white hover:bg-cjd-green-dark'
+                      }`}
                     >
                       <CalendarPlus className="w-4 h-4 mr-2" />
-                      S'inscrire
+                      {event.maxParticipants && event.inscriptionCount >= event.maxParticipants 
+                        ? 'Complet' 
+                        : "S'inscrire"}
                     </Button>
                   </div>
                 </div>

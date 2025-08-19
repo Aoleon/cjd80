@@ -165,11 +165,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin stats route
+  // Admin routes
   app.get("/api/admin/stats", requireAuth, async (req, res, next) => {
     try {
       const stats = await storage.getStats();
       res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/ideas", requireAuth, async (req, res, next) => {
+    try {
+      const result = await storage.getAllIdeas();
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/events", requireAuth, async (req, res, next) => {
+    try {
+      const result = await storage.getAllEvents();
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/admin/ideas/:id/approve", requireAuth, async (req, res, next) => {
+    try {
+      const { approved } = req.body;
+      const result = await storage.approveIdea(req.params.id, approved);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.sendStatus(200);
     } catch (error) {
       next(error);
     }

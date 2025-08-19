@@ -70,12 +70,12 @@ export default function AdminSection() {
   });
 
   const { data: ideas, isLoading: ideasLoading } = useQuery<IdeaWithVotes[]>({
-    queryKey: ["/api/ideas"],
+    queryKey: ["/api/admin/ideas"],
     enabled: !!user && activeTab === "ideas",
   });
 
   const { data: events, isLoading: eventsLoading } = useQuery<EventWithInscriptions[]>({
-    queryKey: ["/api/events"],
+    queryKey: ["/api/admin/events"],
     enabled: !!user && activeTab === "events",
   });
 
@@ -84,7 +84,7 @@ export default function AdminSection() {
       await apiRequest("DELETE", `/api/ideas/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ideas"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({
         title: "Idée supprimée",
@@ -105,7 +105,7 @@ export default function AdminSection() {
       await apiRequest("DELETE", `/api/events/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({
         title: "Événement supprimé",
@@ -149,6 +149,33 @@ export default function AdminSection() {
     if (confirm("Êtes-vous sûr de vouloir supprimer cet événement ?")) {
       deleteEventMutation.mutate(id);
     }
+  };
+
+  // Idea approval mutations
+  const approveIdeaMutation = useMutation({
+    mutationFn: async ({ id, approved }: { id: string; approved: boolean }) => {
+      await apiRequest("PATCH", `/api/admin/ideas/${id}/approve`, { approved });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ideas"] }); // Also invalidate public ideas
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Statut mis à jour",
+        description: "Le statut d'approbation de l'idée a été mis à jour",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le statut de l'idée",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleApproveIdea = (id: string, approved: boolean) => {
+    approveIdeaMutation.mutate({ id, approved });
   };
 
   const formatDate = (dateString: string) => {
@@ -272,6 +299,7 @@ export default function AdminSection() {
                       <TableRow>
                         <TableHead>Titre</TableHead>
                         <TableHead>Auteur</TableHead>
+                        <TableHead className="text-center">Statut</TableHead>
                         <TableHead className="text-center">Votes</TableHead>
                         <TableHead className="text-center">Date</TableHead>
                         <TableHead className="text-center">Actions</TableHead>
@@ -291,18 +319,52 @@ export default function AdminSection() {
                             </div>
                           </TableCell>
                           <TableCell>{idea.proposedBy}</TableCell>
+                          <TableCell className="text-center">
+                            <div className={`inline-block px-2 py-1 text-xs rounded-full ${
+                              idea.approved 
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-orange-100 text-orange-800'
+                            }`}>
+                              {idea.approved ? 'Approuvée' : 'En attente'}
+                            </div>
+                          </TableCell>
                           <TableCell className="text-center">{idea.voteCount}</TableCell>
                           <TableCell className="text-center">
                             {formatDate(idea.createdAt.toString())}
                           </TableCell>
                           <TableCell className="text-center">
-                            <div className="flex justify-center space-x-2">
+                            <div className="flex justify-center space-x-1">
+                              {!idea.approved && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleApproveIdea(idea.id, true)}
+                                  disabled={approveIdeaMutation.isPending}
+                                  className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                                  title="Approuver cette idée"
+                                >
+                                  ✓
+                                </Button>
+                              )}
+                              {idea.approved && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleApproveIdea(idea.id, false)}
+                                  disabled={approveIdeaMutation.isPending}
+                                  className="text-orange-600 hover:text-orange-800 hover:bg-orange-50"
+                                  title="Remettre en attente"
+                                >
+                                  ⏸
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleDeleteIdea(idea.id)}
                                 disabled={deleteIdeaMutation.isPending}
                                 className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                title="Supprimer cette idée"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -348,6 +410,7 @@ export default function AdminSection() {
                       <TableRow>
                         <TableHead>Titre</TableHead>
                         <TableHead>Date</TableHead>
+                        <TableHead>Lieu</TableHead>
                         <TableHead>HelloAsso</TableHead>
                         <TableHead className="text-center">Inscrits</TableHead>
                         <TableHead className="text-center">Actions</TableHead>
@@ -370,6 +433,9 @@ export default function AdminSection() {
                             {new Date(event.date).toLocaleDateString("fr-FR")}
                           </TableCell>
                           <TableCell className="max-w-xs truncate">
+                            {event.location || <span className="text-gray-400">Non défini</span>}
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
                             {event.helloAssoLink ? (
                               <a href={event.helloAssoLink} target="_blank" rel="noopener noreferrer" className="text-cjd-green hover:underline">
                                 Lien actif
@@ -380,6 +446,7 @@ export default function AdminSection() {
                           </TableCell>
                           <TableCell className="text-center">
                             {event.inscriptionCount}
+                            {event.maxParticipants && ` / ${event.maxParticipants}`}
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex justify-center space-x-2">

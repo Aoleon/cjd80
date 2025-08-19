@@ -83,6 +83,7 @@ export default function EventRegistrationModal({
       eventId: event.id,
       name: formData.name.trim(),
       email: formData.email.trim(),
+      comments: formData.comments.trim() || undefined,
     };
 
     registerMutation.mutate(inscription);
@@ -122,9 +123,18 @@ export default function EventRegistrationModal({
                     <Calendar className="w-4 h-4 mr-2 text-cjd-green" />
                     <span>{formatEventDate(event.date.toString())}</span>
                   </div>
+                  {event.location && (
+                    <div className="flex items-center">
+                      <MapPin className="w-4 h-4 mr-2 text-cjd-green" />
+                      <span>{event.location}</span>
+                    </div>
+                  )}
                   <div className="flex items-center">
                     <Users className="w-4 h-4 mr-2 text-cjd-green" />
-                    <span>{event.inscriptionCount} personne(s) déjà inscrite(s)</span>
+                    <span>
+                      {event.inscriptionCount} personne(s) déjà inscrite(s)
+                      {event.maxParticipants && ` / ${event.maxParticipants} maximum`}
+                    </span>
                   </div>
                 </div>
                 {event.description && (

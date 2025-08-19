@@ -138,6 +138,7 @@ export class DatabaseStorage implements IStorage {
           proposedBy: ideas.proposedBy,
           proposedByEmail: ideas.proposedByEmail,
           status: ideas.status,
+          approved: ideas.approved,
           deadline: ideas.deadline,
           createdAt: ideas.createdAt,
           updatedAt: ideas.updatedAt,
@@ -146,6 +147,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(ideas)
         .leftJoin(votes, eq(ideas.id, votes.ideaId))
+        .where(eq(ideas.approved, true)) // Only show approved ideas to public
         .groupBy(ideas.id)
         .orderBy(desc(ideas.createdAt));
       
@@ -331,6 +333,8 @@ export class DatabaseStorage implements IStorage {
           title: events.title,
           description: events.description,
           date: events.date,
+          location: events.location,
+          maxParticipants: events.maxParticipants,
           helloAssoLink: events.helloAssoLink,
           createdAt: events.createdAt,
           updatedAt: events.updatedAt,
@@ -339,6 +343,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(events)
         .leftJoin(inscriptions, eq(events.id, inscriptions.eventId))
+        .where(sql`${events.date} > NOW()`) // Only show future events to public
         .groupBy(events.id)
         .orderBy(events.date);
       
@@ -511,6 +516,20 @@ export class DatabaseStorage implements IStorage {
         return { success: false, error: new NotFoundError("Événement introuvable") };
       }
 
+      // Check participant limit if set
+      if (eventResult.data.maxParticipants) {
+        const currentInscriptionsResult = await this.getEventInscriptions(inscription.eventId);
+        if (currentInscriptionsResult.success) {
+          const currentCount = currentInscriptionsResult.data.length;
+          if (currentCount >= eventResult.data.maxParticipants) {
+            return { 
+              success: false, 
+              error: new ValidationError(`L'événement est complet (${eventResult.data.maxParticipants} participants maximum)`) 
+            };
+          }
+        }
+      }
+
       const result = await db.transaction(async (tx) => {
         const [newInscription] = await tx
           .insert(inscriptions)
@@ -533,6 +552,102 @@ export class DatabaseStorage implements IStorage {
       .from(inscriptions)
       .where(and(eq(inscriptions.eventId, eventId), eq(inscriptions.email, email)));
     return !!existingInscription;
+  }
+
+  // Admin-only methods for complete data access and moderation
+  async getAllIdeas(): Promise<Result<(Idea & { voteCount: number })[]>> {
+    try {
+      const result = await db
+        .select({
+          id: ideas.id,
+          title: ideas.title,
+          description: ideas.description,
+          proposedBy: ideas.proposedBy,
+          proposedByEmail: ideas.proposedByEmail,
+          status: ideas.status,
+          approved: ideas.approved,
+          deadline: ideas.deadline,
+          createdAt: ideas.createdAt,
+          updatedAt: ideas.updatedAt,
+          updatedBy: ideas.updatedBy,
+          voteCount: count(votes.id),
+        })
+        .from(ideas)
+        .leftJoin(votes, eq(ideas.id, votes.ideaId))
+        .groupBy(ideas.id)
+        .orderBy(desc(ideas.createdAt));
+      
+      const formattedResult = result.map(row => ({
+        ...row,
+        voteCount: Number(row.voteCount),
+      }));
+
+      return { success: true, data: formattedResult };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération admin des idées: ${error}`) };
+    }
+  }
+
+  async getAllEvents(): Promise<Result<(Event & { inscriptionCount: number })[]>> {
+    try {
+      const result = await db
+        .select({
+          id: events.id,
+          title: events.title,
+          description: events.description,
+          date: events.date,
+          location: events.location,
+          maxParticipants: events.maxParticipants,
+          helloAssoLink: events.helloAssoLink,
+          createdAt: events.createdAt,
+          updatedAt: events.updatedAt,
+          updatedBy: events.updatedBy,
+          inscriptionCount: count(inscriptions.id),
+        })
+        .from(events)
+        .leftJoin(inscriptions, eq(events.id, inscriptions.eventId))
+        .groupBy(events.id)
+        .orderBy(desc(events.date)); // Admin sees all events, past and future
+      
+      const formattedResult = result.map(row => ({
+        ...row,
+        inscriptionCount: Number(row.inscriptionCount),
+      }));
+
+      return { success: true, data: formattedResult };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération admin des événements: ${error}`) };
+    }
+  }
+
+  async approveIdea(id: string, approved: boolean): Promise<Result<void>> {
+    try {
+      // Check if idea exists
+      const ideaResult = await this.getIdea(id);
+      if (!ideaResult.success) {
+        return { success: false, error: ideaResult.error };
+      }
+      if (!ideaResult.data) {
+        return { success: false, error: new NotFoundError("Idée introuvable") };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(ideas)
+          .set({ 
+            approved,
+            updatedAt: sql`NOW()`,
+            updatedBy: "admin"
+          })
+          .where(eq(ideas.id, id));
+        
+        console.log(`[Storage] Idée ${approved ? 'approuvée' : 'rejetée'}: ${id}`);
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de l'approbation de l'idée: ${error}`) };
+    }
   }
 
   // Ultra-robust Stats method with Result pattern

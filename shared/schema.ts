@@ -19,6 +19,7 @@ export const ideas = pgTable("ideas", {
   proposedBy: text("proposed_by").notNull(),
   proposedByEmail: text("proposed_by_email").notNull(),
   status: text("status").default("open").notNull(), // open, closed, realized
+  approved: boolean("approved").default(true).notNull(), // Auto-approve by default, admin can moderate
   deadline: timestamp("deadline"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -40,6 +41,8 @@ export const events = pgTable("events", {
   title: text("title").notNull(),
   description: text("description"),
   date: timestamp("date").notNull(),
+  location: text("location"), // Lieu de l'événement
+  maxParticipants: integer("max_participants"), // Limite de participants (optionnel)
   helloAssoLink: text("hello_asso_link"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -52,6 +55,7 @@ export const inscriptions = pgTable("inscriptions", {
   eventId: varchar("event_id").references(() => events.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   email: text("email").notNull(),
+  comments: text("comments"), // Commentaires lors de l'inscription (accompagnants, régime alimentaire, etc.)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -160,6 +164,8 @@ export const insertEventSchema = createInsertSchema(events).pick({
   title: true,
   description: true,
   date: true,
+  location: true,
+  maxParticipants: true,
   helloAssoLink: true,
 }).extend({
   title: z.string()
@@ -172,6 +178,14 @@ export const insertEventSchema = createInsertSchema(events).pick({
     .optional()
     .transform(val => val ? sanitizeText(val) : undefined),
   date: z.string().datetime("Date invalide"),
+  location: z.string()
+    .max(200, "Lieu trop long")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  maxParticipants: z.number()
+    .min(1, "Le nombre de participants doit être positif")
+    .max(1000, "Nombre de participants trop élevé")
+    .optional(),
   helloAssoLink: z.string()
     .url("URL HelloAsso invalide")
     .refine(url => url.includes('helloasso.com'), "Doit être un lien HelloAsso valide")
@@ -183,6 +197,7 @@ export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({
   eventId: true,
   name: true,
   email: true,
+  comments: true,
 }).extend({
   eventId: z.string()
     .uuid("ID d'événement invalide")
@@ -196,6 +211,10 @@ export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({
     .email("Email invalide")
     .refine(isValidDomain, "Domaine email non autorisé")
     .transform(sanitizeText),
+  comments: z.string()
+    .max(500, "Commentaires trop longs (max 500 caractères)")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
 });
 
 // Types
