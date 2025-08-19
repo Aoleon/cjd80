@@ -11,6 +11,44 @@ interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
   voteCount: number;
 }
 
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'approved':
+      return 'bg-green-100 text-green-800 border-green-200';
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    case 'rejected':
+      return 'bg-red-100 text-red-800 border-red-200';
+    case 'under review':
+      return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'postponed':
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+    case 'completed':
+      return 'bg-purple-100 text-purple-800 border-purple-200';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+};
+
+const getStatusLabel = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'approved':
+      return 'Approuvée';
+    case 'pending':
+      return 'En attente';
+    case 'rejected':
+      return 'Rejetée';
+    case 'under review':
+      return 'En examen';
+    case 'postponed':
+      return 'Reportée';
+    case 'completed':
+      return 'Réalisée';
+    default:
+      return status;
+  }
+};
+
 interface IdeasSectionProps {
   onNavigateToPropose?: () => void;
 }
@@ -61,7 +99,12 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
           {ideas.map((idea) => (
             <Card key={idea.id} className="hover:shadow-lg transition-shadow duration-300">
               <CardContent className="p-4 sm:p-6">
-                <h3 className="font-bold text-base sm:text-lg text-gray-800 mb-2 line-clamp-2">{idea.title}</h3>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
+                  <h3 className="font-bold text-base sm:text-lg text-gray-800 line-clamp-2 flex-1">{idea.title}</h3>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full border whitespace-nowrap ${getStatusColor(idea.status)}`}>
+                    {getStatusLabel(idea.status)}
+                  </span>
+                </div>
                 {idea.description && (
                   <p className="text-gray-600 text-xs sm:text-sm mb-4 line-clamp-3">{idea.description}</p>
                 )}
