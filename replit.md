@@ -13,6 +13,11 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
 - Demandez des clarifications si les exigences ne sont pas claires
 - Fournissez des explications brèves pour les décisions techniques
 
+**Communication Contextuelle** (Important):
+- Les remarques de l'utilisateur concernent TOUJOURS ce qu'il voit dans l'interface utilisateur (frontend), sauf indication contraire explicite
+- Prioriser les corrections d'interface visible par rapport aux ajustements backend
+- Interpréter les demandes depuis la perspective de l'expérience utilisateur
+
 **Reporting**: Utilisez `mark_completed_and_get_feedback` après chaque fonctionnalité majeure complète pour obtenir des retours utilisateur.
 
 **Anti-Loop Strategy**: Utilisez les checkpoints automatiques Replit pour éviter les boucles de développement :
