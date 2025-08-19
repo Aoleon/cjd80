@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ThumbsUp, Lightbulb, Loader2, Vote } from "lucide-react";
+import { ThumbsUp, Lightbulb, Loader2, Vote, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import VoteModal from "./vote-modal";
@@ -10,7 +10,11 @@ interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
   voteCount: number;
 }
 
-export default function IdeasSection() {
+interface IdeasSectionProps {
+  onNavigateToPropose?: () => void;
+}
+
+export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps) {
   const [selectedIdea, setSelectedIdea] = useState<IdeaWithVotes | null>(null);
   const [voteModalOpen, setVoteModalOpen] = useState(false);
 
@@ -85,6 +89,31 @@ export default function IdeasSection() {
           <p className="text-gray-500">Soyez le premier à proposer une idée !</p>
         </div>
       )}
+
+      {/* Add Idea Section */}
+      <div className="bg-gradient-to-r from-cjd-green to-green-600 rounded-lg shadow-md p-4 sm:p-6 text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1">
+            <h3 className="text-lg sm:text-xl font-bold mb-2 flex items-center">
+              <Lightbulb className="w-5 h-5 mr-2" />
+              Vous avez une idée ?
+            </h3>
+            <p className="text-sm sm:text-base text-green-100 opacity-90">
+              Partagez votre idée avec la communauté CJD Amiens et permettez aux autres de voter pour la soutenir
+            </p>
+          </div>
+          <div className="flex-shrink-0">
+            <Button
+              onClick={onNavigateToPropose}
+              className="bg-white text-cjd-green hover:bg-gray-100 transition-colors duration-200 w-full sm:w-auto font-medium"
+              size="lg"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Ajouter une idée
+            </Button>
+          </div>
+        </div>
+      </div>
 
       <VoteModal
         open={voteModalOpen}

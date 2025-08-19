@@ -15,7 +15,9 @@ export default function HomePage() {
       <Header activeSection={activeSection} setActiveSection={setActiveSection} />
       
       <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
-        {activeSection === "ideas" && <IdeasSection />}
+        {activeSection === "ideas" && (
+          <IdeasSection onNavigateToPropose={() => setActiveSection("propose")} />
+        )}
         {activeSection === "propose" && <ProposeSection />}
         {activeSection === "events" && <EventsSection />}
         {activeSection === "admin" && <AdminSection />}
