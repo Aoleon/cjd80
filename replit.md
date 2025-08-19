@@ -75,6 +75,10 @@ The application uses a modern web stack:
 -   **Anti-Duplicate Protection**: Votes and inscriptions with business logic validation
 -   **Data Migration Complete**: Successfully migrated authentic CJD Amiens data from Firestore
 -   **React Query Fixed**: Backend response format {success: true, data: []} properly handled by frontend
+-   **PWA Implementation Complete**: Full Progressive Web App capabilities with 2025 best practices
+-   **Advanced Caching**: Multi-layer service worker with NetworkFirst/CacheFirst strategies
+-   **Offline Support**: Complete offline functionality with intelligent fallbacks
+-   **App Installation**: Native-like installation with shortcuts and app controls
 
 ### UI/UX Decisions
 -   **Styling**: Exclusively uses Tailwind CSS for utility-first styling.
