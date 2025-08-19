@@ -291,7 +291,7 @@ export default function AdminSection() {
           <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
         </div>
       ) : stats ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Card>
             <CardContent className="p-4 sm:p-6 text-center">
               <div className="text-2xl sm:text-3xl font-bold text-cjd-green mb-2">
@@ -374,86 +374,177 @@ export default function AdminSection() {
                   <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
                 </div>
               ) : ideas && ideas.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Titre</TableHead>
-                        <TableHead>Auteur</TableHead>
-                        <TableHead className="text-center">Statut</TableHead>
-                        <TableHead className="text-center">Votes</TableHead>
-                        <TableHead className="text-center">Date</TableHead>
-                        <TableHead className="text-center">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {ideas.map((idea) => (
-                        <TableRow key={idea.id}>
-                          <TableCell className="font-medium max-w-xs">
-                            <div>
-                              <button
-                                onClick={() => {
-                                  setSelectedIdea(idea);
-                                  setIdeaDetailModalOpen(true);
-                                }}
-                                className="font-semibold text-left hover:text-cjd-green transition-colors cursor-pointer text-blue-600 hover:underline"
-                              >
-                                {idea.title}
-                              </button>
-                              {idea.description && (
-                                <div className="text-sm text-gray-500 truncate">
-                                  {idea.description}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>{idea.proposedBy}</TableCell>
-                          <TableCell className="text-center">
-                            <Select 
-                              value={idea.status} 
-                              onValueChange={(status) => handleIdeaStatusChange(idea.id, status)}
-                              disabled={updateIdeaStatusMutation.isPending}
-                            >
-                              <SelectTrigger className="w-36">
-                                <SelectValue>
-                                  <div className={`inline-block px-2 py-1 text-xs rounded-full ${getIdeaStatusInfo(idea.status).class}`}>
-                                    {getIdeaStatusInfo(idea.status).label}
-                                  </div>
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value={IDEA_STATUS.PENDING}>En attente</SelectItem>
-                                <SelectItem value={IDEA_STATUS.APPROVED}>Approuvée</SelectItem>
-                                <SelectItem value={IDEA_STATUS.REJECTED}>Rejetée</SelectItem>
-                                <SelectItem value={IDEA_STATUS.UNDER_REVIEW}>En cours d'étude</SelectItem>
-                                <SelectItem value={IDEA_STATUS.POSTPONED}>Reportée</SelectItem>
-                                <SelectItem value={IDEA_STATUS.COMPLETED}>Réalisée</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell className="text-center">{idea.voteCount}</TableCell>
-                          <TableCell className="text-center">
-                            {formatDate(idea.createdAt.toString())}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex justify-center space-x-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleDeleteIdea(idea.id)}
-                                disabled={deleteIdeaMutation.isPending}
-                                className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                                title="Supprimer cette idée"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Titre</TableHead>
+                          <TableHead>Auteur</TableHead>
+                          <TableHead className="text-center">Statut</TableHead>
+                          <TableHead className="text-center">Votes</TableHead>
+                          <TableHead className="text-center">Date</TableHead>
+                          <TableHead className="text-center">Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableHeader>
+                      <TableBody>
+                        {ideas.map((idea) => (
+                          <TableRow key={idea.id}>
+                            <TableCell className="font-medium max-w-xs">
+                              <div>
+                                <button
+                                  onClick={() => {
+                                    setSelectedIdea(idea);
+                                    setIdeaDetailModalOpen(true);
+                                  }}
+                                  className="font-semibold text-left hover:text-cjd-green transition-colors cursor-pointer text-blue-600 hover:underline"
+                                >
+                                  {idea.title}
+                                </button>
+                                {idea.description && (
+                                  <div className="text-sm text-gray-500 truncate">
+                                    {idea.description}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>{idea.proposedBy}</TableCell>
+                            <TableCell className="text-center">
+                              <Select 
+                                value={idea.status} 
+                                onValueChange={(status) => handleIdeaStatusChange(idea.id, status)}
+                                disabled={updateIdeaStatusMutation.isPending}
+                              >
+                                <SelectTrigger className="w-36">
+                                  <SelectValue>
+                                    <div className={`inline-block px-2 py-1 text-xs rounded-full ${getIdeaStatusInfo(idea.status).class}`}>
+                                      {getIdeaStatusInfo(idea.status).label}
+                                    </div>
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value={IDEA_STATUS.PENDING}>En attente</SelectItem>
+                                  <SelectItem value={IDEA_STATUS.APPROVED}>Approuvée</SelectItem>
+                                  <SelectItem value={IDEA_STATUS.REJECTED}>Rejetée</SelectItem>
+                                  <SelectItem value={IDEA_STATUS.UNDER_REVIEW}>En cours d'étude</SelectItem>
+                                  <SelectItem value={IDEA_STATUS.POSTPONED}>Reportée</SelectItem>
+                                  <SelectItem value={IDEA_STATUS.COMPLETED}>Réalisée</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell className="text-center">{idea.voteCount}</TableCell>
+                            <TableCell className="text-center">
+                              {formatDate(idea.createdAt.toString())}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex justify-center space-x-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeleteIdea(idea.id)}
+                                  disabled={deleteIdeaMutation.isPending}
+                                  className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                  title="Supprimer cette idée"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden space-y-4">
+                    {ideas.map((idea) => (
+                      <Card key={idea.id} className="p-4">
+                        <div className="space-y-3">
+                          {/* Header with title and status */}
+                          <div className="flex justify-between items-start gap-3">
+                            <button
+                              onClick={() => {
+                                setSelectedIdea(idea);
+                                setIdeaDetailModalOpen(true);
+                              }}
+                              className="flex-1 text-left"
+                            >
+                              <h4 className="font-semibold text-blue-600 hover:text-cjd-green transition-colors hover:underline">
+                                {idea.title}
+                              </h4>
+                              {idea.description && (
+                                <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                                  {idea.description}
+                                </p>
+                              )}
+                            </button>
+                            <div className={`px-2 py-1 text-xs rounded-full ${getIdeaStatusInfo(idea.status).class} whitespace-nowrap`}>
+                              {getIdeaStatusInfo(idea.status).label}
+                            </div>
+                          </div>
+
+                          {/* Metadata */}
+                          <div className="grid grid-cols-2 gap-3 text-sm text-gray-600">
+                            <div>
+                              <span className="font-medium">Auteur:</span>
+                              <div className="truncate">{idea.proposedBy}</div>
+                            </div>
+                            <div>
+                              <span className="font-medium">Votes:</span>
+                              <div>{idea.voteCount}</div>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="font-medium">Date:</span>
+                              <div>{formatDate(idea.createdAt.toString())}</div>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="pt-3 border-t border-gray-200 space-y-3">
+                            <div>
+                              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Changer le statut
+                              </label>
+                              <Select 
+                                value={idea.status} 
+                                onValueChange={(status) => handleIdeaStatusChange(idea.id, status)}
+                                disabled={updateIdeaStatusMutation.isPending}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue>
+                                    <div className={`inline-block px-2 py-1 text-xs rounded-full ${getIdeaStatusInfo(idea.status).class}`}>
+                                      {getIdeaStatusInfo(idea.status).label}
+                                    </div>
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value={IDEA_STATUS.PENDING}>En attente</SelectItem>
+                                  <SelectItem value={IDEA_STATUS.APPROVED}>Approuvée</SelectItem>
+                                  <SelectItem value={IDEA_STATUS.REJECTED}>Rejetée</SelectItem>
+                                  <SelectItem value={IDEA_STATUS.UNDER_REVIEW}>En cours d'étude</SelectItem>
+                                  <SelectItem value={IDEA_STATUS.POSTPONED}>Reportée</SelectItem>
+                                  <SelectItem value={IDEA_STATUS.COMPLETED}>Réalisée</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteIdea(idea.id)}
+                              disabled={deleteIdeaMutation.isPending}
+                              className="w-full text-red-600 border-red-300 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Supprimer cette idée
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-8">
                   <Lightbulb className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -483,97 +574,208 @@ export default function AdminSection() {
                   <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
                 </div>
               ) : events && events.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Titre</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Lieu</TableHead>
-                        <TableHead>HelloAsso</TableHead>
-                        <TableHead className="text-center">Inscrits</TableHead>
-                        <TableHead className="text-center">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {events.map((event) => (
-                        <TableRow key={event.id}>
-                          <TableCell className="font-medium max-w-xs">
-                            <div>
-                              <button
-                                onClick={() => {
-                                  setSelectedEventForDetail(event);
-                                  setEventDetailModalOpen(true);
-                                }}
-                                className="font-semibold text-left hover:text-cjd-green transition-colors cursor-pointer text-blue-600 hover:underline"
-                              >
-                                {event.title}
-                              </button>
-                              {event.description && (
-                                <div className="text-sm text-gray-500 truncate">
-                                  {event.description}
-                                </div>
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Titre</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Lieu</TableHead>
+                          <TableHead>HelloAsso</TableHead>
+                          <TableHead className="text-center">Inscrits</TableHead>
+                          <TableHead className="text-center">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {events.map((event) => (
+                          <TableRow key={event.id}>
+                            <TableCell className="font-medium max-w-xs">
+                              <div>
+                                <button
+                                  onClick={() => {
+                                    setSelectedEventForDetail(event);
+                                    setEventDetailModalOpen(true);
+                                  }}
+                                  className="font-semibold text-left hover:text-cjd-green transition-colors cursor-pointer text-blue-600 hover:underline"
+                                >
+                                  {event.title}
+                                </button>
+                                {event.description && (
+                                  <div className="text-sm text-gray-500 truncate">
+                                    {event.description}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(event.date).toLocaleDateString("fr-FR")}
+                            </TableCell>
+                            <TableCell className="max-w-xs truncate">
+                              {event.location || <span className="text-gray-400">Non défini</span>}
+                            </TableCell>
+                            <TableCell className="max-w-xs truncate">
+                              {event.helloAssoLink ? (
+                                <a href={event.helloAssoLink} target="_blank" rel="noopener noreferrer" className="text-cjd-green hover:underline">
+                                  Lien actif
+                                </a>
+                              ) : (
+                                <span className="text-gray-400">Aucun lien</span>
                               )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {new Date(event.date).toLocaleDateString("fr-FR")}
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {event.location || <span className="text-gray-400">Non défini</span>}
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {event.helloAssoLink ? (
-                              <a href={event.helloAssoLink} target="_blank" rel="noopener noreferrer" className="text-cjd-green hover:underline">
-                                Lien actif
-                              </a>
-                            ) : (
-                              <span className="text-gray-400">Aucun lien</span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {event.inscriptionCount}
+                              {event.maxParticipants && ` / ${event.maxParticipants}`}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex justify-center space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleEditEvent(event)}
+                                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                                  title="Modifier l'événement"
+                                >
+                                  <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                                </Button>
+                                {event.inscriptionCount > 0 && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleExportInscriptions(event)}
+                                    className="text-green-600 border-green-300 hover:bg-green-50"
+                                    title="Exporter les inscriptions"
+                                  >
+                                    <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDeleteEvent(event.id)}
+                                  disabled={deleteEventMutation.isPending}
+                                  className="text-red-600 border-red-300 hover:bg-red-50"
+                                  title="Supprimer l'événement"
+                                >
+                                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden space-y-4">
+                    {events.map((event) => (
+                      <Card key={event.id} className="p-4">
+                        <div className="space-y-3">
+                          {/* Header with title */}
+                          <button
+                            onClick={() => {
+                              setSelectedEventForDetail(event);
+                              setEventDetailModalOpen(true);
+                            }}
+                            className="w-full text-left"
+                          >
+                            <h4 className="font-semibold text-blue-600 hover:text-cjd-green transition-colors hover:underline">
+                              {event.title}
+                            </h4>
+                            {event.description && (
+                              <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                                {event.description}
+                              </p>
                             )}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {event.inscriptionCount}
-                            {event.maxParticipants && ` / ${event.maxParticipants}`}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex justify-center space-x-2">
+                          </button>
+
+                          {/* Metadata Grid */}
+                          <div className="grid grid-cols-1 gap-3 text-sm">
+                            <div>
+                              <span className="font-medium text-gray-700">Date:</span>
+                              <div className="text-gray-600">
+                                {new Date(event.date).toLocaleDateString("fr-FR", {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <span className="font-medium text-gray-700">Lieu:</span>
+                              <div className="text-gray-600">
+                                {event.location || <span className="text-gray-400">Non défini</span>}
+                              </div>
+                            </div>
+
+                            <div>
+                              <span className="font-medium text-gray-700">HelloAsso:</span>
+                              <div className="text-gray-600">
+                                {event.helloAssoLink ? (
+                                  <a href={event.helloAssoLink} target="_blank" rel="noopener noreferrer" className="text-cjd-green hover:underline">
+                                    Lien actif →
+                                  </a>
+                                ) : (
+                                  <span className="text-gray-400">Aucun lien</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div>
+                              <span className="font-medium text-gray-700">Inscriptions:</span>
+                              <div className="text-gray-600">
+                                {event.inscriptionCount}
+                                {event.maxParticipants && ` / ${event.maxParticipants} participants`}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="pt-3 border-t border-gray-200">
+                            <div className="grid grid-cols-1 gap-2">
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleEditEvent(event)}
-                                className="text-blue-600 border-blue-300 hover:bg-blue-50"
-                                title="Modifier l'événement"
+                                className="w-full text-blue-600 border-blue-300 hover:bg-blue-50"
                               >
-                                <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                                <Edit className="w-4 h-4 mr-2" />
+                                Modifier l'événement
                               </Button>
+                              
                               {event.inscriptionCount > 0 && (
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handleExportInscriptions(event)}
-                                  className="text-green-600 border-green-300 hover:bg-green-50"
-                                  title="Exporter les inscriptions"
+                                  className="w-full text-green-600 border-green-300 hover:bg-green-50"
                                 >
-                                  <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  <Download className="w-4 h-4 mr-2" />
+                                  Exporter les inscriptions ({event.inscriptionCount})
                                 </Button>
                               )}
+                              
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleDeleteEvent(event.id)}
                                 disabled={deleteEventMutation.isPending}
-                                className="text-red-600 border-red-300 hover:bg-red-50"
-                                title="Supprimer l'événement"
+                                className="w-full text-red-600 border-red-300 hover:bg-red-50"
                               >
-                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Supprimer l'événement
                               </Button>
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-8">
                   <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
