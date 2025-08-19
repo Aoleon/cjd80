@@ -201,6 +201,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get inscriptions for a specific event (admin only)
+  app.get("/api/admin/events/:eventId/inscriptions", requireAuth, async (req, res, next) => {
+    try {
+      const { eventId } = req.params;
+      const inscriptionsResult = await storage.getEventInscriptions(eventId);
+      if (!inscriptionsResult.success) {
+        return res.status(500).json({ message: inscriptionsResult.error.message });
+      }
+      res.json(inscriptionsResult.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.patch("/api/admin/ideas/:id/approve", requireAuth, async (req, res, next) => {
     try {
       const { approved } = req.body;

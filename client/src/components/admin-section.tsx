@@ -29,8 +29,9 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import AdminDbMonitor from "./admin-db-monitor";
 import EventAdminModal from "./event-admin-modal";
+import EventDetailModal from "./event-detail-modal";
+import IdeaDetailModal from "./idea-detail-modal";
 import InscriptionExportModal from "./inscription-export-modal";
 import AdminLogin from "./admin-login";
 import type { Idea, Event } from "@shared/schema";
@@ -60,6 +61,12 @@ export default function AdminSection() {
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [eventModalMode, setEventModalMode] = useState<"create" | "edit">("create");
   const [selectedEvent, setSelectedEvent] = useState<EventWithInscriptions | null>(null);
+  
+  // Modal states for details
+  const [ideaDetailModalOpen, setIdeaDetailModalOpen] = useState(false);
+  const [selectedIdea, setSelectedIdea] = useState<IdeaWithVotes | null>(null);
+  const [eventDetailModalOpen, setEventDetailModalOpen] = useState(false);
+  const [selectedEventForDetail, setSelectedEventForDetail] = useState<EventWithInscriptions | null>(null);
   
   // Modal state for inscription export
   const [exportModalOpen, setExportModalOpen] = useState(false);
@@ -273,19 +280,16 @@ export default function AdminSection() {
       {/* Admin Tabs */}
       <Card>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-3 lg:grid-cols-4">
+          <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="ideas" className="text-xs sm:text-sm">
+              <Lightbulb className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Gestion des idées</span>
               <span className="sm:hidden">Idées</span>
             </TabsTrigger>
             <TabsTrigger value="events" className="text-xs sm:text-sm">
+              <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Gestion des événements</span>
               <span className="sm:hidden">Événements</span>
-            </TabsTrigger>
-            <TabsTrigger value="monitoring" className="text-xs sm:text-sm">
-              <Database className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Monitoring DB</span>
-              <span className="sm:hidden">DB</span>
             </TabsTrigger>
           </TabsList>
 
@@ -342,6 +346,17 @@ export default function AdminSection() {
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex justify-center space-x-1">
+                              <Button
+                                onClick={() => {
+                                  setSelectedIdea(idea);
+                                  setIdeaDetailModalOpen(true);
+                                }}
+                                variant="outline"
+                                size="sm"
+                                className="text-cjd-green border-cjd-green hover:bg-cjd-green hover:text-white"
+                              >
+                                <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                              </Button>
                               {!idea.approved && (
                                 <Button
                                   size="sm"
@@ -459,6 +474,17 @@ export default function AdminSection() {
                           <TableCell className="text-center">
                             <div className="flex justify-center space-x-2">
                               <Button
+                                onClick={() => {
+                                  setSelectedEventForDetail(event);
+                                  setEventDetailModalOpen(true);
+                                }}
+                                variant="outline"
+                                size="sm"
+                                className="text-cjd-green border-cjd-green hover:bg-cjd-green hover:text-white"
+                              >
+                                <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                              </Button>
+                              <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleEditEvent(event)}
@@ -504,14 +530,10 @@ export default function AdminSection() {
             </div>
           </TabsContent>
 
-          {/* Database Monitoring Tab */}
-          <TabsContent value="monitoring" className="p-6">
-            <AdminDbMonitor />
-          </TabsContent>
         </Tabs>
       </Card>
 
-      {/* Event Management Modal */}
+      {/* Modals */}
       <EventAdminModal
         open={eventModalOpen}
         onOpenChange={setEventModalOpen}
@@ -519,7 +541,23 @@ export default function AdminSection() {
         mode={eventModalMode}
       />
 
-      {/* Inscription Export Modal */}
+      <EventDetailModal
+        open={eventDetailModalOpen}
+        onOpenChange={setEventDetailModalOpen}
+        event={selectedEventForDetail}
+        onEdit={(event) => {
+          setSelectedEvent(event);
+          setEventModalMode("edit");
+          setEventModalOpen(true);
+        }}
+      />
+
+      <IdeaDetailModal
+        open={ideaDetailModalOpen}
+        onOpenChange={setIdeaDetailModalOpen}
+        idea={selectedIdea}
+      />
+      
       <InscriptionExportModal
         open={exportModalOpen}
         onOpenChange={setExportModalOpen}
