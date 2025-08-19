@@ -322,7 +322,15 @@ export default function AdminSection() {
                         <TableRow key={idea.id}>
                           <TableCell className="font-medium max-w-xs">
                             <div>
-                              <div className="font-semibold">{idea.title}</div>
+                              <button
+                                onClick={() => {
+                                  setSelectedIdea(idea);
+                                  setIdeaDetailModalOpen(true);
+                                }}
+                                className="font-semibold text-left hover:text-cjd-green transition-colors cursor-pointer text-blue-600 hover:underline"
+                              >
+                                {idea.title}
+                              </button>
                               {idea.description && (
                                 <div className="text-sm text-gray-500 truncate">
                                   {idea.description}
@@ -346,17 +354,6 @@ export default function AdminSection() {
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex justify-center space-x-1">
-                              <Button
-                                onClick={() => {
-                                  setSelectedIdea(idea);
-                                  setIdeaDetailModalOpen(true);
-                                }}
-                                variant="outline"
-                                size="sm"
-                                className="text-cjd-green border-cjd-green hover:bg-cjd-green hover:text-white"
-                              >
-                                <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-                              </Button>
                               {!idea.approved && (
                                 <Button
                                   size="sm"
@@ -444,7 +441,15 @@ export default function AdminSection() {
                         <TableRow key={event.id}>
                           <TableCell className="font-medium max-w-xs">
                             <div>
-                              <div className="font-semibold">{event.title}</div>
+                              <button
+                                onClick={() => {
+                                  setSelectedEventForDetail(event);
+                                  setEventDetailModalOpen(true);
+                                }}
+                                className="font-semibold text-left hover:text-cjd-green transition-colors cursor-pointer text-blue-600 hover:underline"
+                              >
+                                {event.title}
+                              </button>
                               {event.description && (
                                 <div className="text-sm text-gray-500 truncate">
                                   {event.description}
@@ -474,44 +479,34 @@ export default function AdminSection() {
                           <TableCell className="text-center">
                             <div className="flex justify-center space-x-2">
                               <Button
-                                onClick={() => {
-                                  setSelectedEventForDetail(event);
-                                  setEventDetailModalOpen(true);
-                                }}
+                                size="sm"
                                 variant="outline"
-                                size="sm"
-                                className="text-cjd-green border-cjd-green hover:bg-cjd-green hover:text-white"
-                              >
-                                <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
                                 onClick={() => handleEditEvent(event)}
-                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                                title="Modifier l'événement"
                               >
-                                <Edit className="w-4 h-4" />
+                                <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                               </Button>
-                              
                               {event.inscriptionCount > 0 && (
                                 <Button
                                   size="sm"
-                                  variant="ghost"
+                                  variant="outline"
                                   onClick={() => handleExportInscriptions(event)}
-                                  className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                                  className="text-green-600 border-green-300 hover:bg-green-50"
+                                  title="Exporter les inscriptions"
                                 >
-                                  <Download className="w-4 h-4" />
+                                  <Download className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </Button>
                               )}
-                              
                               <Button
                                 size="sm"
-                                variant="ghost"
+                                variant="outline"
                                 onClick={() => handleDeleteEvent(event.id)}
                                 disabled={deleteEventMutation.isPending}
-                                className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                className="text-red-600 border-red-300 hover:bg-red-50"
+                                title="Supprimer l'événement"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                               </Button>
                             </div>
                           </TableCell>
