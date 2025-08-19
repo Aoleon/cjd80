@@ -40,14 +40,15 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
     <section className="space-y-6 sm:space-y-8">
       {/* Welcome Message */}
       <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 border-l-4 border-cjd-green">
-        <div className="flex items-center gap-4 mb-2">
+        <div className="flex flex-col items-center text-center mb-4">
           <img 
             src={boiteKiffImage} 
             alt="La Boîte à Kiffs" 
-            className="h-12 sm:h-16 w-auto object-contain"
+            className="h-36 sm:h-48 w-auto object-contain rounded-[60px] mb-4"
+            style={{ transform: 'scale(3)' }}
           />
         </div>
-        <p className="text-sm sm:text-base text-gray-600">
+        <p className="text-sm sm:text-base text-gray-600 text-center">
           Découvrez les idées proposées par la section et votez pour celles que vous souhaitez voir réalisées
         </p>
       </div>
