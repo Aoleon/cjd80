@@ -55,12 +55,10 @@ export default function ProposeSection() {
 
   return (
     <section className="space-y-6 sm:space-y-8">
-      <Card>
-        <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-xl sm:text-2xl text-gray-800">Proposer une nouvelle idée</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-0">
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+      <div className="mb-6">
+        <h2 className="text-xl sm:text-2xl text-gray-800 font-bold">Proposer une nouvelle idée</h2>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             <div>
               <Label htmlFor="idea-title" className="text-sm font-medium text-gray-700">
                 Titre de l'idée *
@@ -140,8 +138,6 @@ export default function ProposeSection() {
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
     </section>
   );
 }
