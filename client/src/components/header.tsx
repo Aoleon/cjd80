@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import cjdLogo from "@assets/logo-cjd-social_1755640197258.jpg";
 
 interface HeaderProps {
   activeSection: "ideas" | "propose" | "events" | "admin";
@@ -22,13 +23,11 @@ export default function Header({ activeSection, setActiveSection }: HeaderProps)
       <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-cjd-green font-bold text-base sm:text-lg">CJD</span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold truncate">Centre des Jeunes Dirigeants</h1>
-              <p className="text-xs sm:text-sm opacity-90">Amiens</p>
-            </div>
+            <img 
+              src={cjdLogo} 
+              alt="CJD - Centre des Jeunes Dirigeants Amiens" 
+              className="h-10 sm:h-12 w-auto object-contain bg-white rounded-lg p-1"
+            />
           </div>
           
           <nav className="hidden lg:flex space-x-4 xl:space-x-6">
