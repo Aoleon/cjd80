@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, boolean, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -33,7 +33,10 @@ export const votes = pgTable("votes", {
   voterName: text("voter_name").notNull(),
   voterEmail: text("voter_email").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Contrainte unique: un email ne peut voter qu'une seule fois par idée
+  uniqueVotePerEmail: unique().on(table.ideaId, table.voterEmail),
+}));
 
 // Events table
 export const events = pgTable("events", {
@@ -57,7 +60,10 @@ export const inscriptions = pgTable("inscriptions", {
   email: text("email").notNull(),
   comments: text("comments"), // Commentaires lors de l'inscription (accompagnants, régime alimentaire, etc.)
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Contrainte unique: un email ne peut s'inscrire qu'une seule fois par événement
+  uniqueRegistrationPerEmail: unique().on(table.eventId, table.email),
+}));
 
 // Relations
 export const ideasRelations = relations(ideas, ({ many }) => ({
