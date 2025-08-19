@@ -38,8 +38,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ideas", async (req, res, next) => {
     try {
       const validatedData = insertIdeaSchema.parse(req.body);
-      const idea = await storage.createIdea(validatedData);
-      res.status(201).json(idea);
+      const result = await storage.createIdea(validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json(result.data);
     } catch (error) {
       next(error);
     }

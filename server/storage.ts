@@ -190,11 +190,17 @@ export class DatabaseStorage implements IStorage {
         return { success: false, error: new DuplicateError("Une idée avec ce titre existe déjà") };
       }
 
+      // Prepare data with proper date conversion
+      const ideaData = {
+        ...idea,
+        deadline: idea.deadline ? new Date(idea.deadline) : undefined
+      };
+
       // Transaction for atomic operation
       const result = await db.transaction(async (tx) => {
         const [newIdea] = await tx
           .insert(ideas)
-          .values([idea])
+          .values([ideaData])
           .returning();
         
         // Log audit trail
@@ -375,20 +381,29 @@ export class DatabaseStorage implements IStorage {
 
   async createEvent(event: InsertEvent): Promise<Result<Event>> {
     try {
+      // Convert date string to Date object
+      const eventDate = new Date(event.date);
+      
       // Business validation: Check for duplicate event (same title and date)
-      if (await this.isDuplicateEvent(event.title, new Date(event.date))) {
+      if (await this.isDuplicateEvent(event.title, eventDate)) {
         return { success: false, error: new DuplicateError("Un événement avec ce titre et cette date existe déjà") };
       }
 
       // Validate date is in the future
-      if (new Date(event.date) <= new Date()) {
+      if (eventDate <= new Date()) {
         return { success: false, error: new ValidationError("La date de l'événement doit être dans le futur") };
       }
+
+      // Prepare data with proper date conversion
+      const eventData = {
+        ...event,
+        date: eventDate
+      };
 
       const result = await db.transaction(async (tx) => {
         const [newEvent] = await tx
           .insert(events)
-          .values([event])
+          .values([eventData])
           .returning();
         
         console.log(`[Storage] Nouvel événement créé: ${newEvent.id} - ${newEvent.title}`);
@@ -418,7 +433,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       const result = await db.transaction(async (tx) => {
-        const formattedData = {
+        const formattedData: any = {
           ...eventData,
           updatedAt: sql`NOW()`,
           updatedBy: "admin" // Could be improved with actual user
