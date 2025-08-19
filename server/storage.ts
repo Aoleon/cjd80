@@ -15,10 +15,15 @@ import {
   type Event,
   type InsertEvent,
   type Inscription,
-  type InsertInscription
+  type InsertInscription,
+  type Result,
+  ValidationError,
+  DuplicateError,
+  DatabaseError,
+  NotFoundError
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, count } from "drizzle-orm";
+import { eq, desc, and, count, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -28,42 +33,44 @@ const PostgresSessionStore = connectPg(session);
 export interface IStorage {
   sessionStore: session.Store;
   
-  // Admin users
-  getUser(email: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Admin users - Ultra-robust with Result pattern
+  getUser(email: string): Promise<Result<User | null>>;
+  getUserByEmail(email: string): Promise<Result<User | null>>;
+  createUser(user: InsertUser): Promise<Result<User>>;
   
-  // Ideas
-  getIdeas(): Promise<(Idea & { voteCount: number })[]>;
-  getIdea(id: string): Promise<Idea | undefined>;
-  createIdea(idea: InsertIdea): Promise<Idea>;
-  deleteIdea(id: string): Promise<void>;
-  updateIdeaStatus(id: string, status: string): Promise<void>;
+  // Ideas - Ultra-robust with business validation
+  getIdeas(): Promise<Result<(Idea & { voteCount: number })[]>>;
+  getIdea(id: string): Promise<Result<Idea | null>>;
+  createIdea(idea: InsertIdea): Promise<Result<Idea>>;
+  deleteIdea(id: string): Promise<Result<void>>;
+  updateIdeaStatus(id: string, status: string): Promise<Result<void>>;
+  isDuplicateIdea(title: string): Promise<boolean>;
   
-  // Votes
-  getVotesByIdea(ideaId: string): Promise<Vote[]>;
-  createVote(vote: InsertVote): Promise<Vote>;
+  // Votes - Ultra-robust with duplicate protection
+  getVotesByIdea(ideaId: string): Promise<Result<Vote[]>>;
+  createVote(vote: InsertVote): Promise<Result<Vote>>;
   hasUserVoted(ideaId: string, email: string): Promise<boolean>;
   
-  // Events
-  getEvents(): Promise<(Event & { inscriptionCount: number })[]>;
-  getEvent(id: string): Promise<Event | undefined>;
-  createEvent(event: InsertEvent): Promise<Event>;
-  updateEvent(id: string, event: Partial<InsertEvent>): Promise<Event | undefined>;
-  deleteEvent(id: string): Promise<void>;
+  // Events - Ultra-robust with validation
+  getEvents(): Promise<Result<(Event & { inscriptionCount: number })[]>>;
+  getEvent(id: string): Promise<Result<Event | null>>;
+  createEvent(event: InsertEvent): Promise<Result<Event>>;
+  updateEvent(id: string, event: Partial<InsertEvent>): Promise<Result<Event>>;
+  deleteEvent(id: string): Promise<Result<void>>;
+  isDuplicateEvent(title: string, date: Date): Promise<boolean>;
   
-  // Inscriptions
-  getEventInscriptions(eventId: string): Promise<Inscription[]>;
-  createInscription(inscription: InsertInscription): Promise<Inscription>;
+  // Inscriptions - Ultra-robust with duplicate protection
+  getEventInscriptions(eventId: string): Promise<Result<Inscription[]>>;
+  createInscription(inscription: InsertInscription): Promise<Result<Inscription>>;
   hasUserRegistered(eventId: string, email: string): Promise<boolean>;
   
   // Admin stats
-  getStats(): Promise<{
+  getStats(): Promise<Result<{
     totalIdeas: number;
     totalVotes: number;
     upcomingEvents: number;
     totalInscriptions: number;
-  }>;
+  }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -87,69 +94,176 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async getUser(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(admins).where(eq(admins.email, email));
-    return user || undefined;
+  // Ultra-robust User methods with Result pattern
+  async getUser(email: string): Promise<Result<User | null>> {
+    try {
+      const [user] = await db.select().from(admins).where(eq(admins.email, email));
+      return { success: true, data: user || null };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération utilisateur: ${error}`) };
+    }
   }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(admins).where(eq(admins.email, email));
-    return user || undefined;
+  async getUserByEmail(email: string): Promise<Result<User | null>> {
+    return this.getUser(email); // Delegate to avoid duplication
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(admins)
-      .values(insertUser)
-      .returning();
-    return user;
+  async createUser(insertUser: InsertUser): Promise<Result<User>> {
+    try {
+      // Check for duplicate admin
+      const existingUser = await this.getUser(insertUser.email);
+      if (existingUser.success && existingUser.data) {
+        return { success: false, error: new DuplicateError("Utilisateur déjà existant") };
+      }
+
+      const [user] = await db
+        .insert(admins)
+        .values(insertUser)
+        .returning();
+      
+      return { success: true, data: user };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création utilisateur: ${error}`) };
+    }
   }
 
-  async getIdeas(): Promise<(Idea & { voteCount: number })[]> {
-    const result = await db
-      .select({
-        id: ideas.id,
-        title: ideas.title,
-        description: ideas.description,
-        proposedBy: ideas.proposedBy,
-        proposedByEmail: ideas.proposedByEmail,
-        status: ideas.status,
-        deadline: ideas.deadline,
-        createdAt: ideas.createdAt,
-        updatedAt: ideas.updatedAt,
-        updatedBy: ideas.updatedBy,
-        voteCount: count(votes.id),
-      })
-      .from(ideas)
-      .leftJoin(votes, eq(ideas.id, votes.ideaId))
-      .groupBy(ideas.id)
-      .orderBy(desc(ideas.createdAt));
-    
-    return result.map(row => ({
-      ...row,
-      voteCount: Number(row.voteCount),
-    }));
+  // Ultra-robust Ideas methods with Result pattern and business validation
+  async getIdeas(): Promise<Result<(Idea & { voteCount: number })[]>> {
+    try {
+      const result = await db
+        .select({
+          id: ideas.id,
+          title: ideas.title,
+          description: ideas.description,
+          proposedBy: ideas.proposedBy,
+          proposedByEmail: ideas.proposedByEmail,
+          status: ideas.status,
+          deadline: ideas.deadline,
+          createdAt: ideas.createdAt,
+          updatedAt: ideas.updatedAt,
+          updatedBy: ideas.updatedBy,
+          voteCount: count(votes.id),
+        })
+        .from(ideas)
+        .leftJoin(votes, eq(ideas.id, votes.ideaId))
+        .groupBy(ideas.id)
+        .orderBy(desc(ideas.createdAt));
+      
+      const formattedResult = result.map(row => ({
+        ...row,
+        voteCount: Number(row.voteCount),
+      }));
+
+      return { success: true, data: formattedResult };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des idées: ${error}`) };
+    }
   }
 
-  async getIdea(id: string): Promise<Idea | undefined> {
-    const [idea] = await db.select().from(ideas).where(eq(ideas.id, id));
-    return idea || undefined;
+  async getIdea(id: string): Promise<Result<Idea | null>> {
+    try {
+      const [idea] = await db.select().from(ideas).where(eq(ideas.id, id));
+      return { success: true, data: idea || null };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération de l'idée: ${error}`) };
+    }
   }
 
-  async createIdea(idea: InsertIdea): Promise<Idea> {
-    const [newIdea] = await db
-      .insert(ideas)
-      .values(idea)
-      .returning();
-    return newIdea;
+  async isDuplicateIdea(title: string): Promise<boolean> {
+    try {
+      const [existing] = await db
+        .select({ id: ideas.id })
+        .from(ideas)
+        .where(eq(ideas.title, title))
+        .limit(1);
+      return !!existing;
+    } catch (error) {
+      console.error('[Storage] Erreur vérification duplicate idée:', error);
+      return false; // Fail safe - allow creation
+    }
   }
 
-  async deleteIdea(id: string): Promise<void> {
-    await db.delete(ideas).where(eq(ideas.id, id));
+  async createIdea(idea: InsertIdea): Promise<Result<Idea>> {
+    try {
+      // Business validation: Check for duplicate
+      if (await this.isDuplicateIdea(idea.title)) {
+        return { success: false, error: new DuplicateError("Une idée avec ce titre existe déjà") };
+      }
+
+      // Transaction for atomic operation
+      const result = await db.transaction(async (tx) => {
+        const [newIdea] = await tx
+          .insert(ideas)
+          .values(idea)
+          .returning();
+        
+        // Log audit trail
+        console.log(`[Storage] Nouvelle idée créée: ${newIdea.id} par ${idea.proposedBy}`);
+        
+        return newIdea;
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création de l'idée: ${error}`) };
+    }
   }
 
-  async updateIdeaStatus(id: string, status: string): Promise<void> {
-    await db.update(ideas).set({ status }).where(eq(ideas.id, id));
+  async deleteIdea(id: string): Promise<Result<void>> {
+    try {
+      // Check if idea exists
+      const ideaResult = await this.getIdea(id);
+      if (!ideaResult.success) {
+        return { success: false, error: ideaResult.error };
+      }
+      if (!ideaResult.data) {
+        return { success: false, error: new NotFoundError("Idée introuvable") };
+      }
+
+      // Transaction for atomic deletion (cascade will handle votes)
+      await db.transaction(async (tx) => {
+        await tx.delete(ideas).where(eq(ideas.id, id));
+        console.log(`[Storage] Idée supprimée: ${id}`);
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression de l'idée: ${error}`) };
+    }
+  }
+
+  async updateIdeaStatus(id: string, status: string): Promise<Result<void>> {
+    try {
+      // Validate status
+      const validStatuses = ["open", "closed", "realized"];
+      if (!validStatuses.includes(status)) {
+        return { success: false, error: new ValidationError("Statut invalide") };
+      }
+
+      // Check if idea exists
+      const ideaResult = await this.getIdea(id);
+      if (!ideaResult.success) {
+        return { success: false, error: ideaResult.error };
+      }
+      if (!ideaResult.data) {
+        return { success: false, error: new NotFoundError("Idée introuvable") };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(ideas)
+          .set({ 
+            status, 
+            updatedAt: sql`NOW()`,
+            updatedBy: "admin" // Could be improved with actual user
+          })
+          .where(eq(ideas.id, id));
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du statut: ${error}`) };
+    }
   }
 
   async getVotesByIdea(ideaId: string): Promise<Vote[]> {
