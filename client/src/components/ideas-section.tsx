@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import VoteModal from "./vote-modal";
 import type { Idea } from "@shared/schema";
+import boiteKiffImage from "@assets/boite-kiff_1755640123881.jpeg";
 
 interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
   voteCount: number;
@@ -39,7 +40,13 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
     <section className="space-y-6 sm:space-y-8">
       {/* Welcome Message */}
       <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 border-l-4 border-cjd-green">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Boîte à Kiffs</h2>
+        <div className="flex items-center gap-4 mb-2">
+          <img 
+            src={boiteKiffImage} 
+            alt="La Boîte à Kiffs" 
+            className="h-12 sm:h-16 w-auto object-contain"
+          />
+        </div>
         <p className="text-sm sm:text-base text-gray-600">
           Découvrez les idées proposées par la section et votez pour celles que vous souhaitez voir réalisées
         </p>
