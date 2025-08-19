@@ -31,15 +31,15 @@ interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
   voteCount: number;
 }
 
-interface EventWithRegistrations extends Omit<Event, "registrationCount"> {
-  registrationCount: number;
+interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
+  inscriptionCount: number;
 }
 
 interface AdminStats {
   totalIdeas: number;
   totalVotes: number;
   upcomingEvents: number;
-  totalRegistrations: number;
+  totalInscriptions: number;
 }
 
 export default function AdminSection() {
@@ -58,7 +58,7 @@ export default function AdminSection() {
     enabled: !!user && activeTab === "ideas",
   });
 
-  const { data: events, isLoading: eventsLoading } = useQuery<EventWithRegistrations[]>({
+  const { data: events, isLoading: eventsLoading } = useQuery<EventWithInscriptions[]>({
     queryKey: ["/api/events"],
     enabled: !!user && activeTab === "events",
   });
@@ -139,7 +139,7 @@ export default function AdminSection() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Administration</h2>
-          <p className="text-gray-600">Bienvenue, {user.username}</p>
+          <p className="text-gray-600">Bienvenue, {user.email}</p>
         </div>
         <Button
           onClick={() => logoutMutation.mutate()}
@@ -197,7 +197,7 @@ export default function AdminSection() {
           <Card>
             <CardContent className="p-6 text-center">
               <div className="text-3xl font-bold text-cjd-green mb-2">
-                {stats.totalRegistrations}
+                {stats.totalInscriptions}
               </div>
               <div className="text-sm text-gray-600 flex items-center justify-center">
                 <Users className="w-4 h-4 mr-1" />
@@ -252,10 +252,10 @@ export default function AdminSection() {
                               )}
                             </div>
                           </TableCell>
-                          <TableCell>{idea.authorName}</TableCell>
+                          <TableCell>{idea.proposedBy}</TableCell>
                           <TableCell className="text-center">{idea.voteCount}</TableCell>
                           <TableCell className="text-center">
-                            {formatDate(idea.createdAt)}
+                            {formatDate(idea.createdAt.toString())}
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex justify-center space-x-2">
@@ -303,7 +303,7 @@ export default function AdminSection() {
                       <TableRow>
                         <TableHead>Titre</TableHead>
                         <TableHead>Date</TableHead>
-                        <TableHead>Lieu</TableHead>
+                        <TableHead>HelloAsso</TableHead>
                         <TableHead className="text-center">Inscrits</TableHead>
                         <TableHead className="text-center">Actions</TableHead>
                       </TableRow>
@@ -324,10 +324,17 @@ export default function AdminSection() {
                           <TableCell>
                             {new Date(event.date).toLocaleDateString("fr-FR")}
                           </TableCell>
-                          <TableCell className="max-w-xs truncate">{event.location}</TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {event.helloAssoLink ? (
+                              <a href={event.helloAssoLink} target="_blank" rel="noopener noreferrer" className="text-cjd-green hover:underline">
+                                Lien actif
+                              </a>
+                            ) : (
+                              <span className="text-gray-400">Aucun lien</span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-center">
-                            {event.registrationCount}
-                            {event.maxAttendees && ` / ${event.maxAttendees}`}
+                            {event.inscriptionCount}
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex justify-center space-x-2">

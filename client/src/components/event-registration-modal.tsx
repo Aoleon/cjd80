@@ -8,12 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Event, InsertEventRegistration } from "@shared/schema";
+import type { Event, InsertInscription } from "@shared/schema";
 
 interface EventRegistrationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  event: (Event & { registrationCount: number }) | null;
+  event: (Event & { inscriptionCount: number }) | null;
 }
 
 export default function EventRegistrationModal({ 
@@ -24,20 +24,19 @@ export default function EventRegistrationModal({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
-    participantName: "",
-    participantEmail: "",
-    comments: "",
+    name: "",
+    email: "",
   });
 
   useEffect(() => {
     if (!open) {
-      setFormData({ participantName: "", participantEmail: "", comments: "" });
+      setFormData({ name: "", email: "" });
     }
   }, [open]);
 
   const registrationMutation = useMutation({
-    mutationFn: async (registration: InsertEventRegistration) => {
-      const res = await apiRequest("POST", "/api/event-registrations", registration);
+    mutationFn: async (inscription: InsertInscription) => {
+      const res = await apiRequest("POST", "/api/inscriptions", inscription);
       return await res.json();
     },
     onSuccess: () => {
@@ -63,9 +62,8 @@ export default function EventRegistrationModal({
 
     registrationMutation.mutate({
       eventId: event.id,
-      participantName: formData.participantName,
-      participantEmail: formData.participantEmail,
-      comments: formData.comments || undefined,
+      name: formData.name,
+      email: formData.email,
     });
   };
 
@@ -94,8 +92,10 @@ export default function EventRegistrationModal({
         {event && (
           <div className="mb-4 p-3 bg-gray-50 rounded-md">
             <h4 className="font-medium text-gray-800 mb-1">{event.title}</h4>
-            <p className="text-sm text-gray-600">{formatDate(event.date)}</p>
-            <p className="text-sm text-gray-600">{event.location}</p>
+            <p className="text-sm text-gray-600">{formatDate(event.date.toString())}</p>
+            {event.description && (
+              <p className="text-sm text-gray-600">{event.description}</p>
+            )}
           </div>
         )}
 
@@ -107,8 +107,8 @@ export default function EventRegistrationModal({
             <Input
               id="registrant-name"
               type="text"
-              value={formData.participantName}
-              onChange={(e) => handleInputChange("participantName", e.target.value)}
+              value={formData.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
               placeholder="Prénom Nom"
               required
               className="focus:ring-cjd-green focus:border-cjd-green"
@@ -122,24 +122,10 @@ export default function EventRegistrationModal({
             <Input
               id="registrant-email"
               type="email"
-              value={formData.participantEmail}
-              onChange={(e) => handleInputChange("participantEmail", e.target.value)}
+              value={formData.email}
+              onChange={(e) => handleInputChange("email", e.target.value)}
               placeholder="email@exemple.com"
               required
-              className="focus:ring-cjd-green focus:border-cjd-green"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="registrant-comments" className="text-sm font-medium text-gray-700">
-              Commentaires (facultatif)
-            </Label>
-            <Textarea
-              id="registrant-comments"
-              value={formData.comments}
-              onChange={(e) => handleInputChange("comments", e.target.value)}
-              placeholder="Allergies alimentaires, nombre d'accompagnants..."
-              rows={3}
               className="focus:ring-cjd-green focus:border-cjd-green"
             />
           </div>

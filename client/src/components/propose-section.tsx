@@ -16,8 +16,8 @@ export default function ProposeSection() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    authorName: "",
-    authorEmail: "",
+    proposedBy: "",
+    proposedByEmail: "",
   });
 
   const createIdeaMutation = useMutation({
@@ -27,7 +27,7 @@ export default function ProposeSection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/ideas"] });
-      setFormData({ title: "", description: "", authorName: "", authorEmail: "" });
+      setFormData({ title: "", description: "", proposedBy: "", proposedByEmail: "" });
       toast({
         title: "Idée soumise avec succès !",
         description: "Votre idée a été ajoutée à la boîte à kiffs",
@@ -102,8 +102,8 @@ export default function ProposeSection() {
                 <Input
                   id="proposer-name"
                   type="text"
-                  value={formData.authorName}
-                  onChange={(e) => handleInputChange("authorName", e.target.value)}
+                  value={formData.proposedBy}
+                  onChange={(e) => handleInputChange("proposedBy", e.target.value)}
                   placeholder="Prénom Nom"
                   required
                   className="focus:ring-cjd-green focus:border-cjd-green"
@@ -116,8 +116,8 @@ export default function ProposeSection() {
                 <Input
                   id="proposer-email"
                   type="email"
-                  value={formData.authorEmail}
-                  onChange={(e) => handleInputChange("authorEmail", e.target.value)}
+                  value={formData.proposedByEmail}
+                  onChange={(e) => handleInputChange("proposedByEmail", e.target.value)}
                   placeholder="email@exemple.com"
                   required
                   className="focus:ring-cjd-green focus:border-cjd-green"

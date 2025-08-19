@@ -72,7 +72,7 @@ export default function IdeasSection() {
                   </Button>
                 </div>
                 <div className="mt-4 text-xs text-gray-500">
-                  Proposée par {idea.authorName}
+                  Proposée par {idea.proposedBy}
                 </div>
               </CardContent>
             </Card>

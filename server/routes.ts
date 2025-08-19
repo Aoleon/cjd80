@@ -6,7 +6,7 @@ import {
   insertIdeaSchema,
   insertVoteSchema,
   insertEventSchema,
-  insertEventRegistrationSchema 
+  insertInscriptionSchema 
 } from "@shared/schema";
 
 function requireAuth(req: any, res: any, next: any) {
@@ -128,28 +128,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Event registrations routes
-  app.get("/api/events/:id/registrations", requireAuth, async (req, res, next) => {
+  // Inscriptions routes
+  app.get("/api/events/:id/inscriptions", requireAuth, async (req, res, next) => {
     try {
-      const registrations = await storage.getEventRegistrations(req.params.id);
-      res.json(registrations);
+      const inscriptions = await storage.getEventInscriptions(req.params.id);
+      res.json(inscriptions);
     } catch (error) {
       next(error);
     }
   });
 
-  app.post("/api/event-registrations", async (req, res, next) => {
+  app.post("/api/inscriptions", async (req, res, next) => {
     try {
-      const validatedData = insertEventRegistrationSchema.parse(req.body);
+      const validatedData = insertInscriptionSchema.parse(req.body);
       
       // Check if user has already registered for this event
-      const hasRegistered = await storage.hasUserRegistered(validatedData.eventId, validatedData.participantEmail);
+      const hasRegistered = await storage.hasUserRegistered(validatedData.eventId, validatedData.email);
       if (hasRegistered) {
         return res.status(400).json({ message: "Vous êtes déjà inscrit à cet événement" });
       }
 
-      const registration = await storage.createEventRegistration(validatedData);
-      res.status(201).json(registration);
+      const inscription = await storage.createInscription(validatedData);
+      res.status(201).json(inscription);
     } catch (error) {
       next(error);
     }

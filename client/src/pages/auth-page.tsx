@@ -10,8 +10,8 @@ import { Loader2, Users, Lightbulb, Calendar, Shield } from "lucide-react";
 
 export default function AuthPage() {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
-  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
-  const [registerForm, setRegisterForm] = useState({ username: "", password: "", confirmPassword: "" });
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [registerForm, setRegisterForm] = useState({ email: "", password: "", confirmPassword: "" });
 
   // Redirect if already logged in (after hooks are called)
   if (!isLoading && user) {
@@ -38,7 +38,7 @@ export default function AuthPage() {
       return;
     }
     registerMutation.mutate({
-      username: registerForm.username,
+      email: registerForm.email,
       password: registerForm.password,
     });
   };
@@ -73,12 +73,12 @@ export default function AuthPage() {
                 <CardContent>
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div>
-                      <Label htmlFor="login-username">Nom d'utilisateur</Label>
+                      <Label htmlFor="login-email">Email</Label>
                       <Input
-                        id="login-username"
-                        type="text"
-                        value={loginForm.username}
-                        onChange={(e) => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
+                        id="login-email"
+                        type="email"
+                        value={loginForm.email}
+                        onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
                         required
                         className="focus:ring-cjd-green focus:border-cjd-green"
                       />
@@ -122,12 +122,12 @@ export default function AuthPage() {
                 <CardContent>
                   <form onSubmit={handleRegister} className="space-y-4">
                     <div>
-                      <Label htmlFor="register-username">Nom d'utilisateur</Label>
+                      <Label htmlFor="register-email">Email</Label>
                       <Input
-                        id="register-username"
-                        type="text"
-                        value={registerForm.username}
-                        onChange={(e) => setRegisterForm(prev => ({ ...prev, username: e.target.value }))}
+                        id="register-email"
+                        type="email"
+                        value={registerForm.email}
+                        onChange={(e) => setRegisterForm(prev => ({ ...prev, email: e.target.value }))}
                         required
                         className="focus:ring-cjd-green focus:border-cjd-green"
                       />

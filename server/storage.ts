@@ -1,11 +1,11 @@
 import { 
-  adminUsers, 
+  admins, 
   ideas, 
   votes, 
   events, 
-  eventRegistrations,
-  type AdminUser, 
-  type InsertAdminUser,
+  inscriptions,
+  type Admin, 
+  type InsertAdmin,
   type User,
   type InsertUser,
   type Idea,
@@ -14,8 +14,8 @@ import {
   type InsertVote,
   type Event,
   type InsertEvent,
-  type EventRegistration,
-  type InsertEventRegistration
+  type Inscription,
+  type InsertInscription
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, count } from "drizzle-orm";
@@ -26,11 +26,11 @@ import { pool } from "./db";
 const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
   
   // Admin users
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUser(email: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
   // Ideas
@@ -46,15 +46,15 @@ export interface IStorage {
   hasUserVoted(ideaId: string, email: string): Promise<boolean>;
   
   // Events
-  getEvents(): Promise<(Event & { registrationCount: number })[]>;
+  getEvents(): Promise<(Event & { inscriptionCount: number })[]>;
   getEvent(id: string): Promise<Event | undefined>;
   createEvent(event: InsertEvent): Promise<Event>;
   updateEvent(id: string, event: Partial<InsertEvent>): Promise<Event | undefined>;
   deleteEvent(id: string): Promise<void>;
   
-  // Event registrations
-  getEventRegistrations(eventId: string): Promise<EventRegistration[]>;
-  createEventRegistration(registration: InsertEventRegistration): Promise<EventRegistration>;
+  // Inscriptions
+  getEventInscriptions(eventId: string): Promise<Inscription[]>;
+  createInscription(inscription: InsertInscription): Promise<Inscription>;
   hasUserRegistered(eventId: string, email: string): Promise<boolean>;
   
   // Admin stats
@@ -62,12 +62,12 @@ export interface IStorage {
     totalIdeas: number;
     totalVotes: number;
     upcomingEvents: number;
-    totalRegistrations: number;
+    totalInscriptions: number;
   }>;
 }
 
 export class DatabaseStorage implements IStorage {
-  public sessionStore: session.SessionStore;
+  public sessionStore: session.Store;
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({ 
@@ -76,19 +76,19 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.id, id));
+  async getUser(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(admins).where(eq(admins.email, email));
     return user || undefined;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.username, username));
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(admins).where(eq(admins.email, email));
     return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db
-      .insert(adminUsers)
+      .insert(admins)
       .values(insertUser)
       .returning();
     return user;
@@ -100,10 +100,13 @@ export class DatabaseStorage implements IStorage {
         id: ideas.id,
         title: ideas.title,
         description: ideas.description,
-        authorName: ideas.authorName,
-        authorEmail: ideas.authorEmail,
+        proposedBy: ideas.proposedBy,
+        proposedByEmail: ideas.proposedByEmail,
         status: ideas.status,
+        deadline: ideas.deadline,
         createdAt: ideas.createdAt,
+        updatedAt: ideas.updatedAt,
+        updatedBy: ideas.updatedBy,
         voteCount: count(votes.id),
       })
       .from(ideas)
@@ -158,28 +161,27 @@ export class DatabaseStorage implements IStorage {
     return !!existingVote;
   }
 
-  async getEvents(): Promise<(Event & { registrationCount: number })[]> {
+  async getEvents(): Promise<(Event & { inscriptionCount: number })[]> {
     const result = await db
       .select({
         id: events.id,
         title: events.title,
         description: events.description,
         date: events.date,
-        location: events.location,
-        maxAttendees: events.maxAttendees,
-        status: events.status,
+        helloAssoLink: events.helloAssoLink,
         createdAt: events.createdAt,
-        registrationCount: count(eventRegistrations.id),
+        updatedAt: events.updatedAt,
+        updatedBy: events.updatedBy,
+        inscriptionCount: count(inscriptions.id),
       })
       .from(events)
-      .leftJoin(eventRegistrations, eq(events.id, eventRegistrations.eventId))
-      .where(eq(events.status, "open"))
+      .leftJoin(inscriptions, eq(events.id, inscriptions.eventId))
       .groupBy(events.id)
       .orderBy(events.date);
     
     return result.map(row => ({
       ...row,
-      registrationCount: Number(row.registrationCount),
+      inscriptionCount: Number(row.inscriptionCount),
     }));
   }
 
@@ -209,42 +211,42 @@ export class DatabaseStorage implements IStorage {
     await db.delete(events).where(eq(events.id, id));
   }
 
-  async getEventRegistrations(eventId: string): Promise<EventRegistration[]> {
-    return await db.select().from(eventRegistrations).where(eq(eventRegistrations.eventId, eventId));
+  async getEventInscriptions(eventId: string): Promise<Inscription[]> {
+    return await db.select().from(inscriptions).where(eq(inscriptions.eventId, eventId));
   }
 
-  async createEventRegistration(registration: InsertEventRegistration): Promise<EventRegistration> {
-    const [newRegistration] = await db
-      .insert(eventRegistrations)
-      .values(registration)
+  async createInscription(inscription: InsertInscription): Promise<Inscription> {
+    const [newInscription] = await db
+      .insert(inscriptions)
+      .values(inscription)
       .returning();
-    return newRegistration;
+    return newInscription;
   }
 
   async hasUserRegistered(eventId: string, email: string): Promise<boolean> {
-    const [existingRegistration] = await db
+    const [existingInscription] = await db
       .select()
-      .from(eventRegistrations)
-      .where(and(eq(eventRegistrations.eventId, eventId), eq(eventRegistrations.participantEmail, email)));
-    return !!existingRegistration;
+      .from(inscriptions)
+      .where(and(eq(inscriptions.eventId, eventId), eq(inscriptions.email, email)));
+    return !!existingInscription;
   }
 
   async getStats(): Promise<{
     totalIdeas: number;
     totalVotes: number;
     upcomingEvents: number;
-    totalRegistrations: number;
+    totalInscriptions: number;
   }> {
     const [ideaCount] = await db.select({ count: count() }).from(ideas);
     const [voteCount] = await db.select({ count: count() }).from(votes);
-    const [eventCount] = await db.select({ count: count() }).from(events).where(eq(events.status, "open"));
-    const [registrationCount] = await db.select({ count: count() }).from(eventRegistrations);
+    const [eventCount] = await db.select({ count: count() }).from(events);
+    const [inscriptionCount] = await db.select({ count: count() }).from(inscriptions);
 
     return {
       totalIdeas: Number(ideaCount.count),
       totalVotes: Number(voteCount.count),
       upcomingEvents: Number(eventCount.count),
-      totalRegistrations: Number(registrationCount.count),
+      totalInscriptions: Number(inscriptionCount.count),
     };
   }
 }

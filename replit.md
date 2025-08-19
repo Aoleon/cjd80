@@ -37,26 +37,34 @@ Key backend technologies:
 The API is structured around resource-based endpoints (/api/ideas, /api/votes, /api/events, etc.) and includes proper error handling, validation, and authentication middleware where required.
 
 ### Data Storage
-The application uses PostgreSQL as the primary database with Drizzle ORM for type-safe database operations. The database schema includes tables for ideas, votes, events, event registrations, and administrative users.
+The application uses PostgreSQL as the primary database with Drizzle ORM for type-safe database operations. The database schema has been migrated from the original Firestore structure to include all required tables and fields.
 
 Database design:
 - PostgreSQL with Neon serverless for cloud hosting
 - Drizzle ORM for schema definition and queries
 - Type-safe database operations with generated TypeScript types
 - Session storage using connect-pg-simple for PostgreSQL
-- UUID-based primary keys for all entities
+- UUID-based primary keys for entities, email as primary key for admins
 
-The schema supports the core functionality with proper relationships between entities (ideas to votes, events to registrations) and includes audit fields like creation timestamps.
+Current schema (migrated from Firestore specifications):
+- **admins**: email (primary key), password, added_by, created_at
+- **ideas**: id, title, description, proposed_by, proposed_by_email, status, deadline, created_at, updated_at, updated_by
+- **votes**: id, idea_id, voter_name, voter_email, created_at  
+- **events**: id, title, description, date, hello_asso_link, created_at, updated_at, updated_by
+- **inscriptions**: id, event_id, name, email, created_at
+
+The schema supports the core functionality with proper relationships between entities (ideas to votes, events to inscriptions) and includes audit fields like creation/update timestamps and user tracking.
 
 ### Authentication and Authorization
-The application implements a two-tier access model. Public access is available for core functionality (viewing/voting on ideas, proposing ideas, viewing/registering for events) without requiring user accounts. Administrative access is protected by username/password authentication for content moderation and management.
+The application implements a two-tier access model. Public access is available for core functionality (viewing/voting on ideas, proposing ideas, viewing/registering for events) without requiring user accounts. Administrative access is protected by email/password authentication for content moderation and management.
 
 Authentication features:
 - Public access for member interactions (no registration required)
-- Administrative authentication using Passport.js
-- Session-based authentication with secure cookies
+- Administrative authentication using Passport.js with email as username field
+- Session-based authentication with secure cookies and PostgreSQL session store
 - Password hashing using scrypt for security
 - Protected routes for administrative functions
+- Admin user management with audit trail (added_by field)
 
 ### External Dependencies
 

@@ -6,15 +6,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import EventRegistrationModal from "./event-registration-modal";
 import type { Event } from "@shared/schema";
 
-interface EventWithRegistrations extends Omit<Event, "registrationCount"> {
-  registrationCount: number;
+interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
+  inscriptionCount: number;
 }
 
 export default function EventsSection() {
-  const [selectedEvent, setSelectedEvent] = useState<EventWithRegistrations | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventWithInscriptions | null>(null);
   const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
 
-  const { data: events, isLoading, error } = useQuery<EventWithRegistrations[]>({
+  const { data: events, isLoading, error } = useQuery<EventWithInscriptions[]>({
     queryKey: ["/api/events"],
   });
 
@@ -26,7 +26,7 @@ export default function EventsSection() {
     );
   }
 
-  const handleRegisterClick = (event: EventWithRegistrations) => {
+  const handleRegisterClick = (event: EventWithInscriptions) => {
     setSelectedEvent(event);
     setRegistrationModalOpen(true);
   };
@@ -68,12 +68,16 @@ export default function EventsSection() {
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center text-gray-600">
                         <Calendar className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0" />
-                        <span>{formatDate(event.date)}</span>
+                        <span>{formatDate(event.date.toString())}</span>
                       </div>
-                      <div className="flex items-center text-gray-600">
-                        <MapPin className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0" />
-                        <span>{event.location}</span>
-                      </div>
+                      {event.helloAssoLink && (
+                        <div className="flex items-center text-gray-600">
+                          <MapPin className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0" />
+                          <a href={event.helloAssoLink} target="_blank" rel="noopener noreferrer" className="text-cjd-green hover:underline">
+                            Lien d'inscription HelloAsso
+                          </a>
+                        </div>
+                      )}
                     </div>
                     {event.description && (
                       <p className="text-gray-600 mb-4">{event.description}</p>
@@ -81,8 +85,7 @@ export default function EventsSection() {
                     <div className="flex items-center text-sm text-gray-500">
                       <Users className="w-4 h-4 mr-1" />
                       <span>
-                        {event.registrationCount} inscrit{event.registrationCount !== 1 ? 's' : ''}
-                        {event.maxAttendees && ` / ${event.maxAttendees}`}
+                        {event.inscriptionCount} inscrit{event.inscriptionCount !== 1 ? 's' : ''}
                       </span>
                     </div>
                   </div>

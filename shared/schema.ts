@@ -3,11 +3,11 @@ import { pgTable, text, varchar, timestamp, integer, boolean } from "drizzle-orm
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Admin users table
-export const adminUsers = pgTable("admin_users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
+// Admin users table  
+export const admins = pgTable("admins", {
+  email: text("email").primaryKey(),
   password: text("password").notNull(),
+  addedBy: text("added_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -16,10 +16,13 @@ export const ideas = pgTable("ideas", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   description: text("description"),
-  authorName: text("author_name").notNull(),
-  authorEmail: text("author_email").notNull(),
+  proposedBy: text("proposed_by").notNull(),
+  proposedByEmail: text("proposed_by_email").notNull(),
   status: text("status").default("open").notNull(), // open, closed, realized
+  deadline: timestamp("deadline"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedBy: text("updated_by"),
 });
 
 // Votes table
@@ -37,19 +40,18 @@ export const events = pgTable("events", {
   title: text("title").notNull(),
   description: text("description"),
   date: timestamp("date").notNull(),
-  location: text("location").notNull(),
-  maxAttendees: integer("max_attendees"),
-  status: text("status").default("open").notNull(), // open, closed, cancelled
+  helloAssoLink: text("hello_asso_link"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedBy: text("updated_by"),
 });
 
-// Event registrations table
-export const eventRegistrations = pgTable("event_registrations", {
+// Inscriptions table  
+export const inscriptions = pgTable("inscriptions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   eventId: varchar("event_id").references(() => events.id, { onDelete: "cascade" }).notNull(),
-  participantName: text("participant_name").notNull(),
-  participantEmail: text("participant_email").notNull(),
-  comments: text("comments"),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -66,27 +68,29 @@ export const votesRelations = relations(votes, ({ one }) => ({
 }));
 
 export const eventsRelations = relations(events, ({ many }) => ({
-  registrations: many(eventRegistrations),
+  inscriptions: many(inscriptions),
 }));
 
-export const eventRegistrationsRelations = relations(eventRegistrations, ({ one }) => ({
+export const inscriptionsRelations = relations(inscriptions, ({ one }) => ({
   event: one(events, {
-    fields: [eventRegistrations.eventId],
+    fields: [inscriptions.eventId],
     references: [events.id],
   }),
 }));
 
 // Insert schemas
-export const insertAdminUserSchema = createInsertSchema(adminUsers).pick({
-  username: true,
+export const insertAdminSchema = createInsertSchema(admins).pick({
+  email: true,
   password: true,
+  addedBy: true,
 });
 
 export const insertIdeaSchema = createInsertSchema(ideas).pick({
   title: true,
   description: true,
-  authorName: true,
-  authorEmail: true,
+  proposedBy: true,
+  proposedByEmail: true,
+  deadline: true,
 });
 
 export const insertVoteSchema = createInsertSchema(votes).pick({
@@ -99,21 +103,19 @@ export const insertEventSchema = createInsertSchema(events).pick({
   title: true,
   description: true,
   date: true,
-  location: true,
-  maxAttendees: true,
+  helloAssoLink: true,
 });
 
-export const insertEventRegistrationSchema = createInsertSchema(eventRegistrations).pick({
+export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({
   eventId: true,
-  participantName: true,
-  participantEmail: true,
-  comments: true,
+  name: true,
+  email: true,
 });
 
 // Types
-export type AdminUser = typeof adminUsers.$inferSelect;
-export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
-export type User = AdminUser; // For compatibility with auth blueprint
+export type Admin = typeof admins.$inferSelect;
+export type InsertAdmin = z.infer<typeof insertAdminSchema>;
+export type User = Admin; // For compatibility with auth blueprint
 
 export type Idea = typeof ideas.$inferSelect;
 export type InsertIdea = z.infer<typeof insertIdeaSchema>;
@@ -124,10 +126,20 @@ export type InsertVote = z.infer<typeof insertVoteSchema>;
 export type Event = typeof events.$inferSelect;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 
-export type EventRegistration = typeof eventRegistrations.$inferSelect;
-export type InsertEventRegistration = z.infer<typeof insertEventRegistrationSchema>;
+export type Inscription = typeof inscriptions.$inferSelect;
+export type InsertInscription = z.infer<typeof insertInscriptionSchema>;
 
 // For compatibility with existing auth system
-export const users = adminUsers;
-export const insertUserSchema = insertAdminUserSchema;
-export type InsertUser = InsertAdminUser;
+export const users = admins;
+export const insertUserSchema = insertAdminSchema;
+export type InsertUser = InsertAdmin;
+
+// Legacy compatibility
+export type AdminUser = Admin;
+export type InsertAdminUser = InsertAdmin;
+export type EventRegistration = Inscription;
+export type InsertEventRegistration = InsertInscription;
+export const adminUsers = admins;
+export const insertAdminUserSchema = insertAdminSchema;
+export const eventRegistrations = inscriptions;
+export const insertEventRegistrationSchema = insertInscriptionSchema;
