@@ -73,6 +73,8 @@ The application uses a modern web stack:
 -   **Transaction Safety**: All operations atomic with commit/rollback logging
 -   **Real-time Monitoring**: DB pool stats, query logging, performance tracking
 -   **Anti-Duplicate Protection**: Votes and inscriptions with business logic validation
+-   **Data Migration Complete**: Successfully migrated authentic CJD Amiens data from Firestore
+-   **React Query Fixed**: Backend response format {success: true, data: []} properly handled by frontend
 
 ### UI/UX Decisions
 -   **Styling**: Exclusively uses Tailwind CSS for utility-first styling.
