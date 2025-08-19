@@ -12,6 +12,9 @@ import {
   Loader2,
   Plus,
   Database,
+  Edit,
+  Download,
+  CalendarPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +30,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import AdminDbMonitor from "./admin-db-monitor";
+import EventAdminModal from "./event-admin-modal";
+import InscriptionExportModal from "./inscription-export-modal";
 import type { Idea, Event } from "@shared/schema";
 
 interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
@@ -49,6 +54,15 @@ export default function AdminSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("ideas");
+  
+  // Modal states for event management
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [eventModalMode, setEventModalMode] = useState<"create" | "edit">("create");
+  const [selectedEvent, setSelectedEvent] = useState<EventWithInscriptions | null>(null);
+  
+  // Modal state for inscription export
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [eventToExport, setEventToExport] = useState<EventWithInscriptions | null>(null);
 
   const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -106,6 +120,24 @@ export default function AdminSection() {
       });
     },
   });
+
+  // Event management functions
+  const handleCreateEvent = () => {
+    setEventModalMode("create");
+    setSelectedEvent(null);
+    setEventModalOpen(true);
+  };
+
+  const handleEditEvent = (event: EventWithInscriptions) => {
+    setEventModalMode("edit");
+    setSelectedEvent(event);
+    setEventModalOpen(true);
+  };
+
+  const handleExportInscriptions = (event: EventWithInscriptions) => {
+    setEventToExport(event);
+    setExportModalOpen(true);
+  };
 
   const handleDeleteIdea = (id: string) => {
     if (confirm("Êtes-vous sûr de vouloir supprimer cette idée ?")) {
@@ -296,6 +328,13 @@ export default function AdminSection() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Tous les événements</h3>
+                <Button
+                  onClick={handleCreateEvent}
+                  className="bg-cjd-green hover:bg-green-700 text-white"
+                >
+                  <CalendarPlus className="w-4 h-4 mr-2" />
+                  Nouvel événement
+                </Button>
               </div>
 
               {eventsLoading ? (
@@ -347,6 +386,26 @@ export default function AdminSection() {
                               <Button
                                 size="sm"
                                 variant="ghost"
+                                onClick={() => handleEditEvent(event)}
+                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              
+                              {event.inscriptionCount > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleExportInscriptions(event)}
+                                  className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                              )}
+                              
+                              <Button
+                                size="sm"
+                                variant="ghost"
                                 onClick={() => handleDeleteEvent(event.id)}
                                 disabled={deleteEventMutation.isPending}
                                 className="text-red-600 hover:text-red-800 hover:bg-red-50"
@@ -376,6 +435,21 @@ export default function AdminSection() {
           </TabsContent>
         </Tabs>
       </Card>
+
+      {/* Event Management Modal */}
+      <EventAdminModal
+        open={eventModalOpen}
+        onOpenChange={setEventModalOpen}
+        event={selectedEvent}
+        mode={eventModalMode}
+      />
+
+      {/* Inscription Export Modal */}
+      <InscriptionExportModal
+        open={exportModalOpen}
+        onOpenChange={setExportModalOpen}
+        event={eventToExport}
+      />
     </section>
   );
 }
