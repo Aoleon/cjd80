@@ -108,51 +108,51 @@ export default function EventRegistrationModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-2xl mx-3 sm:mx-auto">
-        <DialogHeader className="text-left">
-          <DialogTitle className="text-xl font-bold text-gray-800 mb-2">
+      <DialogContent className="w-full max-w-2xl mx-auto p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="text-left pb-4">
+          <DialogTitle className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
             S'inscrire à l'événement
           </DialogTitle>
           <DialogDescription asChild>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Event Info */}
-              <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-cjd-green">
-                <h3 className="font-semibold text-lg text-gray-800 mb-2">{event.title}</h3>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-2 text-cjd-green" />
-                    <span>{formatEventDate(event.date.toString())}</span>
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border-l-4 border-cjd-green">
+                <h3 className="font-semibold text-base sm:text-lg text-gray-800 mb-2 line-clamp-2">{event.title}</h3>
+                <div className="space-y-2 text-xs sm:text-sm text-gray-600">
+                  <div className="flex items-start sm:items-center">
+                    <Calendar className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0 mt-0.5 sm:mt-0" />
+                    <span className="break-words">{formatEventDate(event.date.toString())}</span>
                   </div>
                   {event.location && (
-                    <div className="flex items-center">
-                      <MapPin className="w-4 h-4 mr-2 text-cjd-green" />
-                      <span>{event.location}</span>
+                    <div className="flex items-start sm:items-center">
+                      <MapPin className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0 mt-0.5 sm:mt-0" />
+                      <span className="break-words">{event.location}</span>
                     </div>
                   )}
-                  <div className="flex items-center">
-                    <Users className="w-4 h-4 mr-2 text-cjd-green" />
-                    <span>
+                  <div className="flex items-start sm:items-center">
+                    <Users className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0 mt-0.5 sm:mt-0" />
+                    <span className="break-words">
                       {event.inscriptionCount} personne(s) déjà inscrite(s)
                       {event.maxParticipants && ` / ${event.maxParticipants} maximum`}
                     </span>
                   </div>
                 </div>
                 {event.description && (
-                  <p className="mt-3 text-sm text-gray-700">{event.description}</p>
+                  <p className="mt-3 text-xs sm:text-sm text-gray-700 break-words">{event.description}</p>
                 )}
               </div>
               
-              <p className="text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600">
                 Remplissez les informations ci-dessous pour confirmer votre inscription.
               </p>
             </div>
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
           {/* Name Field */}
-          <div>
-            <Label htmlFor="participant-name" className="text-base font-medium text-gray-700">
+          <div className="space-y-2">
+            <Label htmlFor="participant-name" className="text-sm sm:text-base font-medium text-gray-700">
               Votre nom complet *
             </Label>
             <Input
@@ -162,17 +162,17 @@ export default function EventRegistrationModal({
               onChange={(e) => handleInputChange("name", e.target.value)}
               placeholder="Ex: Jean Dupont"
               required
-              className="mt-2 text-base focus:ring-cjd-green focus:border-cjd-green"
+              className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green h-10 sm:h-11"
               maxLength={100}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500">
               Ce nom apparaîtra sur la liste des participants
             </p>
           </div>
 
           {/* Email Field */}
-          <div>
-            <Label htmlFor="participant-email" className="text-base font-medium text-gray-700">
+          <div className="space-y-2">
+            <Label htmlFor="participant-email" className="text-sm sm:text-base font-medium text-gray-700">
               Votre email *
             </Label>
             <Input
@@ -182,17 +182,17 @@ export default function EventRegistrationModal({
               onChange={(e) => handleInputChange("email", e.target.value)}
               placeholder="jean.dupont@exemple.com"
               required
-              className="mt-2 text-base focus:ring-cjd-green focus:border-cjd-green"
+              className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green h-10 sm:h-11"
               maxLength={100}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500">
               Pour recevoir les informations et confirmations de l'événement
             </p>
           </div>
 
           {/* Comments Field (Optional) */}
-          <div>
-            <Label htmlFor="participant-comments" className="text-base font-medium text-gray-700">
+          <div className="space-y-2">
+            <Label htmlFor="participant-comments" className="text-sm sm:text-base font-medium text-gray-700">
               Commentaires ou informations particulières
             </Label>
             <Textarea
@@ -201,31 +201,32 @@ export default function EventRegistrationModal({
               onChange={(e) => handleInputChange("comments", e.target.value)}
               placeholder="Ex: régime alimentaire, nombre d'accompagnants, questions..."
               rows={3}
-              className="mt-2 text-base focus:ring-cjd-green focus:border-cjd-green"
+              className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green resize-none"
               maxLength={500}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500">
               Optionnel - {500 - formData.comments.length} caractères restants
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 border-t">
             <Button
               type="submit"
               disabled={registerMutation.isPending}
-              className="bg-cjd-green hover:bg-green-700 text-white flex-1"
-              size="lg"
+              className="bg-cjd-green hover:bg-green-700 text-white flex-1 h-11 sm:h-12 text-sm sm:text-base"
             >
               {registerMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Inscription en cours...
+                  <span className="hidden sm:inline">Inscription en cours...</span>
+                  <span className="sm:hidden">Inscription...</span>
                 </>
               ) : (
                 <>
                   <UserPlus className="mr-2 h-4 w-4" />
-                  Confirmer mon inscription
+                  <span className="hidden sm:inline">Confirmer mon inscription</span>
+                  <span className="sm:hidden">S'inscrire</span>
                 </>
               )}
             </Button>
@@ -235,8 +236,7 @@ export default function EventRegistrationModal({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={registerMutation.isPending}
-              className="px-8"
-              size="lg"
+              className="sm:px-8 h-11 sm:h-12 text-sm sm:text-base"
             >
               Annuler
             </Button>
@@ -244,9 +244,9 @@ export default function EventRegistrationModal({
         </form>
 
         {/* Additional Info */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-          <h4 className="font-medium text-blue-800 mb-2">ℹ️ À propos de votre inscription</h4>
-          <ul className="text-sm text-blue-700 space-y-1">
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+          <h4 className="font-medium text-blue-800 mb-2 text-sm sm:text-base">ℹ️ À propos de votre inscription</h4>
+          <ul className="text-xs sm:text-sm text-blue-700 space-y-1">
             <li>• Vous recevrez un email de confirmation</li>
             <li>• Votre email ne sera utilisé que pour cet événement</li>
             <li>• En cas d'empêchement, contactez l'organisation</li>
