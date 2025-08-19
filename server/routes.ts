@@ -10,6 +10,8 @@ import {
   insertEventSchema,
   insertInscriptionSchema 
 } from "@shared/schema";
+import { ZodError } from "zod";
+import { fromZodError } from "zod-validation-error";
 
 function requireAuth(req: any, res: any, next: any) {
   if (!req.isAuthenticated()) {
@@ -152,15 +154,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertInscriptionSchema.parse(req.body);
       
-      // Check if user has already registered for this event
-      const hasRegistered = await storage.hasUserRegistered(validatedData.eventId, validatedData.email);
-      if (hasRegistered) {
-        return res.status(400).json({ message: "Vous êtes déjà inscrit à cet événement" });
+      const result = await storage.createInscription(validatedData);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
       }
-
-      const inscription = await storage.createInscription(validatedData);
-      res.status(201).json(inscription);
+      res.status(201).json(result.data);
     } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
       next(error);
     }
   });
