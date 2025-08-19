@@ -1,12 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, XCircle, Lightbulb, User, Calendar, TrendingUp } from "lucide-react";
+import { Lightbulb, User, Calendar, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Idea } from "@shared/schema";
+import { IDEA_STATUS } from "@shared/schema";
 
 interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
   voteCount: number;
@@ -22,19 +24,17 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const approveIdeaMutation = useMutation({
-    mutationFn: async ({ id, approved }: { id: string; approved: boolean }) => {
-      await apiRequest("PATCH", `/api/admin/ideas/${id}`, { approved });
+  const updateIdeaStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      await apiRequest("PATCH", `/api/admin/ideas/${id}/status`, { status });
     },
-    onSuccess: (_, { approved }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ideas"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/ideas"] });
       toast({
-        title: approved ? "Idée approuvée" : "Idée refusée",
-        description: approved 
-          ? "L'idée est maintenant visible par tous les utilisateurs"
-          : "L'idée a été refusée et n'est plus visible",
+        title: "Statut mis à jour",
+        description: "Le statut de l'idée a été mis à jour",
       });
       onOpenChange(false);
     },
@@ -72,6 +72,35 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
 
   if (!idea) return null;
 
+  const getIdeaStatusInfo = (status: string) => {
+    switch (status) {
+      case IDEA_STATUS.PENDING:
+        return { label: "En attente", class: "bg-orange-100 text-orange-800" };
+      case IDEA_STATUS.APPROVED:
+        return { label: "Approuvée", class: "bg-green-100 text-green-800" };
+      case IDEA_STATUS.REJECTED:
+        return { label: "Rejetée", class: "bg-red-100 text-red-800" };
+      case IDEA_STATUS.UNDER_REVIEW:
+        return { label: "En cours d'étude", class: "bg-blue-100 text-blue-800" };
+      case IDEA_STATUS.POSTPONED:
+        return { label: "Reportée", class: "bg-gray-100 text-gray-800" };
+      case IDEA_STATUS.COMPLETED:
+        return { label: "Réalisée", class: "bg-purple-100 text-purple-800" };
+      default:
+        return { label: "Inconnu", class: "bg-gray-100 text-gray-800" };
+    }
+  };
+
+  const handleStatusChange = (status: string) => {
+    updateIdeaStatusMutation.mutate({ id: idea.id, status });
+  };
+
+  const handleDelete = () => {
+    if (confirm("Êtes-vous sûr de vouloir supprimer définitivement cette idée ?")) {
+      deleteIdeaMutation.mutate(idea.id);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("fr-FR", {
       day: "2-digit",
@@ -82,19 +111,7 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
     });
   };
 
-  const handleApprove = () => {
-    approveIdeaMutation.mutate({ id: idea.id, approved: true });
-  };
 
-  const handleReject = () => {
-    approveIdeaMutation.mutate({ id: idea.id, approved: false });
-  };
-
-  const handleDelete = () => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer cette idée ? Cette action est irréversible.")) {
-      deleteIdeaMutation.mutate(idea.id);
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -108,9 +125,11 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
 
         <div className="space-y-6">
           {/* Status Badge */}
-          <div className="flex items-center justify-between">
-            <Badge variant={idea.approved ? "default" : "secondary"} className="text-sm">
-              {idea.approved ? "✓ Approuvée" : "⏳ En attente"}
+          <div className="flex items-center justify-between mb-6">
+            <Badge 
+              className={getIdeaStatusInfo(idea.status).class}
+            >
+              {getIdeaStatusInfo(idea.status).label}
             </Badge>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <TrendingUp className="w-4 h-4" />
@@ -152,47 +171,42 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
           <Separator />
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            {!idea.approved ? (
-              <>
-                <Button
-                  onClick={handleApprove}
-                  className="bg-green-600 hover:bg-green-700 text-white flex-1"
-                  disabled={approveIdeaMutation.isPending}
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Approuver l'idée
-                </Button>
-                <Button
-                  onClick={handleReject}
-                  variant="outline"
-                  className="text-orange-600 border-orange-300 hover:bg-orange-50 flex-1"
-                  disabled={approveIdeaMutation.isPending}
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Refuser
-                </Button>
-              </>
-            ) : (
-              <Button
-                onClick={handleReject}
-                variant="outline"
-                className="text-orange-600 border-orange-300 hover:bg-orange-50 flex-1"
-                disabled={approveIdeaMutation.isPending}
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-medium text-gray-700 mb-3">Changer le statut</h4>
+              <Select 
+                value={idea.status} 
+                onValueChange={handleStatusChange}
+                disabled={updateIdeaStatusMutation.isPending}
               >
-                <XCircle className="w-4 h-4 mr-2" />
-                Retirer l'approbation
-              </Button>
-            )}
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    <div className={`inline-block px-3 py-1 text-sm rounded-full ${getIdeaStatusInfo(idea.status).class}`}>
+                      {getIdeaStatusInfo(idea.status).label}
+                    </div>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={IDEA_STATUS.PENDING}>En attente</SelectItem>
+                  <SelectItem value={IDEA_STATUS.APPROVED}>Approuvée</SelectItem>
+                  <SelectItem value={IDEA_STATUS.REJECTED}>Rejetée</SelectItem>
+                  <SelectItem value={IDEA_STATUS.UNDER_REVIEW}>En cours d'étude</SelectItem>
+                  <SelectItem value={IDEA_STATUS.POSTPONED}>Reportée</SelectItem>
+                  <SelectItem value={IDEA_STATUS.COMPLETED}>Réalisée</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             
-            <Button
-              onClick={handleDelete}
-              variant="destructive"
-              disabled={deleteIdeaMutation.isPending}
-              className="sm:w-auto"
-            >
-              Supprimer définitivement
-            </Button>
+            <div className="pt-3 border-t border-gray-200">
+              <Button
+                onClick={handleDelete}
+                variant="destructive"
+                disabled={deleteIdeaMutation.isPending}
+                className="w-full"
+              >
+                Supprimer définitivement
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
