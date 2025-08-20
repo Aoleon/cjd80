@@ -1,42 +1,50 @@
-import { scrypt, randomBytes } from "crypto";
-import { promisify } from "util";
-import { db } from "./server/db.js";
-import { admins } from "./shared/schema.js";
+// Script pour créer/modifier les administrateurs avec hash Scrypt
+import { scrypt, randomBytes } from 'crypto';
+import { promisify } from 'util';
+import { db } from './server/db.js';
+import { admins } from './shared/schema.js';
+import { eq } from 'drizzle-orm';
 
 const scryptAsync = promisify(scrypt);
 
 async function hashPassword(password) {
   const salt = randomBytes(16).toString("hex");
-  const buf = await scryptAsync(password, salt, 64);
+  const buf = (await scryptAsync(password, salt, 64));
   return `${buf.toString("hex")}.${salt}`;
 }
 
-async function createAdmin() {
+async function createAdmins() {
   try {
-    const hashedPassword = await hashPassword("Admin123!");
+    // Supprimer les anciens admins
+    await db.delete(admins);
     
+    // Créer Thibault comme admin principal
+    const thibaultPassword = await hashPassword('CjdAdmin2025!');
     await db.insert(admins).values({
-      email: "admin@cjd-amiens.fr",
-      password: hashedPassword,
-      addedBy: null,
+      email: 'thibault@youcom.io',
+      password: thibaultPassword,
+      addedBy: 'system'
     });
+    console.log('✅ Admin Thibault créé avec succès');
     
-    console.log("✅ Compte administrateur créé avec succès !");
-    console.log("📧 Email: admin@cjd-amiens.fr");
-    console.log("🔐 Mot de passe: Admin123!");
-    console.log("⚠️  Changez ce mot de passe après la première connexion");
+    // Créer Maxence comme second admin
+    const maxencePassword = await hashPassword('MaxAdmin2025!');
+    await db.insert(admins).values({
+      email: 'maxencebonduelle@gmail.com',
+      password: maxencePassword,
+      addedBy: 'thibault@youcom.io'
+    });
+    console.log('✅ Admin Maxence créé avec succès');
     
-    process.exit(0);
+    console.log('\n🔐 Identifiants de connexion:');
+    console.log('Thibault: thibault@youcom.io / CjdAdmin2025!');
+    console.log('Maxence: maxencebonduelle@gmail.com / MaxAdmin2025!');
+    
   } catch (error) {
-    if (error.code === '23505') { // Unique constraint violation
-      console.log("ℹ️  Compte administrateur déjà existant");
-      console.log("📧 Email: admin@cjd-amiens.fr");
-      console.log("🔐 Mot de passe: Admin123!");
-    } else {
-      console.error("❌ Erreur lors de la création du compte:", error.message);
-    }
-    process.exit(1);
+    console.error('❌ Erreur:', error);
+  } finally {
+    process.exit(0);
   }
 }
 
-createAdmin();
+createAdmins();
