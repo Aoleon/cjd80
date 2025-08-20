@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Lightbulb, User, Calendar, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -121,6 +121,9 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
             <Lightbulb className="w-5 h-5 text-cjd-green" />
             Détails de l'idée
           </DialogTitle>
+          <DialogDescription>
+            Consultez et gérez les détails de cette idée proposée par les membres CJD
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
