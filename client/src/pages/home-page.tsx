@@ -32,7 +32,7 @@ export default function HomePage() {
               </div>
               <div>
                 <p className="font-medium text-sm sm:text-base">Centre des Jeunes Dirigeants d'Amiens</p>
-                <p className="text-xs sm:text-sm text-gray-400">© 2024 - Tous droits réservés</p>
+                <p className="text-xs sm:text-sm text-gray-400">© 2025 - Tous droits réservés</p>
               </div>
             </div>
             <div className="text-xs sm:text-sm text-gray-400">

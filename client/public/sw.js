@@ -333,4 +333,4 @@ async function getCacheStatus() {
   return status;
 }
 
-console.log('[SW] Service Worker CJD Amiens chargé - Version 1755674341052 - Cache auto-purgé');
+console.log('[SW] Service Worker CJD Amiens chargé - Version 1755674382820 - Cache auto-purgé');
