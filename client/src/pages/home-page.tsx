@@ -36,7 +36,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="text-xs sm:text-sm text-gray-400">
-              <span>Créé avec ❤️ par Thibault</span>
+              <span>Créé avec ❤️ par <a href="https://robinswood.io" target="_blank" rel="noopener noreferrer" className="text-cjd-green hover:text-green-400 transition-colors duration-200">Thibault</a></span>
             </div>
           </div>
         </div>
