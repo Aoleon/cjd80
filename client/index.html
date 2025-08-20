@@ -6,6 +6,11 @@
     <title>CJD Amiens - Boîte à Kiffs</title>
     <meta name="description" content="Plateforme collaborative du Centre des Jeunes Dirigeants d'Amiens. Partagez vos idées, votez et inscrivez-vous aux événements de la section." />
     
+    <!-- Disable cache in development -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    
     <!-- PWA Meta Tags -->
     <meta name="application-name" content="CJD Amiens">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -48,6 +53,26 @@
     <div id="root"></div>
     <!-- Fix WebSocket errors in Replit environment -->
     <script src="/vite-websocket-fix.js"></script>
+    <!-- Auto cache busting -->
+    <script>
+      // Force reload service worker on each page load to see changes immediately
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.update();
+        });
+        
+        // Clear all caches on development reload
+        if (location.hostname === 'localhost' || location.hostname.includes('replit')) {
+          caches.keys().then(names => {
+            names.forEach(name => {
+              if (name.includes('cjd-amiens')) {
+                caches.delete(name);
+              }
+            });
+          });
+        }
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
