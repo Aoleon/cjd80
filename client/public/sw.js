@@ -1,9 +1,9 @@
 // Service Worker avec stratégies de cache optimisées pour 2025
-const CACHE_NAME = 'cjd-amiens-v1.0.0';
-const API_CACHE = 'cjd-api-cache-v1';
-const STATIC_CACHE = 'cjd-static-v1';
-const FONTS_CACHE = 'cjd-fonts-v1';
-const IMAGES_CACHE = 'cjd-images-v1';
+const CACHE_NAME = 'cjd-amiens-v1.0.1';
+const API_CACHE = 'cjd-api-cache-v2';
+const STATIC_CACHE = 'cjd-static-v2';
+const FONTS_CACHE = 'cjd-fonts-v2';
+const IMAGES_CACHE = 'cjd-images-v2';
 
 // Assets critiques à précharger
 const CRITICAL_ASSETS = [
@@ -333,4 +333,4 @@ async function getCacheStatus() {
   return status;
 }
 
-console.log('[SW] Service Worker CJD Amiens chargé - Version 1.0.0');
+console.log('[SW] Service Worker CJD Amiens chargé - Version 1.0.1 - Cache vidé');
