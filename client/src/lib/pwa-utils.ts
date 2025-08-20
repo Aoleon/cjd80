@@ -75,7 +75,10 @@ export const PWAUtils = {
             await cache.put(url, response);
           }
         } catch (error) {
-          console.warn(`[PWA] Échec préchargement de ${url}:`, error);
+          // Silencieux en production, debug seulement en développement
+          if (process.env.NODE_ENV === 'development') {
+            console.debug(`[PWA] Échec préchargement de ${url}:`, error);
+          }
         }
       });
       

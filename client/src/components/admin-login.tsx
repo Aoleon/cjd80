@@ -96,15 +96,7 @@ export default function AdminLogin() {
             </Button>
           </form>
 
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center">
-              <strong>Compte de test :</strong>
-              <br />
-              📧 admin@cjd-amiens.fr
-              <br />
-              🔐 Admin123!
-            </p>
-          </div>
+
         </CardContent>
       </Card>
     </div>
