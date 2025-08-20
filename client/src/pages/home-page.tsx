@@ -35,10 +35,8 @@ export default function HomePage() {
                 <p className="text-xs sm:text-sm text-gray-400">© 2024 - Tous droits réservés</p>
               </div>
             </div>
-            <div className="text-xs sm:text-sm text-gray-400 flex flex-col sm:flex-row gap-2 sm:gap-1">
-              <a href="#" className="hover:text-white transition-colors">Mentions légales</a>
-              <span className="hidden sm:inline"> | </span>
-              <a href="#" className="hover:text-white transition-colors">Contact</a>
+            <div className="text-xs sm:text-sm text-gray-400">
+              <span>Créé avec ❤️ par Thibault</span>
             </div>
           </div>
         </div>
