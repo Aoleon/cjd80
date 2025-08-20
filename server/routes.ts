@@ -90,11 +90,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user has already voted for this idea
       const hasVoted = await storage.hasUserVoted(validatedData.ideaId, validatedData.voterEmail);
       if (hasVoted) {
-        return res.status(400).json({ message: "Vous avez déjà voté pour cette idée" });
+        return res.status(400).json({ success: false, error: "Vous avez déjà voté pour cette idée" });
       }
 
       const vote = await storage.createVote(validatedData);
-      res.status(201).json(vote);
+      res.status(201).json({ success: true, data: vote });
     } catch (error) {
       next(error);
     }

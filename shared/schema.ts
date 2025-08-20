@@ -112,11 +112,16 @@ export const inscriptionsRelations = relations(inscriptions, ({ one }) => ({
   }),
 }));
 
-// Security helper functions
-const validEmailDomains = ["cjd-amiens.fr", "gmail.com", "outlook.com", "yahoo.com", "hotmail.com"];
+// Security helper functions - Plus permissif pour permettre plus de domaines
 const isValidDomain = (email: string) => {
   const domain = email.split('@')[1];
-  return validEmailDomains.includes(domain) || domain?.endsWith('.fr') || domain?.endsWith('.com');
+  // Accepte la plupart des domaines courants
+  return domain && (
+    domain.includes('.') && 
+    !domain.includes('<') && 
+    !domain.includes('>') && 
+    domain.length >= 3
+  );
 };
 
 const sanitizeText = (text: string) => text
@@ -134,7 +139,6 @@ export const insertAdminSchema = createInsertSchema(admins).pick({
     .email("Email invalide")
     .min(5, "Email trop court")
     .max(100, "Email trop long")
-    .refine(isValidDomain, "Domaine email non autorisé")
     .transform(sanitizeText),
   password: z.string()
     .min(8, "Mot de passe trop court (min 8 caractères)")
@@ -166,7 +170,6 @@ export const insertIdeaSchema = createInsertSchema(ideas).pick({
     .transform(sanitizeText),
   proposedByEmail: z.string()
     .email("Email invalide")
-    .refine(isValidDomain, "Domaine email non autorisé")
     .transform(sanitizeText),
   deadline: z.string().datetime().optional(),
 });
@@ -197,7 +200,6 @@ export const insertVoteSchema = createInsertSchema(votes).pick({
     .transform(sanitizeText),
   voterEmail: z.string()
     .email("Email invalide")
-    .refine(isValidDomain, "Domaine email non autorisé")
     .transform(sanitizeText),
 });
 
