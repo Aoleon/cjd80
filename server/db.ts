@@ -38,7 +38,7 @@ export const pool = new Pool(poolConfig);
 
 // Gestionnaire d'événements pour le monitoring du pool
 pool.on('connect', (client) => {
-  console.log(`[DB] Nouvelle connexion établie (pool: ${pool.totalCount}/${pool.max})`);
+  console.log(`[DB] Nouvelle connexion établie (pool: ${pool.totalCount})`);
 });
 
 pool.on('error', (err, client) => {
@@ -46,7 +46,7 @@ pool.on('error', (err, client) => {
 });
 
 pool.on('remove', (client) => {
-  console.log(`[DB] Connexion fermée (pool: ${pool.totalCount}/${pool.max})`);
+  console.log(`[DB] Connexion fermée (pool: ${pool.totalCount})`);
 });
 
 // Configuration Drizzle avec optimisations
@@ -65,8 +65,8 @@ export const getPoolStats = () => ({
   totalCount: pool.totalCount,
   idleCount: pool.idleCount,
   waitingCount: pool.waitingCount,
-  max: pool.max,
-  min: pool.min
+  maxConnections: 20, // Configuration statique
+  minConnections: 2
 });
 
 // Graceful shutdown du pool

@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
+import path from "path";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, log } from "./vite";
 import { startPoolMonitoring } from "./utils/db-health";
 
 const app = express();
@@ -54,7 +55,16 @@ app.use((req, res, next) => {
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
-    serveStatic(app);
+    // Servir les fichiers de build (client)
+    app.use(express.static(path.join(__dirname, '../dist/public')));
+
+    // Fallback pour les routes front (tout sauf /api)
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api')) {
+        return res.status(404).end();
+      }
+      return res.sendFile(path.join(__dirname, '../dist/public/index.html'));
+    });
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
