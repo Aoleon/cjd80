@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PWAInstallButton } from "@/components/pwa-install-prompt";
 import cjdLogo from "@assets/logo-cjd-social_1755640197258.jpg";
 
 interface HeaderProps {
@@ -43,7 +44,7 @@ export default function Header({ activeSection, setActiveSection }: HeaderProps)
             </button>
           </div>
           
-          <nav className="hidden lg:flex space-x-4 xl:space-x-6">
+          <nav className="hidden lg:flex space-x-4 xl:space-x-6 items-center">
             {menuItems.map((item) => (
               <button
                 key={item.id}
@@ -55,16 +56,20 @@ export default function Header({ activeSection, setActiveSection }: HeaderProps)
                 {item.label}
               </button>
             ))}
+            <PWAInstallButton />
           </nav>
           
-          <Button
-            variant="ghost"
-            size="sm"
-            className="lg:hidden text-white hover:text-green-200 hover:bg-cjd-green-dark flex-shrink-0"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
-          </Button>
+          <div className="lg:hidden flex items-center space-x-2">
+            <PWAInstallButton />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:text-green-200 hover:bg-cjd-green-dark flex-shrink-0"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
+            </Button>
+          </div>
         </div>
       </div>
       

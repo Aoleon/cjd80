@@ -158,6 +158,128 @@ export const PWAUtils = {
         });
       });
     }
+  },
+
+  // Détecter le système d'exploitation
+  getOperatingSystem(): 'ios' | 'android' | 'desktop' | 'other' {
+    const userAgent = navigator.userAgent.toLowerCase();
+    
+    if (/ipad|iphone|ipod/.test(userAgent)) {
+      return 'ios';
+    }
+    
+    if (/android/.test(userAgent)) {
+      return 'android';
+    }
+    
+    if (/windows|mac|linux/.test(userAgent) && !/android|iphone|ipad|ipod/.test(userAgent)) {
+      return 'desktop';
+    }
+    
+    return 'other';
+  },
+
+  // Vérifier si l'installation PWA est possible
+  canInstallPWA(): boolean {
+    const os = this.getOperatingSystem();
+    
+    // iOS : toujours possible (instructions manuelles)
+    if (os === 'ios') {
+      return !this.isAppInstalled();
+    }
+    
+    // Android/Desktop : vérifier le support beforeinstallprompt
+    if (os === 'android' || os === 'desktop') {
+      return 'serviceWorker' in navigator && !this.isAppInstalled();
+    }
+    
+    return false;
+  },
+
+  // Obtenir les instructions d'installation selon l'OS
+  getInstallInstructions(): {
+    title: string;
+    steps: string[];
+    icon: string;
+  } {
+    const os = this.getOperatingSystem();
+    
+    if (os === 'ios') {
+      return {
+        title: 'Installer CJD Amiens sur votre iPhone/iPad',
+        steps: [
+          'Appuyez sur le bouton "Partager" en bas de Safari',
+          'Sélectionnez "Sur l\'écran d\'accueil"',
+          'Appuyez sur "Ajouter" pour confirmer'
+        ],
+        icon: '📱'
+      };
+    }
+    
+    if (os === 'android') {
+      return {
+        title: 'Installer CJD Amiens sur votre appareil Android',
+        steps: [
+          'Appuyez sur "Installer l\'application" ci-dessous',
+          'Confirmez l\'installation dans la pop-up',
+          'L\'application apparaîtra sur votre écran d\'accueil'
+        ],
+        icon: '🤖'
+      };
+    }
+    
+    return {
+      title: 'Installer CJD Amiens sur votre ordinateur',
+      steps: [
+        'Cliquez sur "Installer l\'application" ci-dessous',
+        'Confirmez l\'installation dans votre navigateur',
+        'L\'application apparaîtra dans vos applications'
+      ],
+      icon: '💻'
+    };
+  },
+
+  // Vérifier si l'appareil est mobile
+  isMobileDevice(): boolean {
+    const os = this.getOperatingSystem();
+    return os === 'ios' || os === 'android';
+  },
+
+  // Obtenir les informations du navigateur
+  getBrowserInfo(): {
+    name: string;
+    supportsInstall: boolean;
+    isStandalone: boolean;
+  } {
+    const userAgent = navigator.userAgent.toLowerCase();
+    let browserName = 'Unknown';
+    let supportsInstall = false;
+
+    if (userAgent.includes('safari') && userAgent.includes('ios')) {
+      browserName = 'Safari iOS';
+      supportsInstall = true;
+    } else if (userAgent.includes('chrome') && userAgent.includes('android')) {
+      browserName = 'Chrome Android';
+      supportsInstall = true;
+    } else if (userAgent.includes('samsung')) {
+      browserName = 'Samsung Internet';
+      supportsInstall = true;
+    } else if (userAgent.includes('edge')) {
+      browserName = 'Microsoft Edge';
+      supportsInstall = true;
+    } else if (userAgent.includes('chrome')) {
+      browserName = 'Google Chrome';
+      supportsInstall = true;
+    } else if (userAgent.includes('firefox')) {
+      browserName = 'Mozilla Firefox';
+      supportsInstall = false; // Firefox ne supporte pas l'installation PWA
+    }
+
+    return {
+      name: browserName,
+      supportsInstall,
+      isStandalone: this.isAppInstalled()
+    };
   }
 };
 
