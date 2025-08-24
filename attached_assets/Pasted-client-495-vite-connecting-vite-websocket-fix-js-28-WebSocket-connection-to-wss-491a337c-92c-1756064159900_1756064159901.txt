@@ -1,0 +1,66 @@
+client:495 [vite] connecting...
+vite-websocket-fix.js:28 WebSocket connection to 'wss://491a337c-92c4-4cf2-a53a-939fa540a3f2-00-1bvd8b9oj088n.worf.replit.dev/?token=I7fa1lVGtPjs' failed: Error during WebSocket handshake: Unexpected response code: 400
+window.WebSocket @ vite-websocket-fix.js:28
+sw.js:432 [SW] Service Worker CJD Amiens chargé - Version 1756037822820 - Notifications activées
+sw.js:19 [SW] Installation en cours...
+sw.js:24 [SW] Préchargement des assets critiques
+sw.js:28 [SW] Installation terminée
+chunk-RPCDYKBN.js?v=f47519bf:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+chunk-RPCDYKBN.js?v=81b2bda3:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+2vite-websocket-fix.js:70 Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem.
+console.error @ vite-websocket-fix.js:70
+chunk-QCHXOAYK.js?v=81b2bda3:1074 Uncaught TypeError: Cannot read properties of null (reading 'useRef')
+    at Object.useRef (chunk-QCHXOAYK.js?v=81b2bda3:1074:29)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=81b2bda3:64:34)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=f47519bf:11548:26)
+    at mountIndeterminateComponent (chunk-RPCDYKBN.js?v=f47519bf:14926:21)
+    at beginWork (chunk-RPCDYKBN.js?v=f47519bf:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=f47519bf:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=f47519bf:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=f47519bf:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=f47519bf:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=f47519bf:19198:20)
+2vite-websocket-fix.js:70 Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem.
+console.error @ vite-websocket-fix.js:70
+chunk-QCHXOAYK.js?v=81b2bda3:1074 Uncaught TypeError: Cannot read properties of null (reading 'useRef')
+    at Object.useRef (chunk-QCHXOAYK.js?v=81b2bda3:1074:29)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=81b2bda3:64:34)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=f47519bf:11548:26)
+    at mountIndeterminateComponent (chunk-RPCDYKBN.js?v=f47519bf:14926:21)
+    at beginWork (chunk-RPCDYKBN.js?v=f47519bf:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=f47519bf:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=f47519bf:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=f47519bf:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=f47519bf:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=f47519bf:19198:20)
+vite-websocket-fix.js:70 The above error occurred in the <TooltipProvider> component:
+
+    at TooltipProvider (https://491a337c-92c4-4cf2-a53a-939fa540a3f2-00-1bvd8b9oj088n.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=81b2bda3:58:5)
+    at QueryClientProvider (https://491a337c-92c4-4cf2-a53a-939fa540a3f2-00-1bvd8b9oj088n.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=f47519bf:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+console.error @ vite-websocket-fix.js:70
+chunk-RPCDYKBN.js?v=f47519bf:19413 Uncaught TypeError: Cannot read properties of null (reading 'useRef')
+    at Object.useRef (chunk-QCHXOAYK.js?v=81b2bda3:1074:29)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=81b2bda3:64:34)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=f47519bf:11548:26)
+    at mountIndeterminateComponent (chunk-RPCDYKBN.js?v=f47519bf:14926:21)
+    at beginWork (chunk-RPCDYKBN.js?v=f47519bf:15914:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=f47519bf:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=f47519bf:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=f47519bf:19137:13)
+    at renderRootSync (chunk-RPCDYKBN.js?v=f47519bf:19116:15)
+    at recoverFromConcurrentError (chunk-RPCDYKBN.js?v=f47519bf:18736:28)
+sw.js:39 [SW] Activation en cours...
+sw.js:60 [SW] Activation terminée
+pwa-utils.ts:96 [PWA] Métriques de navigation: Object
