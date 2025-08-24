@@ -4,8 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
-import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
-import { usePWAInstall } from "@/hooks/use-pwa-install";
+import { PWAFloatingInstall } from "@/components/pwa-floating-install";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import ProposePage from "@/pages/propose-page";
@@ -27,14 +26,14 @@ function Router() {
 }
 
 function PWAWrapper({ children }: { children: React.ReactNode }) {
-  const { shouldShowAutoPrompt, showPrompt } = usePWAInstall();
-
   useEffect(() => {
     // Enregistrer le Service Worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {
-          console.log('[PWA] Service Worker enregistré:', registration.scope);
+          if (import.meta.env.DEV) {
+            console.log('[PWA] Service Worker enregistré:', registration.scope);
+          }
         })
         .catch(error => {
           console.error('[PWA] Erreur enregistrement Service Worker:', error);
@@ -54,9 +53,8 @@ function PWAWrapper({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      {shouldShowAutoPrompt() && showPrompt && (
-        <PWAInstallPrompt variant="banner" />
-      )}
+      {/* Bouton flottant d'installation sur mobile uniquement */}
+      <PWAFloatingInstall />
     </>
   );
 }
