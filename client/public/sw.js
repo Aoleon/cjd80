@@ -333,4 +333,100 @@ async function getCacheStatus() {
   return status;
 }
 
-console.log('[SW] Service Worker CJD Amiens chargé - Version 1755674382820 - Cache auto-purgé');
+// Gestion des notifications push
+self.addEventListener('push', event => {
+  if (!event.data) {
+    console.log('[SW] Notification push sans données');
+    return;
+  }
+
+  try {
+    const data = event.data.json();
+    console.log('[SW] Notification push reçue:', data);
+
+    const options = {
+      body: data.body,
+      icon: data.icon || '/icon-192.svg',
+      badge: data.badge || '/icon-192.svg',
+      tag: data.tag || 'default',
+      data: data.data || {},
+      actions: data.actions || [],
+      requireInteraction: false,
+      vibrate: [200, 100, 200],
+      timestamp: Date.now()
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(data.title, options)
+    );
+  } catch (error) {
+    console.error('[SW] Erreur traitement notification push:', error);
+  }
+});
+
+// Gestion des clics sur les notifications
+self.addEventListener('notificationclick', event => {
+  console.log('[SW] Clic notification:', event.notification.tag);
+  
+  event.notification.close();
+
+  const action = event.action;
+  const data = event.notification.data;
+
+  if (action === 'view' || !action) {
+    // Ouvrir l'application
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true })
+        .then(clientList => {
+          // Si l'app est déjà ouverte, la focuser
+          for (const client of clientList) {
+            if (client.url.includes(self.registration.scope) && 'focus' in client) {
+              return client.focus();
+            }
+          }
+          
+          // Sinon, ouvrir une nouvelle fenêtre
+          if (clients.openWindow) {
+            let targetUrl = '/';
+            
+            // Redirection selon le type de notification
+            if (data.type === 'new_idea') {
+              targetUrl = '/?tab=ideas';
+            } else if (data.type === 'new_event') {
+              targetUrl = '/?tab=events';
+            }
+            
+            return clients.openWindow(targetUrl);
+          }
+        })
+    );
+  } else if (action === 'vote') {
+    // Action spécifique pour voter
+    event.waitUntil(
+      clients.openWindow('/?tab=ideas&action=vote')
+    );
+  } else if (action === 'register') {
+    // Action spécifique pour s'inscrire
+    event.waitUntil(
+      clients.openWindow('/?tab=events&action=register')
+    );
+  }
+});
+
+// Gestion de la fermeture des notifications
+self.addEventListener('notificationclose', event => {
+  console.log('[SW] Notification fermée:', event.notification.tag);
+  
+  // Optionnel : envoyer des analytics
+  // event.waitUntil(
+  //   fetch('/api/analytics/notification-closed', {
+  //     method: 'POST',
+  //     body: JSON.stringify({
+  //       tag: event.notification.tag,
+  //       timestamp: Date.now()
+  //     })
+  //   })
+  // );
+});
+
+console.log('[SW] Service Worker CJD Amiens chargé - Version 1756037822820 - Notifications activées');

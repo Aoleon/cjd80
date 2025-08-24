@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { dbMonitoringMiddleware, getPoolStatsEndpoint } from "./middleware/db-monitoring";
 import { checkDatabaseHealth } from "./utils/db-health";
+import { notificationService } from "./notification-service";
 import { 
   insertIdeaSchema,
   insertVoteSchema,
@@ -48,6 +49,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: result.error.message });
       }
       
+      // Envoyer notification pour nouvelle idée
+      try {
+        await notificationService.notifyNewIdea({
+          title: result.data.title,
+          proposedBy: result.data.proposedBy
+        });
+      } catch (notifError) {
+        console.error('[Notifications] Erreur envoi notification nouvelle idée:', notifError);
+      }
+      
       res.status(201).json(result.data);
     } catch (error) {
       next(error);
@@ -66,7 +77,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/ideas/:id/status", requireAuth, async (req, res, next) => {
     try {
       const { status } = req.body;
-      await storage.updateIdeaStatus(req.params.id, status);
+      const result = await storage.updateIdeaStatus(req.params.id, status);
+      
+      // Envoyer notification pour changement de statut (simplifié pour l'instant)
+      try {
+        await notificationService.notifyIdeaStatusChange({
+          title: `Idée ${req.params.id}`,
+          status: status,
+          proposedBy: 'Utilisateur'
+        });
+      } catch (notifError) {
+        console.error('[Notifications] Erreur envoi notification changement statut:', notifError);
+      }
+      
       res.sendStatus(200);
     } catch (error) {
       next(error);
@@ -113,8 +136,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/events", requireAuth, async (req, res, next) => {
     try {
       const validatedData = insertEventSchema.parse(req.body);
-      const event = await storage.createEvent(validatedData);
-      res.status(201).json(event);
+      const result = await storage.createEvent(validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      // Envoyer notification pour nouvel événement
+      try {
+        await notificationService.notifyNewEvent({
+          title: result.data.title,
+          date: result.data.date.toISOString(),
+          location: result.data.location || 'Lieu à définir'
+        });
+      } catch (notifError) {
+        console.error('[Notifications] Erreur envoi notification nouvel événement:', notifError);
+      }
+      
+      res.status(201).json(result.data);
     } catch (error) {
       next(error);
     }
@@ -253,6 +292,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(health);
     } catch (error) {
       next(error);
+    }
+  });
+
+  // Routes pour les notifications push
+  app.get("/api/notifications/vapid-key", (req, res) => {
+    try {
+      const publicKey = notificationService.getVapidPublicKey();
+      res.json({ publicKey });
+    } catch (error) {
+      res.status(500).json({ message: "Erreur récupération clé VAPID" });
+    }
+  });
+
+  app.post("/api/notifications/subscribe", async (req, res) => {
+    try {
+      const { endpoint, keys } = req.body;
+      
+      if (!endpoint || !keys || !keys.p256dh || !keys.auth) {
+        return res.status(400).json({ message: "Données d'abonnement invalides" });
+      }
+
+      const success = await notificationService.addSubscription({
+        endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        userId: req.user?.email || undefined // Optionnel
+      });
+
+      if (success) {
+        res.json({ success: true, message: "Abonnement créé" });
+      } else {
+        res.status(500).json({ message: "Erreur création abonnement" });
+      }
+    } catch (error) {
+      console.error('[Notifications] Erreur abonnement:', error);
+      res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/notifications/unsubscribe", async (req, res) => {
+    try {
+      const { endpoint } = req.body;
+      
+      if (!endpoint) {
+        return res.status(400).json({ message: "Endpoint requis" });
+      }
+
+      const success = await notificationService.removeSubscription(endpoint);
+      
+      if (success) {
+        res.json({ success: true, message: "Désabonnement effectué" });
+      } else {
+        res.status(404).json({ message: "Abonnement non trouvé" });
+      }
+    } catch (error) {
+      console.error('[Notifications] Erreur désabonnement:', error);
+      res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+
+  // Test de notification (admin seulement)
+  app.post("/api/notifications/test", requireAuth, async (req, res) => {
+    try {
+      const { title, message } = req.body;
+      
+      const result = await notificationService.sendToAll({
+        title: title || "Test de notification",
+        body: message || "Ceci est un test des notifications push",
+        tag: "admin-test"
+      });
+
+      res.json({ 
+        success: true, 
+        message: "Notification de test envoyée",
+        stats: result
+      });
+    } catch (error) {
+      console.error('[Notifications] Erreur test notification:', error);
+      res.status(500).json({ message: "Erreur envoi notification" });
+    }
+  });
+
+  // Statistiques des notifications (admin seulement)
+  app.get("/api/notifications/stats", requireAuth, async (req, res) => {
+    try {
+      const stats = notificationService.getStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Erreur récupération statistiques" });
     }
   });
 
