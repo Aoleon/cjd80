@@ -12,11 +12,23 @@ jobs:
     # environment: prod
 
     steps:
-      - name: Precheck secrets
-        if: ${{ secrets.VPS_SSH_KEY == '' || secrets.VPS_HOST == '' || secrets.VPS_USER == '' || secrets.VPS_PORT == '' }}
+      - name: Precheck secrets (bash)
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
         run: |
-          echo "::error::One or more required secrets are missing: VPS_SSH_KEY / VPS_HOST / VPS_USER / VPS_PORT"
-          exit 1
+          missing=0
+          for v in VPS_SSH_KEY VPS_HOST VPS_PORT VPS_USER; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Missing secret: $v"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
 
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.9.0
@@ -24,9 +36,12 @@ jobs:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
       - name: Trust VPS host key
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts
 
       - name: Run deploy on VPS
         env:
