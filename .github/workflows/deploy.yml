@@ -8,9 +8,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Décommente si tes secrets sont dans un Environment nommé "prod"
-    # environment: prod
-
     steps:
       - name: Precheck secrets (bash)
         env:
@@ -21,19 +18,17 @@ jobs:
         run: |
           missing=0
           for v in VPS_SSH_KEY VPS_HOST VPS_PORT VPS_USER; do
-            if [ -z "${!v}" ]; then
-              echo "::error::Missing secret: $v"
-              missing=1
-            fi
+            if [ -z "${!v}" ]; then echo "::error::Missing secret: $v"; missing=1; fi
           done
-          if [ "$missing" -ne 0 ]; then
-            exit 1
-          fi
+          [ "$missing" -eq 0 ]
 
-      - name: Add SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+      - name: Start ssh-agent & add key (fix CRLF)
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          eval "$(ssh-agent -s)"
+          printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' | ssh-add - <<<"$VPS_SSH_KEY" 2>/dev/null || \
+          ( printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' | ssh-add - )
 
       - name: Trust VPS host key
         env:
@@ -43,7 +38,7 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts
 
-      - name: Run deploy on VPS
+      - name: Deploy on VPS
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
