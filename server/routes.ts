@@ -27,6 +27,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware de monitoring de la base de données
   app.use('/api', dbMonitoringMiddleware);
   
+  // Health check endpoint (AVANT l'authentification pour être toujours accessible)
+  app.get("/api/health", async (req, res) => {
+    try {
+      const health = await checkDatabaseHealth();
+      const statusCode = health.status === 'healthy' ? 200 : 
+                        health.status === 'degraded' ? 200 : 503;
+      res.status(statusCode).json(health);
+    } catch (error) {
+      res.status(503).json({ 
+        status: 'unhealthy', 
+        error: 'Health check failed',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   // Setup authentication
   setupAuth(app);
 

@@ -51,15 +51,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Fix WebSocket errors in Replit environment -->
-    <script>
-      // Only load in development on Replit
-      if (location.hostname.includes('replit')) {
-        const script = document.createElement('script');
-        script.src = '/vite-websocket-fix.js';
-        document.head.appendChild(script);
-      }
-    </script>
     <!-- Auto cache busting -->
     <script>
       // Force reload service worker on each page load to see changes immediately
