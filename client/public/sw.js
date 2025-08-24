@@ -1,356 +1,167 @@
-// Service Worker avec stratégies de cache optimisées pour 2025
-const CACHE_NAME = 'cjd-amiens-v1755674341052';
-const API_CACHE = 'cjd-api-cache-v1755674341052';
-const STATIC_CACHE = 'cjd-static-v1755674341052';
-const FONTS_CACHE = 'cjd-fonts-v1755674341052';
-const IMAGES_CACHE = 'cjd-images-v1755674341052';
+// Service Worker optimisé CJD Amiens - Version Production 2025
+const CACHE_VERSION = '1.1.0';
+const CACHE_NAME = `cjd-amiens-v${CACHE_VERSION}`;
+const API_CACHE = `cjd-api-v${CACHE_VERSION}`;
+const STATIC_CACHE = `cjd-static-v${CACHE_VERSION}`;
+
+// Configuration optimisée
+const API_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const STATIC_CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 jours
 
 // Assets critiques à précharger
 const CRITICAL_ASSETS = [
   '/',
-  '/index.html',
-  '/src/main.tsx',
-  '/src/App.tsx',
-  '/src/index.css'
+  '/manifest.json',
+  '/icon-192.svg',
+  '/icon-512.svg'
 ];
 
-// Installation du Service Worker
+// Installation
 self.addEventListener('install', event => {
-  console.log('[SW] Installation en cours...');
-  
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('[SW] Préchargement des assets critiques');
-        return cache.addAll(CRITICAL_ASSETS);
-      })
-      .then(() => {
-        console.log('[SW] Installation terminée');
-        return self.skipWaiting();
-      })
-      .catch(error => {
-        console.error('[SW] Erreur lors de l\'installation:', error);
-      })
+    caches.open(STATIC_CACHE)
+      .then(cache => cache.addAll(CRITICAL_ASSETS))
+      .then(() => self.skipWaiting())
+      .catch(error => console.error('[SW] Erreur installation:', error))
   );
 });
 
-// Activation du Service Worker
+// Activation et nettoyage
 self.addEventListener('activate', event => {
-  console.log('[SW] Activation en cours...');
-  
   event.waitUntil(
     caches.keys()
       .then(cacheNames => {
-        const oldCaches = cacheNames.filter(name => 
-          name !== CACHE_NAME && 
-          name !== API_CACHE && 
-          name !== STATIC_CACHE && 
-          name !== FONTS_CACHE && 
-          name !== IMAGES_CACHE
-        );
-        
         return Promise.all(
-          oldCaches.map(cacheName => {
-            console.log('[SW] Suppression ancien cache:', cacheName);
-            return caches.delete(cacheName);
-          })
+          cacheNames
+            .filter(name => !name.includes(CACHE_VERSION))
+            .map(name => caches.delete(name))
         );
       })
-      .then(() => {
-        console.log('[SW] Activation terminée');
-        return self.clients.claim();
-      })
+      .then(() => self.clients.claim())
   );
 });
 
-// Gestion des requêtes avec stratégies optimisées
+// Stratégies de cache optimisées
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
   
-  // Ignorer les requêtes non-HTTP
-  if (!request.url.startsWith('http')) return;
+  // Ignorer les requêtes non-HTTP et Vite HMR
+  if (!request.url.startsWith('http') || url.pathname.includes('/@')) {
+    return;
+  }
   
-  event.respondWith(handleRequest(request, url));
+  // API: Network First avec cache fallback
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      networkFirstStrategy(request, API_CACHE, API_CACHE_DURATION)
+    );
+    return;
+  }
+  
+  // Assets statiques: Cache First
+  if (isStaticAsset(url.pathname)) {
+    event.respondWith(
+      cacheFirstStrategy(request, STATIC_CACHE)
+    );
+    return;
+  }
+  
+  // HTML et autres: Network First
+  event.respondWith(
+    networkFirstStrategy(request, CACHE_NAME, STATIC_CACHE_DURATION)
+  );
 });
 
-async function handleRequest(request, url) {
+// Stratégie Network First optimisée
+async function networkFirstStrategy(request, cacheName, maxAge) {
   try {
-    // 1. Stratégie Cache-First pour les polices Google
-    if (url.hostname === 'fonts.gstatic.com') {
-      return await cacheFirst(request, FONTS_CACHE, 365 * 24 * 60 * 60 * 1000); // 1 an
-    }
-    
-    // 2. Stratégie StaleWhileRevalidate pour les CSS de polices
-    if (url.hostname === 'fonts.googleapis.com') {
-      return await staleWhileRevalidate(request, FONTS_CACHE);
-    }
-    
-    // 3. Stratégie NetworkFirst pour les APIs avec fallback
-    if (url.pathname.startsWith('/api/')) {
-      return await networkFirstWithFallback(request, url);
-    }
-    
-    // 4. Stratégie CacheFirst pour les images
-    if (request.destination === 'image' || /\.(png|jpg|jpeg|svg|gif|webp|avif)$/i.test(url.pathname)) {
-      return await cacheFirst(request, IMAGES_CACHE, 30 * 24 * 60 * 60 * 1000); // 30 jours
-    }
-    
-    // 5. Stratégie StaleWhileRevalidate pour les assets statiques
-    if (request.destination === 'script' || request.destination === 'style' || 
-        /\.(js|css|woff|woff2|ttf|eot)$/i.test(url.pathname)) {
-      return await staleWhileRevalidate(request, STATIC_CACHE);
-    }
-    
-    // 6. Stratégie NetworkFirst pour les pages HTML
-    if (request.destination === 'document' || 
-        request.headers.get('accept')?.includes('text/html')) {
-      return await networkFirstForPages(request);
-    }
-    
-    // 7. Stratégie par défaut : NetworkFirst
-    return await networkFirst(request, CACHE_NAME);
-    
-  } catch (error) {
-    console.error('[SW] Erreur dans handleRequest:', error);
-    return await handleOfflineFallback(request);
-  }
-}
-
-// Stratégie Cache-First avec expiration
-async function cacheFirst(request, cacheName, maxAge = null) {
-  const cache = await caches.open(cacheName);
-  const cachedResponse = await cache.match(request);
-  
-  if (cachedResponse) {
-    // Vérifier l'expiration si maxAge est défini
-    if (maxAge) {
-      const cachedDate = new Date(cachedResponse.headers.get('sw-cached-date') || 0);
-      const now = new Date();
-      if (now - cachedDate > maxAge) {
-        console.log('[SW] Cache expiré, récupération réseau');
-        return await fetchAndCache(request, cache);
-      }
-    }
-    return cachedResponse;
-  }
-  
-  return await fetchAndCache(request, cache);
-}
-
-// Stratégie Network-First optimisée
-async function networkFirst(request, cacheName, timeout = 3000) {
-  const cache = await caches.open(cacheName);
-  
-  try {
-    const networkResponse = await Promise.race([
-      fetch(request),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Network timeout')), timeout)
-      )
-    ]);
-    
-    if (networkResponse.ok) {
-      await cacheResponse(cache, request, networkResponse.clone());
-    }
-    return networkResponse;
-    
-  } catch (error) {
-    console.log('[SW] Network failed, utilisation du cache:', error.message);
-    const cachedResponse = await cache.match(request);
-    if (cachedResponse) return cachedResponse;
-    
-    throw error;
-  }
-}
-
-// Stratégie Network-First spécialisée pour les APIs
-async function networkFirstWithFallback(request, url) {
-  // Jamais de cache pour l'admin (sécurité)
-  if (url.pathname.startsWith('/api/admin/')) {
-    return fetch(request);
-  }
-  
-  const cache = await caches.open(API_CACHE);
-  const timeout = getApiTimeout(url.pathname);
-  
-  try {
-    const networkResponse = await Promise.race([
-      fetch(request),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('API timeout')), timeout)
-      )
-    ]);
+    const networkResponse = await fetch(request.clone());
     
     if (networkResponse.ok && request.method === 'GET') {
-      const responseToCache = networkResponse.clone();
-      // Ajouter timestamp pour invalidation
-      const headers = new Headers(responseToCache.headers);
-      headers.set('sw-cached-date', new Date().toISOString());
-      
-      const cachedResponse = new Response(responseToCache.body, {
-        status: responseToCache.status,
-        statusText: responseToCache.statusText,
-        headers: headers
-      });
-      
-      await cache.put(request, cachedResponse);
+      const cache = await caches.open(cacheName);
+      cache.put(request, networkResponse.clone());
     }
-    return networkResponse;
     
+    return networkResponse;
   } catch (error) {
-    if (request.method === 'GET') {
-      const cachedResponse = await cache.match(request);
-      if (cachedResponse) {
-        console.log('[SW] API cache utilisé pour:', url.pathname);
+    const cachedResponse = await caches.match(request);
+    
+    if (cachedResponse) {
+      const cacheDate = new Date(cachedResponse.headers.get('date'));
+      const age = Date.now() - cacheDate.getTime();
+      
+      if (age < maxAge) {
         return cachedResponse;
       }
     }
     
-    // Fallback pour APIs critiques
-    return createApiErrorResponse(url.pathname);
-  }
-}
-
-// Stratégie StaleWhileRevalidate
-async function staleWhileRevalidate(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cachedResponse = await cache.match(request);
-  
-  // Réponse immédiate du cache si disponible
-  const fetchPromise = fetchAndCache(request, cache);
-  
-  return cachedResponse || await fetchPromise;
-}
-
-// Stratégie spécialisée pour les pages HTML
-async function networkFirstForPages(request) {
-  try {
-    const networkResponse = await fetch(request);
-    const cache = await caches.open(CACHE_NAME);
-    await cache.put(request, networkResponse.clone());
-    return networkResponse;
-  } catch (error) {
-    const cache = await caches.open(CACHE_NAME);
-    const cachedResponse = await cache.match(request);
-    return cachedResponse || await cache.match('/');
-  }
-}
-
-// Utilitaires
-async function fetchAndCache(request, cache) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      await cacheResponse(cache, request, response.clone());
+    // Fallback pour les erreurs réseau
+    if (request.destination === 'document') {
+      return caches.match('/');
     }
-    return response;
-  } catch (error) {
-    console.error('[SW] Erreur fetch:', error);
+    
     throw error;
   }
 }
 
-async function cacheResponse(cache, request, response) {
-  const headers = new Headers(response.headers);
-  headers.set('sw-cached-date', new Date().toISOString());
+// Stratégie Cache First optimisée
+async function cacheFirstStrategy(request, cacheName) {
+  const cachedResponse = await caches.match(request);
   
-  const cachedResponse = new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: headers
-  });
-  
-  await cache.put(request, cachedResponse);
-}
-
-function getApiTimeout(pathname) {
-  if (pathname.includes('/votes') || pathname.includes('/inscriptions')) {
-    return 5000; // 5s pour les actions utilisateur
+  if (cachedResponse) {
+    // Mise à jour en arrière-plan
+    fetch(request.clone())
+      .then(response => {
+        if (response.ok) {
+          caches.open(cacheName).then(cache => {
+            cache.put(request, response);
+          });
+        }
+      })
+      .catch(() => {}); // Ignorer les erreurs de mise à jour
+    
+    return cachedResponse;
   }
-  if (pathname.includes('/ideas') || pathname.includes('/events')) {
-    return 3000; // 3s pour le contenu principal
-  }
-  return 8000; // 8s par défaut
-}
-
-function createApiErrorResponse(pathname) {
-  const errorData = {
-    success: false,
-    error: 'Application hors ligne',
-    message: 'Cette fonctionnalité nécessite une connexion internet',
-    offline: true
-  };
   
-  return new Response(JSON.stringify(errorData), {
-    status: 503,
-    statusText: 'Service Unavailable',
-    headers: {
-      'Content-Type': 'application/json',
-      'sw-fallback': 'true'
+  try {
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse.ok && request.method === 'GET') {
+      const cache = await caches.open(cacheName);
+      cache.put(request, networkResponse.clone());
     }
-  });
+    
+    return networkResponse;
+  } catch (error) {
+    // Retourner une réponse vide pour éviter les erreurs
+    return new Response('', { status: 503, statusText: 'Service Unavailable' });
+  }
 }
 
-async function handleOfflineFallback(request) {
-  if (request.destination === 'document') {
-    const cache = await caches.open(CACHE_NAME);
-    return await cache.match('/') || new Response('Application hors ligne', {
-      status: 503,
-      headers: { 'Content-Type': 'text/html' }
-    });
-  }
+// Détection des assets statiques
+function isStaticAsset(pathname) {
+  const staticExtensions = [
+    '.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg',
+    '.woff', '.woff2', '.ttf', '.eot', '.ico', '.webp', '.avif'
+  ];
   
-  return new Response('Ressource indisponible hors ligne', {
-    status: 503,
-    headers: { 'Content-Type': 'text/plain' }
-  });
-}
-
-// Gestion des messages du client
-self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-  
-  if (event.data && event.data.type === 'GET_CACHE_STATUS') {
-    getCacheStatus().then(status => {
-      event.ports[0].postMessage(status);
-    });
-  }
-});
-
-async function getCacheStatus() {
-  const cacheNames = await caches.keys();
-  const status = {};
-  
-  for (const cacheName of cacheNames) {
-    const cache = await caches.open(cacheName);
-    const keys = await cache.keys();
-    status[cacheName] = keys.length;
-  }
-  
-  return status;
+  return staticExtensions.some(ext => pathname.endsWith(ext));
 }
 
 // Gestion des notifications push
 self.addEventListener('push', event => {
-  if (!event.data) {
-    console.log('[SW] Notification push sans données');
-    return;
-  }
+  if (!event.data) return;
 
   try {
     const data = event.data.json();
-    console.log('[SW] Notification push reçue:', data);
-
+    
     const options = {
       body: data.body,
       icon: data.icon || '/icon-192.svg',
       badge: data.badge || '/icon-192.svg',
       tag: data.tag || 'default',
       data: data.data || {},
-      actions: data.actions || [],
       requireInteraction: false,
       vibrate: [200, 100, 200],
       timestamp: Date.now()
@@ -360,73 +171,89 @@ self.addEventListener('push', event => {
       self.registration.showNotification(data.title, options)
     );
   } catch (error) {
-    console.error('[SW] Erreur traitement notification push:', error);
+    console.error('[SW] Erreur notification:', error);
   }
 });
 
 // Gestion des clics sur les notifications
 self.addEventListener('notificationclick', event => {
-  console.log('[SW] Clic notification:', event.notification.tag);
-  
   event.notification.close();
 
   const action = event.action;
   const data = event.notification.data;
 
-  if (action === 'view' || !action) {
-    // Ouvrir l'application
-    event.waitUntil(
-      clients.matchAll({ type: 'window', includeUncontrolled: true })
-        .then(clientList => {
-          // Si l'app est déjà ouverte, la focuser
-          for (const client of clientList) {
-            if (client.url.includes(self.registration.scope) && 'focus' in client) {
-              return client.focus();
-            }
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(clientList => {
+        // Si l'app est déjà ouverte, la focuser
+        for (const client of clientList) {
+          if (client.url.includes(self.registration.scope) && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        
+        // Sinon, ouvrir une nouvelle fenêtre
+        if (clients.openWindow) {
+          let targetUrl = '/';
+          
+          if (data.type === 'new_idea') {
+            targetUrl = '/?tab=ideas';
+          } else if (data.type === 'new_event') {
+            targetUrl = '/?tab=events';
           }
           
-          // Sinon, ouvrir une nouvelle fenêtre
-          if (clients.openWindow) {
-            let targetUrl = '/';
-            
-            // Redirection selon le type de notification
-            if (data.type === 'new_idea') {
-              targetUrl = '/?tab=ideas';
-            } else if (data.type === 'new_event') {
-              targetUrl = '/?tab=events';
-            }
-            
-            return clients.openWindow(targetUrl);
+          return clients.openWindow(targetUrl);
+        }
+      })
+  );
+});
+
+// Gestion de la synchronisation en arrière-plan
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-data') {
+    event.waitUntil(syncData());
+  }
+});
+
+async function syncData() {
+  try {
+    // Synchroniser les données en cache avec le serveur
+    const cache = await caches.open(API_CACHE);
+    const requests = await cache.keys();
+    
+    for (const request of requests) {
+      if (request.url.includes('/api/')) {
+        try {
+          const response = await fetch(request);
+          if (response.ok) {
+            await cache.put(request, response);
           }
-        })
-    );
-  } else if (action === 'vote') {
-    // Action spécifique pour voter
+        } catch (error) {
+          // Ignorer les erreurs de synchronisation
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[SW] Erreur synchronisation:', error);
+  }
+}
+
+// Message handler pour la communication avec l'app
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
     event.waitUntil(
-      clients.openWindow('/?tab=ideas&action=vote')
-    );
-  } else if (action === 'register') {
-    // Action spécifique pour s'inscrire
-    event.waitUntil(
-      clients.openWindow('/?tab=events&action=register')
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+      })
     );
   }
 });
 
-// Gestion de la fermeture des notifications
-self.addEventListener('notificationclose', event => {
-  console.log('[SW] Notification fermée:', event.notification.tag);
-  
-  // Optionnel : envoyer des analytics
-  // event.waitUntil(
-  //   fetch('/api/analytics/notification-closed', {
-  //     method: 'POST',
-  //     body: JSON.stringify({
-  //       tag: event.notification.tag,
-  //       timestamp: Date.now()
-  //     })
-  //   })
-  // );
-});
-
-console.log('[SW] Service Worker CJD Amiens chargé - Version 1756037822820 - Notifications activées');
+// Log minimal en production
+console.log('[SW] Service Worker actif - Version', CACHE_VERSION);

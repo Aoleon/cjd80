@@ -76,7 +76,7 @@ export const PWAUtils = {
           }
         } catch (error) {
           // Silencieux en production, debug seulement en développement
-          if (process.env.NODE_ENV === 'development') {
+          if (import.meta.env.DEV) {
             console.debug(`[PWA] Échec préchargement de ${url}:`, error);
           }
         }
@@ -89,27 +89,29 @@ export const PWAUtils = {
   // Enregistrer les métriques de performance PWA
   logPerformanceMetrics(): void {
     if ('performance' in window && 'getEntriesByType' in performance) {
-      // Navigation Timing
-      const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
-      if (navigationEntries.length > 0) {
-        const navigation = navigationEntries[0];
-        console.log('[PWA] Métriques de navigation:', {
-          domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
-          loadComplete: navigation.loadEventEnd - navigation.loadEventStart,
-          ttfb: navigation.responseStart - navigation.requestStart
-        });
-      }
+      // Navigation Timing - logs seulement en développement
+      if (import.meta.env.DEV) {
+        const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+        if (navigationEntries.length > 0) {
+          const navigation = navigationEntries[0];
+          console.log('[PWA] Métriques de navigation:', {
+            domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
+            loadComplete: navigation.loadEventEnd - navigation.loadEventStart,
+            ttfb: navigation.responseStart - navigation.requestStart
+          });
+        }
 
-      // Resource Timing pour les assets PWA
-      const resourceEntries = performance.getEntriesByType('resource');
-      const pwaResources = resourceEntries.filter(entry => 
-        entry.name.includes('/sw.js') || 
-        entry.name.includes('/manifest.json') ||
-        entry.name.includes('/icon-')
-      );
-      
-      if (pwaResources.length > 0) {
-        console.log('[PWA] Ressources PWA chargées:', pwaResources.length);
+        // Resource Timing pour les assets PWA
+        const resourceEntries = performance.getEntriesByType('resource');
+        const pwaResources = resourceEntries.filter(entry => 
+          entry.name.includes('/sw.js') || 
+          entry.name.includes('/manifest.json') ||
+          entry.name.includes('/icon-')
+        );
+        
+        if (pwaResources.length > 0) {
+          console.log('[PWA] Ressources PWA chargées:', pwaResources.length);
+        }
       }
     }
   },

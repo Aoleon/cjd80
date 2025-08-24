@@ -14,15 +14,15 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Configuration optimisée du pool de connexions
+// Configuration optimisée du pool de connexions pour Neon
 const poolConfig = {
   connectionString: process.env.DATABASE_URL,
-  // Taille du pool optimisée pour une application web interne
-  max: 20, // Maximum 20 connexions simultanées
-  min: 2,  // Minimum 2 connexions maintenues
-  // Timeouts optimisés
-  idleTimeoutMillis: 30000, // 30s - ferme les connexions inactives
-  connectionTimeoutMillis: 5000, // 5s - timeout de connexion
+  // Réduit pour éviter les connexions inutiles avec Neon serverless
+  max: 5, // Maximum 5 connexions simultanées (optimisé pour Neon)
+  min: 1,  // Minimum 1 connexion maintenue
+  // Timeouts réduits pour des connexions plus rapides
+  idleTimeoutMillis: 10000, // 10s - ferme rapidement les connexions inactives
+  connectionTimeoutMillis: 3000, // 3s - timeout de connexion réduit
   // Gestion des erreurs de connexion
   maxUses: 7500, // Recycle les connexions après 7500 utilisations
   // Pool de requêtes pour éviter les blocages
@@ -30,23 +30,25 @@ const poolConfig = {
   // Configuration spécifique à l'environnement
   application_name: 'cjd-amiens-app',
   // Optimisations pour Neon serverless
-  statement_timeout: 30000, // 30s timeout pour les requêtes longues
-  query_timeout: 10000, // 10s timeout par défaut
+  statement_timeout: 10000, // 10s timeout pour éviter les blocages
+  query_timeout: 5000, // 5s timeout par défaut
 };
 
 export const pool = new Pool(poolConfig);
 
-// Gestionnaire d'événements pour le monitoring du pool
-pool.on('connect', (client) => {
-  console.log(`[DB] Nouvelle connexion établie (pool: ${pool.totalCount})`);
-});
+// Gestionnaire d'événements pour le monitoring du pool (logs réduits)
+if (process.env.NODE_ENV === 'development') {
+  pool.on('connect', (client) => {
+    console.log(`[DB] Nouvelle connexion établie (pool: ${pool.totalCount})`);
+  });
+  
+  pool.on('remove', (client) => {
+    console.log(`[DB] Connexion fermée (pool: ${pool.totalCount})`);
+  });
+}
 
 pool.on('error', (err, client) => {
   console.error('[DB] Erreur de connexion pool:', err.message);
-});
-
-pool.on('remove', (client) => {
-  console.log(`[DB] Connexion fermée (pool: ${pool.totalCount})`);
 });
 
 // Configuration Drizzle avec optimisations
@@ -65,8 +67,8 @@ export const getPoolStats = () => ({
   totalCount: pool.totalCount,
   idleCount: pool.idleCount,
   waitingCount: pool.waitingCount,
-  maxConnections: 20, // Configuration statique
-  minConnections: 2
+  maxConnections: 5, // Configuration optimisée
+  minConnections: 1
 });
 
 // Graceful shutdown du pool
