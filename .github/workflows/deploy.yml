@@ -9,26 +9,40 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      # (facultatif) petit pré-check clair des secrets
       - name: Precheck secrets
         env:
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          VPS_HOST:    ${{ secrets.VPS_HOST }}
-          VPS_PORT:    ${{ secrets.VPS_PORT }}
-          VPS_USER:    ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY:     ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KEY_B64: ${{ secrets.VPS_SSH_KEY_B64 }}
+          VPS_HOST:        ${{ secrets.VPS_HOST }}
+          VPS_PORT:        ${{ secrets.VPS_PORT }}
+          VPS_USER:        ${{ secrets.VPS_USER }}
         run: |
-          for v in VPS_SSH_KEY VPS_HOST VPS_PORT VPS_USER; do
+          # Vérifie host/port/user
+          for v in VPS_HOST VPS_PORT VPS_USER; do
             if [ -z "${!v}" ]; then echo "::error::Missing secret: $v"; exit 1; fi
           done
+          # Exige au moins une forme de clé: brut OU base64
+          if [ -z "${VPS_SSH_KEY}" ] && [ -z "${VPS_SSH_KEY_B64}" ]; then
+            echo "::error::Provide VPS_SSH_KEY (OpenSSH) OR VPS_SSH_KEY_B64 (base64)"; exit 1
+          fi
 
-        - name: Decode SSH key (base64) & start agent
+      - name: Write SSH key & start agent
         env:
+          VPS_SSH_KEY:     ${{ secrets.VPS_SSH_KEY }}
           VPS_SSH_KEY_B64: ${{ secrets.VPS_SSH_KEY_B64 }}
         run: |
+          set -e
           mkdir -p ~/.ssh
           umask 077
-          echo "$VPS_SSH_KEY_B64" | base64 -d > ~/.ssh/id_ed25519
-          head -1 ~/.ssh/id_ed25519; tail -1 ~/.ssh/id_ed25519; ssh-keygen -lf ~/.ssh/id_ed25519
+          if [ -n "$VPS_SSH_KEY_B64" ]; then
+            echo "$VPS_SSH_KEY_B64" | base64 -d > ~/.ssh/id_ed25519
+          else
+            # Normalise CRLF si la clé brute est utilisée
+            printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+          fi
+          head -1 ~/.ssh/id_ed25519
+          tail -1 ~/.ssh/id_ed25519
+          ssh-keygen -lf ~/.ssh/id_ed25519
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_ed25519
 
@@ -37,6 +51,7 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
+          mkdir -p ~/.ssh
           ssh-keyscan -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts
 
       - name: Deploy on VPS
