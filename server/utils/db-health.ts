@@ -58,21 +58,26 @@ export async function checkDatabaseHealth(): Promise<{
 export function optimizePoolUsage() {
   const stats = getPoolStats();
   
-  console.log(`[DB Optimizer] Statistiques actuelles:`, stats);
-  
-  // Si trop de connexions en attente, log un warning
-  if (stats.waitingCount > 5) {
-    console.warn(`[DB Optimizer] ${stats.waitingCount} connexions en attente - possible goulot d'étranglement`);
+  // Log détaillé seulement toutes les 10 minutes en production
+  if (process.env.NODE_ENV !== 'development' && Math.random() > 0.05) {
+    return; // Skip 95% des logs en production
   }
   
-  // Si le pool est presque plein, log une info
-  if (stats.totalCount >= stats.max * 0.9) {
-    console.info(`[DB Optimizer] Pool presque plein: ${stats.totalCount}/${stats.max} connexions`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[DB Optimizer] Statistiques actuelles:`, stats);
   }
   
-  // Si beaucoup de connexions idle, suggérer une optimisation
-  if (stats.idleCount > stats.max * 0.7) {
-    console.info(`[DB Optimizer] Beaucoup de connexions idle: ${stats.idleCount}/${stats.totalCount}`);
+  // Log seulement en développement et seulement si problème
+  if (process.env.NODE_ENV === 'development') {
+    // Si trop de connexions en attente, log un warning
+    if (stats.waitingCount > 5) {
+      console.warn(`[DB Optimizer] ${stats.waitingCount} connexions en attente - possible goulot d'étranglement`);
+    }
+    
+    // Si le pool est presque plein, log une info
+    if (stats.totalCount >= stats.maxConnections * 0.9) {
+      console.info(`[DB Optimizer] Pool presque plein: ${stats.totalCount}/${stats.maxConnections} connexions`);
+    }
   }
 }
 

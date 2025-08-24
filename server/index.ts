@@ -86,6 +86,8 @@ app.use((req, res, next) => {
     log(`DB pool monitoring activé`);
     
     // Démarrer le monitoring du pool de connexions
-    startPoolMonitoring(30000); // Check toutes les 30 secondes
+    // En dev: toutes les 5 minutes, en prod: toutes les 10 minutes
+    const monitoringInterval = process.env.NODE_ENV === 'development' ? 300000 : 600000;
+    startPoolMonitoring(monitoringInterval);
   });
 })();

@@ -52,7 +52,14 @@
   <body>
     <div id="root"></div>
     <!-- Fix WebSocket errors in Replit environment -->
-    <script src="/vite-websocket-fix.js"></script>
+    <script>
+      // Only load in development on Replit
+      if (location.hostname.includes('replit')) {
+        const script = document.createElement('script');
+        script.src = '/vite-websocket-fix.js';
+        document.head.appendChild(script);
+      }
+    </script>
     <!-- Auto cache busting -->
     <script>
       // Force reload service worker on each page load to see changes immediately
@@ -61,16 +68,7 @@
           registration.update();
         });
         
-        // Clear all caches on development reload
-        if (location.hostname === 'localhost' || location.hostname.includes('replit')) {
-          caches.keys().then(names => {
-            names.forEach(name => {
-              if (name.includes('cjd-amiens')) {
-                caches.delete(name);
-              }
-            });
-          });
-        }
+        // Ne pas clearer les caches automatiquement - cause des problèmes de performance
       }
     </script>
     <script type="module" src="/src/main.tsx"></script>
