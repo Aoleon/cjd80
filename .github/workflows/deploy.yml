@@ -21,15 +21,13 @@ jobs:
             if [ -z "${!v}" ]; then echo "::error::Missing secret: $v"; exit 1; fi
           done
 
-      - name: Write SSH key file (normalize LF) & start agent
+        - name: Decode SSH key (base64) & start agent
         env:
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KEY_B64: ${{ secrets.VPS_SSH_KEY_B64 }}
         run: |
           mkdir -p ~/.ssh
           umask 077
-          # Normalise les fins de ligne et écrit la clé privée dans un fichier
-          printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
-          # Vérifie le format de la clé (doit afficher BEGIN/END et l’empreinte)
+          echo "$VPS_SSH_KEY_B64" | base64 -d > ~/.ssh/id_ed25519
           head -1 ~/.ssh/id_ed25519; tail -1 ~/.ssh/id_ed25519; ssh-keygen -lf ~/.ssh/id_ed25519
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_ed25519
