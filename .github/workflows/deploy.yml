@@ -17,16 +17,15 @@ jobs:
           VPS_PORT:        ${{ secrets.VPS_PORT }}
           VPS_USER:        ${{ secrets.VPS_USER }}
         run: |
-          # Vérifie host/port/user
+          set -e
           for v in VPS_HOST VPS_PORT VPS_USER; do
             if [ -z "${!v}" ]; then echo "::error::Missing secret: $v"; exit 1; fi
           done
-          # Exige au moins une forme de clé: brut OU base64
           if [ -z "${VPS_SSH_KEY}" ] && [ -z "${VPS_SSH_KEY_B64}" ]; then
             echo "::error::Provide VPS_SSH_KEY (OpenSSH) OR VPS_SSH_KEY_B64 (base64)"; exit 1
           fi
 
-      - name: Write SSH key & start agent
+      - name: Write SSH key & start agent (auto-detect raw vs b64)
         env:
           VPS_SSH_KEY:     ${{ secrets.VPS_SSH_KEY }}
           VPS_SSH_KEY_B64: ${{ secrets.VPS_SSH_KEY_B64 }}
@@ -34,15 +33,22 @@ jobs:
           set -e
           mkdir -p ~/.ssh
           umask 077
-          if [ -n "$VPS_SSH_KEY_B64" ]; then
-            echo "$VPS_SSH_KEY_B64" | base64 -d > ~/.ssh/id_ed25519
-          else
-            # Normalise CRLF si la clé brute est utilisée
+
+          if [ -n "$VPS_SSH_KEY" ] && printf '%s' "$VPS_SSH_KEY" | grep -q 'BEGIN OPENSSH'; then
+            # Clé privée brute OpenSSH
             printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+          elif [ -n "$VPS_SSH_KEY_B64" ]; then
+            # Variante base64 (une seule ligne)
+            echo "$VPS_SSH_KEY_B64" | tr -d '\r\n ' | base64 -d > ~/.ssh/id_ed25519 || { echo "::error::VPS_SSH_KEY_B64 is not valid base64"; exit 1; }
+          else
+            echo "::error::No valid key provided"; exit 1
           fi
-          head -1 ~/.ssh/id_ed25519
-          tail -1 ~/.ssh/id_ed25519
-          ssh-keygen -lf ~/.ssh/id_ed25519
+
+          # Petit contrôle format
+          head -1 ~/.ssh/id_ed25519 | grep -q 'BEGIN OPENSSH' || { echo "::error::SSH key file header is wrong"; exit 1; }
+          tail -1 ~/.ssh/id_ed25519 | grep -q 'END OPENSSH'   || { echo "::error::SSH key file footer is wrong"; exit 1; }
+
+          # Démarre l'agent et charge la clé
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_ed25519
 
