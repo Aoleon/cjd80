@@ -182,22 +182,22 @@ export default function EventAdminModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader className="text-left">
-          <DialogTitle className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+      <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
+        <DialogHeader className="text-left pb-2">
+          <DialogTitle className="text-lg sm:text-xl font-bold text-gray-800 mb-2 flex items-center gap-2 flex-wrap">
             {mode === "create" ? (
               <>
-                <CalendarPlus className="h-5 w-5 text-cjd-green" />
-                Créer un nouvel événement
+                <CalendarPlus className="h-5 w-5 text-cjd-green flex-shrink-0" />
+                <span>Créer un nouvel événement</span>
               </>
             ) : (
               <>
-                <Edit className="h-5 w-5 text-cjd-green" />
-                Modifier l'événement
+                <Edit className="h-5 w-5 text-cjd-green flex-shrink-0" />
+                <span>Modifier l'événement</span>
               </>
             )}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             {mode === "create" 
               ? "Ajoutez un nouvel événement pour la section CJD Amiens. Les membres pourront s'y inscrire." 
               : "Modifiez les informations de cet événement. Les participants déjà inscrits seront préservés."
@@ -205,10 +205,10 @@ export default function EventAdminModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 mt-4">
           {/* Title Field */}
           <div>
-            <Label htmlFor="event-title" className="text-base font-medium text-gray-700">
+            <Label htmlFor="event-title" className="text-sm sm:text-base font-medium text-gray-700">
               Titre de l'événement *
             </Label>
             <Input
@@ -218,7 +218,7 @@ export default function EventAdminModal({
               onChange={(e) => handleInputChange("title", e.target.value)}
               placeholder="Ex: Afterwork tech & innovation"
               required
-              className="mt-2 text-base focus:ring-cjd-green focus:border-cjd-green"
+              className="mt-1 sm:mt-2 text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green"
               maxLength={200}
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -228,7 +228,7 @@ export default function EventAdminModal({
 
           {/* Date Field */}
           <div>
-            <Label htmlFor="event-date" className="text-base font-medium text-gray-700">
+            <Label htmlFor="event-date" className="text-sm sm:text-base font-medium text-gray-700">
               Date et heure *
             </Label>
             <Input
@@ -237,17 +237,17 @@ export default function EventAdminModal({
               value={formData.date}
               onChange={(e) => handleInputChange("date", e.target.value)}
               required
-              className="mt-2 text-base focus:ring-cjd-green focus:border-cjd-green"
+              className="mt-1 sm:mt-2 text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              <Calendar className="inline h-4 w-4 mr-1" />
-              La date doit être dans le futur
+            <p className="text-xs text-gray-500 mt-1 flex items-center">
+              <Calendar className="h-3 w-3 mr-1 flex-shrink-0" />
+              <span>La date doit être dans le futur</span>
             </p>
           </div>
 
           {/* Description Field */}
           <div>
-            <Label htmlFor="event-description" className="text-base font-medium text-gray-700">
+            <Label htmlFor="event-description" className="text-sm sm:text-base font-medium text-gray-700">
               Description
             </Label>
             <Textarea
@@ -255,8 +255,8 @@ export default function EventAdminModal({
               value={formData.description}
               onChange={(e) => handleInputChange("description", e.target.value)}
               placeholder="Décrivez l'événement, le programme, les intervenants..."
-              rows={4}
-              className="mt-2 text-base focus:ring-cjd-green focus:border-cjd-green"
+              rows={3}
+              className="mt-1 sm:mt-2 text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green resize-none"
               maxLength={1000}
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -266,7 +266,7 @@ export default function EventAdminModal({
 
           {/* HelloAsso Link Field */}
           <div>
-            <Label htmlFor="event-helloasso" className="text-base font-medium text-gray-700">
+            <Label htmlFor="event-helloasso" className="text-sm sm:text-base font-medium text-gray-700">
               Lien HelloAsso (optionnel)
             </Label>
             <Input
@@ -275,7 +275,7 @@ export default function EventAdminModal({
               value={formData.helloAssoLink}
               onChange={(e) => handleInputChange("helloAssoLink", e.target.value)}
               placeholder="https://www.helloasso.com/..."
-              className="mt-2 text-base focus:ring-cjd-green focus:border-cjd-green"
+              className="mt-1 sm:mt-2 text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green"
             />
             <p className="text-xs text-gray-500 mt-1">
               Lien vers la billetterie HelloAsso si l'événement est payant
@@ -283,24 +283,25 @@ export default function EventAdminModal({
           </div>
 
           {/* External Redirect Section */}
-          <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="flex items-center space-x-2">
+          <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-start space-x-2">
               <Checkbox
                 id="enable-redirect"
                 checked={formData.enableExternalRedirect}
                 onCheckedChange={(checked) => handleInputChange("enableExternalRedirect", checked as boolean)}
+                className="mt-1"
               />
               <Label 
                 htmlFor="enable-redirect" 
-                className="text-base font-medium text-gray-700 cursor-pointer"
+                className="text-sm sm:text-base font-medium text-gray-700 cursor-pointer leading-relaxed"
               >
-                <ExternalLink className="inline h-4 w-4 mr-2" />
+                <ExternalLink className="inline h-4 w-4 mr-1" />
                 Activer la redirection externe après inscription
               </Label>
             </div>
 
             {formData.enableExternalRedirect && (
-              <div className="ml-6">
+              <div className="ml-4 sm:ml-6 space-y-2">
                 <Label htmlFor="redirect-url" className="text-sm font-medium text-gray-700">
                   URL de redirection
                 </Label>
@@ -310,10 +311,10 @@ export default function EventAdminModal({
                   value={formData.externalRedirectUrl}
                   onChange={(e) => handleInputChange("externalRedirectUrl", e.target.value)}
                   placeholder="https://www.helloasso.com/associations/..."
-                  className="mt-2 text-base focus:ring-cjd-green focus:border-cjd-green"
+                  className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green"
                   required={formData.enableExternalRedirect}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500">
                   L'utilisateur sera redirigé vers cette URL après avoir complété son inscription
                 </p>
               </div>
@@ -321,66 +322,75 @@ export default function EventAdminModal({
           </div>
 
           {/* Display Options Section */}
-          <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Options d'affichage</h3>
+          <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">Options d'affichage</h3>
             
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="show-inscriptions"
-                checked={formData.showInscriptionsCount}
-                onCheckedChange={(checked) => handleInputChange("showInscriptionsCount", checked as boolean)}
-              />
-              <Label 
-                htmlFor="show-inscriptions" 
-                className="text-base font-medium text-gray-700 cursor-pointer"
-              >
-                Afficher le nombre d'inscrits
-              </Label>
-            </div>
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex items-start space-x-2">
+                <Checkbox
+                  id="show-inscriptions"
+                  checked={formData.showInscriptionsCount}
+                  onCheckedChange={(checked) => handleInputChange("showInscriptionsCount", checked as boolean)}
+                  className="mt-1"
+                />
+                <Label 
+                  htmlFor="show-inscriptions" 
+                  className="text-sm sm:text-base font-medium text-gray-700 cursor-pointer leading-relaxed"
+                >
+                  Afficher le nombre d'inscrits
+                </Label>
+              </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="show-seats"
-                checked={formData.showAvailableSeats}
-                onCheckedChange={(checked) => handleInputChange("showAvailableSeats", checked as boolean)}
-              />
-              <Label 
-                htmlFor="show-seats" 
-                className="text-base font-medium text-gray-700 cursor-pointer"
-              >
-                Afficher le nombre de places disponibles
-              </Label>
+              <div className="flex items-start space-x-2">
+                <Checkbox
+                  id="show-seats"
+                  checked={formData.showAvailableSeats}
+                  onCheckedChange={(checked) => handleInputChange("showAvailableSeats", checked as boolean)}
+                  className="mt-1"
+                />
+                <Label 
+                  htmlFor="show-seats" 
+                  className="text-sm sm:text-base font-medium text-gray-700 cursor-pointer leading-relaxed"
+                >
+                  Afficher le nombre de places disponibles
+                </Label>
+              </div>
             </div>
             
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-500">
               Ces options contrôlent ce qui est visible pour les utilisateurs sur la page publique
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 border-t">
             <Button
               type="submit"
               disabled={isPending}
-              className="bg-cjd-green hover:bg-green-700 text-white flex-1"
-              size="lg"
+              className="bg-cjd-green hover:bg-green-700 text-white flex-1 order-2 sm:order-1"
+              size="default"
             >
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {mode === "create" ? "Création en cours..." : "Modification en cours..."}
+                  <span className="hidden sm:inline">
+                    {mode === "create" ? "Création en cours..." : "Modification en cours..."}
+                  </span>
+                  <span className="sm:hidden">En cours...</span>
                 </>
               ) : (
                 <>
                   {mode === "create" ? (
                     <>
                       <CalendarPlus className="mr-2 h-4 w-4" />
-                      Créer l'événement
+                      <span className="hidden sm:inline">Créer l'événement</span>
+                      <span className="sm:hidden">Créer</span>
                     </>
                   ) : (
                     <>
                       <Edit className="mr-2 h-4 w-4" />
-                      Modifier l'événement
+                      <span className="hidden sm:inline">Modifier l'événement</span>
+                      <span className="sm:hidden">Modifier</span>
                     </>
                   )}
                 </>
@@ -392,8 +402,8 @@ export default function EventAdminModal({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isPending}
-              className="px-8"
-              size="lg"
+              className="order-1 sm:order-2 sm:px-8"
+              size="default"
             >
               Annuler
             </Button>
@@ -401,9 +411,9 @@ export default function EventAdminModal({
         </form>
 
         {/* Help Text */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-          <h4 className="font-medium text-blue-800 mb-2">💡 Conseils pour un bon événement</h4>
-          <ul className="text-sm text-blue-700 space-y-1">
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+          <h4 className="font-medium text-blue-800 mb-2 text-sm sm:text-base">💡 Conseils pour un bon événement</h4>
+          <ul className="text-xs sm:text-sm text-blue-700 space-y-1">
             <li>• Choisissez un titre accrocheur et explicite</li>
             <li>• Précisez le lieu dans la description</li>
             <li>• Mentionnez les intervenants si pertinent</li>
