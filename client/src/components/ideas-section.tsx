@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ThumbsUp, Lightbulb, Loader2, Vote, Plus } from "lucide-react";
+import { ThumbsUp, Lightbulb, Loader2, Vote, Plus, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import VoteModal from "./vote-modal";
 import type { Idea } from "@shared/schema";
-import boiteKiffImage from "@assets/boite-kiff_1755640123881.jpeg";
 
 interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
   voteCount: number;
@@ -78,12 +77,10 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
     <section className="space-y-6 sm:space-y-8">
       {/* Welcome Message */}
       <div className="flex flex-col items-center text-center mb-6">
-        <img 
-          src={boiteKiffImage} 
-          alt="La Boîte à Kiffs" 
-          className="h-36 sm:h-48 w-auto object-contain rounded-[60px] mb-4"
-          style={{ transform: 'scale(1)' }}
-        />
+        <div className="bg-gradient-to-br from-cjd-green to-green-600 p-8 rounded-[60px] mb-4 shadow-lg">
+          <Zap className="h-20 sm:h-32 w-20 sm:w-32 text-white" />
+        </div>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">La Boîte à Kiffs</h2>
         <p className="text-sm sm:text-base text-gray-600 text-center max-w-2xl">
           Découvrez les idées proposées par la section et votez pour celles que vous souhaitez voir réalisées
         </p>
