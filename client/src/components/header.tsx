@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import cjdLogo from "@assets/logo-cjd-social_1756108273665.jpg";
 
 interface HeaderProps {
   activeSection: "ideas" | "propose" | "events" | "admin";
@@ -24,10 +25,14 @@ export default function Header({ activeSection, setActiveSection }: HeaderProps)
           <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
             <button 
               onClick={() => setActiveSection("ideas")}
-              className="hover:text-green-200 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 rounded"
+              className="hover:opacity-80 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 rounded"
               aria-label="Retour à la page d'accueil - Voter pour des idées"
             >
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">CJD Amiens</h1>
+              <img 
+                src={cjdLogo} 
+                alt="CJD Amiens" 
+                className="h-8 sm:h-10 lg:h-12 w-auto"
+              />
             </button>
           </div>
           
