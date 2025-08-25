@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import VoteModal from "./vote-modal";
 import type { Idea } from "@shared/schema";
+import { IDEA_STATUS } from "@shared/schema";
 import boiteKiffImage from "@assets/boite-kiff_1756106212980.jpeg";
 
 interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
@@ -12,18 +13,18 @@ interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
 }
 
 const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'approved':
+  switch (status) {
+    case IDEA_STATUS.APPROVED:
       return 'bg-green-50 text-green-800 border-green-300 ring-1 ring-green-200';
-    case 'pending':
+    case IDEA_STATUS.PENDING:
       return 'bg-amber-50 text-amber-800 border-amber-300 ring-1 ring-amber-200';
-    case 'rejected':
+    case IDEA_STATUS.REJECTED:
       return 'bg-red-50 text-red-800 border-red-300 ring-1 ring-red-200';
-    case 'under review':
+    case IDEA_STATUS.UNDER_REVIEW:
       return 'bg-blue-50 text-blue-800 border-blue-300 ring-1 ring-blue-200';
-    case 'postponed':
+    case IDEA_STATUS.POSTPONED:
       return 'bg-slate-50 text-slate-800 border-slate-300 ring-1 ring-slate-200';
-    case 'completed':
+    case IDEA_STATUS.COMPLETED:
       return 'bg-violet-50 text-violet-800 border-violet-300 ring-1 ring-violet-200';
     default:
       return 'bg-gray-50 text-gray-800 border-gray-300 ring-1 ring-gray-200';
@@ -31,18 +32,18 @@ const getStatusColor = (status: string) => {
 };
 
 const getStatusLabel = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'approved':
-      return 'Approuvée';
-    case 'pending':
+  switch (status) {
+    case IDEA_STATUS.APPROVED:
+      return 'Idée soumise au vote';
+    case IDEA_STATUS.PENDING:
       return 'En attente';
-    case 'rejected':
+    case IDEA_STATUS.REJECTED:
       return 'Rejetée';
-    case 'under review':
-      return 'En examen';
-    case 'postponed':
+    case IDEA_STATUS.UNDER_REVIEW:
+      return 'En cours d\'étude';
+    case IDEA_STATUS.POSTPONED:
       return 'Reportée';
-    case 'completed':
+    case IDEA_STATUS.COMPLETED:
       return 'Réalisée';
     default:
       return status;
