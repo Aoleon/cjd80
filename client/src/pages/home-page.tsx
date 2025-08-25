@@ -18,7 +18,12 @@ export default function HomePage() {
         {activeSection === "ideas" && (
           <>
             <IdeasSection onNavigateToPropose={() => setActiveSection("propose")} />
-            <div className="mt-8 sm:mt-12">
+            {/* Séparateur visuel entre les sections */}
+            <div className="mt-8 sm:mt-12 border-t-4 border-cjd-green pt-8">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl sm:text-3xl font-bold text-cjd-green">📅 Événements à venir</h2>
+                <p className="text-gray-600 mt-2">Inscrivez-vous aux prochains événements CJD Amiens</p>
+              </div>
               <EventsSection />
             </div>
           </>
