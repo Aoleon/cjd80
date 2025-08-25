@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PWAInstallButton } from "@/components/pwa-install-prompt";
-import cjdLogo from "@assets/logo-cjd-social_1755640197258.jpg";
 
 interface HeaderProps {
   activeSection: "ideas" | "propose" | "events" | "admin";
@@ -26,21 +25,10 @@ export default function Header({ activeSection, setActiveSection }: HeaderProps)
           <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
             <button 
               onClick={() => setActiveSection("ideas")}
-              className="hover:opacity-80 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 rounded-lg"
-              aria-label="Retour à la page d'accueil - Voter pour des idées"
-            >
-              <img 
-                src={cjdLogo} 
-                alt="CJD - Centre des Jeunes Dirigeants Amiens" 
-                className="h-10 sm:h-12 w-auto object-contain bg-white rounded-lg p-1"
-              />
-            </button>
-            <button 
-              onClick={() => setActiveSection("ideas")}
               className="hover:text-green-200 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 rounded"
               aria-label="Retour à la page d'accueil - Voter pour des idées"
             >
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">Amiens</h1>
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">CJD Amiens</h1>
             </button>
           </div>
           
