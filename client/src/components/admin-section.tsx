@@ -405,7 +405,7 @@ export default function AdminSection() {
                           <TableHead>Titre</TableHead>
                           <TableHead>Auteur</TableHead>
                           <TableHead className="text-center">Statut</TableHead>
-                          <TableHead className="text-center">Votes</TableHead>
+                          <TableHead className="text-center">Votants</TableHead>
                           <TableHead className="text-center">Date</TableHead>
                           <TableHead className="text-center">Actions</TableHead>
                         </TableRow>
@@ -460,7 +460,21 @@ export default function AdminSection() {
                                 </SelectContent>
                               </Select>
                             </TableCell>
-                            <TableCell className="text-center">{idea.voteCount}</TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setSelectedIdea(idea);
+                                  setIdeaDetailModalOpen(true);
+                                }}
+                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                title="Voir les votants"
+                              >
+                                <Users className="w-4 h-4 mr-1" />
+                                {idea.voteCount}
+                              </Button>
+                            </TableCell>
                             <TableCell className="text-center">
                               {formatDate(idea.createdAt.toString())}
                             </TableCell>
@@ -554,8 +568,20 @@ export default function AdminSection() {
                               <div className="truncate">{idea.proposedBy}</div>
                             </div>
                             <div>
-                              <span className="font-medium">Votes:</span>
-                              <div>{idea.voteCount}</div>
+                              <span className="font-medium">Votants:</span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setSelectedIdea(idea);
+                                  setIdeaDetailModalOpen(true);
+                                }}
+                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1"
+                                title="Voir les votants"
+                              >
+                                <Users className="w-3 h-3 mr-1" />
+                                {idea.voteCount}
+                              </Button>
                             </div>
                             <div className="col-span-2">
                               <span className="font-medium">Date:</span>
@@ -699,8 +725,20 @@ export default function AdminSection() {
                               )}
                             </TableCell>
                             <TableCell className="text-center">
-                              {event.inscriptionCount}
-                              {event.maxParticipants && ` / ${event.maxParticipants}`}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setSelectedEventForDetail(event);
+                                  setEventDetailModalOpen(true);
+                                }}
+                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                title="Voir les inscrits"
+                              >
+                                <Users className="w-4 h-4 mr-1" />
+                                {event.inscriptionCount}
+                                {event.maxParticipants && ` / ${event.maxParticipants}`}
+                              </Button>
                             </TableCell>
                             <TableCell className="text-center">
                               <div className="flex justify-center space-x-2">
@@ -801,10 +839,20 @@ export default function AdminSection() {
 
                             <div>
                               <span className="font-medium text-gray-700">Inscriptions:</span>
-                              <div className="text-gray-600">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setSelectedEventForDetail(event);
+                                  setEventDetailModalOpen(true);
+                                }}
+                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1"
+                                title="Voir les inscrits"
+                              >
+                                <Users className="w-3 h-3 mr-1" />
                                 {event.inscriptionCount}
-                                {event.maxParticipants && ` / ${event.maxParticipants} participants`}
-                              </div>
+                                {event.maxParticipants && ` / ${event.maxParticipants}`}
+                              </Button>
                             </div>
                           </div>
 
