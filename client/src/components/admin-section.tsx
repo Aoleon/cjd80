@@ -232,7 +232,7 @@ export default function AdminSection() {
       case IDEA_STATUS.PENDING:
         return { label: "En attente", class: "bg-orange-100 text-orange-800" };
       case IDEA_STATUS.APPROVED:
-        return { label: "Approuvée", class: "bg-green-100 text-green-800" };
+        return { label: "Idée soumise au vote", class: "bg-green-100 text-green-800" };
       case IDEA_STATUS.REJECTED:
         return { label: "Rejetée", class: "bg-red-100 text-red-800" };
       case IDEA_STATUS.UNDER_REVIEW:
@@ -425,7 +425,7 @@ export default function AdminSection() {
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value={IDEA_STATUS.PENDING}>En attente</SelectItem>
-                                  <SelectItem value={IDEA_STATUS.APPROVED}>Approuvée</SelectItem>
+                                  <SelectItem value={IDEA_STATUS.APPROVED}>Idée soumise au vote</SelectItem>
                                   <SelectItem value={IDEA_STATUS.REJECTED}>Rejetée</SelectItem>
                                   <SelectItem value={IDEA_STATUS.UNDER_REVIEW}>En cours d'étude</SelectItem>
                                   <SelectItem value={IDEA_STATUS.POSTPONED}>Reportée</SelectItem>
@@ -439,6 +439,28 @@ export default function AdminSection() {
                             </TableCell>
                             <TableCell className="text-center">
                               <div className="flex justify-center space-x-1">
+                                {idea.status === IDEA_STATUS.APPROVED && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      const eventData = {
+                                        title: idea.title,
+                                        description: idea.description,
+                                        date: new Date().toISOString(),
+                                        location: 'À définir',
+                                        helloAssoUrl: ''
+                                      };
+                                      setSelectedEvent(eventData as any);
+                                      setEventModalMode("create");
+                                      setEventModalOpen(true);
+                                    }}
+                                    className="text-cjd-green hover:text-green-700 hover:bg-green-50"
+                                    title="Créer un événement à partir de cette idée"
+                                  >
+                                    <CalendarPlus className="w-4 h-4" />
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -521,7 +543,7 @@ export default function AdminSection() {
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value={IDEA_STATUS.PENDING}>En attente</SelectItem>
-                                  <SelectItem value={IDEA_STATUS.APPROVED}>Approuvée</SelectItem>
+                                  <SelectItem value={IDEA_STATUS.APPROVED}>Idée soumise au vote</SelectItem>
                                   <SelectItem value={IDEA_STATUS.REJECTED}>Rejetée</SelectItem>
                                   <SelectItem value={IDEA_STATUS.UNDER_REVIEW}>En cours d'étude</SelectItem>
                                   <SelectItem value={IDEA_STATUS.POSTPONED}>Reportée</SelectItem>

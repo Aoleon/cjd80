@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ThumbsUp, Lightbulb, Loader2, Vote, Plus } from "lucide-react";
+import { ThumbsUp, Lightbulb, Loader2, Vote, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import VoteModal from "./vote-modal";
@@ -56,6 +56,7 @@ interface IdeasSectionProps {
 export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps) {
   const [selectedIdea, setSelectedIdea] = useState<IdeaWithVotes | null>(null);
   const [voteModalOpen, setVoteModalOpen] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
 
   const { data: ideas, isLoading, error } = useQuery<IdeaWithVotes[]>({
     queryKey: ["/api/ideas"],
@@ -108,9 +109,39 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
                   </span>
                 </div>
                 {idea.description && (
-                  <p className="text-gray-700 text-sm sm:text-base mb-5 line-clamp-3 leading-relaxed">
-                    {idea.description}
-                  </p>
+                  <div className="mb-5">
+                    <p className={`text-gray-700 text-sm sm:text-base leading-relaxed ${
+                      !expandedDescriptions.has(idea.id) && idea.description.length > 200 ? 'line-clamp-3' : ''
+                    }`}>
+                      {idea.description}
+                    </p>
+                    {idea.description.length > 200 && (
+                      <button
+                        onClick={() => {
+                          const newSet = new Set(expandedDescriptions);
+                          if (newSet.has(idea.id)) {
+                            newSet.delete(idea.id);
+                          } else {
+                            newSet.add(idea.id);
+                          }
+                          setExpandedDescriptions(newSet);
+                        }}
+                        className="text-cjd-green hover:text-green-700 text-sm font-medium mt-2 flex items-center"
+                      >
+                        {expandedDescriptions.has(idea.id) ? (
+                          <>
+                            <ChevronUp className="w-4 h-4 mr-1" />
+                            Voir moins
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-4 h-4 mr-1" />
+                            Voir plus
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 )}
                 <div className="border-t border-gray-100 pt-4">
                   <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 xs:gap-2 mb-3">

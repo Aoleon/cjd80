@@ -33,7 +33,7 @@ export default function EventDetailModal({
 
   // Fetch inscriptions for this event
   const { data: inscriptions, isLoading: inscriptionsLoading } = useQuery<Inscription[]>({
-    queryKey: ["/api/admin/events", event?.id, "inscriptions"],
+    queryKey: [`/api/admin/events/${event?.id}/inscriptions`],
     enabled: !!event && showInscriptions,
   });
 

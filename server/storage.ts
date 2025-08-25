@@ -49,6 +49,7 @@ export interface IStorage {
   
   // Votes - Ultra-robust with duplicate protection
   getVotesByIdea(ideaId: string): Promise<Result<Vote[]>>;
+  getIdeaVotes(ideaId: string): Promise<Result<Vote[]>>;
   createVote(vote: InsertVote): Promise<Result<Vote>>;
   hasUserVoted(ideaId: string, email: string): Promise<boolean>;
   
@@ -468,6 +469,18 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: inscriptionsList };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération des inscriptions: ${error}`) };
+    }
+  }
+
+  // Ultra-robust Votes methods with Result pattern
+  async getIdeaVotes(ideaId: string): Promise<Result<Vote[]>> {
+    try {
+      const votesList = await db.select().from(votes)
+        .where(eq(votes.ideaId, ideaId))
+        .orderBy(desc(votes.createdAt));
+      return { success: true, data: votesList };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des votes: ${error}`) };
     }
   }
 

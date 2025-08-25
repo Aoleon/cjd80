@@ -272,6 +272,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get votes for a specific idea (admin only)
+  app.get("/api/admin/ideas/:ideaId/votes", requireAuth, async (req, res, next) => {
+    try {
+      const { ideaId } = req.params;
+      const votesResult = await storage.getIdeaVotes(ideaId);
+      if (!votesResult.success) {
+        return res.status(500).json({ message: votesResult.error.message });
+      }
+      res.json(votesResult.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.patch("/api/admin/ideas/:id/status", requireAuth, async (req, res, next) => {
     try {
       const validatedData = updateIdeaStatusSchema.parse(req.body);

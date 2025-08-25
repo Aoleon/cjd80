@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, User, Calendar, TrendingUp } from "lucide-react";
+import { Lightbulb, User, Calendar, TrendingUp, Users, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,8 @@ interface IdeaDetailModalProps {
 export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetailModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [votes, setVotes] = useState<any[]>([]);
+  const [votesLoading, setVotesLoading] = useState(false);
 
   const updateIdeaStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -77,7 +80,7 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
       case IDEA_STATUS.PENDING:
         return { label: "En attente", class: "bg-orange-100 text-orange-800" };
       case IDEA_STATUS.APPROVED:
-        return { label: "Approuvée", class: "bg-green-100 text-green-800" };
+        return { label: "Idée soumise au vote", class: "bg-green-100 text-green-800" };
       case IDEA_STATUS.REJECTED:
         return { label: "Rejetée", class: "bg-red-100 text-red-800" };
       case IDEA_STATUS.UNDER_REVIEW:
@@ -110,6 +113,23 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
       minute: "2-digit",
     });
   };
+
+  // Charger les votes quand le modal s'ouvre
+  useEffect(() => {
+    if (open && idea) {
+      setVotesLoading(true);
+      fetch(`/api/admin/ideas/${idea.id}/votes`)
+        .then(res => res.json())
+        .then(data => {
+          setVotes(data);
+          setVotesLoading(false);
+        })
+        .catch(err => {
+          console.error('Erreur chargement votes:', err);
+          setVotesLoading(false);
+        });
+    }
+  }, [open, idea]);
 
 
 
@@ -173,6 +193,40 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
 
           <Separator />
 
+          {/* Votes List */}
+          <div>
+            <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Votants ({idea.voteCount})
+            </h4>
+            {votesLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-cjd-green" />
+              </div>
+            ) : votes.length > 0 ? (
+              <div className="bg-gray-50 rounded-lg p-4 max-h-48 overflow-y-auto">
+                <div className="space-y-2">
+                  {votes.map((vote: any, index: number) => (
+                    <div key={vote.id} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">{index + 1}.</span>
+                        <span className="font-medium">{vote.voterName}</span>
+                        <span className="text-gray-500">({vote.voterEmail})</span>
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {new Date(vote.createdAt).toLocaleDateString('fr-FR')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">Aucun vote pour le moment</p>
+            )}
+          </div>
+
+          <Separator />
+
           {/* Actions */}
           <div className="space-y-4">
             <div>
@@ -191,7 +245,7 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={IDEA_STATUS.PENDING}>En attente</SelectItem>
-                  <SelectItem value={IDEA_STATUS.APPROVED}>Approuvée</SelectItem>
+                  <SelectItem value={IDEA_STATUS.APPROVED}>Idée soumise au vote</SelectItem>
                   <SelectItem value={IDEA_STATUS.REJECTED}>Rejetée</SelectItem>
                   <SelectItem value={IDEA_STATUS.UNDER_REVIEW}>En cours d'étude</SelectItem>
                   <SelectItem value={IDEA_STATUS.POSTPONED}>Reportée</SelectItem>

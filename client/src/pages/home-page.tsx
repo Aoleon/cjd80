@@ -16,7 +16,12 @@ export default function HomePage() {
       
       <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
         {activeSection === "ideas" && (
-          <IdeasSection onNavigateToPropose={() => setActiveSection("propose")} />
+          <>
+            <IdeasSection onNavigateToPropose={() => setActiveSection("propose")} />
+            <div className="mt-8 sm:mt-12">
+              <EventsSection />
+            </div>
+          </>
         )}
         {activeSection === "propose" && <ProposeSection />}
         {activeSection === "events" && <EventsSection />}
