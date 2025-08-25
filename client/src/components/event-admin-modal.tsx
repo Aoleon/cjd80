@@ -34,6 +34,8 @@ export default function EventAdminModal({
     helloAssoLink: "",
     enableExternalRedirect: false,
     externalRedirectUrl: "",
+    showInscriptionsCount: true,
+    showAvailableSeats: true,
   });
 
   // Initialize form when modal opens or event changes
@@ -49,6 +51,8 @@ export default function EventAdminModal({
           helloAssoLink: event.helloAssoLink || "",
           enableExternalRedirect: event.enableExternalRedirect || false,
           externalRedirectUrl: event.externalRedirectUrl || "",
+          showInscriptionsCount: event.showInscriptionsCount ?? true,
+          showAvailableSeats: event.showAvailableSeats ?? true,
         });
       } else {
         // Reset form for create mode
@@ -59,6 +63,8 @@ export default function EventAdminModal({
           helloAssoLink: "",
           enableExternalRedirect: false,
           externalRedirectUrl: "",
+          showInscriptionsCount: true,
+          showAvailableSeats: true,
         });
       }
     }
@@ -157,6 +163,8 @@ export default function EventAdminModal({
       helloAssoLink: formData.helloAssoLink.trim() || undefined,
       enableExternalRedirect: formData.enableExternalRedirect,
       externalRedirectUrl: formData.enableExternalRedirect && formData.externalRedirectUrl.trim() ? formData.externalRedirectUrl.trim() : undefined,
+      showInscriptionsCount: formData.showInscriptionsCount,
+      showAvailableSeats: formData.showAvailableSeats,
     };
 
     if (mode === "create") {
@@ -310,6 +318,43 @@ export default function EventAdminModal({
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Display Options Section */}
+          <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">Options d'affichage</h3>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="show-inscriptions"
+                checked={formData.showInscriptionsCount}
+                onCheckedChange={(checked) => handleInputChange("showInscriptionsCount", checked as boolean)}
+              />
+              <Label 
+                htmlFor="show-inscriptions" 
+                className="text-base font-medium text-gray-700 cursor-pointer"
+              >
+                Afficher le nombre d'inscrits
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="show-seats"
+                checked={formData.showAvailableSeats}
+                onCheckedChange={(checked) => handleInputChange("showAvailableSeats", checked as boolean)}
+              />
+              <Label 
+                htmlFor="show-seats" 
+                className="text-base font-medium text-gray-700 cursor-pointer"
+              >
+                Afficher le nombre de places disponibles
+              </Label>
+            </div>
+            
+            <p className="text-xs text-gray-500 mt-2">
+              Ces options contrôlent ce qui est visible pour les utilisateurs sur la page publique
+            </p>
           </div>
 
           {/* Action Buttons */}

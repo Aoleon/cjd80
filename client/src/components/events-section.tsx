@@ -90,27 +90,42 @@ export default function EventsSection() {
                     )}
                     {event.maxParticipants && (
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs sm:text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <Users className="w-4 h-4 mr-1 flex-shrink-0" />
-                          <span>
-                            {event.maxParticipants} places disponibles
-                          </span>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <div className={`inline-block px-2 py-1 text-xs rounded-full ${
-                            event.inscriptionCount >= event.maxParticipants 
-                              ? 'bg-red-100 text-red-800'
-                              : event.inscriptionCount / event.maxParticipants > 0.8 
-                                ? 'bg-orange-100 text-orange-800'
-                                : 'bg-green-100 text-green-800'
-                          }`}>
-                            {event.inscriptionCount >= event.maxParticipants 
-                              ? 'Complet' 
-                              : event.maxParticipants - event.inscriptionCount <= 5
-                                ? `Plus que ${event.maxParticipants - event.inscriptionCount} place${event.maxParticipants - event.inscriptionCount > 1 ? 's' : ''}`
-                                : 'Places disponibles'}
+                        {/* Affichage du nombre d'inscrits si activé */}
+                        {event.showInscriptionsCount && (
+                          <div className="flex items-center">
+                            <Users className="w-4 h-4 mr-1 flex-shrink-0" />
+                            <span>
+                              {event.inscriptionCount} inscrit{event.inscriptionCount > 1 ? 's' : ''} / {event.maxParticipants} places
+                            </span>
                           </div>
-                        </div>
+                        )}
+                        
+                        {/* Affichage des places disponibles si activé */}
+                        {event.showAvailableSeats && (
+                          <div className="flex-shrink-0">
+                            <div className={`inline-block px-2 py-1 text-xs rounded-full ${
+                              event.inscriptionCount >= event.maxParticipants 
+                                ? 'bg-red-100 text-red-800'
+                                : event.inscriptionCount / event.maxParticipants > 0.8 
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-green-100 text-green-800'
+                            }`}>
+                              {event.inscriptionCount >= event.maxParticipants 
+                                ? 'Complet' 
+                                : event.maxParticipants - event.inscriptionCount <= 5
+                                  ? `Plus que ${event.maxParticipants - event.inscriptionCount} place${event.maxParticipants - event.inscriptionCount > 1 ? 's' : ''}`
+                                  : `${event.maxParticipants - event.inscriptionCount} places disponibles`}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Si aucune option n'est activée, afficher juste le nombre total de places */}
+                        {!event.showInscriptionsCount && !event.showAvailableSeats && (
+                          <div className="flex items-center">
+                            <Users className="w-4 h-4 mr-1 flex-shrink-0" />
+                            <span>{event.maxParticipants} places</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
