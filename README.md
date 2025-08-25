@@ -342,6 +342,29 @@ const createIdeaSchema = insertIdeaSchema.extend({
 3. **Variables d'environnement** via secrets Replit
 4. **HTTPS automatique** avec domaine `.replit.app`
 
+### Système de purge du cache
+
+L'application implémente plusieurs mécanismes pour garantir les mises à jour après déploiement :
+
+#### 1. Headers de cache optimisés
+- **HTML** : `no-cache, no-store, must-revalidate` - toujours récupérer la dernière version
+- **Assets JS/CSS** : `max-age=31536000, immutable` - cache long pour les fichiers avec hash
+- **Service Worker** : `no-cache` - force le rechargement du SW
+
+#### 2. Script de déploiement (`deploy.sh`)
+```bash
+# Purge automatique des caches avant build
+./deploy.sh
+```
+- Nettoie le dossier `dist/`
+- Supprime le cache Vite (`node_modules/.vite`)
+- Ajoute un timestamp de déploiement
+
+#### 3. Cache Buster automatique
+- Vérification automatique toutes les 5 minutes
+- Rechargement forcé si nouvelle version détectée
+- Nettoyage des caches navigateur et service worker
+
 ### Déploiement manuel
 
 ```bash

@@ -60,14 +60,46 @@ app.use((req, res, next) => {
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
+    // Headers de cache pour forcer le rechargement après déploiement
+    app.use((req, res, next) => {
+      // Pas de cache pour HTML - toujours récupérer la dernière version
+      if (req.path === '/' || req.path.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      } 
+      // Cache long pour les assets avec hash (JS, CSS, images)
+      else if (req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+      // Pas de cache pour les autres fichiers
+      else {
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+      }
+      next();
+    });
+
     // Servir les fichiers de build (client)
-    app.use(express.static(path.join(__dirname, '../dist/public')));
+    app.use(express.static(path.join(__dirname, '../dist/public'), {
+      etag: true,
+      lastModified: true,
+      setHeaders: (res, path) => {
+        // Headers additionnels pour forcer le rechargement du service worker
+        if (path.endsWith('sw.js') || path.endsWith('service-worker.js')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        }
+      }
+    }));
 
     // Fallback pour les routes front (tout sauf /api)
     app.get('*', (req, res, next) => {
       if (req.path.startsWith('/api')) {
         return res.status(404).end();
       }
+      // Headers no-cache pour l'index.html
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       return res.sendFile(path.join(__dirname, '../dist/public/index.html'));
     });
   }

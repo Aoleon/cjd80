@@ -12,6 +12,7 @@ import AdminPage from "@/pages/admin-page";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 import { PWAUtils } from "@/lib/pwa-utils";
+import "@/lib/cache-buster";
 
 function Router() {
   return (
