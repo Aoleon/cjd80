@@ -233,12 +233,42 @@ export default function AdminSection() {
     },
   });
 
+  const transformToEventMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("POST", `/api/admin/ideas/${id}/transform-to-event`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      toast({
+        title: "Idée transformée",
+        description: "L'idée a été transformée en événement avec succès",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erreur de transformation",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleIdeaStatusChange = (id: string, status: string) => {
     updateIdeaStatusMutation.mutate({ id, status });
   };
 
   const handleEventStatusChange = (id: string, status: string) => {
     updateEventStatusMutation.mutate({ id, status });
+  };
+
+  const handleTransformIdeaToEvent = (id: string) => {
+    if (confirm("Êtes-vous sûr de vouloir transformer cette idée en événement ? Cette action créera un nouvel événement basé sur cette idée.")) {
+      transformToEventMutation.mutate(id);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -490,24 +520,15 @@ export default function AdminSection() {
                                 >
                                   <Star className={`w-4 h-4 ${idea.featured ? "fill-current" : ""}`} />
                                 </Button>
-                                {idea.status === IDEA_STATUS.APPROVED && (
+                                {(idea.status === IDEA_STATUS.APPROVED || idea.status === IDEA_STATUS.COMPLETED) && (
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => {
-                                      const eventData = {
-                                        title: idea.title,
-                                        description: idea.description,
-                                        date: new Date().toISOString(),
-                                        location: 'À définir',
-                                        helloAssoUrl: ''
-                                      };
-                                      setSelectedEvent(eventData as any);
-                                      setEventModalMode("create");
-                                      setEventModalOpen(true);
-                                    }}
+                                    onClick={() => handleTransformIdeaToEvent(idea.id)}
+                                    disabled={transformToEventMutation.isPending}
                                     className="text-cjd-green hover:text-green-700 hover:bg-green-50"
-                                    title="Créer un événement à partir de cette idée"
+                                    title="Transformer cette idée en événement"
+                                    data-testid={`button-transform-${idea.id}`}
                                   >
                                     <CalendarPlus className="w-4 h-4" />
                                   </Button>
