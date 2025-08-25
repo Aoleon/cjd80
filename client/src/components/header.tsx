@@ -25,14 +25,15 @@ export default function Header({ activeSection, setActiveSection }: HeaderProps)
           <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
             <button 
               onClick={() => setActiveSection("ideas")}
-              className="hover:opacity-80 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 rounded"
+              className="hover:opacity-80 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 rounded flex items-center space-x-3"
               aria-label="Retour à la page d'accueil - Voter pour des idées"
             >
               <img 
                 src={cjdLogo} 
-                alt="CJD Amiens" 
-                className="h-8 sm:h-10 lg:h-12 w-auto"
+                alt="CJD" 
+                className="h-8 sm:h-10 lg:h-12 w-auto rounded-[60px]"
               />
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">Amiens</h1>
             </button>
           </div>
           
