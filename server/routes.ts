@@ -160,9 +160,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Envoyer notification pour nouvel événement
       try {
+        const dateString = typeof result.data.date === 'string' 
+          ? result.data.date 
+          : result.data.date.toISOString();
+        
         await notificationService.notifyNewEvent({
           title: result.data.title,
-          date: result.data.date.toISOString(),
+          date: dateString,
           location: result.data.location || 'Lieu à définir'
         });
       } catch (notifError) {
