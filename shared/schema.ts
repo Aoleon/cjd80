@@ -133,7 +133,7 @@ const isValidDomain = (email: string) => {
 const sanitizeText = (text: string) => text
   .replace(/[<>]/g, '') // Remove potential HTML
   .trim()
-  .slice(0, 1000); // Limit length
+  .slice(0, 5000); // Limit length
 
 // Ultra-secure insert schemas with validation
 export const insertAdminSchema = createInsertSchema(admins).pick({
@@ -166,7 +166,7 @@ export const insertIdeaSchema = createInsertSchema(ideas).pick({
     .regex(/^[a-zA-Z0-9\s\-_.&():!?,:àâäéèêëïîôöùûüÿñç]+$/, "Titre contient des caractères non autorisés")
     .transform(sanitizeText),
   description: z.string()
-    .max(1000, "Description trop longue (max 1000 caractères)")
+    .max(5000, "Description trop longue (max 5000 caractères)")
     .optional()
     .transform(val => val ? sanitizeText(val) : undefined),
   proposedBy: z.string()
@@ -230,7 +230,7 @@ export const insertEventSchema = createInsertSchema(events).pick({
     .regex(/^[a-zA-Z0-9\s\-_.&():!?,:àâäéèêëïîôöùûüÿñç]+$/, "Titre contient des caractères non autorisés")
     .transform(sanitizeText),
   description: z.string()
-    .max(1000, "Description trop longue")
+    .max(5000, "Description trop longue (max 5000 caractères)")
     .optional()
     .transform(val => val ? sanitizeText(val) : undefined),
   date: z.string().datetime("Date invalide"),
