@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarPlus, Loader2, Calendar, Edit, Trash2 } from "lucide-react";
+import { CalendarPlus, Loader2, Calendar, Edit, Trash2, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Event, InsertEvent } from "@shared/schema";
@@ -31,6 +32,8 @@ export default function EventAdminModal({
     description: "",
     date: "",
     helloAssoLink: "",
+    enableExternalRedirect: false,
+    externalRedirectUrl: "",
   });
 
   // Initialize form when modal opens or event changes
@@ -44,6 +47,8 @@ export default function EventAdminModal({
           description: event.description || "",
           date: formattedDate,
           helloAssoLink: event.helloAssoLink || "",
+          enableExternalRedirect: event.enableExternalRedirect || false,
+          externalRedirectUrl: event.externalRedirectUrl || "",
         });
       } else {
         // Reset form for create mode
@@ -52,6 +57,8 @@ export default function EventAdminModal({
           description: "",
           date: "",
           helloAssoLink: "",
+          enableExternalRedirect: false,
+          externalRedirectUrl: "",
         });
       }
     }
@@ -148,6 +155,8 @@ export default function EventAdminModal({
       description: formData.description.trim() || undefined,
       date: selectedDate.toISOString(),
       helloAssoLink: formData.helloAssoLink.trim() || undefined,
+      enableExternalRedirect: formData.enableExternalRedirect,
+      externalRedirectUrl: formData.enableExternalRedirect && formData.externalRedirectUrl.trim() ? formData.externalRedirectUrl.trim() : undefined,
     };
 
     if (mode === "create") {
@@ -157,7 +166,7 @@ export default function EventAdminModal({
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -263,6 +272,44 @@ export default function EventAdminModal({
             <p className="text-xs text-gray-500 mt-1">
               Lien vers la billetterie HelloAsso si l'événement est payant
             </p>
+          </div>
+
+          {/* External Redirect Section */}
+          <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="enable-redirect"
+                checked={formData.enableExternalRedirect}
+                onCheckedChange={(checked) => handleInputChange("enableExternalRedirect", checked as boolean)}
+              />
+              <Label 
+                htmlFor="enable-redirect" 
+                className="text-base font-medium text-gray-700 cursor-pointer"
+              >
+                <ExternalLink className="inline h-4 w-4 mr-2" />
+                Activer la redirection externe après inscription
+              </Label>
+            </div>
+
+            {formData.enableExternalRedirect && (
+              <div className="ml-6">
+                <Label htmlFor="redirect-url" className="text-sm font-medium text-gray-700">
+                  URL de redirection
+                </Label>
+                <Input
+                  id="redirect-url"
+                  type="url"
+                  value={formData.externalRedirectUrl}
+                  onChange={(e) => handleInputChange("externalRedirectUrl", e.target.value)}
+                  placeholder="https://www.helloasso.com/associations/..."
+                  className="mt-2 text-base focus:ring-cjd-green focus:border-cjd-green"
+                  required={formData.enableExternalRedirect}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  L'utilisateur sera redirigé vers cette URL après avoir complété son inscription
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

@@ -47,13 +47,30 @@ export default function EventRegistrationModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      onOpenChange(false);
       
-      toast({
-        title: "✅ Inscription confirmée !",
-        description: `Vous êtes inscrit(e) à "${event?.title}". Un email de confirmation vous sera envoyé.`,
-        duration: 6000,
-      });
+      // Vérifier si une redirection externe est configurée
+      if (event?.enableExternalRedirect && event?.externalRedirectUrl) {
+        toast({
+          title: "✅ Inscription confirmée !",
+          description: `Vous êtes inscrit(e) à "${event?.title}". Vous allez être redirigé vers le site de paiement...`,
+          duration: 3000,
+        });
+        
+        // Rediriger après un court délai pour que l'utilisateur puisse voir le message
+        setTimeout(() => {
+          if (event.externalRedirectUrl) {
+            window.open(event.externalRedirectUrl, '_blank');
+          }
+        }, 2000);
+      } else {
+        toast({
+          title: "✅ Inscription confirmée !",
+          description: `Vous êtes inscrit(e) à "${event?.title}". Un email de confirmation vous sera envoyé.`,
+          duration: 6000,
+        });
+      }
+      
+      onOpenChange(false);
     },
     onError: (error: Error) => {
       toast({

@@ -69,6 +69,8 @@ export const events = pgTable("events", {
   location: text("location"), // Lieu de l'événement
   maxParticipants: integer("max_participants"), // Limite de participants (optionnel)
   helloAssoLink: text("hello_asso_link"),
+  enableExternalRedirect: boolean("enable_external_redirect").default(false).notNull(), // Active la redirection externe après inscription
+  externalRedirectUrl: text("external_redirect_url"), // URL de redirection externe (HelloAsso, etc.)
   status: text("status").default(EVENT_STATUS.PUBLISHED).notNull(), // draft, published, cancelled, postponed, completed
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -212,6 +214,8 @@ export const insertEventSchema = createInsertSchema(events).pick({
   location: true,
   maxParticipants: true,
   helloAssoLink: true,
+  enableExternalRedirect: true,
+  externalRedirectUrl: true,
 }).extend({
   title: z.string()
     .min(3, "Titre trop court (min 3 caractères)")
@@ -234,6 +238,11 @@ export const insertEventSchema = createInsertSchema(events).pick({
   helloAssoLink: z.string()
     .url("URL HelloAsso invalide")
     .refine(url => url.includes('helloasso.com'), "Doit être un lien HelloAsso valide")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  enableExternalRedirect: z.boolean().optional().default(false),
+  externalRedirectUrl: z.string()
+    .url("URL de redirection invalide")
     .optional()
     .transform(val => val ? sanitizeText(val) : undefined),
 });
