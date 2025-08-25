@@ -7,7 +7,6 @@ import {
   Calendar, 
   Users, 
   Lightbulb, 
-  TrendingUp,
   LogOut,
   Loader2,
   Plus,
@@ -53,12 +52,6 @@ interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
   inscriptionCount: number;
 }
 
-interface AdminStats {
-  totalIdeas: number;
-  totalVotes: number;
-  upcomingEvents: number;
-  totalInscriptions: number;
-}
 
 export default function AdminSection() {
   const { user, logoutMutation } = useAuth();
@@ -81,10 +74,6 @@ export default function AdminSection() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [eventToExport, setEventToExport] = useState<EventWithInscriptions | null>(null);
 
-  const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
-    queryKey: ["/api/admin/stats"],
-    enabled: !!user,
-  });
 
   const { data: ideas, isLoading: ideasLoading } = useQuery<IdeaWithVotes[]>({
     queryKey: ["/api/admin/ideas"],
@@ -102,7 +91,7 @@ export default function AdminSection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ideas"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+
       toast({
         title: "Idée supprimée",
         description: "L'idée a été supprimée avec succès",
@@ -123,7 +112,7 @@ export default function AdminSection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+
       toast({
         title: "Événement supprimé",
         description: "L'événement a été supprimé avec succès",
@@ -176,7 +165,7 @@ export default function AdminSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ideas"] });
       queryClient.invalidateQueries({ queryKey: ["/api/ideas"] }); 
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+
       toast({
         title: "Statut mis à jour",
         description: "Le statut de l'idée a été mis à jour",
@@ -240,7 +229,7 @@ export default function AdminSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ideas"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+
       queryClient.invalidateQueries({ queryKey: ["/api/ideas"] });
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
       toast({
@@ -337,66 +326,6 @@ export default function AdminSection() {
         </Button>
       </div>
 
-      {/* Dashboard Stats */}
-      {statsLoading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
-        </div>
-      ) : stats ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <Card>
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="text-2xl sm:text-3xl font-bold text-cjd-green mb-2">
-                {stats.totalIdeas}
-              </div>
-              <div className="text-xs sm:text-sm text-gray-600 flex items-center justify-center">
-                <Lightbulb className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                <span className="hidden sm:inline">Idées proposées</span>
-                <span className="sm:hidden">Idées</span>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="text-2xl sm:text-3xl font-bold text-cjd-green mb-2">
-                {stats.totalVotes}
-              </div>
-              <div className="text-xs sm:text-sm text-gray-600 flex items-center justify-center">
-                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                <span className="hidden sm:inline">Votes totaux</span>
-                <span className="sm:hidden">Votes</span>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="text-2xl sm:text-3xl font-bold text-cjd-green mb-2">
-                {stats.upcomingEvents}
-              </div>
-              <div className="text-xs sm:text-sm text-gray-600 flex items-center justify-center">
-                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                <span className="hidden sm:inline">Événements à venir</span>
-                <span className="sm:hidden">Événements</span>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="text-2xl sm:text-3xl font-bold text-cjd-green mb-2">
-                {stats.totalInscriptions}
-              </div>
-              <div className="text-xs sm:text-sm text-gray-600 flex items-center justify-center">
-                <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                <span className="hidden sm:inline">Inscriptions totales</span>
-                <span className="sm:hidden">Inscriptions</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : null}
 
       {/* Admin Tabs */}
       <Card>
