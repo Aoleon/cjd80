@@ -17,21 +17,21 @@ if (!process.env.DATABASE_URL) {
 // Configuration optimisée du pool de connexions pour Neon
 const poolConfig = {
   connectionString: process.env.DATABASE_URL,
-  // Réduit pour éviter les connexions inutiles avec Neon serverless
-  max: 5, // Maximum 5 connexions simultanées (optimisé pour Neon)
-  min: 1,  // Minimum 1 connexion maintenue
-  // Timeouts réduits pour des connexions plus rapides
-  idleTimeoutMillis: 10000, // 10s - ferme rapidement les connexions inactives
-  connectionTimeoutMillis: 3000, // 3s - timeout de connexion réduit
+  // Configuration optimisée pour éviter les cold starts
+  max: 20, // Plus de connexions pour gérer les pics de charge
+  min: 2,  // Maintenir 2 connexions chaudes minimum
+  // Timeouts optimisés pour garder les connexions chaudes
+  idleTimeoutMillis: 60000, // 60s - garde les connexions chaudes plus longtemps
+  connectionTimeoutMillis: 5000, // 5s - timeout de connexion standard
   // Gestion des erreurs de connexion
-  maxUses: 7500, // Recycle les connexions après 7500 utilisations
+  maxUses: 10000, // Recycle les connexions après 10000 utilisations
   // Pool de requêtes pour éviter les blocages
-  allowExitOnIdle: true,
+  allowExitOnIdle: false, // Garde le pool actif
   // Configuration spécifique à l'environnement
   application_name: 'cjd-amiens-app',
   // Optimisations pour Neon serverless
-  statement_timeout: 10000, // 10s timeout pour éviter les blocages
-  query_timeout: 5000, // 5s timeout par défaut
+  statement_timeout: 30000, // 30s timeout pour les requêtes complexes
+  query_timeout: 10000, // 10s timeout par défaut
 };
 
 export const pool = new Pool(poolConfig);
@@ -67,8 +67,8 @@ export const getPoolStats = () => ({
   totalCount: pool.totalCount,
   idleCount: pool.idleCount,
   waitingCount: pool.waitingCount,
-  maxConnections: 5, // Configuration optimisée
-  minConnections: 1
+  maxConnections: 20, // Configuration optimisée
+  minConnections: 2
 });
 
 // Graceful shutdown du pool

@@ -73,6 +73,23 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
     },
   });
 
+  // Charger les votes quand le modal s'ouvre - doit être AVANT le return null
+  useEffect(() => {
+    if (open && idea) {
+      setVotesLoading(true);
+      fetch(`/api/admin/ideas/${idea.id}/votes`)
+        .then(res => res.json())
+        .then(data => {
+          setVotes(data);
+          setVotesLoading(false);
+        })
+        .catch(err => {
+          console.error('Erreur chargement votes:', err);
+          setVotesLoading(false);
+        });
+    }
+  }, [open, idea]);
+
   if (!idea) return null;
 
   const getIdeaStatusInfo = (status: string) => {
@@ -113,23 +130,6 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
       minute: "2-digit",
     });
   };
-
-  // Charger les votes quand le modal s'ouvre
-  useEffect(() => {
-    if (open && idea) {
-      setVotesLoading(true);
-      fetch(`/api/admin/ideas/${idea.id}/votes`)
-        .then(res => res.json())
-        .then(data => {
-          setVotes(data);
-          setVotesLoading(false);
-        })
-        .catch(err => {
-          console.error('Erreur chargement votes:', err);
-          setVotesLoading(false);
-        });
-    }
-  }, [open, idea]);
 
 
 
