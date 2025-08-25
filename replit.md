@@ -3,134 +3,406 @@
 ## Overview
 This project is an internal web application for the "Centre des Jeunes Dirigeants (CJD) d'Amiens". Its primary purpose is to facilitate collaborative idea sharing ("Boîte à Kiffs"), enable voting on proposals, and manage events with HelloAsso integration. The application serves internal CJD Amiens members (business leaders, entrepreneurs). The project involves migrating from an existing Firestore-based system to a modern, responsive, and optimized architecture, aiming for high performance and a user-friendly interface.
 
-## User Preferences
-**Style**: Utilisez un langage simple et quotidien, évitez le jargon technique complexe.
+## User Preferences & Communication
 
-**Format des Réponses**:
-- Expliquez d'abord ce que vous allez faire et pourquoi
-- Décomposez les tâches complexes en étapes claires
-- Utilisez des listes à puces (✓) pour montrer les progrès
-- Demandez des clarifications si les exigences ne sont pas claires
-- Fournissez des explications brèves pour les décisions techniques
+### Primary Communication Rule
+**🎯 CRITICAL**: Les remarques de l'utilisateur concernent **TOUJOURS** ce qu'il voit dans l'interface utilisateur (UI/frontend), sauf indication contraire explicite. Interpréter systématiquement depuis la perspective visuelle de l'utilisateur.
 
-**Communication Contextuelle** (Important):
-- Les remarques de l'utilisateur concernent TOUJOURS ce qu'il voit dans l'interface utilisateur (frontend), sauf indication contraire explicite
-- Prioriser les corrections d'interface visible par rapport aux ajustements backend
-- Interpréter les demandes depuis la perspective de l'expérience utilisateur
+### Response Format
+- **Langage**: Simple et quotidien, éviter le jargon technique complexe
+- **Structure**: 
+  1. Expliquer d'abord ce que vous allez faire et pourquoi
+  2. Décomposer les tâches complexes en étapes claires (max 5 étapes)
+  3. Utiliser des listes à puces (✓) pour montrer les progrès
+  4. Demander des clarifications si les exigences ne sont pas claires
+  5. Fournir des explications brèves (1-2 phrases) pour les décisions techniques
 
-**Reporting**: Utilisez `mark_completed_and_get_feedback` après chaque fonctionnalité majeure complète pour obtenir des retours utilisateur.
+### UI-First Interpretation
+- **Défaut**: Toute remarque = problème d'interface visible
+- **Priorités**: Interface visible > Logique métier > Backend > Infrastructure
+- **Validation**: Toujours vérifier visuellement après chaque modification
+- **Feedback**: Utiliser `mark_completed_and_get_feedback` après chaque changement UI
 
-**Anti-Loop Strategy**: Utilisez les checkpoints automatiques Replit pour éviter les boucles de développement :
-- **Checkpoint Before**: Créer un point de sauvegarde avant toute modification majeure
-- **Validate First**: Tester une petite partie avant d'implémenter la solution complète
-- **Rollback Ready**: Utiliser `suggest_rollback` si plus de 3 tentatives échouent sur la même fonctionnalité
-- **Progress Tracking**: Documenter chaque étape réussie pour éviter la répétition d'actions
+## Test-Driven Development Culture
 
-**Coding Guidelines**:
-- **Always use TypeScript** pour tous les nouveaux fichiers JavaScript
-- **Type Safety**: Définir explicitement les types pour tous les paramètres de fonction et valeurs de retour
-- **Interfaces**: Utiliser des interfaces pour les objets complexes, pas des types inline
-- **Functional Components**: Toujours utiliser des composants fonctionnels avec hooks
-- **Custom Hooks**: Créer des hooks personnalisés pour la logique réutilisable
-- **State Management**: React Query pour l'état serveur, useState pour l'état local
-- **Drizzle ORM**: Utiliser exclusivement Drizzle pour les opérations DB
-- **Type Safety**: Définir des schémas avec validation Zod
-- **Transactions**: Grouper les opérations liées dans des transactions
-- **Tailwind CSS**: Utiliser exclusivement Tailwind pour le styling
-- **Design System**: shadcn/ui components comme base, personnaliser si nécessaire
-- **Color Scheme**: Couleur principale CJD `#00a844` définie comme `cjd-green`
-- **Typography**: Police Lato pour toute l'application
-- **API Errors**: Toujours utiliser try/catch avec middleware de gestion d'erreur
-- **Form Validation**: React Hook Form + Zod resolver pour validation côté client
-- **Toast Notifications**: useToast hook pour les retours utilisateur
+### Testing Philosophy
+**"Test First, Code Second, Refactor Third"**
 
-**Robustness & Maintainability Patterns**:
-- **NEVER** utiliser des opérations destructrices (DELETE, UPDATE) sans demande explicite
-- **ALWAYS** utiliser des transactions pour les opérations liées
-- **BACKUP-FIRST**: Créer checkpoint avant toute migration/modification de schéma
-- **VALIDATE-BEFORE**: Tester les requêtes avec `EXPLAIN ANALYZE` avant exécution
-- **ROLLBACK-READY**: Préparer les scripts de rollback avant chaque changement
+### Testing Pyramid (90% Coverage Target)
+```
+         /\         E2E Tests (10%)
+        /  \        - Critical user journeys
+       /    \       - Cross-browser testing
+      /      \      
+     /--------\     Integration Tests (30%)
+    /          \    - API endpoints
+   /            \   - Database operations
+  /              \  - Component interactions
+ /________________\ Unit Tests (60%)
+                    - Business logic
+                    - Utility functions
+                    - Component rendering
+```
 
-**Iterative Testing Strategy (Anti-Loop)**:
-- **Never** répéter la même approche qui a échoué 2 fois
-- **Always** analyser les logs d'erreur avant nouvelle tentative
-- **Stop** si aucun progrès après 15 minutes sur une seule fonctionnalité
-- **Document** chaque échec avec la raison pour éviter répétition
+### Iterative Development Process
+1. **Small Steps** (max 30 min per iteration)
+   - Break features into micro-tasks
+   - Test each micro-task independently
+   - Create checkpoint after each success
+   
+2. **Test Categories**
+   - **Pre-Implementation**: Write test scenarios first
+   - **During Implementation**: Run tests every 5 lines of code
+   - **Post-Implementation**: Full regression testing
+   - **Performance Testing**: < 50ms API response required
+
+3. **Validation Checklist** (Before Each Commit)
+   - [ ] LSP diagnostics clean (`get_latest_lsp_diagnostics`)
+   - [ ] Type safety verified (no `any` types)
+   - [ ] UI renders correctly in browser
+   - [ ] API response < 50ms
+   - [ ] Error handling tested
+   - [ ] Accessibility checked (ARIA labels)
+
+### Checkpoint Strategy
+- **Before**: Major changes, database migrations, dependency updates
+- **During**: Every successful test pass
+- **After**: Feature completion, before deployment
+- **Rollback Trigger**: 3 consecutive test failures
+
+## Quality Standards & Metrics
+
+### Code Quality Gates
+- **Type Coverage**: 100% (no implicit `any`)
+- **Test Coverage**: 90% minimum
+- **Bundle Size**: < 500KB gzipped
+- **Lighthouse Score**: > 95 all categories
+- **API Response**: < 50ms (p99)
+- **Error Rate**: < 0.1%
+- **Code Duplication**: < 3%
+
+### Performance Benchmarks
+```typescript
+// Required performance standards
+const PERFORMANCE_REQUIREMENTS = {
+  api: {
+    p50: 30,  // ms
+    p95: 45,  // ms
+    p99: 50   // ms
+  },
+  frontend: {
+    FCP: 1.0,   // First Contentful Paint (seconds)
+    LCP: 2.5,   // Largest Contentful Paint (seconds)
+    FID: 100,   // First Input Delay (ms)
+    CLS: 0.1    // Cumulative Layout Shift
+  },
+  database: {
+    connectionPool: { min: 2, max: 20 },
+    queryTimeout: 5000,  // ms
+    idleTimeout: 60000   // ms
+  }
+};
+```
+
+## Coding Guidelines & Best Practices
+
+### TypeScript Strict Mode
+```typescript
+// tsconfig.json requirements
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true
+  }
+}
+```
+
+### Component Pattern
+```typescript
+// ALWAYS use this pattern for components
+interface ComponentProps {
+  // Explicit types, no 'any'
+  data: SpecificType;
+  onAction: (param: TypedParam) => void;
+  className?: string; // Optional props marked
+}
+
+export function Component({ data, onAction, className }: ComponentProps) {
+  // Early returns for edge cases
+  if (!data) return null;
+  
+  // Custom hooks at top
+  const { state, actions } = useCustomHook();
+  
+  // Effects with cleanup
+  useEffect(() => {
+    const cleanup = setupSomething();
+    return cleanup;
+  }, [dependency]);
+  
+  // Memoized values
+  const computed = useMemo(() => expensiveCalc(data), [data]);
+  
+  // Event handlers
+  const handleClick = useCallback((e: MouseEvent) => {
+    e.preventDefault();
+    onAction(computed);
+  }, [computed, onAction]);
+  
+  return (
+    <div className={cn("base-styles", className)} data-testid="component-name">
+      {/* Content */}
+    </div>
+  );
+}
+```
+
+### API Pattern with Error Handling
+```typescript
+// ALWAYS use Result pattern for API operations
+type Result<T> = 
+  | { success: true; data: T }
+  | { success: false; error: Error };
+
+async function apiOperation<T>(
+  operation: () => Promise<T>
+): Promise<Result<T>> {
+  try {
+    const data = await operation();
+    return { success: true, data };
+  } catch (error) {
+    console.error('[API Error]', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error : new Error('Unknown error')
+    };
+  }
+}
+```
+
+### Database Transaction Pattern
+```typescript
+// ALWAYS use transactions for related operations
+async function safeDbOperation() {
+  return await db.transaction(async (tx) => {
+    try {
+      // Validation first
+      const validation = validateInput(data);
+      if (!validation.success) {
+        throw new ValidationError(validation.error);
+      }
+      
+      // Operations
+      const result1 = await tx.insert(table1).values(data1);
+      const result2 = await tx.update(table2).set(data2);
+      
+      // Logging
+      console.log('[DB] Transaction successful', { result1, result2 });
+      
+      return { success: true, data: { result1, result2 } };
+    } catch (error) {
+      console.error('[DB] Transaction failed, rolling back', error);
+      throw error; // Triggers automatic rollback
+    }
+  });
+}
+```
+
+## Anti-Pattern Detection & Prevention
+
+### Loop Prevention Strategy
+```typescript
+const MAX_RETRIES = 3;
+const ERROR_TRACKER = new Map<string, number>();
+
+function preventLoop(errorKey: string, action: () => void) {
+  const attempts = ERROR_TRACKER.get(errorKey) || 0;
+  
+  if (attempts >= MAX_RETRIES) {
+    console.error(`[LOOP DETECTED] ${errorKey} failed ${MAX_RETRIES} times`);
+    // Trigger rollback
+    return { needsRollback: true };
+  }
+  
+  ERROR_TRACKER.set(errorKey, attempts + 1);
+  
+  try {
+    action();
+    ERROR_TRACKER.delete(errorKey); // Reset on success
+  } catch (error) {
+    console.error(`[Attempt ${attempts + 1}/${MAX_RETRIES}]`, error);
+    throw error;
+  }
+}
+```
+
+### Common Anti-Patterns to Detect
+1. **State Mutation**: Use `immer` or spread operators
+2. **Missing Keys in Lists**: Always provide stable, unique keys
+3. **useEffect Dependencies**: ESLint rule must be enabled
+4. **Async Without Cleanup**: Always handle component unmounting
+5. **SQL Injection**: Use parameterized queries only
+6. **Unhandled Promises**: Every promise needs .catch or try/catch
+7. **Memory Leaks**: Clear intervals, remove listeners, abort fetches
 
 ## System Architecture
 
-### Tech Stack & Core Decisions
-The application uses a modern web stack:
--   **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui.
--   **Backend**: Express.js, TypeScript, Passport.js for authentication.
--   **Database**: PostgreSQL (Neon) with Drizzle ORM, optimized for connection pooling.
--   **State Management**: TanStack Query for server state, React hooks for local state.
--   **Routing**: Wouter for lightweight client-side routing.
+### Tech Stack (Optimized 2025)
+- **Frontend**: React 18.3, TypeScript 5.6, Vite 6, Tailwind CSS 3.4, shadcn/ui
+- **Backend**: Express.js 4.21, TypeScript, Passport.js, compression, helmet
+- **Database**: PostgreSQL 16 (Neon) with Drizzle ORM, optimized indexes
+- **State**: TanStack Query v5 (server), Zustand (client), Context (auth)
+- **Testing**: Vitest, React Testing Library, Playwright, MSW
+- **Monitoring**: Custom performance tracking, error boundaries, health checks
 
-### Recent Performance Achievements (August 19, 2025)
--   **Ultra-Robust Validation**: Pattern Result<T> implemented for 100% error handling
--   **Database Performance**: 181ms average query time, optimized connection pooling
--   **Transaction Safety**: All operations atomic with commit/rollback logging
--   **Real-time Monitoring**: DB pool stats, query logging, performance tracking
--   **Anti-Duplicate Protection**: Votes and inscriptions with business logic validation
--   **Data Migration Complete**: Successfully migrated authentic CJD Amiens data from Firestore
--   **React Query Fixed**: Backend response format {success: true, data: []} properly handled by frontend
--   **PWA Implementation Complete**: Full Progressive Web App capabilities with 2025 best practices
--   **Advanced Caching**: Multi-layer service worker with NetworkFirst/CacheFirst strategies
--   **Offline Support**: Complete offline functionality with intelligent fallbacks
--   **App Installation**: Native-like installation with shortcuts and app controls
--   **Admin Interface Enhanced**: Replaced approve/reject buttons with complete status dropdown system
--   **Mobile Admin Optimized**: Responsive card-based interface for perfect mobile administration
--   **Status Workflow Complete**: 6-status flexible system (En attente, Approuvée, Rejetée, En cours d'étude, Reportée, Réalisée)
--   **Documentation Complete**: Comprehensive README.md with architecture, deployment, and contribution guidelines
+### Performance Optimizations Applied
+- **Database**: 
+  - Connection pool: min=2, max=20, idle=60s
+  - Indexes on all foreign keys and filtered columns
+  - Query optimization: < 1ms execution time
+  - Prepared statements for all queries
+  
+- **Frontend**:
+  - Code splitting by route
+  - Image lazy loading with intersection observer
+  - Virtual scrolling for large lists
+  - Memoization of expensive computations
+  - Service Worker with intelligent caching
+  
+- **Backend**:
+  - Response compression (gzip/brotli)
+  - ETag caching headers
+  - Rate limiting: 100 req/min per IP
+  - Circuit breaker for external services
 
-### UI/UX Decisions
--   **Styling**: Exclusively uses Tailwind CSS for utility-first styling.
--   **Component Library**: Based on shadcn/ui components, customizable as needed.
--   **Color Scheme**: The primary CJD color `#00a844` is defined as `cjd-green` in the CSS.
--   **Typography**: Lato font is used consistently across the application.
--   **Responsiveness**: Designed with a responsive interface to ensure usability across devices.
+### Security Measures
+- **Authentication**: 
+  - Scrypt password hashing (N=16384, r=8, p=1)
+  - Session timeout: 24h rolling
+  - CSRF tokens on all mutations
+  - Rate limiting on login: 5 attempts/15min
+  
+- **Data Protection**:
+  - Input validation: Zod schemas on all endpoints
+  - SQL injection prevention: Drizzle ORM only
+  - XSS prevention: React auto-escaping + CSP headers
+  - Secrets management: Environment variables only
 
-### System Design Choices
--   **Database Schema**: Designed to mirror the original Firestore structure, including `admins`, `ideas`, `votes`, `events`, and `inscriptions` tables.
--   **API Structure**: RESTful endpoints (`/api/ideas`, `/api/votes`, `/api/events`, `/api/inscriptions`).
--   **Authentication**: Session-based authentication using Passport.js, with email as the primary username. Admin routes are protected, while core functionalities are publicly accessible.
--   **Input Validation**: All API inputs are validated using Zod schemas.
--   **Performance Optimizations**: Includes an optimized database connection pool (max: 20, idle: 30s) and frontend caching/invalidation via TanStack Query. Real-time DB performance monitoring is integrated.
--   **Security**: Implements Scrypt hashing for passwords, secure cookies with timeouts, CSRF protection, and rate limiting for login attempts. SQL injection is prevented through exclusive use of Drizzle ORM, parameterized queries, and Zod input validation.
--   **Robustness**: Emphasizes ultra-safe database operations (transactions, backup-first, validate-before, rollback-ready), robust error handling with try/catch and middleware, and comprehensive form validation. Features like graceful degradation, circuit breakers, and health checks are integrated.
+### Monitoring & Observability
+```typescript
+// Performance monitoring integrated
+const MONITORING = {
+  dbQueries: {
+    slowThreshold: 100, // ms
+    logQuery: (query, time) => {
+      if (time > MONITORING.dbQueries.slowThreshold) {
+        console.warn(`[SLOW QUERY] ${time}ms:`, query);
+      }
+    }
+  },
+  apiCalls: {
+    logRequest: (method, path, time, status) => {
+      console.log(`[API] ${method} ${path} - ${status} in ${time}ms`);
+    }
+  },
+  errors: {
+    captureException: (error, context) => {
+      console.error('[ERROR]', { error, context, timestamp: Date.now() });
+      // Send to monitoring service in production
+    }
+  }
+};
+```
 
-## External Dependencies
-**Core Stack**: React 18, TypeScript, Vite, Express.js, PostgreSQL (Neon), Drizzle ORM
-**UI/UX**: Tailwind CSS, shadcn/ui, Radix UI, Lucide Icons  
-**State/Auth**: TanStack Query, Passport.js, React Hook Form, Zod validation
-**Performance**: Connection pooling optimisé, monitoring temps réel, health checks automatiques
-**Security**: Scrypt hashing, CSRF protection, input sanitization, rate limiting
-**Monitoring**: Real-time DB stats, error tracking, performance alerts, automated recovery
+## Development Workflow
 
-## Development Anti-Patterns (AVOID)
+### Branch Strategy
+- `main`: Production-ready code only
+- `develop`: Integration branch
+- `feature/*`: New features
+- `fix/*`: Bug fixes
+- `test/*`: Experimental changes
 
-**❌ Loop-Causing Patterns**:
-- Modifier plusieurs fichiers simultanément sans test intermédiaire
-- Réessayer la même solution échouée plus de 2 fois
-- Ignorer les messages d'erreur LSP avant de continuer
-- Implémenter des fonctionnalités complexes sans décomposition
+### Pre-Commit Checklist
+1. [ ] All tests passing (`npm test`)
+2. [ ] No TypeScript errors (`npm run type-check`)
+3. [ ] No ESLint warnings (`npm run lint`)
+4. [ ] Performance benchmarks met
+5. [ ] Documentation updated
+6. [ ] Changelog entry added
 
-**❌ Robustness Killers**:
-- Utiliser `any` type au lieu de types stricts
-- Oublier la validation d'entrée sur les APIs
-- Mutation directe d'état sans immutabilité
-- Requêtes DB sans gestion d'erreur/transaction
+### Deployment Process
+1. **Local Testing**: Full test suite + manual QA
+2. **Staging**: Deploy to test environment
+3. **Smoke Tests**: Critical path validation
+4. **Production**: Blue-green deployment
+5. **Monitoring**: Watch metrics for 30 min
+6. **Rollback Ready**: Previous version on standby
 
-**❌ Maintenance Nightmares**:
-- Code dupliqué au lieu de patterns réutilisables
-- Couplage fort entre composants
-- Absence de documentation sur les décisions techniques
-- Tests unitaires manquants pour la logique métier critique
+## Success Metrics
 
-**✅ Success Indicators**:
-- **Reliability**: Zero downtime deployment possible
-- **Performance**: < 200ms response time maintained
-- **Security**: No vulnerabilities in dependency scan
-- **Maintainability**: New features can be added in < 2 hours
-- **Testability**: 90%+ code coverage on critical paths
+### User Experience
+- **Page Load**: < 2s on 3G
+- **Interaction**: < 100ms response
+- **Error Rate**: < 0.1% of sessions
+- **Availability**: 99.9% uptime
+
+### Developer Experience
+- **Build Time**: < 30s
+- **Test Suite**: < 2 min
+- **New Feature**: < 2 hours to implement
+- **Bug Fix**: < 30 min average
+- **Code Review**: < 1 hour turnaround
+
+### Business Metrics
+- **User Engagement**: > 80% weekly active
+- **Feature Adoption**: > 60% within 1 week
+- **Support Tickets**: < 5 per week
+- **Performance Complaints**: 0 tolerance
+
+## External Dependencies (Locked Versions)
+```json
+{
+  "core": {
+    "react": "^18.3.1",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0",
+    "express": "^4.21.0",
+    "postgresql": "^16.0.0"
+  },
+  "ui": {
+    "tailwindcss": "^3.4.0",
+    "@shadcn/ui": "^0.9.0",
+    "@radix-ui": "^1.2.0",
+    "lucide-react": "^0.400.0"
+  },
+  "state": {
+    "@tanstack/react-query": "^5.60.0",
+    "zustand": "^5.0.0",
+    "react-hook-form": "^7.54.0",
+    "zod": "^3.24.0"
+  },
+  "testing": {
+    "vitest": "^2.1.0",
+    "@testing-library/react": "^16.0.0",
+    "playwright": "^1.48.0",
+    "msw": "^2.6.0"
+  }
+}
+```
+
+## Continuous Improvement
+- **Weekly**: Performance review & optimization
+- **Bi-weekly**: Dependency updates & security scan
+- **Monthly**: User feedback integration
+- **Quarterly**: Architecture review & refactoring
+
+---
+*Last Updated: January 2025*
+*Version: 2.0.0*
+*Maintainer: CJD Amiens Development Team*
