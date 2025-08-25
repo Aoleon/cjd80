@@ -142,6 +142,7 @@ export class DatabaseStorage implements IStorage {
           proposedBy: ideas.proposedBy,
           proposedByEmail: ideas.proposedByEmail,
           status: ideas.status,
+          featured: ideas.featured,
           deadline: ideas.deadline,
           createdAt: ideas.createdAt,
           updatedAt: ideas.updatedAt,
@@ -152,7 +153,7 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(votes, eq(ideas.id, votes.ideaId))
         .where(eq(ideas.status, 'approved')) // Only show approved ideas to public
         .groupBy(ideas.id)
-        .orderBy(desc(ideas.createdAt));
+        .orderBy(desc(ideas.featured), desc(ideas.createdAt)); // Featured en premier, puis par date
       
       const formattedResult = result.map(row => ({
         ...row,
@@ -549,6 +550,7 @@ export class DatabaseStorage implements IStorage {
           proposedBy: ideas.proposedBy,
           proposedByEmail: ideas.proposedByEmail,
           status: ideas.status,
+          featured: ideas.featured,
           deadline: ideas.deadline,
           createdAt: ideas.createdAt,
           updatedAt: ideas.updatedAt,
@@ -558,7 +560,7 @@ export class DatabaseStorage implements IStorage {
         .from(ideas)
         .leftJoin(votes, eq(ideas.id, votes.ideaId))
         .groupBy(ideas.id)
-        .orderBy(desc(ideas.createdAt));
+        .orderBy(desc(ideas.featured), desc(ideas.createdAt)); // Featured en premier
       
       const formattedResult = result.map(row => ({
         ...row,
@@ -631,6 +633,38 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: undefined };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du statut de l'idée: ${error}`) };
+    }
+  }
+
+  async toggleIdeaFeatured(id: string): Promise<Result<boolean>> {
+    try {
+      // Check if idea exists
+      const ideaResult = await this.getIdea(id);
+      if (!ideaResult.success) {
+        return { success: false, error: ideaResult.error };
+      }
+      if (!ideaResult.data) {
+        return { success: false, error: new NotFoundError("Idée introuvable") };
+      }
+
+      const newFeaturedStatus = !ideaResult.data.featured;
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(ideas)
+          .set({ 
+            featured: newFeaturedStatus,
+            updatedAt: sql`NOW()`,
+            updatedBy: "admin"
+          })
+          .where(eq(ideas.id, id));
+        
+        console.log(`[Storage] Featured idée mis à jour: ${id} -> ${newFeaturedStatus}`);
+      });
+
+      return { success: true, data: newFeaturedStatus };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du featured de l'idée: ${error}`) };
     }
   }
 

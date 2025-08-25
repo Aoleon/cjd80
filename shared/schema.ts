@@ -37,6 +37,7 @@ export const ideas = pgTable("ideas", {
   proposedBy: text("proposed_by").notNull(),
   proposedByEmail: text("proposed_by_email").notNull(),
   status: text("status").default(IDEA_STATUS.PENDING).notNull(), // pending, approved, rejected, under_review, postponed, completed
+  featured: boolean("featured").default(false).notNull(), // Mise en avant de l'idée
   deadline: timestamp("deadline"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -44,6 +45,7 @@ export const ideas = pgTable("ideas", {
 }, (table) => ({
   statusIdx: index("ideas_status_idx").on(table.status),
   emailIdx: index("ideas_email_idx").on(table.proposedByEmail),
+  featuredIdx: index("ideas_featured_idx").on(table.featured),
 }));
 
 // Votes table

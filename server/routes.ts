@@ -303,6 +303,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/admin/ideas/:id/featured", requireAuth, async (req, res, next) => {
+    try {
+      const result = await storage.toggleIdeaFeatured(req.params.id);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.json({ featured: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.patch("/api/admin/events/:id/status", requireAuth, async (req, res, next) => {
     try {
       const validatedData = updateEventStatusSchema.parse(req.body);

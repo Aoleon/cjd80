@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ThumbsUp, Lightbulb, Loader2, Vote, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { ThumbsUp, Lightbulb, Loader2, Vote, Plus, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import VoteModal from "./vote-modal";
@@ -102,7 +102,14 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
               <CardContent className="p-5 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                   <h3 className="font-bold text-lg sm:text-xl text-gray-900 line-clamp-2 flex-1 leading-tight">
-                    {idea.title}
+                    <div className="flex items-start gap-2">
+                      {idea.featured && (
+                        <div title="Idée mise en avant">
+                          <Star className="w-5 h-5 text-yellow-500 fill-current flex-shrink-0 mt-0.5" />
+                        </div>
+                      )}
+                      <span>{idea.title}</span>
+                    </div>
                   </h3>
                   <span className={`px-3 py-1.5 text-xs font-semibold rounded-full border whitespace-nowrap shadow-sm ${getStatusColor(idea.status)}`}>
                     {getStatusLabel(idea.status)}

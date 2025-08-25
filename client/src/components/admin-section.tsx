@@ -15,6 +15,7 @@ import {
   Edit,
   Download,
   CalendarPlus,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -211,6 +212,27 @@ export default function AdminSection() {
     },
   });
 
+  const toggleIdeaFeaturedMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("PATCH", `/api/admin/ideas/${id}/featured`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ideas"] });
+      toast({
+        title: "Mise en avant modifiée",
+        description: "Le statut de mise en avant de l'idée a été modifié",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier la mise en avant de l'idée",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleIdeaStatusChange = (id: string, status: string) => {
     updateIdeaStatusMutation.mutate({ id, status });
   };
@@ -400,7 +422,12 @@ export default function AdminSection() {
                                   }}
                                   className="font-semibold text-left hover:text-cjd-green transition-colors cursor-pointer text-blue-600 hover:underline"
                                 >
-                                  {idea.title}
+                                  <div className="flex items-center gap-1">
+                                    {idea.featured && (
+                                      <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />
+                                    )}
+                                    {idea.title}
+                                  </div>
                                 </button>
                                 {idea.description && (
                                   <div className="text-sm text-gray-500 truncate">
@@ -439,6 +466,16 @@ export default function AdminSection() {
                             </TableCell>
                             <TableCell className="text-center">
                               <div className="flex justify-center space-x-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => toggleIdeaFeaturedMutation.mutate(idea.id)}
+                                  disabled={toggleIdeaFeaturedMutation.isPending}
+                                  className={idea.featured ? "text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50" : "text-gray-400 hover:text-yellow-500 hover:bg-yellow-50"}
+                                  title={idea.featured ? "Retirer la mise en avant" : "Mettre en avant cette idée"}
+                                >
+                                  <Star className={`w-4 h-4 ${idea.featured ? "fill-current" : ""}`} />
+                                </Button>
                                 {idea.status === IDEA_STATUS.APPROVED && (
                                   <Button
                                     size="sm"
@@ -493,7 +530,10 @@ export default function AdminSection() {
                               }}
                               className="flex-1 text-left"
                             >
-                              <h4 className="font-semibold text-blue-600 hover:text-cjd-green transition-colors hover:underline">
+                              <h4 className="font-semibold text-blue-600 hover:text-cjd-green transition-colors hover:underline flex items-center gap-1">
+                                {idea.featured && (
+                                  <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />
+                                )}
                                 {idea.title}
                               </h4>
                               {idea.description && (
@@ -551,16 +591,28 @@ export default function AdminSection() {
                                 </SelectContent>
                               </Select>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDeleteIdea(idea.id)}
-                              disabled={deleteIdeaMutation.isPending}
-                              className="w-full text-red-600 border-red-300 hover:bg-red-50"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Supprimer cette idée
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => toggleIdeaFeaturedMutation.mutate(idea.id)}
+                                disabled={toggleIdeaFeaturedMutation.isPending}
+                                className={`flex-1 ${idea.featured ? "text-yellow-500 border-yellow-300 hover:bg-yellow-50" : "text-gray-600 border-gray-300 hover:bg-gray-50"}`}
+                              >
+                                <Star className={`w-4 h-4 mr-2 ${idea.featured ? "fill-current" : ""}`} />
+                                {idea.featured ? "Retirer mise en avant" : "Mettre en avant"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteIdea(idea.id)}
+                                disabled={deleteIdeaMutation.isPending}
+                                className="flex-1 text-red-600 border-red-300 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Supprimer
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </Card>
