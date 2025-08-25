@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PWAInstallButton } from "@/components/pwa-install-prompt";
 
 interface HeaderProps {
   activeSection: "ideas" | "propose" | "events" | "admin";
@@ -44,11 +43,9 @@ export default function Header({ activeSection, setActiveSection }: HeaderProps)
                 {item.label}
               </button>
             ))}
-            <PWAInstallButton />
           </nav>
           
           <div className="lg:hidden flex items-center space-x-2">
-            <PWAInstallButton />
             <Button
               variant="ghost"
               size="sm"
