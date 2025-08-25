@@ -191,6 +191,11 @@ export const updateIdeaStatusSchema = z.object({
   ]),
 });
 
+export const updateIdeaSchema = z.object({
+  title: z.string().min(1, "Le titre est requis").max(255, "Titre trop long"),
+  description: z.string().nullable().optional(),
+});
+
 export const insertVoteSchema = createInsertSchema(votes).pick({
   ideaId: true,
   voterName: true,

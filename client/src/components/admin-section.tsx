@@ -39,6 +39,7 @@ import {
 import EventAdminModal from "./event-admin-modal";
 import EventDetailModal from "./event-detail-modal";
 import IdeaDetailModal from "./idea-detail-modal";
+import EditIdeaModal from "./edit-idea-modal";
 import InscriptionExportModal from "./inscription-export-modal";
 import AdminLogin from "./admin-login";
 import type { Idea, Event } from "@shared/schema";
@@ -73,6 +74,10 @@ export default function AdminSection() {
   // Modal state for inscription export
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [eventToExport, setEventToExport] = useState<EventWithInscriptions | null>(null);
+
+  // Modal state for editing ideas
+  const [editIdeaModalOpen, setEditIdeaModalOpen] = useState(false);
+  const [ideaToEdit, setIdeaToEdit] = useState<IdeaWithVotes | null>(null);
 
 
   const { data: ideas, isLoading: ideasLoading } = useQuery<IdeaWithVotes[]>({
@@ -149,6 +154,11 @@ export default function AdminSection() {
     if (confirm("Êtes-vous sûr de vouloir supprimer cette idée ?")) {
       deleteIdeaMutation.mutate(id);
     }
+  };
+
+  const handleEditIdea = (idea: IdeaWithVotes) => {
+    setIdeaToEdit(idea);
+    setEditIdeaModalOpen(true);
   };
 
   const handleDeleteEvent = (id: string) => {
@@ -449,6 +459,16 @@ export default function AdminSection() {
                                 >
                                   <Star className={`w-4 h-4 ${idea.featured ? "fill-current" : ""}`} />
                                 </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditIdea(idea)}
+                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                  title="Modifier cette idée"
+                                  data-testid={`button-edit-${idea.id}`}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
                                 {(idea.status === IDEA_STATUS.APPROVED || idea.status === IDEA_STATUS.COMPLETED) && (
                                   <Button
                                     size="sm"
@@ -577,6 +597,16 @@ export default function AdminSection() {
                               >
                                 <Star className={`w-4 h-4 mr-2 ${idea.featured ? "fill-current" : ""}`} />
                                 {idea.featured ? "Retirer mise en avant" : "Mettre en avant"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditIdea(idea)}
+                                className="flex-1 text-blue-600 border-blue-300 hover:bg-blue-50"
+                                data-testid={`button-edit-mobile-${idea.id}`}
+                              >
+                                <Edit className="w-4 h-4 mr-2" />
+                                Modifier
                               </Button>
                               <Button
                                 size="sm"
@@ -884,6 +914,12 @@ export default function AdminSection() {
         open={ideaDetailModalOpen}
         onOpenChange={setIdeaDetailModalOpen}
         idea={selectedIdea}
+      />
+
+      <EditIdeaModal
+        open={editIdeaModalOpen}
+        onOpenChange={setEditIdeaModalOpen}
+        idea={ideaToEdit}
       />
       
       <InscriptionExportModal

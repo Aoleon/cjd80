@@ -11,6 +11,7 @@ import {
   insertEventSchema,
   insertInscriptionSchema,
   updateIdeaStatusSchema,
+  updateIdeaSchema,
   updateEventStatusSchema 
 } from "@shared/schema";
 import { ZodError } from "zod";
@@ -324,6 +325,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ success: true, eventId: result.data.id });
     } catch (error) {
+      next(error);
+    }
+  });
+
+  // Update idea content (admin only)
+  app.put("/api/admin/ideas/:id", requireAuth, async (req, res, next) => {
+    try {
+      const validatedData = updateIdeaSchema.parse(req.body);
+      const result = await storage.updateIdea(req.params.id, validatedData);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
       next(error);
     }
   });

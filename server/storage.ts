@@ -46,6 +46,7 @@ export interface IStorage {
   createIdea(idea: InsertIdea): Promise<Result<Idea>>;
   deleteIdea(id: string): Promise<Result<void>>;
   updateIdeaStatus(id: string, status: string): Promise<Result<void>>;
+  updateIdea(id: string, ideaData: { title?: string; description?: string | null }): Promise<Result<Idea>>;
   transformIdeaToEvent(ideaId: string): Promise<Result<Event>>;
   isDuplicateIdea(title: string): Promise<boolean>;
   getAllIdeas(): Promise<Result<(Idea & { voteCount: number })[]>>;
@@ -644,6 +645,45 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: undefined };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du statut de l'idée: ${error}`) };
+    }
+  }
+
+  async updateIdea(id: string, ideaData: { title?: string; description?: string | null }): Promise<Result<Idea>> {
+    try {
+      // Check if idea exists
+      const ideaResult = await this.getIdea(id);
+      if (!ideaResult.success) {
+        return { success: false, error: ideaResult.error };
+      }
+      if (!ideaResult.data) {
+        return { success: false, error: new NotFoundError("Idée introuvable") };
+      }
+
+      // Check for duplicate title if title is being updated
+      if (ideaData.title && ideaData.title !== ideaResult.data.title) {
+        if (await this.isDuplicateIdea(ideaData.title)) {
+          return { success: false, error: new DuplicateError("Une idée avec ce titre existe déjà") };
+        }
+      }
+
+      const result = await db.transaction(async (tx) => {
+        const [updatedIdea] = await tx
+          .update(ideas)
+          .set({ 
+            ...ideaData,
+            updatedAt: sql`NOW()`,
+            updatedBy: "admin"
+          })
+          .where(eq(ideas.id, id))
+          .returning();
+        
+        console.log(`[Storage] Idée mise à jour: ${id} - ${ideaData.title || 'contenu modifié'}`);
+        return updatedIdea;
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de l'idée: ${error}`) };
     }
   }
 
