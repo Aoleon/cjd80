@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, User, Calendar, TrendingUp, Users, Loader2 } from "lucide-react";
+import { Lightbulb, User, Calendar, TrendingUp, Users, Loader2, CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +73,31 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
     },
   });
 
+  const transformToEventMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("POST", `/api/admin/ideas/${id}/transform-to-event`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      toast({
+        title: "Idée transformée",
+        description: "L'idée a été transformée en événement avec succès",
+      });
+      onOpenChange(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erreur de transformation",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Charger les votes quand le modal s'ouvre - doit être AVANT le return null
   useEffect(() => {
     if (open && idea) {
@@ -118,6 +143,12 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
   const handleDelete = () => {
     if (confirm("Êtes-vous sûr de vouloir supprimer définitivement cette idée ?")) {
       deleteIdeaMutation.mutate(idea.id);
+    }
+  };
+
+  const handleTransformToEvent = () => {
+    if (confirm("Êtes-vous sûr de vouloir transformer cette idée en événement ? Cette action créera un nouvel événement basé sur cette idée.")) {
+      transformToEventMutation.mutate(idea.id);
     }
   };
 
@@ -253,6 +284,21 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Transform to Event Action */}
+            {(idea.status === IDEA_STATUS.APPROVED || idea.status === IDEA_STATUS.COMPLETED) && (
+              <div className="pt-3 border-t border-gray-200">
+                <Button
+                  onClick={handleTransformToEvent}
+                  disabled={transformToEventMutation.isPending}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  data-testid="button-transform-to-event"
+                >
+                  <CalendarPlus className="w-4 h-4 mr-2" />
+                  {transformToEventMutation.isPending ? "Transformation..." : "Transformer en événement"}
+                </Button>
+              </div>
+            )}
             
             <div className="pt-3 border-t border-gray-200">
               <Button
@@ -260,6 +306,7 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
                 variant="destructive"
                 disabled={deleteIdeaMutation.isPending}
                 className="w-full"
+                data-testid="button-delete-idea"
               >
                 Supprimer définitivement
               </Button>

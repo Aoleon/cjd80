@@ -315,6 +315,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Transform idea to event (admin only)
+  app.post("/api/admin/ideas/:id/transform-to-event", requireAuth, async (req, res, next) => {
+    try {
+      const result = await storage.transformIdeaToEvent(req.params.id);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.json({ success: true, eventId: result.data.id });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.patch("/api/admin/events/:id/status", requireAuth, async (req, res, next) => {
     try {
       const validatedData = updateEventStatusSchema.parse(req.body);

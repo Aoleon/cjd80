@@ -44,6 +44,7 @@ export interface IStorage {
   createIdea(idea: InsertIdea): Promise<Result<Idea>>;
   deleteIdea(id: string): Promise<Result<void>>;
   updateIdeaStatus(id: string, status: string): Promise<Result<void>>;
+  transformIdeaToEvent(ideaId: string): Promise<Result<Event>>;
   isDuplicateIdea(title: string): Promise<boolean>;
   getAllIdeas(): Promise<Result<(Idea & { voteCount: number })[]>>;
   
@@ -673,6 +674,73 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: newFeaturedStatus };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du featured de l'idée: ${error}`) };
+    }
+  }
+
+  async transformIdeaToEvent(ideaId: string): Promise<Result<Event>> {
+    try {
+      // Récupérer l'idée source
+      const ideaResult = await this.getIdea(ideaId);
+      if (!ideaResult.success) {
+        return { success: false, error: ideaResult.error };
+      }
+      if (!ideaResult.data) {
+        return { success: false, error: new NotFoundError("Idée introuvable") };
+      }
+
+      const idea = ideaResult.data;
+
+      // Vérifier que l'idée peut être transformée (approuvée ou réalisée)
+      if (idea.status !== IDEA_STATUS.APPROVED && idea.status !== IDEA_STATUS.COMPLETED) {
+        return { success: false, error: new ValidationError("Seules les idées approuvées ou réalisées peuvent être transformées en événements") };
+      }
+
+      // Créer l'événement dans une transaction
+      const result = await db.transaction(async (tx) => {
+        // Créer l'événement basé sur l'idée
+        const eventData = {
+          title: `Événement: ${idea.title}`,
+          description: idea.description ? 
+            `Événement créé à partir de l'idée proposée par ${idea.proposedBy}.\n\n${idea.description}` : 
+            `Événement créé à partir de l'idée proposée par ${idea.proposedBy}: "${idea.title}"`,
+          // Définir la date à dans 30 jours par défaut
+          date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          location: "À définir",
+          maxParticipants: null,
+          helloAssoLink: null,
+          enableExternalRedirect: false,
+          externalRedirectUrl: null,
+          showInscriptionsCount: true,
+          showAvailableSeats: true,
+          status: EVENT_STATUS.DRAFT, // Créer en brouillon pour permettre les modifications
+          updatedBy: "admin"
+        };
+
+        const [newEvent] = await tx
+          .insert(events)
+          .values([eventData])
+          .returning();
+
+        // Marquer l'idée comme réalisée si elle ne l'est pas déjà
+        if (idea.status !== IDEA_STATUS.COMPLETED) {
+          await tx
+            .update(ideas)
+            .set({ 
+              status: IDEA_STATUS.COMPLETED,
+              updatedAt: sql`NOW()`,
+              updatedBy: "admin" 
+            })
+            .where(eq(ideas.id, ideaId));
+        }
+
+        console.log(`[Storage] Idée transformée en événement: ${ideaId} -> ${newEvent.id}`);
+        return newEvent;
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('[Storage] Erreur transformation idée vers événement:', error);
+      return { success: false, error: new DatabaseError(`Erreur lors de la transformation de l'idée en événement: ${error}`) };
     }
   }
 
