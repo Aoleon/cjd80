@@ -4,3 +4,12 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Configuration et données locales
+replit.md
+.replit
+replit.nix
+
+# Tests et développement local
+test/test-validation-report.md
+*.log
