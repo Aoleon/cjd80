@@ -12,17 +12,19 @@ import type { Idea } from "@shared/schema";
 interface EditIdeaModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  idea: Idea;
+  idea: Idea | null;
 }
 
 export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModalProps) {
-  const [title, setTitle] = useState(idea.title);
-  const [description, setDescription] = useState(idea.description || "");
+  const [title, setTitle] = useState(idea?.title || "");
+  const [description, setDescription] = useState(idea?.description || "");
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const updateIdeaMutation = useMutation({
     mutationFn: async (data: { title: string; description: string | null }) => {
+      if (!idea) throw new Error("Aucune idée sélectionnée");
+      
       const response = await fetch(`/api/admin/ideas/${idea.id}`, {
         method: "PUT",
         headers: {
@@ -76,8 +78,8 @@ export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModa
   };
 
   const handleCancel = () => {
-    setTitle(idea.title);
-    setDescription(idea.description || "");
+    setTitle(idea?.title || "");
+    setDescription(idea?.description || "");
     onOpenChange(false);
   };
 
@@ -90,7 +92,7 @@ export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModa
             Modifier l'idée
           </DialogTitle>
           <DialogDescription>
-            Modifier le titre et la description de l'idée proposée par {idea.proposedBy}
+            Modifier le titre et la description de l'idée proposée par {idea?.proposedBy || "Utilisateur"}
           </DialogDescription>
         </DialogHeader>
 
@@ -127,11 +129,11 @@ export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModa
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Décrivez votre idée en détail..."
               className="w-full min-h-32 resize-y"
-              maxLength={1000}
+              maxLength={5000}
               data-testid="textarea-edit-description"
             />
             <p className="text-xs text-gray-500">
-              {description.length}/1000 caractères
+              {description.length}/5000 caractères
             </p>
           </div>
 
