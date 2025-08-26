@@ -153,8 +153,8 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
                 )}
                 <div className="border-t border-gray-100 pt-4">
                   {/* Section votes temporairement masquée */}
-                  <div className="hidden flex-col xs:flex-row xs:items-center xs:justify-between gap-3 xs:gap-2 mb-3">
-                    <div className="flex items-center space-x-2">
+                  <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 xs:gap-2 mb-3">
+                    <div className="hidden items-center space-x-2">
                       <div className="bg-cjd-green/10 p-1.5 rounded-full">
                         <ThumbsUp className="w-4 h-4 text-cjd-green flex-shrink-0" />
                       </div>
