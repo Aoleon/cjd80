@@ -294,7 +294,7 @@ export default function EventAdminModal({
           {/* Max Participants Field */}
           <div>
             <Label htmlFor="event-max-participants" className="text-sm sm:text-base font-medium text-gray-700">
-              Nombre maximum de participants (optionnel)
+              📊 Nombre total de places disponibles (optionnel)
             </Label>
             <Input
               id="event-max-participants"
@@ -307,7 +307,7 @@ export default function EventAdminModal({
               className="mt-1 sm:mt-2 text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Limitez le nombre d'inscriptions si nécessaire (1-1000 participants)
+              💡 <strong>Définit le nombre maximum de participants.</strong> Si renseigné, les utilisateurs verront "X inscrits / Y places" et "Z places restantes" (selon les options d'affichage ci-dessous).
             </p>
           </div>
 
@@ -370,7 +370,7 @@ export default function EventAdminModal({
 
           {/* Display Options Section */}
           <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h3 className="text-sm font-semibold text-gray-700 mb-1">Options d'affichage</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">👁️ Options d'affichage des places</h3>
             
             <div className="space-y-2 sm:space-y-3">
               <div className="flex items-start space-x-2">
@@ -379,13 +379,21 @@ export default function EventAdminModal({
                   checked={formData.showInscriptionsCount}
                   onCheckedChange={(checked) => handleInputChange("showInscriptionsCount", checked as boolean)}
                   className="mt-1"
+                  disabled={!formData.maxParticipants}
                 />
-                <Label 
-                  htmlFor="show-inscriptions" 
-                  className="text-sm sm:text-base font-medium text-gray-700 cursor-pointer leading-relaxed"
-                >
-                  Afficher le nombre d'inscrits
-                </Label>
+                <div className="flex-1">
+                  <Label 
+                    htmlFor="show-inscriptions" 
+                    className={`text-sm sm:text-base font-medium cursor-pointer leading-relaxed ${
+                      !formData.maxParticipants ? 'text-gray-400' : 'text-gray-700'
+                    }`}
+                  >
+                    Afficher le nombre d'inscrits ("X inscrits / Y places")
+                  </Label>
+                  {!formData.maxParticipants && (
+                    <p className="text-xs text-gray-400 mt-1">Nécessite un nombre total de places</p>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-start space-x-2">
@@ -394,19 +402,32 @@ export default function EventAdminModal({
                   checked={formData.showAvailableSeats}
                   onCheckedChange={(checked) => handleInputChange("showAvailableSeats", checked as boolean)}
                   className="mt-1"
+                  disabled={!formData.maxParticipants}
                 />
-                <Label 
-                  htmlFor="show-seats" 
-                  className="text-sm sm:text-base font-medium text-gray-700 cursor-pointer leading-relaxed"
-                >
-                  Afficher le nombre de places disponibles
-                </Label>
+                <div className="flex-1">
+                  <Label 
+                    htmlFor="show-seats" 
+                    className={`text-sm sm:text-base font-medium cursor-pointer leading-relaxed ${
+                      !formData.maxParticipants ? 'text-gray-400' : 'text-gray-700'
+                    }`}
+                  >
+                    Afficher le nombre de places restantes ("Z places disponibles")
+                  </Label>
+                  {!formData.maxParticipants && (
+                    <p className="text-xs text-gray-400 mt-1">Nécessite un nombre total de places</p>
+                  )}
+                </div>
               </div>
             </div>
             
-            <p className="text-xs text-gray-500">
-              Ces options contrôlent ce qui est visible pour les utilisateurs sur la page publique
-            </p>
+            <div className="p-3 bg-blue-100 rounded-lg border border-blue-200">
+              <p className="text-xs text-blue-800">
+                💡 <strong>Comment ça fonctionne :</strong><br/>
+                • Définissez d'abord le <strong>nombre total de places</strong> ci-dessus<br/>
+                • Puis choisissez quelles informations afficher aux utilisateurs<br/>
+                • Le système calcule automatiquement les places restantes en soustrayant les inscriptions
+              </p>
+            </div>
           </div>
 
           {/* Action Buttons */}
