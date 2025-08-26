@@ -201,6 +201,7 @@ export const updateIdeaSchema = z.object({
   proposedByEmail: z.string()
     .email("Adresse email invalide. Veuillez saisir une adresse email valide (ex: nom@domaine.fr)")
     .transform(sanitizeText),
+  createdAt: z.string().datetime("La date de publication n'est pas valide").optional(),
 });
 
 export const insertVoteSchema = createInsertSchema(votes).pick({

@@ -20,6 +20,7 @@ export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModa
   const [description, setDescription] = useState("");
   const [proposedBy, setProposedBy] = useState("");
   const [proposedByEmail, setProposedByEmail] = useState("");
+  const [createdAt, setCreatedAt] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -30,17 +31,21 @@ export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModa
       setDescription(idea.description || "");
       setProposedBy(idea.proposedBy || "");
       setProposedByEmail(idea.proposedByEmail || "");
+      // Format date for datetime-local input (remove seconds and timezone)
+      const formattedDate = idea.createdAt ? new Date(idea.createdAt).toISOString().slice(0, 16) : "";
+      setCreatedAt(formattedDate);
     } else if (!open) {
       // Réinitialiser les champs quand le modal se ferme
       setTitle("");
       setDescription("");
       setProposedBy("");
       setProposedByEmail("");
+      setCreatedAt("");
     }
   }, [open, idea]);
 
   const updateIdeaMutation = useMutation({
-    mutationFn: async (data: { title: string; description: string | null; proposedBy: string; proposedByEmail: string }) => {
+    mutationFn: async (data: { title: string; description: string | null; proposedBy: string; proposedByEmail: string; createdAt?: string }) => {
       if (!idea) throw new Error("Aucune idée sélectionnée");
       
       const response = await fetch(`/api/admin/ideas/${idea.id}`, {
@@ -94,6 +99,7 @@ export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModa
       description: description.trim() || null,
       proposedBy: proposedBy.trim(),
       proposedByEmail: proposedByEmail.trim(),
+      createdAt: createdAt ? new Date(createdAt).toISOString() : undefined,
     });
   };
 
@@ -102,6 +108,8 @@ export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModa
     setDescription(idea?.description || "");
     setProposedBy(idea?.proposedBy || "");
     setProposedByEmail(idea?.proposedByEmail || "");
+    const formattedDate = idea?.createdAt ? new Date(idea.createdAt).toISOString().slice(0, 16) : "";
+    setCreatedAt(formattedDate);
     onOpenChange(false);
   };
 
@@ -193,6 +201,24 @@ export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModa
                 data-testid="input-edit-author-email"
               />
             </div>
+          </div>
+
+          {/* Publication Date Field */}
+          <div className="space-y-2">
+            <Label htmlFor="edit-created-at" className="text-sm font-medium text-gray-700">
+              📅 Date de publication
+            </Label>
+            <Input
+              id="edit-created-at"
+              type="datetime-local"
+              value={createdAt}
+              onChange={(e) => setCreatedAt(e.target.value)}
+              className="w-full"
+              data-testid="input-edit-created-at"
+            />
+            <p className="text-xs text-gray-500">
+              Modifiez la date et l'heure de publication de cette idée
+            </p>
           </div>
 
           {/* Action Buttons */}

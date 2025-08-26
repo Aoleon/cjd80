@@ -648,7 +648,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateIdea(id: string, ideaData: { title?: string; description?: string | null; proposedBy?: string; proposedByEmail?: string }): Promise<Result<Idea>> {
+  async updateIdea(id: string, ideaData: { title?: string; description?: string | null; proposedBy?: string; proposedByEmail?: string; createdAt?: string }): Promise<Result<Idea>> {
     try {
       // Check if idea exists
       const ideaResult = await this.getIdea(id);
@@ -667,13 +667,21 @@ export class DatabaseStorage implements IStorage {
       }
 
       const result = await db.transaction(async (tx) => {
+        // Prepare update data with proper date conversion
+        const updateData: any = {
+          ...ideaData,
+          updatedAt: sql`NOW()`,
+          updatedBy: "admin"
+        };
+        
+        // Convert createdAt string to Date object if provided
+        if (ideaData.createdAt) {
+          updateData.createdAt = new Date(ideaData.createdAt);
+        }
+        
         const [updatedIdea] = await tx
           .update(ideas)
-          .set({ 
-            ...ideaData,
-            updatedAt: sql`NOW()`,
-            updatedBy: "admin"
-          })
+          .set(updateData)
           .where(eq(ideas.id, id))
           .returning();
         
