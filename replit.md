@@ -64,6 +64,35 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
    - [ ] Error handling tested
    - [ ] Accessibility checked (ARIA labels)
 
+### Tests Systématiques Obligatoires
+**🚨 RÈGLE ABSOLUE** : Toute modification ou ajout de fonctionnalité DOIT être accompagné de tests couvrant SANS EXCEPTION :
+
+1. **Backend** : 
+   - Tests unitaires des services et utilitaires
+   - Tests d'intégration des opérations de base de données
+   - Validation des schémas Zod
+   - Gestion d'erreurs et cas limites
+
+2. **Routes API** :
+   - Tests de tous les endpoints (GET, POST, PUT, DELETE)
+   - Validation des codes de statut HTTP
+   - Tests d'authentification et d'autorisation
+   - Validation des corps de requête et réponse
+
+3. **Frontend** :
+   - Tests de rendu des composants
+   - Tests d'interactions utilisateur (clics, saisies)
+   - Tests de gestion d'état (hooks, context)
+   - Tests de navigation et routing
+
+4. **Interface Utilisateur** :
+   - Tests E2E des parcours critiques
+   - Tests d'accessibilité (ARIA, navigation clavier)
+   - Tests responsive (mobile, tablet, desktop)
+   - Tests de performance UI (Core Web Vitals)
+
+**Aucune Pull Request ne sera acceptée sans cette couverture complète.**
+
 ### Checkpoint Strategy
 - **Before**: Major changes, database migrations, dependency updates
 - **During**: Every successful test pass
