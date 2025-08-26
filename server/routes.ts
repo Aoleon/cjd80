@@ -182,13 +182,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/events/:id", requireAuth, async (req, res, next) => {
     try {
+      console.log('[DEBUG] Données reçues pour mise à jour événement:', JSON.stringify(req.body, null, 2));
       const validatedData = insertEventSchema.parse(req.body);
-      const event = await storage.updateEvent(req.params.id, validatedData);
-      if (!event) {
-        return res.status(404).json({ message: "Event not found" });
+      console.log('[DEBUG] Données validées:', JSON.stringify(validatedData, null, 2));
+      const result = await storage.updateEvent(req.params.id, validatedData);
+      if (!result.success) {
+        return res.status(404).json({ message: result.error.message });
       }
-      res.json(event);
+      res.json({ success: true, data: result.data });
     } catch (error) {
+      console.error('[DEBUG] Erreur lors de la validation:', error);
       next(error);
     }
   });
