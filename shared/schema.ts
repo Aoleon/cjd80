@@ -254,13 +254,13 @@ export const insertEventSchema = createInsertSchema(events).pick({
     .refine(url => !url || url.includes('helloasso.com'), "L'adresse doit être un lien HelloAsso valide (contenant 'helloasso.com')")
     .refine(url => !url || z.string().url().safeParse(url).success, "L'adresse web n'est pas valide. Veuillez saisir une URL complète (ex: https://exemple.com)")
     .transform(val => val ? sanitizeText(val) : undefined),
-  enableExternalRedirect: z.boolean().optional().default(false),
+  enableExternalRedirect: z.boolean().optional(),
   externalRedirectUrl: z.string()
     .optional()
     .refine(url => !url || z.string().url().safeParse(url).success, "L'adresse web de redirection n'est pas valide. Veuillez saisir une URL complète (ex: https://exemple.com)")
     .transform(val => val ? sanitizeText(val) : undefined),
-  showInscriptionsCount: z.boolean().optional().default(true),
-  showAvailableSeats: z.boolean().optional().default(true),
+  showInscriptionsCount: z.boolean().optional(),
+  showAvailableSeats: z.boolean().optional(),
 });
 
 export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({

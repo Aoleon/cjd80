@@ -175,6 +175,13 @@ export default function EventAdminModal({
       showAvailableSeats: formData.showAvailableSeats,
     };
 
+    console.log('[FRONTEND DEBUG] Données du formulaire avant envoi:', {
+      showInscriptionsCount: formData.showInscriptionsCount,
+      showAvailableSeats: formData.showAvailableSeats,
+      enableExternalRedirect: formData.enableExternalRedirect
+    });
+    console.log('[FRONTEND DEBUG] Données événement à envoyer:', eventData);
+
     if (mode === "create") {
       createEventMutation.mutate(eventData);
     } else {
