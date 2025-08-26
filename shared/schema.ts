@@ -161,21 +161,19 @@ export const insertIdeaSchema = createInsertSchema(ideas).pick({
   deadline: true,
 }).extend({
   title: z.string()
-    .min(3, "Titre trop court (min 3 caractères)")
-    .max(200, "Titre trop long (max 200 caractères)")
-    .regex(/^[a-zA-Z0-9\s\-_.&():!?,:àâäéèêëïîôöùûüÿñç]+$/, "Titre contient des caractères non autorisés")
+    .min(3, "Le titre doit contenir au moins 3 caractères")
+    .max(200, "Le titre est trop long (maximum 200 caractères). Raccourcissez votre titre ou utilisez la description pour plus de détails.")
     .transform(sanitizeText),
   description: z.string()
     .max(5000, "Description trop longue (max 5000 caractères)")
     .optional()
     .transform(val => val ? sanitizeText(val) : undefined),
   proposedBy: z.string()
-    .min(2, "Nom trop court (min 2 caractères)")
-    .max(100, "Nom trop long")
-    .regex(/^[a-zA-Z\s\-'.àâäéèêëïîôöùûüÿñç]+$/, "Nom contient des caractères non autorisés")
+    .min(2, "Votre nom doit contenir au moins 2 caractères")
+    .max(100, "Votre nom est trop long (maximum 100 caractères)")
     .transform(sanitizeText),
   proposedByEmail: z.string()
-    .email("Email invalide")
+    .email("Adresse email invalide. Veuillez saisir une adresse email valide (ex: nom@domaine.fr)")
     .transform(sanitizeText),
   deadline: z.string().datetime().optional(),
 });
@@ -192,7 +190,9 @@ export const updateIdeaStatusSchema = z.object({
 });
 
 export const updateIdeaSchema = z.object({
-  title: z.string().min(1, "Le titre est requis").max(255, "Titre trop long"),
+  title: z.string()
+    .min(1, "Le titre est requis")
+    .max(255, "Le titre est trop long (maximum 255 caractères). Raccourcissez votre titre."),
   description: z.string().nullable().optional(),
 });
 
@@ -205,12 +205,11 @@ export const insertVoteSchema = createInsertSchema(votes).pick({
     .uuid("ID d'idée invalide")
     .transform(sanitizeText),
   voterName: z.string()
-    .min(2, "Nom trop court (min 2 caractères)")
-    .max(100, "Nom trop long")
-    .regex(/^[a-zA-Z\s\-'.àâäéèêëïîôöùûüÿñç]+$/, "Nom contient des caractères non autorisés")
+    .min(2, "Votre nom doit contenir au moins 2 caractères")
+    .max(100, "Votre nom est trop long (maximum 100 caractères)")
     .transform(sanitizeText),
   voterEmail: z.string()
-    .email("Email invalide")
+    .email("Adresse email invalide. Veuillez saisir une adresse email valide (ex: nom@domaine.fr)")
     .transform(sanitizeText),
 });
 
@@ -225,31 +224,30 @@ export const insertEventSchema = createInsertSchema(events).pick({
   externalRedirectUrl: true,
 }).extend({
   title: z.string()
-    .min(3, "Titre trop court (min 3 caractères)")
-    .max(200, "Titre trop long")
-    .regex(/^[a-zA-Z0-9\s\-_.&():!?,:àâäéèêëïîôöùûüÿñç]+$/, "Titre contient des caractères non autorisés")
+    .min(3, "Le titre doit contenir au moins 3 caractères")
+    .max(200, "Le titre est trop long (maximum 200 caractères). Raccourcissez votre titre ou utilisez la description pour plus de détails.")
     .transform(sanitizeText),
   description: z.string()
-    .max(5000, "Description trop longue (max 5000 caractères)")
+    .max(5000, "La description est trop longue (maximum 5000 caractères). Raccourcissez votre texte.")
     .optional()
     .transform(val => val ? sanitizeText(val) : undefined),
-  date: z.string().datetime("Date invalide"),
+  date: z.string().datetime("La date n'est pas valide. Veuillez sélectionner une date et heure correctes."),
   location: z.string()
-    .max(200, "Lieu trop long")
+    .max(200, "Le nom du lieu est trop long (maximum 200 caractères)")
     .optional()
     .transform(val => val ? sanitizeText(val) : undefined),
   maxParticipants: z.number()
-    .min(1, "Le nombre de participants doit être positif")
-    .max(1000, "Nombre de participants trop élevé")
+    .min(1, "Le nombre maximum de participants doit être d'au moins 1 personne")
+    .max(1000, "Le nombre maximum de participants ne peut pas dépasser 1000 personnes")
     .optional(),
   helloAssoLink: z.string()
-    .url("URL HelloAsso invalide")
-    .refine(url => url.includes('helloasso.com'), "Doit être un lien HelloAsso valide")
+    .url("L'adresse web n'est pas valide. Veuillez saisir une URL complète (ex: https://exemple.com)")
+    .refine(url => url.includes('helloasso.com'), "L'adresse doit être un lien HelloAsso valide (contenant 'helloasso.com')")
     .optional()
     .transform(val => val ? sanitizeText(val) : undefined),
   enableExternalRedirect: z.boolean().optional().default(false),
   externalRedirectUrl: z.string()
-    .url("URL de redirection invalide")
+    .url("L'adresse web de redirection n'est pas valide. Veuillez saisir une URL complète (ex: https://exemple.com)")
     .optional()
     .transform(val => val ? sanitizeText(val) : undefined),
 });
@@ -261,19 +259,18 @@ export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({
   comments: true,
 }).extend({
   eventId: z.string()
-    .uuid("ID d'événement invalide")
+    .uuid("L'identifiant de l'événement n'est pas valide")
     .transform(sanitizeText),
   name: z.string()
-    .min(2, "Nom trop court (min 2 caractères)")
-    .max(100, "Nom trop long")
-    .regex(/^[a-zA-Z\s\-'.àâäéèêëïîôöùûüÿñç]+$/, "Nom contient des caractères non autorisés")
+    .min(2, "Votre nom doit contenir au moins 2 caractères")
+    .max(100, "Votre nom est trop long (maximum 100 caractères)")
     .transform(sanitizeText),
   email: z.string()
-    .email("Email invalide")
-    .refine(isValidDomain, "Domaine email non autorisé")
+    .email("Adresse email invalide. Veuillez saisir une adresse email valide (ex: nom@domaine.fr)")
+    .refine(isValidDomain, "Le domaine de votre adresse email n'est pas autorisé")
     .transform(sanitizeText),
   comments: z.string()
-    .max(500, "Commentaires trop longs (max 500 caractères)")
+    .max(500, "Vos commentaires sont trop longs (maximum 500 caractères). Raccourcissez votre message.")
     .optional()
     .transform(val => val ? sanitizeText(val) : undefined),
 });
