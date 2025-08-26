@@ -51,7 +51,7 @@ export default function ProposeSection() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const remainingChars = 500 - (formData.description?.length || 0);
+  const remainingChars = 5000 - (formData.description?.length || 0);
 
   return (
     <section className="space-y-6 sm:space-y-8 max-w-4xl mx-auto">
@@ -98,14 +98,14 @@ export default function ProposeSection() {
                 onChange={(e) => handleInputChange("description", e.target.value)}
                 placeholder="Expliquez votre idée : objectifs, bénéfices, mise en œuvre..."
                 rows={5}
-                maxLength={500}
+                maxLength={5000}
                 className="text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-cjd-green/20 focus:border-cjd-green transition-all duration-200 hover:border-gray-300 resize-none"
               />
               <div className="flex justify-between items-center">
                 <p className="text-sm text-gray-500">
-                  Une description détaillée aide les autres à comprendre votre projet
+                  Une description détaillée aide les autres à comprendre votre projet (max 5000 caractères)
                 </p>
-                <p className={`text-sm font-medium ${remainingChars < 50 ? 'text-orange-600' : 'text-gray-500'}`}>
+                <p className={`text-sm font-medium ${remainingChars < 200 ? 'text-orange-600' : 'text-gray-500'}`}>
                   {remainingChars} caractères restants
                 </p>
               </div>

@@ -147,11 +147,12 @@ export default function ProposePage() {
                       <Textarea
                         placeholder="Décrivez votre idée, ses bénéfices, comment la mettre en œuvre..."
                         className="min-h-32 text-base"
+                        maxLength={5000}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      Expliquez votre idée en détail (max 1000 caractères)
+                      Expliquez votre idée en détail (max 5000 caractères)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
