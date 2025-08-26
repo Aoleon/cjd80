@@ -155,7 +155,7 @@ export default function EventRegistrationModal({
                   </div>
                 </div>
                 {event.description && (
-                  <p className="mt-3 text-xs sm:text-sm text-gray-700 break-words">{event.description}</p>
+                  <p className="mt-3 text-xs sm:text-sm text-gray-700 break-words whitespace-pre-line">{event.description}</p>
                 )}
               </div>
               

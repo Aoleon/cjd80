@@ -277,6 +277,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes for managing inscriptions
+  app.get("/api/admin/inscriptions/:eventId", requireAuth, async (req, res, next) => {
+    try {
+      const inscriptionsResult = await storage.getEventInscriptions(req.params.eventId);
+      if (!inscriptionsResult.success) {
+        return res.status(500).json({ message: inscriptionsResult.error.message });
+      }
+      res.json(inscriptionsResult.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/inscriptions", requireAuth, async (req, res, next) => {
+    try {
+      const inscriptionData = req.body;
+      const result = await storage.createInscription(inscriptionData);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/admin/inscriptions/:inscriptionId", requireAuth, async (req, res, next) => {
+    try {
+      const result = await storage.deleteInscription(req.params.inscriptionId);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Admin routes for managing votes
+  app.get("/api/admin/votes/:ideaId", requireAuth, async (req, res, next) => {
+    try {
+      const votesResult = await storage.getIdeaVotes(req.params.ideaId);
+      if (!votesResult.success) {
+        return res.status(500).json({ message: votesResult.error.message });
+      }
+      res.json(votesResult.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/votes", requireAuth, async (req, res, next) => {
+    try {
+      const voteData = req.body;
+      const result = await storage.createVote(voteData);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/admin/votes/:voteId", requireAuth, async (req, res, next) => {
+    try {
+      const result = await storage.deleteVote(req.params.voteId);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Get votes for a specific idea (admin only)
   app.get("/api/admin/ideas/:ideaId/votes", requireAuth, async (req, res, next) => {
     try {

@@ -165,7 +165,7 @@ export default function EventsSection() {
                           {/* Description */}
                           {event.description && (
                             <div className="mb-5 p-4 bg-gray-50 rounded-lg border-l-2 border-l-cjd-green">
-                              <p className="text-gray-700 text-base leading-relaxed">{event.description}</p>
+                              <p className="text-gray-700 text-base leading-relaxed whitespace-pre-line">{event.description}</p>
                             </div>
                           )}
 

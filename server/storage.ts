@@ -260,37 +260,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createVote(vote: InsertVote): Promise<Result<Vote>> {
-    try {
-      // Business validation: Check for duplicate vote
-      if (await this.hasUserVoted(vote.ideaId, vote.voterEmail)) {
-        return { success: false, error: new DuplicateError("Vous avez déjà voté pour cette idée") };
-      }
-
-      // Check if idea exists
-      const ideaResult = await this.getIdea(vote.ideaId);
-      if (!ideaResult.success) {
-        return { success: false, error: ideaResult.error };
-      }
-      if (!ideaResult.data) {
-        return { success: false, error: new NotFoundError("Idée introuvable") };
-      }
-
-      const result = await db.transaction(async (tx) => {
-        const [newVote] = await tx
-          .insert(votes)
-          .values([vote])
-          .returning();
-        
-        console.log(`[Storage] Nouveau vote créé: ${newVote.id} pour idée ${vote.ideaId} par ${vote.voterEmail}`);
-        return newVote;
-      });
-
-      return { success: true, data: result };
-    } catch (error) {
-      return { success: false, error: new DatabaseError(`Erreur lors de la création du vote: ${error}`) };
-    }
-  }
 
   async hasUserVoted(ideaId: string, email: string): Promise<boolean> {
     const [existingVote] = await db
@@ -545,6 +514,89 @@ export class DatabaseStorage implements IStorage {
       .from(inscriptions)
       .where(and(eq(inscriptions.eventId, eventId), eq(inscriptions.email, email)));
     return !!existingInscription;
+  }
+
+  async deleteInscription(inscriptionId: string): Promise<Result<void>> {
+    try {
+      // Check if inscription exists
+      const [inscription] = await db
+        .select()
+        .from(inscriptions)
+        .where(eq(inscriptions.id, inscriptionId));
+
+      if (!inscription) {
+        return { success: false, error: new NotFoundError("Inscription introuvable") };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx.delete(inscriptions).where(eq(inscriptions.id, inscriptionId));
+        console.log(`[Storage] Inscription supprimée: ${inscriptionId}`);
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression de l'inscription: ${error}`) };
+    }
+  }
+
+  async createVote(vote: InsertVote): Promise<Result<Vote>> {
+    try {
+      // Check for duplicate vote
+      const [existingVote] = await db
+        .select()
+        .from(votes)
+        .where(and(eq(votes.ideaId, vote.ideaId), eq(votes.voterEmail, vote.voterEmail)));
+
+      if (existingVote) {
+        return { success: false, error: new DuplicateError("Vous avez déjà voté pour cette idée") };
+      }
+
+      // Check if idea exists
+      const ideaResult = await this.getIdea(vote.ideaId);
+      if (!ideaResult.success) {
+        return { success: false, error: ideaResult.error };
+      }
+      if (!ideaResult.data) {
+        return { success: false, error: new NotFoundError("Idée introuvable") };
+      }
+
+      const result = await db.transaction(async (tx) => {
+        const [newVote] = await tx
+          .insert(votes)
+          .values([vote])
+          .returning();
+        
+        console.log(`[Storage] Nouveau vote créé: ${newVote.id} pour idée ${vote.ideaId}`);
+        return newVote;
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création du vote: ${error}`) };
+    }
+  }
+
+  async deleteVote(voteId: string): Promise<Result<void>> {
+    try {
+      // Check if vote exists
+      const [vote] = await db
+        .select()
+        .from(votes)
+        .where(eq(votes.id, voteId));
+
+      if (!vote) {
+        return { success: false, error: new NotFoundError("Vote introuvable") };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx.delete(votes).where(eq(votes.id, voteId));
+        console.log(`[Storage] Vote supprimé: ${voteId}`);
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression du vote: ${error}`) };
+    }
   }
 
   // Admin-only methods for complete data access and moderation

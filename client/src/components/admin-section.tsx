@@ -41,6 +41,8 @@ import EventDetailModal from "./event-detail-modal";
 import IdeaDetailModal from "./idea-detail-modal";
 import EditIdeaModal from "./edit-idea-modal";
 import InscriptionExportModal from "./inscription-export-modal";
+import ManageInscriptionsModal from "./manage-inscriptions-modal";
+import ManageVotesModal from "./manage-votes-modal";
 import AdminLogin from "./admin-login";
 import type { Idea, Event } from "@shared/schema";
 import { IDEA_STATUS, EVENT_STATUS } from "@shared/schema";
@@ -78,6 +80,12 @@ export default function AdminSection() {
   // Modal state for editing ideas
   const [editIdeaModalOpen, setEditIdeaModalOpen] = useState(false);
   const [ideaToEdit, setIdeaToEdit] = useState<IdeaWithVotes | null>(null);
+
+  // Modal states for managing inscriptions and votes
+  const [manageInscriptionsModalOpen, setManageInscriptionsModalOpen] = useState(false);
+  const [eventToManageInscriptions, setEventToManageInscriptions] = useState<EventWithInscriptions | null>(null);
+  const [manageVotesModalOpen, setManageVotesModalOpen] = useState(false);
+  const [ideaToManageVotes, setIdeaToManageVotes] = useState<IdeaWithVotes | null>(null);
 
 
   const { data: ideas, isLoading: ideasLoading } = useQuery<IdeaWithVotes[]>({
@@ -159,6 +167,16 @@ export default function AdminSection() {
   const handleEditIdea = (idea: IdeaWithVotes) => {
     setIdeaToEdit(idea);
     setEditIdeaModalOpen(true);
+  };
+
+  const handleManageInscriptions = (event: EventWithInscriptions) => {
+    setEventToManageInscriptions(event);
+    setManageInscriptionsModalOpen(true);
+  };
+
+  const handleManageVotes = (idea: IdeaWithVotes) => {
+    setIdeaToManageVotes(idea);
+    setManageVotesModalOpen(true);
   };
 
   const handleDeleteEvent = (id: string) => {
@@ -433,12 +451,9 @@ export default function AdminSection() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => {
-                                  setSelectedIdea(idea);
-                                  setIdeaDetailModalOpen(true);
-                                }}
+                                onClick={() => handleManageVotes(idea)}
                                 className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                                title="Voir les votants"
+                                title="Gérer les votes"
                               >
                                 <Users className="w-4 h-4 mr-1" />
                                 {idea.voteCount}
@@ -542,12 +557,9 @@ export default function AdminSection() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => {
-                                  setSelectedIdea(idea);
-                                  setIdeaDetailModalOpen(true);
-                                }}
+                                onClick={() => handleManageVotes(idea)}
                                 className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1"
-                                title="Voir les votants"
+                                title="Gérer les votes"
                               >
                                 <Users className="w-3 h-3 mr-1" />
                                 {idea.voteCount}
@@ -708,12 +720,9 @@ export default function AdminSection() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => {
-                                  setSelectedEventForDetail(event);
-                                  setEventDetailModalOpen(true);
-                                }}
+                                onClick={() => handleManageInscriptions(event)}
                                 className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                                title="Voir les inscrits"
+                                title="Gérer les inscriptions"
                               >
                                 <Users className="w-4 h-4 mr-1" />
                                 {event.inscriptionCount}
@@ -822,12 +831,9 @@ export default function AdminSection() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => {
-                                  setSelectedEventForDetail(event);
-                                  setEventDetailModalOpen(true);
-                                }}
+                                onClick={() => handleManageInscriptions(event)}
                                 className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1"
-                                title="Voir les inscrits"
+                                title="Gérer les inscriptions"
                               >
                                 <Users className="w-3 h-3 mr-1" />
                                 {event.inscriptionCount}
@@ -926,6 +932,18 @@ export default function AdminSection() {
         open={exportModalOpen}
         onOpenChange={setExportModalOpen}
         event={eventToExport}
+      />
+
+      <ManageInscriptionsModal
+        open={manageInscriptionsModalOpen}
+        onOpenChange={setManageInscriptionsModalOpen}
+        event={eventToManageInscriptions}
+      />
+
+      <ManageVotesModal
+        open={manageVotesModalOpen}
+        onOpenChange={setManageVotesModalOpen}
+        idea={ideaToManageVotes}
       />
     </section>
   );
