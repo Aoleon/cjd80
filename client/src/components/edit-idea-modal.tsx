@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -16,10 +16,22 @@ interface EditIdeaModalProps {
 }
 
 export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModalProps) {
-  const [title, setTitle] = useState(idea?.title || "");
-  const [description, setDescription] = useState(idea?.description || "");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // Mettre à jour les états quand l'idée change ou le modal s'ouvre
+  useEffect(() => {
+    if (open && idea) {
+      setTitle(idea.title || "");
+      setDescription(idea.description || "");
+    } else if (!open) {
+      // Réinitialiser les champs quand le modal se ferme
+      setTitle("");
+      setDescription("");
+    }
+  }, [open, idea]);
 
   const updateIdeaMutation = useMutation({
     mutationFn: async (data: { title: string; description: string | null }) => {
