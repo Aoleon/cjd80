@@ -194,6 +194,13 @@ export const updateIdeaSchema = z.object({
     .min(1, "Le titre est requis")
     .max(255, "Le titre est trop long (maximum 255 caractères). Raccourcissez votre titre."),
   description: z.string().nullable().optional(),
+  proposedBy: z.string()
+    .min(2, "Votre nom doit contenir au moins 2 caractères")
+    .max(100, "Votre nom est trop long (maximum 100 caractères)")
+    .transform(sanitizeText),
+  proposedByEmail: z.string()
+    .email("Adresse email invalide. Veuillez saisir une adresse email valide (ex: nom@domaine.fr)")
+    .transform(sanitizeText),
 });
 
 export const insertVoteSchema = createInsertSchema(votes).pick({

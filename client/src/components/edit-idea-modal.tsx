@@ -18,6 +18,8 @@ interface EditIdeaModalProps {
 export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [proposedBy, setProposedBy] = useState("");
+  const [proposedByEmail, setProposedByEmail] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -26,15 +28,19 @@ export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModa
     if (open && idea) {
       setTitle(idea.title || "");
       setDescription(idea.description || "");
+      setProposedBy(idea.proposedBy || "");
+      setProposedByEmail(idea.proposedByEmail || "");
     } else if (!open) {
       // Réinitialiser les champs quand le modal se ferme
       setTitle("");
       setDescription("");
+      setProposedBy("");
+      setProposedByEmail("");
     }
   }, [open, idea]);
 
   const updateIdeaMutation = useMutation({
-    mutationFn: async (data: { title: string; description: string | null }) => {
+    mutationFn: async (data: { title: string; description: string | null; proposedBy: string; proposedByEmail: string }) => {
       if (!idea) throw new Error("Aucune idée sélectionnée");
       
       const response = await fetch(`/api/admin/ideas/${idea.id}`, {
@@ -86,12 +92,16 @@ export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModa
     updateIdeaMutation.mutate({
       title: title.trim(),
       description: description.trim() || null,
+      proposedBy: proposedBy.trim(),
+      proposedByEmail: proposedByEmail.trim(),
     });
   };
 
   const handleCancel = () => {
     setTitle(idea?.title || "");
     setDescription(idea?.description || "");
+    setProposedBy(idea?.proposedBy || "");
+    setProposedByEmail(idea?.proposedByEmail || "");
     onOpenChange(false);
   };
 
@@ -104,7 +114,7 @@ export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModa
             Modifier l'idée
           </DialogTitle>
           <DialogDescription>
-            Modifier le titre et la description de l'idée proposée par {idea?.proposedBy || "Utilisateur"}
+            Modifier les informations de l'idée proposée
           </DialogDescription>
         </DialogHeader>
 
@@ -147,6 +157,42 @@ export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModa
             <p className="text-xs text-gray-500">
               {description.length}/5000 caractères
             </p>
+          </div>
+
+          {/* Author Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-author-name" className="text-sm font-medium text-gray-700">
+                Nom de l'auteur *
+              </Label>
+              <Input
+                id="edit-author-name"
+                type="text"
+                value={proposedBy}
+                onChange={(e) => setProposedBy(e.target.value)}
+                placeholder="Nom de l'auteur..."
+                className="w-full"
+                required
+                maxLength={100}
+                data-testid="input-edit-author-name"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-author-email" className="text-sm font-medium text-gray-700">
+                Email de l'auteur *
+              </Label>
+              <Input
+                id="edit-author-email"
+                type="email"
+                value={proposedByEmail}
+                onChange={(e) => setProposedByEmail(e.target.value)}
+                placeholder="email@exemple.com"
+                className="w-full"
+                required
+                data-testid="input-edit-author-email"
+              />
+            </div>
           </div>
 
           {/* Action Buttons */}

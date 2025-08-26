@@ -46,7 +46,7 @@ export interface IStorage {
   createIdea(idea: InsertIdea): Promise<Result<Idea>>;
   deleteIdea(id: string): Promise<Result<void>>;
   updateIdeaStatus(id: string, status: string): Promise<Result<void>>;
-  updateIdea(id: string, ideaData: { title?: string; description?: string | null }): Promise<Result<Idea>>;
+  updateIdea(id: string, ideaData: { title?: string; description?: string | null; proposedBy?: string; proposedByEmail?: string }): Promise<Result<Idea>>;
   transformIdeaToEvent(ideaId: string): Promise<Result<Event>>;
   isDuplicateIdea(title: string): Promise<boolean>;
   getAllIdeas(): Promise<Result<(Idea & { voteCount: number })[]>>;
@@ -648,7 +648,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateIdea(id: string, ideaData: { title?: string; description?: string | null }): Promise<Result<Idea>> {
+  async updateIdea(id: string, ideaData: { title?: string; description?: string | null; proposedBy?: string; proposedByEmail?: string }): Promise<Result<Idea>> {
     try {
       // Check if idea exists
       const ideaResult = await this.getIdea(id);
