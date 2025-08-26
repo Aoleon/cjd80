@@ -21,17 +21,29 @@ export const cacheBuster = {
       });
       
       if (response.ok) {
-        const data = await response.json();
-        const storedVersion = localStorage.getItem('app-version');
-        
-        if (storedVersion && storedVersion !== data.deployedAt) {
-          localStorage.setItem('app-version', data.deployedAt);
-          return true;
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (parseError) {
+          console.warn('Impossible de parser deploy-info.json:', parseError);
+          return false;
         }
         
-        if (!storedVersion) {
-          localStorage.setItem('app-version', data.deployedAt);
+        if (data && data.deployedAt) {
+          const storedVersion = localStorage.getItem('app-version');
+          
+          if (storedVersion && storedVersion !== data.deployedAt) {
+            localStorage.setItem('app-version', data.deployedAt);
+            return true;
+          }
+          
+          if (!storedVersion) {
+            localStorage.setItem('app-version', data.deployedAt);
+          }
         }
+      } else {
+        console.warn('deploy-info.json non accessible, code:', response.status);
       }
     } catch (error) {
       console.error('Erreur lors de la vérification de mise à jour:', error);

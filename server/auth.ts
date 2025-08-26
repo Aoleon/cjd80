@@ -55,6 +55,7 @@ export function setupAuth(app: Express) {
           return done(null, userResult.data);
         }
       } catch (error) {
+        console.error('[Auth] Erreur dans LocalStrategy:', error);
         return done(error);
       }
     }),
@@ -70,6 +71,7 @@ export function setupAuth(app: Express) {
         done(null, null);
       }
     } catch (error) {
+      console.error('[Auth] Erreur lors de la désérialisation:', error);
       done(error);
     }
   });
@@ -99,8 +101,26 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  app.post("/api/login", (req, res, next) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) {
+        console.error('[Auth] Erreur lors de la connexion:', err);
+        return res.status(500).json({ message: "Erreur serveur lors de la connexion" });
+      }
+      
+      if (!user) {
+        return res.status(401).json({ message: "Email ou mot de passe incorrect" });
+      }
+      
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error('[Auth] Erreur lors de l\'établissement de session:', loginErr);
+          return res.status(500).json({ message: "Erreur lors de l'établissement de la session" });
+        }
+        
+        res.status(200).json(user);
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {
