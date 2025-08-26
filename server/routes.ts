@@ -181,6 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.put("/api/events/:id", requireAuth, async (req, res, next) => {
+    console.log('[DEBUG] ROUTE PUT /api/events/:id appelée avec ID:', req.params.id);
     try {
       console.log('[DEBUG] Données reçues pour mise à jour événement:', JSON.stringify(req.body, null, 2));
       const validatedData = insertEventSchema.parse(req.body);
