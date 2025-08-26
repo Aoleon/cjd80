@@ -250,14 +250,14 @@ export const insertEventSchema = createInsertSchema(events).pick({
     .max(1000, "Le nombre maximum de participants ne peut pas dépasser 1000 personnes")
     .optional(),
   helloAssoLink: z.string()
-    .url("L'adresse web n'est pas valide. Veuillez saisir une URL complète (ex: https://exemple.com)")
-    .refine(url => url.includes('helloasso.com'), "L'adresse doit être un lien HelloAsso valide (contenant 'helloasso.com')")
     .optional()
+    .refine(url => !url || url.includes('helloasso.com'), "L'adresse doit être un lien HelloAsso valide (contenant 'helloasso.com')")
+    .refine(url => !url || z.string().url().safeParse(url).success, "L'adresse web n'est pas valide. Veuillez saisir une URL complète (ex: https://exemple.com)")
     .transform(val => val ? sanitizeText(val) : undefined),
   enableExternalRedirect: z.boolean().optional().default(false),
   externalRedirectUrl: z.string()
-    .url("L'adresse web de redirection n'est pas valide. Veuillez saisir une URL complète (ex: https://exemple.com)")
     .optional()
+    .refine(url => !url || z.string().url().safeParse(url).success, "L'adresse web de redirection n'est pas valide. Veuillez saisir une URL complète (ex: https://exemple.com)")
     .transform(val => val ? sanitizeText(val) : undefined),
   showInscriptionsCount: z.boolean().optional().default(true),
   showAvailableSeats: z.boolean().optional().default(true),
