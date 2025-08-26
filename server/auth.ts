@@ -34,8 +34,10 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
+    rolling: true, // Renouveler le cookie à chaque requête
     cookie: {
       secure: process.env.NODE_ENV === "production",
+      httpOnly: true, // Protection contre XSS
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
   };
@@ -61,20 +63,49 @@ export function setupAuth(app: Express) {
     }),
   );
 
+  // Cache en mémoire pour éviter les requêtes DB répétées
+  const userCache = new Map<string, { user: any; timestamp: number }>();
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
   passport.serializeUser((user, done) => done(null, user.email));
+  
   passport.deserializeUser(async (email: string, done) => {
     try {
+      // Vérifier le cache d'abord
+      const cached = userCache.get(email);
+      const now = Date.now();
+      
+      if (cached && (now - cached.timestamp) < CACHE_TTL) {
+        return done(null, cached.user);
+      }
+
+      // Si pas en cache ou expiré, requête DB
       const userResult = await storage.getUser(email);
-      if (userResult.success) {
+      if (userResult.success && userResult.data) {
+        // Mettre en cache
+        userCache.set(email, { user: userResult.data, timestamp: now });
         done(null, userResult.data);
       } else {
+        // Supprimer du cache si l'utilisateur n'existe plus
+        userCache.delete(email);
         done(null, null);
       }
     } catch (error) {
       console.error('[Auth] Erreur lors de la désérialisation:', error);
+      userCache.delete(email); // Nettoyer le cache en cas d'erreur
       done(error);
     }
   });
+
+  // Nettoyage périodique du cache
+  setInterval(() => {
+    const now = Date.now();
+    userCache.forEach((cached, email) => {
+      if ((now - cached.timestamp) >= CACHE_TTL) {
+        userCache.delete(email);
+      }
+    });
+  }, CACHE_TTL);
 
   app.post("/api/register", async (req, res, next) => {
     try {

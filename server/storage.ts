@@ -91,14 +91,14 @@ export class DatabaseStorage implements IStorage {
       createTableIfMissing: true,
       // Optimisations pour les sessions
       tableName: 'user_sessions',
-      pruneSessionInterval: 900, // 15 minutes - nettoyage automatique
+      pruneSessionInterval: 3600, // 1 heure - moins fréquent
       errorLog: (error) => {
         console.error('[Session Store] Erreur:', error.message);
       },
       // Configuration du schéma
       schemaName: 'public',
-      // TTL pour les sessions expirées  
-      ttl: 30 * 24 * 60 * 60 // 30 jours
+      // TTL aligné avec les cookies
+      ttl: 24 * 60 * 60 // 24 heures
     });
   }
 
