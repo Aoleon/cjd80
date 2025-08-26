@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { 
@@ -92,6 +92,30 @@ export default function AdminSection() {
     queryKey: ["/api/admin/ideas"],
     enabled: !!user && activeTab === "ideas",
   });
+
+  // Tri des idées par statut puis par date
+  const sortedIdeas = useMemo(() => {
+    if (!ideas) return [];
+    
+    // Ordre de priorité des statuts (du plus prioritaire au moins prioritaire)
+    const statusOrder: Record<string, number> = {
+      [IDEA_STATUS.PENDING]: 1,
+      [IDEA_STATUS.UNDER_REVIEW]: 2,
+      [IDEA_STATUS.APPROVED]: 3,
+      [IDEA_STATUS.POSTPONED]: 4,
+      [IDEA_STATUS.COMPLETED]: 5,
+      [IDEA_STATUS.REJECTED]: 6,
+    };
+
+    return [...ideas].sort((a, b) => {
+      // Tri par statut d'abord
+      const statusDiff = (statusOrder[a.status] || 999) - (statusOrder[b.status] || 999);
+      if (statusDiff !== 0) return statusDiff;
+
+      // Puis tri par date (plus récentes d'abord)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [ideas]);
 
   const { data: events, isLoading: eventsLoading } = useQuery<EventWithInscriptions[]>({
     queryKey: ["/api/admin/events"],
@@ -382,7 +406,7 @@ export default function AdminSection() {
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
                 </div>
-              ) : ideas && ideas.length > 0 ? (
+              ) : sortedIdeas && sortedIdeas.length > 0 ? (
                 <>
                   {/* Desktop Table View */}
                   <div className="hidden lg:block overflow-x-auto">
@@ -398,7 +422,7 @@ export default function AdminSection() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {ideas.map((idea) => (
+                        {sortedIdeas.map((idea) => (
                           <TableRow key={idea.id}>
                             <TableCell className="font-medium max-w-xs">
                               <div>
@@ -517,7 +541,7 @@ export default function AdminSection() {
 
                   {/* Mobile Card View */}
                   <div className="lg:hidden space-y-4">
-                    {ideas.map((idea) => (
+                    {sortedIdeas.map((idea) => (
                       <Card key={idea.id} className="p-4">
                         <div className="space-y-3">
                           {/* Header with title and status */}
