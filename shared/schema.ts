@@ -229,6 +229,8 @@ export const insertEventSchema = createInsertSchema(events).pick({
   helloAssoLink: true,
   enableExternalRedirect: true,
   externalRedirectUrl: true,
+  showInscriptionsCount: true,
+  showAvailableSeats: true,
 }).extend({
   title: z.string()
     .min(3, "Le titre doit contenir au moins 3 caractères")
@@ -257,6 +259,8 @@ export const insertEventSchema = createInsertSchema(events).pick({
     .url("L'adresse web de redirection n'est pas valide. Veuillez saisir une URL complète (ex: https://exemple.com)")
     .optional()
     .transform(val => val ? sanitizeText(val) : undefined),
+  showInscriptionsCount: z.boolean().optional().default(true),
+  showAvailableSeats: z.boolean().optional().default(true),
 });
 
 export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({

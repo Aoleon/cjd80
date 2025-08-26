@@ -31,6 +31,8 @@ export default function EventAdminModal({
     title: "",
     description: "",
     date: "",
+    location: "",
+    maxParticipants: undefined as number | undefined,
     helloAssoLink: "",
     enableExternalRedirect: false,
     externalRedirectUrl: "",
@@ -48,6 +50,8 @@ export default function EventAdminModal({
           title: event.title,
           description: event.description || "",
           date: formattedDate,
+          location: event.location || "",
+          maxParticipants: event.maxParticipants || undefined,
           helloAssoLink: event.helloAssoLink || "",
           enableExternalRedirect: event.enableExternalRedirect || false,
           externalRedirectUrl: event.externalRedirectUrl || "",
@@ -60,6 +64,8 @@ export default function EventAdminModal({
           title: "",
           description: "",
           date: "",
+          location: "",
+          maxParticipants: undefined,
           helloAssoLink: "",
           enableExternalRedirect: false,
           externalRedirectUrl: "",
@@ -160,6 +166,8 @@ export default function EventAdminModal({
       title: formData.title.trim(),
       description: formData.description.trim() || undefined,
       date: selectedDate.toISOString(),
+      location: formData.location.trim() || undefined,
+      maxParticipants: formData.maxParticipants || undefined,
       helloAssoLink: formData.helloAssoLink.trim() || undefined,
       enableExternalRedirect: formData.enableExternalRedirect,
       externalRedirectUrl: formData.enableExternalRedirect && formData.externalRedirectUrl.trim() ? formData.externalRedirectUrl.trim() : undefined,
@@ -174,7 +182,7 @@ export default function EventAdminModal({
     }
   };
 
-  const handleInputChange = (field: string, value: string | boolean) => {
+  const handleInputChange = (field: string, value: string | boolean | number | undefined) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -261,6 +269,45 @@ export default function EventAdminModal({
             />
             <p className="text-xs text-gray-500 mt-1">
               Optionnel - {1000 - formData.description.length} caractères restants
+            </p>
+          </div>
+
+          {/* Location Field */}
+          <div>
+            <Label htmlFor="event-location" className="text-sm sm:text-base font-medium text-gray-700">
+              Lieu de l'événement (optionnel)
+            </Label>
+            <Input
+              id="event-location"
+              type="text"
+              value={formData.location}
+              onChange={(e) => handleInputChange("location", e.target.value)}
+              placeholder="Ex: Salle de conférence CCI, Amiens"
+              className="mt-1 sm:mt-2 text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green"
+              maxLength={200}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Précisez l'adresse ou le lieu de rendez-vous (max 200 caractères)
+            </p>
+          </div>
+
+          {/* Max Participants Field */}
+          <div>
+            <Label htmlFor="event-max-participants" className="text-sm sm:text-base font-medium text-gray-700">
+              Nombre maximum de participants (optionnel)
+            </Label>
+            <Input
+              id="event-max-participants"
+              type="number"
+              value={formData.maxParticipants?.toString() || ""}
+              onChange={(e) => handleInputChange("maxParticipants", e.target.value ? parseInt(e.target.value) : undefined)}
+              placeholder="Ex: 50"
+              min="1"
+              max="1000"
+              className="mt-1 sm:mt-2 text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Limitez le nombre d'inscriptions si nécessaire (1-1000 participants)
             </p>
           </div>
 
