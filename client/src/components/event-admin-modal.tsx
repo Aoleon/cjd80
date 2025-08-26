@@ -53,10 +53,10 @@ export default function EventAdminModal({
           location: event.location || "",
           maxParticipants: event.maxParticipants || undefined,
           helloAssoLink: event.helloAssoLink || "",
-          enableExternalRedirect: event.enableExternalRedirect || false,
+          enableExternalRedirect: Boolean(event.enableExternalRedirect),
           externalRedirectUrl: event.externalRedirectUrl || "",
-          showInscriptionsCount: event.showInscriptionsCount ?? true,
-          showAvailableSeats: event.showAvailableSeats ?? true,
+          showInscriptionsCount: Boolean(event.showInscriptionsCount),
+          showAvailableSeats: Boolean(event.showAvailableSeats),
         });
       } else {
         // Reset form for create mode
@@ -175,12 +175,6 @@ export default function EventAdminModal({
       showAvailableSeats: formData.showAvailableSeats,
     };
 
-    console.log('[FRONTEND DEBUG] Données du formulaire avant envoi:', {
-      showInscriptionsCount: formData.showInscriptionsCount,
-      showAvailableSeats: formData.showAvailableSeats,
-      enableExternalRedirect: formData.enableExternalRedirect
-    });
-    console.log('[FRONTEND DEBUG] Données événement à envoyer:', eventData);
 
     if (mode === "create") {
       createEventMutation.mutate(eventData);
