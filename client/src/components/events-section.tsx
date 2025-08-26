@@ -170,20 +170,24 @@ export default function EventsSection() {
                           )}
 
                           {/* Participants Info */}
-                          {event.maxParticipants && (
+                          {(event.maxParticipants || event.showInscriptionsCount) && (
                             <div className="flex flex-wrap items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-100">
                               {event.showInscriptionsCount && (
                                 <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
                                   <Users className="w-4 h-4 mr-2 text-blue-600" />
                                   <span className="font-medium text-gray-800">
                                     <span className="text-blue-600 font-bold">{event.inscriptionCount}</span> inscrit{event.inscriptionCount > 1 ? 's' : ''}
-                                    <span className="text-gray-500 mx-1">/</span>
-                                    <span className="font-bold">{event.maxParticipants}</span> places
+                                    {event.maxParticipants && (
+                                      <>
+                                        <span className="text-gray-500 mx-1">/</span>
+                                        <span className="font-bold">{event.maxParticipants}</span> places
+                                      </>
+                                    )}
                                   </span>
                                 </div>
                               )}
                               
-                              {event.showAvailableSeats && (
+                              {event.maxParticipants && event.showAvailableSeats && (
                                 <div className={`inline-flex items-center px-4 py-2 text-sm font-bold rounded-full shadow-sm ${
                                   isEventFull
                                     ? 'bg-red-500 text-white'

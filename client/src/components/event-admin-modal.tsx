@@ -380,20 +380,15 @@ export default function EventAdminModal({
                   checked={formData.showInscriptionsCount}
                   onCheckedChange={(checked) => handleInputChange("showInscriptionsCount", checked as boolean)}
                   className="mt-1"
-                  disabled={!formData.maxParticipants}
                 />
                 <div className="flex-1">
                   <Label 
                     htmlFor="show-inscriptions" 
-                    className={`text-sm sm:text-base font-medium cursor-pointer leading-relaxed ${
-                      !formData.maxParticipants ? 'text-gray-400' : 'text-gray-700'
-                    }`}
+                    className="text-sm sm:text-base font-medium cursor-pointer leading-relaxed text-gray-700"
                   >
-                    Afficher le nombre d'inscrits ("X inscrits / Y places")
+                    Afficher le nombre d'inscrits {formData.maxParticipants ? '("X inscrits / Y places")' : '("X inscrits")'}
                   </Label>
-                  {!formData.maxParticipants && (
-                    <p className="text-xs text-gray-400 mt-1">Nécessite un nombre total de places</p>
-                  )}
+                  <p className="text-xs text-gray-500 mt-1">Affiche le nombre d'inscriptions actuelles. {!formData.maxParticipants && 'Sans limite de places, seul le nombre d\'inscrits s\'affiche.'}</p>
                 </div>
               </div>
 

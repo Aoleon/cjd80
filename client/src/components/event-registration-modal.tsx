@@ -59,7 +59,7 @@ export default function EventRegistrationModal({
         // Rediriger après un court délai pour que l'utilisateur puisse voir le message
         setTimeout(() => {
           if (event.externalRedirectUrl) {
-            window.open(event.externalRedirectUrl, '_blank');
+            window.location.href = event.externalRedirectUrl;
           }
         }, 2000);
       } else {
