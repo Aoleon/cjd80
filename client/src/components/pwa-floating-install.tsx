@@ -123,7 +123,7 @@ export function PWAFloatingInstall() {
 
       {/* Modal avec instructions pour iOS */}
       <Dialog open={showInstructions} onOpenChange={setShowInstructions}>
-        <DialogContent className="max-w-md mx-4 bg-white" data-testid="modal-ios-instructions">
+        <DialogContent className="max-w-md mx-4" data-testid="modal-ios-instructions">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {installInstructions.icon}
