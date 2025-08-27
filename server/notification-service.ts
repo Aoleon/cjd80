@@ -1,6 +1,7 @@
 import webpush from 'web-push';
 import { db } from './db';
 import { eq } from 'drizzle-orm';
+import { pushSubscriptions } from '@shared/schema';
 
 // Configuration des clés VAPID - générées pour le développement
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BPKt_8r2V3SJwVJLGnrvbHcwXBHbMhKYPr3rXjMQhUZOQVbgMZC9_X8fK3HSDx9rDKXe7CgVGaYSLnwJVFtUnQM';
@@ -52,8 +53,20 @@ export class NotificationService {
 
   private async loadSubscriptions(): Promise<void> {
     try {
-      // TODO: Charger depuis la base de données quand la table sera créée
-      console.log('[Notifications] Service initialisé');
+      // Charger tous les abonnements depuis la base de données
+      const subs = await db.select().from(pushSubscriptions);
+      
+      // Remplir le cache en mémoire
+      subs.forEach(sub => {
+        this.subscriptions.set(sub.endpoint, {
+          endpoint: sub.endpoint,
+          p256dh: sub.p256dh,
+          auth: sub.auth,
+          userId: sub.userEmail || undefined
+        });
+      });
+      
+      console.log(`[Notifications] Service initialisé avec ${subs.length} abonnements`);
     } catch (error) {
       console.error('[Notifications] Erreur chargement abonnements:', error);
     }
@@ -67,7 +80,35 @@ export class NotificationService {
         throw new Error('Abonnement invalide');
       }
 
-      // Stocker en mémoire pour l'instant
+      // Vérifier si l'abonnement existe déjà
+      const existing = await db.select()
+        .from(pushSubscriptions)
+        .where(eq(pushSubscriptions.endpoint, subscription.endpoint))
+        .limit(1);
+      
+      if (existing.length === 0) {
+        // Insérer dans la base de données
+        await db.insert(pushSubscriptions).values({
+          endpoint: subscription.endpoint,
+          p256dh: subscription.p256dh,
+          auth: subscription.auth,
+          userEmail: subscription.userId || null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      } else {
+        // Mettre à jour l'abonnement existant
+        await db.update(pushSubscriptions)
+          .set({
+            p256dh: subscription.p256dh,
+            auth: subscription.auth,
+            userEmail: subscription.userId || null,
+            updatedAt: new Date()
+          })
+          .where(eq(pushSubscriptions.endpoint, subscription.endpoint));
+      }
+
+      // Mettre à jour le cache en mémoire
       this.subscriptions.set(subscription.endpoint, {
         ...subscription,
         createdAt: new Date()
@@ -84,6 +125,11 @@ export class NotificationService {
   // Supprimer un abonnement
   async removeSubscription(endpoint: string): Promise<boolean> {
     try {
+      // Supprimer de la base de données
+      await db.delete(pushSubscriptions)
+        .where(eq(pushSubscriptions.endpoint, endpoint));
+      
+      // Supprimer du cache en mémoire
       const removed = this.subscriptions.delete(endpoint);
       console.log(`[Notifications] Abonnement supprimé: ${endpoint.slice(0, 50)}...`);
       return removed;

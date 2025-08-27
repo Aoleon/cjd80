@@ -95,6 +95,20 @@ export const inscriptions = pgTable("inscriptions", {
   uniqueRegistrationPerEmail: unique().on(table.eventId, table.email),
 }));
 
+// Push subscriptions table for PWA notifications
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  userEmail: text("user_email"), // Optional: link to user if logged in
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  endpointIdx: index("push_subscriptions_endpoint_idx").on(table.endpoint),
+  emailIdx: index("push_subscriptions_email_idx").on(table.userEmail),
+}));
+
 // Relations
 export const ideasRelations = relations(ideas, ({ many }) => ({
   votes: many(votes),
@@ -303,6 +317,9 @@ export type InsertEvent = z.infer<typeof insertEventSchema>;
 
 export type Inscription = typeof inscriptions.$inferSelect;
 export type InsertInscription = z.infer<typeof insertInscriptionSchema>;
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
 
 // For compatibility with existing auth system
 export const users = admins;
