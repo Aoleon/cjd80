@@ -87,6 +87,8 @@ export function PWAInstallBanner() {
   const handleDismiss = () => {
     setShowBanner(false);
     localStorage.setItem('pwa-banner-dismissed', Date.now().toString());
+    // Déclencher un événement pour informer le bouton flottant
+    window.dispatchEvent(new CustomEvent('pwa-banner-dismissed'));
   };
 
   return (

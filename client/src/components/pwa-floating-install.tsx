@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Download, X, Share } from 'lucide-react';
@@ -18,16 +18,50 @@ export function PWAFloatingInstall() {
 
   const [showInstructions, setShowInstructions] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
+  const [shouldShow, setShouldShow] = useState(false);
 
   // Vérifier si on a déjà refusé l'installation
   const hasDeclined = localStorage.getItem('pwa-install-declined');
+  
+  useEffect(() => {
+    // Ne montrer le bouton flottant que si la bannière a été fermée ou après 90 secondes
+    const bannerDismissed = localStorage.getItem('pwa-banner-dismissed');
+    const bannerDismissedTime = bannerDismissed ? parseInt(bannerDismissed) : 0;
+    const timeSinceBannerDismissed = Date.now() - bannerDismissedTime;
+    
+    if (bannerDismissed && timeSinceBannerDismissed < 86400000) { // Moins de 24h depuis fermeture bannière
+      // Montrer le bouton flottant immédiatement si la bannière a été fermée récemment
+      setShouldShow(true);
+    } else if (!bannerDismissed) {
+      // Si la bannière n'a jamais été fermée, attendre 90 secondes (plus que les 30s de la bannière)
+      const timer = setTimeout(() => {
+        const currentBannerDismissed = localStorage.getItem('pwa-banner-dismissed');
+        if (!currentBannerDismissed) {
+          setShouldShow(true);
+        }
+      }, 90000);
+      
+      // Écouter si la bannière est fermée
+      const handleBannerDismissed = () => {
+        setShouldShow(true);
+      };
+      
+      window.addEventListener('pwa-banner-dismissed', handleBannerDismissed);
+      
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('pwa-banner-dismissed', handleBannerDismissed);
+      };
+    }
+  }, []);
 
   // Ne pas afficher si :
   // - Déjà installé
-  // - Pas sur mobile
+  // - Pas sur mobile  
   // - Utilisateur a fermé le bouton
   // - Utilisateur a déjà refusé
-  if (isInstalled || !isMobile || isDismissed || hasDeclined) {
+  // - Pas encore le bon moment (coordination avec bannière)
+  if (isInstalled || !isMobile || isDismissed || hasDeclined || !shouldShow) {
     return null;
   }
 
@@ -41,6 +75,8 @@ export function PWAFloatingInstall() {
 
   const handleDismiss = () => {
     setIsDismissed(true);
+    // Mémoriser la fermeture pour ne pas réafficher trop vite
+    localStorage.setItem('pwa-floating-dismissed', Date.now().toString());
     declineInstall();
   };
 
