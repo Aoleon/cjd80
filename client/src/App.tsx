@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import { PWAFloatingInstall } from "@/components/pwa-floating-install";
+import { PWAInstallBanner } from "@/components/pwa-install-banner";
+import { PWAInstallTooltip } from "@/components/pwa-install-tooltip";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import ProposePage from "@/pages/propose-page";
@@ -54,6 +56,10 @@ function PWAWrapper({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
+      {/* Bannière d'invitation intelligente */}
+      <PWAInstallBanner />
+      {/* Tooltip avec conseils d'installation */}
+      <PWAInstallTooltip />
       {/* Bouton flottant d'installation sur mobile uniquement */}
       <PWAFloatingInstall />
     </>
