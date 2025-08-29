@@ -232,22 +232,20 @@ export default function EventsSection() {
                               {isEventFull ? '❌ Complet' : "S'inscrire"}
                             </Button>
                             
-                            {event.allowUnsubscribe && (
-                              <Button
-                                onClick={() => handleUnsubscribeClick(event)}
-                                variant={event.redUnsubscribeButton ? "destructive" : "outline"}
-                                size="lg"
-                                className={`text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl ${
-                                  event.redUnsubscribeButton 
-                                    ? 'bg-red-600 text-white hover:bg-red-700 border-red-600' 
-                                    : 'border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400'
-                                }`}
-                                data-testid="button-unsubscribe-event"
-                              >
-                                <UserMinus className="w-4 h-4 mr-2" />
-                                Se désinscrire
-                              </Button>
-                            )}
+                            <Button
+                              onClick={() => handleUnsubscribeClick(event)}
+                              variant={event.redUnsubscribeButton ? "destructive" : "outline"}
+                              size="lg"
+                              className={`text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl ${
+                                event.redUnsubscribeButton 
+                                  ? 'bg-red-600 text-white hover:bg-red-700 border-red-600' 
+                                  : 'border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400'
+                              }`}
+                              data-testid="button-unsubscribe-event"
+                            >
+                              <UserMinus className="w-4 h-4 mr-2" />
+                              Se désinscrire
+                            </Button>
                           </div>
                         </div>
                       </div>
