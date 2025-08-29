@@ -229,6 +229,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/inscriptions/:eventId/:email", async (req, res, next) => {
+    try {
+      const { eventId, email } = req.params;
+      
+      const result = await storage.unsubscribeFromEvent(eventId, email);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(200).json({ message: "Désinscription réussie" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Admin routes
   app.get("/api/admin/stats", requireAuth, async (req, res, next) => {
     try {

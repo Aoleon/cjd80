@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Loader2, Calendar, Users, MapPin } from "lucide-react";
+import { UserPlus, UserMinus, Loader2, Calendar, Users, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,10 +28,14 @@ export default function EventRegistrationModal({
     email: "",
     comments: "",
   });
+  const [isUnsubscribeMode, setIsUnsubscribeMode] = useState(false);
+  const [unsubscribeEmail, setUnsubscribeEmail] = useState("");
 
   useEffect(() => {
     if (!open) {
       setFormData({ name: "", email: "", comments: "" });
+      setIsUnsubscribeMode(false);
+      setUnsubscribeEmail("");
     }
   }, [open]);
 
@@ -82,28 +86,76 @@ export default function EventRegistrationModal({
     },
   });
 
+  const unsubscribeMutation = useMutation({
+    mutationFn: async ({ eventId, email }: { eventId: string; email: string }) => {
+      const res = await apiRequest("DELETE", `/api/inscriptions/${eventId}/${email}`);
+      if (!res.ok) {
+        const errorData = await res.text();
+        throw new Error(errorData || "Erreur lors de la désinscription");
+      }
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      
+      toast({
+        title: "✅ Désinscription confirmée !",
+        description: `Vous êtes maintenant désinscrit(e) de "${event?.title}".`,
+        duration: 6000,
+      });
+      
+      onOpenChange(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "❌ Erreur lors de la désinscription",
+        description: error.message,
+        variant: "destructive",
+        duration: 8000,
+      });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!event) return;
 
-    // Validation côté client
-    if (!formData.name.trim() || !formData.email.trim()) {
-      toast({
-        title: "Champs requis",
-        description: "Veuillez remplir votre nom et email",
-        variant: "destructive",
+    if (isUnsubscribeMode) {
+      // Désinscription
+      if (!unsubscribeEmail.trim()) {
+        toast({
+          title: "Email requis",
+          description: "Veuillez saisir votre email pour vous désinscrire",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      unsubscribeMutation.mutate({
+        eventId: event.id,
+        email: unsubscribeEmail.trim(),
       });
-      return;
+    } else {
+      // Inscription
+      if (!formData.name.trim() || !formData.email.trim()) {
+        toast({
+          title: "Champs requis",
+          description: "Veuillez remplir votre nom et email",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const inscription: InsertInscription = {
+        eventId: event.id,
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        comments: formData.comments.trim() || undefined,
+      };
+
+      registerMutation.mutate(inscription);
     }
-
-    const inscription: InsertInscription = {
-      eventId: event.id,
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      comments: formData.comments.trim() || undefined,
-    };
-
-    registerMutation.mutate(inscription);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -128,7 +180,9 @@ export default function EventRegistrationModal({
       <DialogContent className="w-full max-w-2xl mx-auto p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
         <DialogHeader className="text-left pb-4">
           <DialogTitle className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
-            S'inscrire à l'événement
+            {event?.allowUnsubscribe && isUnsubscribeMode 
+              ? "Se désinscrire de l'événement" 
+              : "S'inscrire à l'événement"}
           </DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-3 sm:space-y-4">
@@ -166,85 +220,167 @@ export default function EventRegistrationModal({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Mode switcher for events that allow unsubscribe */}
+        {event?.allowUnsubscribe && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                type="button"
+                variant={!isUnsubscribeMode ? "default" : "outline"}
+                onClick={() => setIsUnsubscribeMode(false)}
+                className="flex items-center gap-2"
+                data-testid="button-register-mode"
+              >
+                <UserPlus className="w-4 h-4" />
+                S'inscrire
+              </Button>
+              <Button
+                type="button"
+                variant={isUnsubscribeMode ? "destructive" : "outline"}
+                onClick={() => setIsUnsubscribeMode(true)}
+                className="flex items-center gap-2"
+                data-testid="button-unsubscribe-mode"
+              >
+                <UserMinus className="w-4 h-4" />
+                Se désinscrire
+              </Button>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
-          {/* Name Field */}
-          <div className="space-y-2">
-            <Label htmlFor="participant-name" className="text-sm sm:text-base font-medium text-gray-700">
-              Votre nom complet *
-            </Label>
-            <Input
-              id="participant-name"
-              type="text"
-              value={formData.name}
-              onChange={(e) => handleInputChange("name", e.target.value)}
-              placeholder="Ex: Jean Dupont"
-              required
-              className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green h-10 sm:h-11"
-              maxLength={100}
-            />
-            <p className="text-xs text-gray-500">
-              Ce nom apparaîtra sur la liste des participants
-            </p>
-          </div>
+          {isUnsubscribeMode ? (
+            /* Formulaire de désinscription */
+            <>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h3 className="text-red-800 font-medium mb-2">⚠️ Désinscription</h3>
+                <p className="text-red-700 text-sm">
+                  Saisissez l'email utilisé lors de votre inscription pour vous désinscrire de cet événement.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="unsubscribe-email" className="text-sm sm:text-base font-medium text-gray-700">
+                  Email d'inscription *
+                </Label>
+                <Input
+                  id="unsubscribe-email"
+                  type="email"
+                  value={unsubscribeEmail}
+                  onChange={(e) => setUnsubscribeEmail(e.target.value)}
+                  placeholder="email.utilisé@lors-inscription.com"
+                  required
+                  className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green h-10 sm:h-11"
+                  data-testid="input-unsubscribe-email"
+                />
+                <p className="text-xs text-gray-500">
+                  Utilisez exactement le même email que lors de votre inscription
+                </p>
+              </div>
+            </>
+          ) : (
+            /* Formulaire d'inscription */
+            <>
+              {/* Name Field */}
+              <div className="space-y-2">
+                <Label htmlFor="participant-name" className="text-sm sm:text-base font-medium text-gray-700">
+                  Votre nom complet *
+                </Label>
+                <Input
+                  id="participant-name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  placeholder="Ex: Jean Dupont"
+                  required
+                  className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green h-10 sm:h-11"
+                  maxLength={100}
+                />
+                <p className="text-xs text-gray-500">
+                  Ce nom apparaîtra sur la liste des participants
+                </p>
+              </div>
 
-          {/* Email Field */}
-          <div className="space-y-2">
-            <Label htmlFor="participant-email" className="text-sm sm:text-base font-medium text-gray-700">
-              Votre email *
-            </Label>
-            <Input
-              id="participant-email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
-              placeholder="jean.dupont@exemple.com"
-              required
-              className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green h-10 sm:h-11"
-              maxLength={100}
-            />
-            <p className="text-xs text-gray-500">
-              Pour recevoir les informations et confirmations de l'événement
-            </p>
-          </div>
+              {/* Email Field */}
+              <div className="space-y-2">
+                <Label htmlFor="participant-email" className="text-sm sm:text-base font-medium text-gray-700">
+                  Votre email *
+                </Label>
+                <Input
+                  id="participant-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  placeholder="jean.dupont@exemple.com"
+                  required
+                  className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green h-10 sm:h-11"
+                  maxLength={100}
+                />
+                <p className="text-xs text-gray-500">
+                  Pour recevoir les informations et confirmations de l'événement
+                </p>
+              </div>
 
-          {/* Comments Field (Optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="participant-comments" className="text-sm sm:text-base font-medium text-gray-700">
-              Commentaires ou informations particulières
-            </Label>
-            <Textarea
-              id="participant-comments"
-              value={formData.comments}
-              onChange={(e) => handleInputChange("comments", e.target.value)}
-              placeholder="Ex: régime alimentaire, nombre d'accompagnants, questions..."
-              rows={3}
-              className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green resize-none"
-              maxLength={500}
-            />
-            <p className="text-xs text-gray-500">
-              Optionnel - {500 - formData.comments.length} caractères restants
-            </p>
-          </div>
+              {/* Comments Field (Optional) */}
+              <div className="space-y-2">
+                <Label htmlFor="participant-comments" className="text-sm sm:text-base font-medium text-gray-700">
+                  Commentaires ou informations particulières
+                </Label>
+                <Textarea
+                  id="participant-comments"
+                  value={formData.comments}
+                  onChange={(e) => handleInputChange("comments", e.target.value)}
+                  placeholder="Ex: régime alimentaire, nombre d'accompagnants, questions..."
+                  rows={3}
+                  className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green resize-none"
+                  maxLength={500}
+                />
+                <p className="text-xs text-gray-500">
+                  Optionnel - {500 - formData.comments.length} caractères restants
+                </p>
+              </div>
+            </>
+          )}
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 border-t">
             <Button
               type="submit"
-              disabled={registerMutation.isPending}
-              className="bg-cjd-green hover:bg-green-700 text-white flex-1 h-11 sm:h-12 text-sm sm:text-base"
+              disabled={isUnsubscribeMode ? unsubscribeMutation.isPending : registerMutation.isPending}
+              className={`flex-1 h-11 sm:h-12 text-sm sm:text-base ${
+                isUnsubscribeMode 
+                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                  : 'bg-cjd-green hover:bg-green-700 text-white'
+              }`}
             >
-              {registerMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  <span className="hidden sm:inline">Inscription en cours...</span>
-                  <span className="sm:hidden">Inscription...</span>
-                </>
+              {isUnsubscribeMode ? (
+                unsubscribeMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span className="hidden sm:inline">Désinscription en cours...</span>
+                    <span className="sm:hidden">Désinscription...</span>
+                  </>
+                ) : (
+                  <>
+                    <UserMinus className="mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">Confirmer ma désinscription</span>
+                    <span className="sm:hidden">Se désinscrire</span>
+                  </>
+                )
               ) : (
-                <>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Confirmer mon inscription</span>
-                  <span className="sm:hidden">S'inscrire</span>
-                </>
+                registerMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span className="hidden sm:inline">Inscription en cours...</span>
+                    <span className="sm:hidden">Inscription...</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">Confirmer mon inscription</span>
+                    <span className="sm:hidden">S'inscrire</span>
+                  </>
+                )
               )}
             </Button>
             
@@ -252,7 +388,7 @@ export default function EventRegistrationModal({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={registerMutation.isPending}
+              disabled={isUnsubscribeMode ? unsubscribeMutation.isPending : registerMutation.isPending}
               className="sm:px-8 h-11 sm:h-12 text-sm sm:text-base"
             >
               Annuler

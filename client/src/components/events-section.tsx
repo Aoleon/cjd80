@@ -215,13 +215,17 @@ export default function EventsSection() {
                             className={`w-full xl:w-auto text-base font-semibold px-8 py-3 transition-all duration-200 shadow-lg hover:shadow-xl ${
                               isEventFull
                                 ? 'bg-gray-400 cursor-not-allowed text-gray-200'
-                                : 'bg-gradient-to-r from-cjd-green to-green-600 text-white hover:from-green-600 hover:to-green-700 transform hover:scale-105'
+                                : event.allowUnsubscribe
+                                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 transform hover:scale-105'
+                                  : 'bg-gradient-to-r from-cjd-green to-green-600 text-white hover:from-green-600 hover:to-green-700 transform hover:scale-105'
                             }`}
                           >
                             <CalendarPlus className="w-5 h-5 mr-2" />
                             {isEventFull
                               ? '❌ Complet' 
-                              : "🎯 S'inscrire maintenant"}
+                              : event.allowUnsubscribe
+                                ? "🔄 Gérer mon inscription"
+                                : "🎯 S'inscrire maintenant"}
                           </Button>
                         </div>
                       </div>

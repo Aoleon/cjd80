@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import cjdLogo from "@assets/logo-cjd-social_1756108273665.jpg";
 
 interface HeaderProps {
-  activeSection: "ideas" | "propose" | "events" | "admin";
-  setActiveSection: (section: "ideas" | "propose" | "events" | "admin") => void;
+  activeSection: "ideas" | "propose" | "events" | "tools" | "admin";
+  setActiveSection: (section: "ideas" | "propose" | "events" | "tools" | "admin") => void;
 }
 
 export default function Header({ activeSection, setActiveSection }: HeaderProps) {
@@ -15,6 +15,7 @@ export default function Header({ activeSection, setActiveSection }: HeaderProps)
     { id: "ideas" as const, label: "Voter pour des idées" },
     { id: "propose" as const, label: "Proposer une idée" },
     { id: "events" as const, label: "Événements" },
+    { id: "tools" as const, label: "Les outils du dirigeants" },
     { id: "admin" as const, label: "Administration" },
   ];
 

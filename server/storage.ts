@@ -70,6 +70,7 @@ export interface IStorage {
   // Inscriptions - Ultra-robust with duplicate protection
   getEventInscriptions(eventId: string): Promise<Result<Inscription[]>>;
   createInscription(inscription: InsertInscription): Promise<Result<Inscription>>;
+  unsubscribeFromEvent(eventId: string, email: string): Promise<Result<void>>;
   hasUserRegistered(eventId: string, email: string): Promise<boolean>;
   
   // Admin stats
@@ -285,6 +286,7 @@ export class DatabaseStorage implements IStorage {
           externalRedirectUrl: events.externalRedirectUrl,
           showInscriptionsCount: events.showInscriptionsCount,
           showAvailableSeats: events.showAvailableSeats,
+          allowUnsubscribe: events.allowUnsubscribe,
           status: events.status,
           createdAt: events.createdAt,
           updatedAt: events.updatedAt,
@@ -516,6 +518,31 @@ export class DatabaseStorage implements IStorage {
     return !!existingInscription;
   }
 
+  async unsubscribeFromEvent(eventId: string, email: string): Promise<Result<void>> {
+    try {
+      // Check if user is registered for this event
+      const [inscription] = await db
+        .select()
+        .from(inscriptions)
+        .where(and(eq(inscriptions.eventId, eventId), eq(inscriptions.email, email)));
+
+      if (!inscription) {
+        return { success: false, error: new NotFoundError("Inscription introuvable") };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(inscriptions)
+          .where(and(eq(inscriptions.eventId, eventId), eq(inscriptions.email, email)));
+        console.log(`[Storage] Désinscription: ${email} de l'événement ${eventId}`);
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la désinscription: ${error}`) };
+    }
+  }
+
   async deleteInscription(inscriptionId: string): Promise<Result<void>> {
     try {
       // Check if inscription exists
@@ -648,6 +675,7 @@ export class DatabaseStorage implements IStorage {
           externalRedirectUrl: events.externalRedirectUrl,
           showInscriptionsCount: events.showInscriptionsCount,
           showAvailableSeats: events.showAvailableSeats,
+          allowUnsubscribe: events.allowUnsubscribe,
           status: events.status,
           createdAt: events.createdAt,
           updatedAt: events.updatedAt,

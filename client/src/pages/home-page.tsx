@@ -4,8 +4,9 @@ import IdeasSection from "@/components/ideas-section";
 import ProposeSection from "@/components/propose-section";
 import EventsSection from "@/components/events-section";
 import AdminSection from "@/components/admin-section";
+import ToolsPage from "@/pages/tools-page";
 
-type Section = "ideas" | "propose" | "events" | "admin";
+type Section = "ideas" | "propose" | "events" | "tools" | "admin";
 
 export default function HomePage() {
   const [activeSection, setActiveSection] = useState<Section>("ideas");
@@ -30,6 +31,7 @@ export default function HomePage() {
         )}
         {activeSection === "propose" && <ProposeSection />}
         {activeSection === "events" && <EventsSection />}
+        {activeSection === "tools" && <ToolsPage />}
         {activeSection === "admin" && <AdminSection />}
       </main>
 
