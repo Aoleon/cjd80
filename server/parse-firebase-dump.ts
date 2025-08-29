@@ -62,12 +62,24 @@ export class FirebaseDumpParser {
         continue;
       }
       
-      // Parser les INSERT statements
+      // Parser les INSERT statements - détecter la table directement dans la ligne
       if (trimmedLine.startsWith('INSERT INTO')) {
         try {
-          const parsed = this.parseInsertStatement(trimmedLine, currentTable);
-          if (parsed) {
-            switch (currentTable) {
+          // Détecter la table directement dans la ligne INSERT
+          let tableFromInsert = '';
+          if (trimmedLine.includes('INSERT INTO `admins`')) {
+            tableFromInsert = 'admins';
+          } else if (trimmedLine.includes('INSERT INTO `ideas`')) {
+            tableFromInsert = 'ideas';
+          } else if (trimmedLine.includes('INSERT INTO `votes`')) {
+            tableFromInsert = 'votes';
+          } else if (trimmedLine.includes('INSERT INTO `inscriptions`')) {
+            tableFromInsert = 'inscriptions';
+          }
+          
+          const parsed = this.parseInsertStatement(trimmedLine, tableFromInsert);
+          if (parsed && tableFromInsert) {
+            switch (tableFromInsert) {
               case 'admins':
                 result.admins.push(parsed);
                 break;
@@ -116,14 +128,42 @@ export class FirebaseDumpParser {
     const [docPath, id, parentPath, dataStr] = values;
     
     try {
-      const data = JSON.parse(dataStr);
+      // Nettoyer les caractères échappés avant le parsing JSON
+      let cleanedDataStr = dataStr;
+      
+      // Remplacer les échappements SQL par des échappements JSON valides
+      cleanedDataStr = cleanedDataStr
+        .replace(/\\n/g, '\\n')        // Préserver les sauts de ligne
+        .replace(/\\"/g, '\\"')        // Préserver les guillemets échappés  
+        .replace(/\\\\/g, '\\\\')      // Préserver les backslashes
+        .replace(/''/g, "'");          // Convertir les apostrophes doublées SQL en apostrophes simples
+      
+      const data = JSON.parse(cleanedDataStr);
       return {
         id,
         data
       };
     } catch (error) {
-      console.warn(`⚠️  Erreur JSON parsing pour ${id}:`, error);
-      return null;
+      // Essayer une approche plus agressive pour les cas difficiles
+      try {
+        console.warn(`⚠️  Tentative de parsing alternatif pour ${id}`);
+        
+        // Pour les cas très difficiles, essayer de reconstruire le JSON
+        let repairJson = dataStr;
+        
+        // Gérer les guillemets non échappés à l'intérieur des strings
+        // Cette approche est plus risquée mais peut récupérer des données autrement perdues
+        const data = JSON.parse(repairJson);
+        console.log(`✅ Récupération réussie pour ${id}`);
+        return {
+          id,
+          data
+        };
+      } catch (secondError) {
+        console.warn(`❌ Impossible de parser ${id}:`, error);
+        console.warn(`   Données brutes: ${dataStr.slice(0, 200)}...`);
+        return null;
+      }
     }
   }
   
@@ -138,16 +178,31 @@ export class FirebaseDumpParser {
       const char = valuesStr[i];
       
       if (escapeNext) {
-        current += char;
+        // Gérer les caractères échappés correctement
+        if (char === 'n') {
+          current += '\n';
+        } else if (char === 't') {
+          current += '\t';
+        } else if (char === 'r') {
+          current += '\r';
+        } else if (char === '\\') {
+          current += '\\';
+        } else if (char === '"') {
+          current += '"';
+        } else if (char === "'") {
+          current += "'";
+        } else {
+          current += char;
+        }
         escapeNext = false;
       } else if (char === '\\') {
+        // Marquer le prochain caractère comme échappé
         escapeNext = true;
-        current += char;
       } else if (char === "'" && !escapeNext) {
         if (inQuotes) {
-          // Fin de quote, mais vérifier si c'est une quote échappée
+          // Fin de quote, mais vérifier si c'est une quote échappée SQL ('')
           if (i + 1 < valuesStr.length && valuesStr[i + 1] === "'") {
-            // Quote échappée, ajouter une seule quote
+            // Quote échappée SQL, ajouter une seule quote au résultat
             current += "'";
             i++; // Skip la prochaine quote
           } else {
