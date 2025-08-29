@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, MapPin, Users, CalendarPlus, Loader2, Clock, Star } from "lucide-react";
+import { Calendar, MapPin, Users, CalendarPlus, UserMinus, Loader2, Clock, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import EventRegistrationModal from "./event-registration-modal";
@@ -13,6 +13,7 @@ interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
 export default function EventsSection() {
   const [selectedEvent, setSelectedEvent] = useState<EventWithInscriptions | null>(null);
   const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'register' | 'unsubscribe'>('register');
 
   const { data: events, isLoading, error } = useQuery<EventWithInscriptions[]>({
     queryKey: ["/api/events"],
@@ -28,6 +29,13 @@ export default function EventsSection() {
 
   const handleRegisterClick = (event: EventWithInscriptions) => {
     setSelectedEvent(event);
+    setModalMode('register');
+    setRegistrationModalOpen(true);
+  };
+
+  const handleUnsubscribeClick = (event: EventWithInscriptions) => {
+    setSelectedEvent(event);
+    setModalMode('unsubscribe');
     setRegistrationModalOpen(true);
   };
 
@@ -206,27 +214,37 @@ export default function EventsSection() {
                           )}
                         </div>
 
-                        {/* Registration Button */}
+                        {/* Registration Buttons */}
                         <div className="flex-shrink-0 xl:ml-8 mt-4 xl:mt-0">
-                          <Button
-                            onClick={() => handleRegisterClick(event)}
-                            disabled={isEventFull}
-                            size="lg"
-                            className={`w-full xl:w-auto text-base font-semibold px-8 py-3 transition-all duration-200 shadow-lg hover:shadow-xl ${
-                              isEventFull
-                                ? 'bg-gray-400 cursor-not-allowed text-gray-200'
-                                : event.allowUnsubscribe
-                                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 transform hover:scale-105'
+                          <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
+                            <Button
+                              onClick={() => handleRegisterClick(event)}
+                              disabled={isEventFull}
+                              size="lg"
+                              className={`text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl ${
+                                isEventFull
+                                  ? 'bg-gray-400 cursor-not-allowed text-gray-200'
                                   : 'bg-gradient-to-r from-cjd-green to-green-600 text-white hover:from-green-600 hover:to-green-700 transform hover:scale-105'
-                            }`}
-                          >
-                            <CalendarPlus className="w-5 h-5 mr-2" />
-                            {isEventFull
-                              ? '❌ Complet' 
-                              : event.allowUnsubscribe
-                                ? "🔄 Gérer mon inscription"
-                                : "🎯 S'inscrire maintenant"}
-                          </Button>
+                              }`}
+                              data-testid="button-register-event"
+                            >
+                              <CalendarPlus className="w-4 h-4 mr-2" />
+                              {isEventFull ? '❌ Complet' : "S'inscrire"}
+                            </Button>
+                            
+                            {event.allowUnsubscribe && (
+                              <Button
+                                onClick={() => handleUnsubscribeClick(event)}
+                                variant="outline"
+                                size="lg"
+                                className="text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                                data-testid="button-unsubscribe-event"
+                              >
+                                <UserMinus className="w-4 h-4 mr-2" />
+                                Se désinscrire
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -255,6 +273,7 @@ export default function EventsSection() {
         open={registrationModalOpen}
         onOpenChange={setRegistrationModalOpen}
         event={selectedEvent}
+        mode={modalMode}
       />
     </section>
   );

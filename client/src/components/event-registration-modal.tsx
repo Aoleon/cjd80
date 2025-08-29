@@ -14,12 +14,14 @@ interface EventRegistrationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   event: (Event & { inscriptionCount: number }) | null;
+  mode: 'register' | 'unsubscribe';
 }
 
 export default function EventRegistrationModal({ 
   open, 
   onOpenChange, 
-  event 
+  event,
+  mode
 }: EventRegistrationModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -28,13 +30,12 @@ export default function EventRegistrationModal({
     email: "",
     comments: "",
   });
-  const [isUnsubscribeMode, setIsUnsubscribeMode] = useState(false);
+  const isUnsubscribeMode = mode === 'unsubscribe';
   const [unsubscribeEmail, setUnsubscribeEmail] = useState("");
 
   useEffect(() => {
     if (!open) {
       setFormData({ name: "", email: "", comments: "" });
-      setIsUnsubscribeMode(false);
       setUnsubscribeEmail("");
     }
   }, [open]);
@@ -180,7 +181,7 @@ export default function EventRegistrationModal({
       <DialogContent className="w-full max-w-2xl mx-auto p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
         <DialogHeader className="text-left pb-4">
           <DialogTitle className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
-            {event?.allowUnsubscribe && isUnsubscribeMode 
+            {isUnsubscribeMode 
               ? "Se désinscrire de l'événement" 
               : "S'inscrire à l'événement"}
           </DialogTitle>
@@ -214,39 +215,14 @@ export default function EventRegistrationModal({
               </div>
               
               <p className="text-xs sm:text-sm text-gray-600">
-                Remplissez les informations ci-dessous pour confirmer votre inscription.
+                {isUnsubscribeMode 
+                  ? "Saisissez votre email pour vous désinscrire de cet événement."
+                  : "Remplissez les informations ci-dessous pour confirmer votre inscription."}
               </p>
             </div>
           </DialogDescription>
         </DialogHeader>
 
-        {/* Mode switcher for events that allow unsubscribe */}
-        {event?.allowUnsubscribe && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button
-                type="button"
-                variant={!isUnsubscribeMode ? "default" : "outline"}
-                onClick={() => setIsUnsubscribeMode(false)}
-                className="flex items-center gap-2"
-                data-testid="button-register-mode"
-              >
-                <UserPlus className="w-4 h-4" />
-                S'inscrire
-              </Button>
-              <Button
-                type="button"
-                variant={isUnsubscribeMode ? "destructive" : "outline"}
-                onClick={() => setIsUnsubscribeMode(true)}
-                className="flex items-center gap-2"
-                data-testid="button-unsubscribe-mode"
-              >
-                <UserMinus className="w-4 h-4" />
-                Se désinscrire
-              </Button>
-            </div>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
           {isUnsubscribeMode ? (
