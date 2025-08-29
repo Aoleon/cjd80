@@ -46,7 +46,7 @@ export default function AdminLogin() {
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
-                placeholder="admin@cjd-amiens.fr"
+                placeholder=""
                 required
                 className="focus:ring-cjd-green focus:border-cjd-green"
               />
@@ -62,7 +62,7 @@ export default function AdminLogin() {
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
-                  placeholder="••••••••"
+                  placeholder=""
                   required
                   className="focus:ring-cjd-green focus:border-cjd-green pr-10"
                 />
