@@ -47,8 +47,17 @@ export default function HomePage() {
                 <p className="text-xs sm:text-sm text-gray-400">© 2025 - Tous droits réservés</p>
               </div>
             </div>
-            <div className="text-xs sm:text-sm text-gray-400">
-              <span>Créé avec ❤️ par <a href="https://robinswood.io" target="_blank" rel="noopener noreferrer" className="text-cjd-green hover:text-green-400 transition-colors duration-200">Thibault</a></span>
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+              <button
+                onClick={() => setActiveSection("admin")}
+                className="text-xs sm:text-sm text-gray-400 hover:text-cjd-green transition-colors duration-200 underline"
+                data-testid="link-admin"
+              >
+                Administration
+              </button>
+              <div className="text-xs sm:text-sm text-gray-400">
+                <span>Créé avec ❤️ par <a href="https://robinswood.io" target="_blank" rel="noopener noreferrer" className="text-cjd-green hover:text-green-400 transition-colors duration-200">Thibault</a></span>
+              </div>
             </div>
           </div>
         </div>

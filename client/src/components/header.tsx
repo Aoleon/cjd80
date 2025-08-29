@@ -16,7 +16,6 @@ export default function Header({ activeSection, setActiveSection }: HeaderProps)
     { id: "propose" as const, label: "Proposer une idée" },
     { id: "events" as const, label: "Événements" },
     { id: "tools" as const, label: "Les outils du dirigeants" },
-    { id: "admin" as const, label: "Administration" },
   ];
 
   return (
