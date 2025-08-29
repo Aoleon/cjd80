@@ -5,6 +5,7 @@ import { setupAuth } from "./auth";
 import { dbMonitoringMiddleware, getPoolStatsEndpoint } from "./middleware/db-monitoring";
 import { checkDatabaseHealth } from "./utils/db-health";
 import { notificationService } from "./notification-service";
+import { hashPassword } from "./auth";
 import { 
   insertIdeaSchema,
   insertVoteSchema,
@@ -12,7 +13,12 @@ import {
   insertInscriptionSchema,
   updateIdeaStatusSchema,
   updateIdeaSchema,
-  updateEventStatusSchema 
+  updateEventStatusSchema,
+  insertAdminSchema,
+  updateAdminSchema,
+  updateAdminPasswordSchema,
+  hasPermission,
+  ADMIN_ROLES
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -22,6 +28,21 @@ function requireAuth(req: any, res: any, next: any) {
     return res.status(401).json({ message: "Authentication required" });
   }
   next();
+}
+
+function requirePermission(permission: string) {
+  return (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    const user = req.user;
+    if (!user || !hasPermission(user.role, permission)) {
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
+    
+    next();
+  };
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -549,6 +570,179 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Erreur récupération statistiques" });
+    }
+  });
+
+  // === ROUTES DE GESTION DES ADMINISTRATEURS ===
+
+  // Récupérer tous les administrateurs (super admin seulement)
+  app.get("/api/admin/administrators", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.getAllAdmins();
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+
+      // Masquer les mots de passe des réponses
+      const sanitizedAdmins = result.data.map(admin => ({
+        ...admin,
+        password: undefined
+      }));
+
+      res.json({ success: true, data: sanitizedAdmins });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Créer un nouvel administrateur (super admin seulement)
+  app.post("/api/admin/administrators", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = insertAdminSchema.parse({
+        ...req.body,
+        addedBy: req.user!.email
+      });
+
+      // Hacher le mot de passe
+      const hashedPassword = await hashPassword(validatedData.password);
+      
+      const result = await storage.createUser({
+        ...validatedData,
+        password: hashedPassword
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+
+      // Masquer le mot de passe de la réponse
+      const sanitizedAdmin = {
+        ...result.data,
+        password: undefined
+      };
+
+      res.status(201).json({ success: true, data: sanitizedAdmin });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      next(error);
+    }
+  });
+
+  // Mettre à jour le rôle d'un administrateur (super admin seulement)
+  app.patch("/api/admin/administrators/:email/role", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const { role } = updateAdminSchema.parse(req.body);
+      
+      if (!role) {
+        return res.status(400).json({ message: "Le rôle est requis" });
+      }
+
+      // Empêcher la modification de son propre rôle
+      if (req.params.email === req.user!.email) {
+        return res.status(400).json({ message: "Vous ne pouvez pas modifier votre propre rôle" });
+      }
+
+      const result = await storage.updateAdminRole(req.params.email, role);
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+
+      const sanitizedAdmin = {
+        ...result.data,
+        password: undefined
+      };
+
+      res.json({ success: true, data: sanitizedAdmin });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      next(error);
+    }
+  });
+
+  // Activer/désactiver un administrateur (super admin seulement)
+  app.patch("/api/admin/administrators/:email/status", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const { isActive } = updateAdminSchema.parse(req.body);
+      
+      if (typeof isActive !== 'boolean') {
+        return res.status(400).json({ message: "Le statut actif est requis" });
+      }
+
+      // Empêcher la désactivation de son propre compte
+      if (req.params.email === req.user!.email) {
+        return res.status(400).json({ message: "Vous ne pouvez pas désactiver votre propre compte" });
+      }
+
+      const result = await storage.updateAdminStatus(req.params.email, isActive);
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+
+      const sanitizedAdmin = {
+        ...result.data,
+        password: undefined
+      };
+
+      res.json({ success: true, data: sanitizedAdmin });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      next(error);
+    }
+  });
+
+  // Changer le mot de passe d'un administrateur (super admin seulement)
+  app.patch("/api/admin/administrators/:email/password", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const { password } = updateAdminPasswordSchema.parse(req.body);
+      
+      // Hacher le nouveau mot de passe
+      const hashedPassword = await hashPassword(password);
+      
+      const result = await storage.updateAdminPassword(req.params.email, hashedPassword);
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+
+      res.json({ success: true, message: "Mot de passe mis à jour avec succès" });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      next(error);
+    }
+  });
+
+  // Supprimer un administrateur (super admin seulement)
+  app.delete("/api/admin/administrators/:email", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      // Empêcher la suppression de son propre compte
+      if (req.params.email === req.user!.email) {
+        return res.status(400).json({ message: "Vous ne pouvez pas supprimer votre propre compte" });
+      }
+
+      const result = await storage.deleteAdmin(req.params.email);
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+
+      res.json({ success: true, message: "Administrateur supprimé avec succès" });
+    } catch (error) {
+      next(error);
     }
   });
 

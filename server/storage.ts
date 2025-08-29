@@ -40,6 +40,13 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<Result<User | null>>;
   createUser(user: InsertUser): Promise<Result<User>>;
   
+  // Admin management - Pour la gestion des administrateurs par les super-admins
+  getAllAdmins(): Promise<Result<Admin[]>>;
+  updateAdminRole(email: string, role: string): Promise<Result<Admin>>;
+  updateAdminStatus(email: string, isActive: boolean): Promise<Result<Admin>>;
+  updateAdminPassword(email: string, hashedPassword: string): Promise<Result<void>>;
+  deleteAdmin(email: string): Promise<Result<void>>;
+  
   // Ideas - Ultra-robust with business validation
   getIdeas(): Promise<Result<(Idea & { voteCount: number })[]>>;
   getIdea(id: string): Promise<Result<Idea | null>>;
@@ -133,6 +140,90 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: user };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la création utilisateur: ${error}`) };
+    }
+  }
+
+  // Admin management methods
+  async getAllAdmins(): Promise<Result<Admin[]>> {
+    try {
+      const adminsList = await db
+        .select()
+        .from(admins)
+        .orderBy(desc(admins.createdAt));
+      
+      return { success: true, data: adminsList };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des administrateurs: ${error}`) };
+    }
+  }
+
+  async updateAdminRole(email: string, role: string): Promise<Result<Admin>> {
+    try {
+      const [updatedAdmin] = await db
+        .update(admins)
+        .set({ 
+          role, 
+          updatedAt: sql`NOW()` 
+        })
+        .where(eq(admins.email, email))
+        .returning();
+
+      if (!updatedAdmin) {
+        return { success: false, error: new NotFoundError("Administrateur non trouvé") };
+      }
+
+      return { success: true, data: updatedAdmin };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du rôle: ${error}`) };
+    }
+  }
+
+  async updateAdminStatus(email: string, isActive: boolean): Promise<Result<Admin>> {
+    try {
+      const [updatedAdmin] = await db
+        .update(admins)
+        .set({ 
+          isActive, 
+          updatedAt: sql`NOW()` 
+        })
+        .where(eq(admins.email, email))
+        .returning();
+
+      if (!updatedAdmin) {
+        return { success: false, error: new NotFoundError("Administrateur non trouvé") };
+      }
+
+      return { success: true, data: updatedAdmin };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du statut: ${error}`) };
+    }
+  }
+
+  async updateAdminPassword(email: string, hashedPassword: string): Promise<Result<void>> {
+    try {
+      const result = await db
+        .update(admins)
+        .set({ 
+          password: hashedPassword, 
+          updatedAt: sql`NOW()` 
+        })
+        .where(eq(admins.email, email));
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du mot de passe: ${error}`) };
+    }
+  }
+
+  async deleteAdmin(email: string): Promise<Result<void>> {
+    try {
+      const result = await db
+        .delete(admins)
+        .where(eq(admins.email, email));
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression de l'administrateur: ${error}`) };
     }
   }
 

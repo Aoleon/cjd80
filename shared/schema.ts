@@ -3,13 +3,28 @@ import { pgTable, text, varchar, timestamp, integer, boolean, unique, index } fr
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Admin roles definition
+export const ADMIN_ROLES = {
+  SUPER_ADMIN: "super_admin",
+  IDEAS_READER: "ideas_reader", 
+  IDEAS_MANAGER: "ideas_manager",
+  EVENTS_READER: "events_reader",
+  EVENTS_MANAGER: "events_manager"
+} as const;
+
 // Admin users table  
 export const admins = pgTable("admins", {
   email: text("email").primaryKey(),
   password: text("password").notNull(),
   addedBy: text("added_by"),
+  role: text("role").default(ADMIN_ROLES.IDEAS_READER).notNull(), // Rôle par défaut : consultation des idées
+  isActive: boolean("is_active").default(true).notNull(), // Permet de désactiver un admin sans le supprimer
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  roleIdx: index("admins_role_idx").on(table.role),
+  activeIdx: index("admins_active_idx").on(table.isActive),
+}));
 
 // Status constants for ideas and events
 export const IDEA_STATUS = {
@@ -155,6 +170,7 @@ export const insertAdminSchema = createInsertSchema(admins).pick({
   email: true,
   password: true,
   addedBy: true,
+  role: true,
 }).extend({
   email: z.string()
     .email("Email invalide")
@@ -166,6 +182,31 @@ export const insertAdminSchema = createInsertSchema(admins).pick({
     .max(128, "Mot de passe trop long")
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Mot de passe doit contenir au moins: 1 majuscule, 1 minuscule, 1 chiffre"),
   addedBy: z.string().email().optional().transform(val => val ? sanitizeText(val) : undefined),
+  role: z.enum([
+    ADMIN_ROLES.SUPER_ADMIN,
+    ADMIN_ROLES.IDEAS_READER,
+    ADMIN_ROLES.IDEAS_MANAGER,
+    ADMIN_ROLES.EVENTS_READER,
+    ADMIN_ROLES.EVENTS_MANAGER
+  ]).default(ADMIN_ROLES.IDEAS_READER),
+});
+
+export const updateAdminSchema = z.object({
+  role: z.enum([
+    ADMIN_ROLES.SUPER_ADMIN,
+    ADMIN_ROLES.IDEAS_READER,
+    ADMIN_ROLES.IDEAS_MANAGER,
+    ADMIN_ROLES.EVENTS_READER,
+    ADMIN_ROLES.EVENTS_MANAGER
+  ]).optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const updateAdminPasswordSchema = z.object({
+  password: z.string()
+    .min(8, "Mot de passe trop court (min 8 caractères)")
+    .max(128, "Mot de passe trop long")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Mot de passe doit contenir au moins: 1 majuscule, 1 minuscule, 1 chiffre"),
 });
 
 export const insertIdeaSchema = createInsertSchema(ideas).pick({
@@ -373,6 +414,65 @@ export class NotFoundError extends Error {
     this.name = 'NotFoundError';
   }
 }
+
+// Permission helper functions
+export const hasPermission = (userRole: string, permission: string): boolean => {
+  // Super admin a tous les droits
+  if (userRole === ADMIN_ROLES.SUPER_ADMIN) return true;
+  
+  switch (permission) {
+    case 'ideas.read':
+      return [ADMIN_ROLES.IDEAS_READER, ADMIN_ROLES.IDEAS_MANAGER].includes(userRole as any);
+    case 'ideas.write':
+    case 'ideas.delete':
+    case 'ideas.manage':
+      return userRole === ADMIN_ROLES.IDEAS_MANAGER;
+    case 'events.read':
+      return [ADMIN_ROLES.EVENTS_READER, ADMIN_ROLES.EVENTS_MANAGER].includes(userRole as any);
+    case 'events.write':
+    case 'events.delete':
+    case 'events.manage':
+      return userRole === ADMIN_ROLES.EVENTS_MANAGER;
+    case 'admin.manage':
+      return userRole === ADMIN_ROLES.SUPER_ADMIN;
+    default:
+      return false;
+  }
+};
+
+export const getRoleDisplayName = (role: string): string => {
+  switch (role) {
+    case ADMIN_ROLES.SUPER_ADMIN:
+      return "Super Administrateur";
+    case ADMIN_ROLES.IDEAS_READER:
+      return "Consultation des idées";
+    case ADMIN_ROLES.IDEAS_MANAGER:
+      return "Gestion des idées";
+    case ADMIN_ROLES.EVENTS_READER:
+      return "Consultation des événements";
+    case ADMIN_ROLES.EVENTS_MANAGER:
+      return "Gestion des événements";
+    default:
+      return "Rôle inconnu";
+  }
+};
+
+export const getRolePermissions = (role: string): string[] => {
+  switch (role) {
+    case ADMIN_ROLES.SUPER_ADMIN:
+      return ['Toutes les permissions', 'Gestion des administrateurs'];
+    case ADMIN_ROLES.IDEAS_READER:
+      return ['Consultation des idées'];
+    case ADMIN_ROLES.IDEAS_MANAGER:
+      return ['Consultation des idées', 'Modification des idées', 'Suppression des idées'];
+    case ADMIN_ROLES.EVENTS_READER:
+      return ['Consultation des événements'];
+    case ADMIN_ROLES.EVENTS_MANAGER:
+      return ['Consultation des événements', 'Modification des événements', 'Suppression des événements'];
+    default:
+      return [];
+  }
+};
 
 // Legacy compatibility
 export type AdminUser = Admin;
