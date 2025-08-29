@@ -89,6 +89,7 @@ export const events = pgTable("events", {
   showInscriptionsCount: boolean("show_inscriptions_count").default(true).notNull(), // Afficher le nombre d'inscrits
   showAvailableSeats: boolean("show_available_seats").default(true).notNull(), // Afficher le nombre de places disponibles
   allowUnsubscribe: boolean("allow_unsubscribe").default(false).notNull(), // Permet la désinscription (utile pour les plénières)
+  redUnsubscribeButton: boolean("red_unsubscribe_button").default(false).notNull(), // Bouton de désinscription rouge (pour les plénières)
   status: text("status").default(EVENT_STATUS.PUBLISHED).notNull(), // draft, published, cancelled, postponed, completed
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -266,7 +267,16 @@ export const insertVoteSchema = createInsertSchema(votes).pick({
   voterEmail: true,
 }).extend({
   ideaId: z.string()
-    .uuid("ID d'idée invalide")
+    .min(1, "ID d'idée requis")
+    .refine(
+      (id) => {
+        // Accepter les UUIDs standard (36 caractères) ou les IDs existants (20 caractères alphanumériques)
+        const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
+        const isLegacyId = /^[a-zA-Z0-9]{20}$/.test(id);
+        return isUuid || isLegacyId;
+      },
+      "ID d'idée invalide"
+    )
     .transform(sanitizeText),
   voterName: z.string()
     .min(2, "Votre nom doit contenir au moins 2 caractères")
@@ -318,6 +328,7 @@ export const insertEventSchema = createInsertSchema(events).pick({
     .transform(val => val ? sanitizeText(val) : undefined),
   showInscriptionsCount: z.boolean().optional(),
   showAvailableSeats: z.boolean().optional(),
+  redUnsubscribeButton: z.boolean().optional(),
 });
 
 export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({

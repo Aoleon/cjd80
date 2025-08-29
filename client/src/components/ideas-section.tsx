@@ -59,9 +59,22 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
   const [voteModalOpen, setVoteModalOpen] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
 
-  const { data: ideas, isLoading, error } = useQuery<IdeaWithVotes[]>({
+  const { data: rawIdeas, isLoading, error } = useQuery<IdeaWithVotes[]>({
     queryKey: ["/api/ideas"],
   });
+
+  // Trier les idées : idées actives d'abord, puis réalisées à la fin
+  const ideas = rawIdeas ? [...rawIdeas].sort((a, b) => {
+    const aCompleted = a.status === IDEA_STATUS.COMPLETED;
+    const bCompleted = b.status === IDEA_STATUS.COMPLETED;
+    
+    // Si une idée est réalisée et l'autre pas, mettre la réalisée à la fin
+    if (aCompleted && !bCompleted) return 1;
+    if (!aCompleted && bCompleted) return -1;
+    
+    // Sinon, conserver l'ordre original (par date de création descendante)
+    return 0;
+  }) : [];
 
   if (error) {
     return (
@@ -112,9 +125,21 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
                       <span>{idea.title}</span>
                     </div>
                   </h3>
-                  <span className={`px-3 py-1.5 text-xs font-semibold rounded-full border whitespace-nowrap shadow-sm ${getStatusColor(idea.status)}`}>
-                    {getStatusLabel(idea.status)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-3 py-1.5 text-xs font-semibold rounded-full border whitespace-nowrap shadow-sm ${getStatusColor(idea.status)}`}>
+                      {getStatusLabel(idea.status)}
+                    </span>
+                    {idea.status !== IDEA_STATUS.COMPLETED && (
+                      <Button
+                        onClick={() => handleVoteClick(idea)}
+                        className="bg-gradient-to-r from-cjd-green to-green-600 text-white hover:from-green-600 hover:to-cjd-green shadow-md hover:shadow-lg transition-all duration-200 text-xs font-semibold transform hover:scale-105 flex-shrink-0"
+                        size="sm"
+                      >
+                        <Vote className="w-3 h-3 mr-1" />
+                        Voter
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 {idea.description && (
                   <div className="mb-5">
@@ -152,9 +177,9 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
                   </div>
                 )}
                 <div className="border-t border-gray-100 pt-4">
-                  {/* Section votes temporairement masquée */}
+                  {/* Section votes maintenant visible */}
                   <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 xs:gap-2 mb-3">
-                    <div className="hidden items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                       <div className="bg-cjd-green/10 p-1.5 rounded-full">
                         <ThumbsUp className="w-4 h-4 text-cjd-green flex-shrink-0" />
                       </div>
@@ -162,14 +187,6 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
                         {idea.voteCount} vote{idea.voteCount !== 1 ? 's' : ''}
                       </span>
                     </div>
-                    <Button
-                      onClick={() => handleVoteClick(idea)}
-                      className="bg-gradient-to-r from-cjd-green to-green-600 text-white hover:from-green-600 hover:to-cjd-green shadow-md hover:shadow-lg transition-all duration-200 text-sm font-semibold w-full xs:w-auto transform hover:scale-105"
-                      size="sm"
-                    >
-                      <Vote className="w-4 h-4 mr-2" />
-                      Voter
-                    </Button>
                   </div>
                   <div className="text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
                     <span className="font-medium">Proposée par</span> {idea.proposedBy}

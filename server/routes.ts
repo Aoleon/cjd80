@@ -351,6 +351,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk import inscriptions
+  app.post("/api/admin/inscriptions/bulk", requireAuth, async (req, res, next) => {
+    try {
+      const { eventId, inscriptions } = req.body;
+      
+      if (!eventId || !Array.isArray(inscriptions)) {
+        return res.status(400).json({ message: "eventId et inscriptions (array) requis" });
+      }
+
+      const results = [];
+      const errors = [];
+
+      for (const inscription of inscriptions) {
+        if (!inscription.name || !inscription.email) {
+          errors.push(`Inscription invalide: nom et email requis pour ${inscription.name || inscription.email || 'inscription inconnue'}`);
+          continue;
+        }
+
+        const result = await storage.createInscription({
+          eventId,
+          name: inscription.name.trim(),
+          email: inscription.email.trim(),
+          comments: inscription.comments?.trim() || undefined,
+        });
+
+        if (result.success) {
+          results.push(result.data);
+        } else {
+          errors.push(`Erreur pour ${inscription.name}: ${result.error.message}`);
+        }
+      }
+
+      res.json({
+        success: results.length > 0,
+        created: results.length,
+        errors: errors.length,
+        errorMessages: errors,
+        data: results
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Admin routes for managing votes
   app.get("/api/admin/votes/:ideaId", requireAuth, async (req, res, next) => {
     try {

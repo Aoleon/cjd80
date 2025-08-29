@@ -19,9 +19,10 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Users, Mail, User, MessageSquare, Plus, Loader2 } from "lucide-react";
+import { Trash2, Users, Mail, User, MessageSquare, Plus, Loader2, Upload, FileText, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Textarea } from "@/components/ui/textarea";
 import type { Event } from "@shared/schema";
 
 interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
@@ -56,6 +57,11 @@ export default function ManageInscriptionsModal({
     email: "",
     comments: ""
   });
+  
+  // Import bulk states
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [parsedInscriptions, setParsedInscriptions] = useState<Array<{name: string, email: string, comments?: string}>>([]);
 
   const { data: inscriptions, isLoading } = useQuery<Inscription[]>({
     queryKey: ["/api/admin/inscriptions", event?.id],
@@ -113,10 +119,50 @@ export default function ManageInscriptionsModal({
     },
   });
 
+  const bulkImportMutation = useMutation({
+    mutationFn: async (data: { eventId: string; inscriptions: Array<{name: string, email: string, comments?: string}> }) => {
+      const res = await apiRequest("POST", "/api/admin/inscriptions/bulk", data);
+      if (!res.ok) {
+        const errorData = await res.text();
+        throw new Error(errorData || "Erreur lors de l'import en masse");
+      }
+      return await res.json();
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/inscriptions", event?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      setBulkText("");
+      setParsedInscriptions([]);
+      setShowBulkImport(false);
+      
+      const { created, errors, errorMessages } = result;
+      toast({
+        title: "Import terminé",
+        description: `${created} inscription(s) ajoutée(s)${errors > 0 ? `, ${errors} erreur(s)` : ''}`,
+        variant: errors > 0 ? "destructive" : "default",
+      });
+      
+      if (errorMessages && errorMessages.length > 0) {
+        console.warn("Erreurs d'import:", errorMessages);
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erreur d'import",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   useEffect(() => {
     if (!open) {
       setShowAddForm(false);
       setNewInscription({ name: "", email: "", comments: "" });
+      setShowBulkImport(false);
+      setBulkText("");
+      setParsedInscriptions([]);
     }
   }, [open]);
 
@@ -142,6 +188,85 @@ export default function ManageInscriptionsModal({
       name: newInscription.name.trim(),
       email: newInscription.email.trim(),
       comments: newInscription.comments.trim() || undefined,
+    });
+  };
+
+  const parseInscriptionsText = (text: string) => {
+    const lines = text.split('\n').filter(line => line.trim());
+    const parsed: Array<{name: string, email: string, comments?: string}> = [];
+    const errors: string[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      // Support several formats:
+      // "Name,email" or "Name,email,comments" or "Name;email" or "Name email@domain.com"
+      const parts = line.split(/[,;]/);
+      
+      if (parts.length >= 2) {
+        // CSV format: "Name,email" or "Name,email,comments"
+        const name = parts[0].trim();
+        const email = parts[1].trim();
+        const comments = parts.length > 2 ? parts[2].trim() : undefined;
+        
+        if (name && email && email.includes('@')) {
+          parsed.push({ name, email, comments });
+        } else {
+          errors.push(`Ligne ${i + 1}: format invalide (${line})`);
+        }
+      } else {
+        // Try "Name email@domain.com" format
+        const emailMatch = line.match(/(\S+@\S+\.\S+)/);
+        if (emailMatch) {
+          const email = emailMatch[0];
+          const name = line.replace(email, '').trim();
+          if (name) {
+            parsed.push({ name, email });
+          } else {
+            errors.push(`Ligne ${i + 1}: nom manquant (${line})`);
+          }
+        } else {
+          errors.push(`Ligne ${i + 1}: email non trouvé (${line})`);
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      toast({
+        title: "Erreurs de format",
+        description: `${errors.length} ligne(s) ignorée(s). Voir la console pour détails.`,
+        variant: "destructive",
+      });
+      console.warn("Erreurs de parsing:", errors);
+    }
+
+    return parsed;
+  };
+
+  const handleBulkTextChange = (text: string) => {
+    setBulkText(text);
+    if (text.trim()) {
+      const parsed = parseInscriptionsText(text);
+      setParsedInscriptions(parsed);
+    } else {
+      setParsedInscriptions([]);
+    }
+  };
+
+  const handleBulkImport = () => {
+    if (!event || parsedInscriptions.length === 0) {
+      toast({
+        title: "Aucune inscription",
+        description: "Veuillez ajouter des inscriptions à importer",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    bulkImportMutation.mutate({
+      eventId: event.id,
+      inscriptions: parsedInscriptions,
     });
   };
 
@@ -277,6 +402,106 @@ export default function ManageInscriptionsModal({
                     )}
                   </Button>
                 </form>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Bulk import section */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-base">Import en masse</CardTitle>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowBulkImport(!showBulkImport)}
+                  data-testid="button-toggle-bulk-import"
+                >
+                  <Upload className="w-4 h-4 mr-1" />
+                  {showBulkImport ? "Annuler" : "Import"}
+                </Button>
+              </div>
+              <CardDescription className="text-sm">
+                Importez plusieurs inscrits rapidement via copier-coller
+              </CardDescription>
+            </CardHeader>
+            {showBulkImport && (
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="bulk-text" className="text-sm font-medium">
+                      Liste des participants
+                    </Label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Formats supportés : "Nom,email" ou "Nom;email" ou "Nom email@domain.com" (un par ligne)
+                    </p>
+                    <Textarea
+                      id="bulk-text"
+                      value={bulkText}
+                      onChange={(e) => handleBulkTextChange(e.target.value)}
+                      placeholder={`Jean Dupont,jean@example.com
+Marie Martin;marie@example.com  
+Pierre Durand pierre@example.com
+Claire Dubois,claire@example.com,Commentaire optionnel`}
+                      className="min-h-32"
+                      data-testid="textarea-bulk-import"
+                    />
+                  </div>
+                  
+                  {parsedInscriptions.length > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="flex items-center mb-2">
+                        <FileText className="w-4 h-4 mr-2 text-green-600" />
+                        <span className="text-sm font-medium text-green-800">
+                          {parsedInscriptions.length} inscription(s) détectée(s)
+                        </span>
+                      </div>
+                      <div className="max-h-32 overflow-y-auto space-y-1">
+                        {parsedInscriptions.map((inscription, index) => (
+                          <div key={index} className="text-xs text-green-700">
+                            {inscription.name} - {inscription.email}
+                            {inscription.comments && ` (${inscription.comments})`}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleBulkImport}
+                      disabled={bulkImportMutation.isPending || parsedInscriptions.length === 0}
+                      className="bg-cjd-green hover:bg-cjd-green-dark"
+                      data-testid="button-execute-bulk-import"
+                    >
+                      {bulkImportMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Import...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Importer {parsedInscriptions.length} inscription(s)
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setBulkText("");
+                        setParsedInscriptions([]);
+                      }}
+                      disabled={bulkImportMutation.isPending}
+                      data-testid="button-clear-bulk-import"
+                    >
+                      Vider
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             )}
           </Card>
