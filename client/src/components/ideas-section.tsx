@@ -114,18 +114,18 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
           {ideas.map((idea) => (
             <Card key={idea.id} className="bg-white border-2 border-gray-100 hover:border-cjd-green/30 hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] overflow-hidden">
               <CardContent className="p-5 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
-                  <h3 className="font-bold text-lg sm:text-xl text-gray-900 line-clamp-2 flex-1 leading-tight">
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 mb-4">
+                  <h3 className="font-bold text-lg sm:text-xl text-gray-900 line-clamp-3 lg:flex-1 leading-tight order-1">
                     <div className="flex items-start gap-2">
                       {idea.featured && (
                         <div title="Idée mise en avant">
                           <Star className="w-5 h-5 text-yellow-500 fill-current flex-shrink-0 mt-0.5" />
                         </div>
                       )}
-                      <span>{idea.title}</span>
+                      <span className="break-words">{idea.title}</span>
                     </div>
                   </h3>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 order-2 lg:order-2 flex-wrap sm:flex-nowrap">
                     <span className={`px-3 py-1.5 text-xs font-semibold rounded-full border whitespace-nowrap shadow-sm ${getStatusColor(idea.status)}`}>
                       {getStatusLabel(idea.status)}
                     </span>
