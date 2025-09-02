@@ -157,6 +157,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const vote = await storage.createVote(validatedData);
       res.status(201).json({ success: true, data: vote });
     } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ success: false, error: fromZodError(error).toString() });
+      }
       next(error);
     }
   });
