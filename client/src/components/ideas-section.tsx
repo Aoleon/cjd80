@@ -63,16 +63,22 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
     queryKey: ["/api/ideas"],
   });
 
-  // Trier les idées : idées actives d'abord, puis réalisées à la fin
+  // Trier les idées : idées soumises au vote d'abord, puis réalisées, puis autres
   const ideas = rawIdeas ? [...rawIdeas].sort((a, b) => {
+    const aApproved = a.status === IDEA_STATUS.APPROVED;
+    const bApproved = b.status === IDEA_STATUS.APPROVED;
     const aCompleted = a.status === IDEA_STATUS.COMPLETED;
     const bCompleted = b.status === IDEA_STATUS.COMPLETED;
     
-    // Si une idée est réalisée et l'autre pas, mettre la réalisée à la fin
-    if (aCompleted && !bCompleted) return 1;
-    if (!aCompleted && bCompleted) return -1;
+    // 1. Idées approuvées (soumises au vote) en premier
+    if (aApproved && !bApproved) return -1;
+    if (!aApproved && bApproved) return 1;
     
-    // Sinon, conserver l'ordre original (par date de création descendante)
+    // 2. Idées réalisées juste après les approuvées
+    if (aCompleted && !bCompleted && !bApproved) return -1;
+    if (!aCompleted && bCompleted && !aApproved) return 1;
+    
+    // 3. Sinon, conserver l'ordre original (par date de création descendante)
     return 0;
   }) : [];
 
@@ -177,17 +183,19 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
                   </div>
                 )}
                 <div className="border-t border-gray-100 pt-4">
-                  {/* Section votes maintenant visible */}
-                  <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 xs:gap-2 mb-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="bg-cjd-green/10 p-1.5 rounded-full">
-                        <ThumbsUp className="w-4 h-4 text-cjd-green flex-shrink-0" />
+                  {/* Section votes - masquée pour les idées réalisées */}
+                  {idea.status !== IDEA_STATUS.COMPLETED && (
+                    <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 xs:gap-2 mb-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="bg-cjd-green/10 p-1.5 rounded-full">
+                          <ThumbsUp className="w-4 h-4 text-cjd-green flex-shrink-0" />
+                        </div>
+                        <span className="font-semibold text-gray-800 text-sm">
+                          {idea.voteCount} vote{idea.voteCount !== 1 ? 's' : ''}
+                        </span>
                       </div>
-                      <span className="font-semibold text-gray-800 text-sm">
-                        {idea.voteCount} vote{idea.voteCount !== 1 ? 's' : ''}
-                      </span>
                     </div>
-                  </div>
+                  )}
                   <div className="text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
                     <span className="font-medium">Proposée par</span> {idea.proposedBy}
                   </div>

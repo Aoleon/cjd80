@@ -217,35 +217,41 @@ export default function EventsSection() {
                         {/* Registration Buttons */}
                         <div className="flex-shrink-0 xl:ml-8 mt-4 xl:mt-0">
                           <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
-                            <Button
-                              onClick={() => handleRegisterClick(event)}
-                              disabled={isEventFull}
-                              size="lg"
-                              className={`text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl ${
-                                isEventFull
-                                  ? 'bg-gray-400 cursor-not-allowed text-gray-200'
-                                  : 'bg-gradient-to-r from-cjd-green to-green-600 text-white hover:from-green-600 hover:to-green-700 transform hover:scale-105'
-                              }`}
-                              data-testid="button-register-event"
-                            >
-                              <CalendarPlus className="w-4 h-4 mr-2" />
-                              {isEventFull ? '❌ Complet' : "S'inscrire"}
-                            </Button>
+                            {/* Subscribe Button - Show if buttonMode is "subscribe" or "both" */}
+                            {(event.buttonMode === "subscribe" || event.buttonMode === "both" || !event.buttonMode) && (
+                              <Button
+                                onClick={() => handleRegisterClick(event)}
+                                disabled={isEventFull}
+                                size="lg"
+                                className={`text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl ${
+                                  isEventFull
+                                    ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+                                    : 'bg-gradient-to-r from-cjd-green to-green-600 text-white hover:from-green-600 hover:to-green-700 transform hover:scale-105'
+                                }`}
+                                data-testid="button-register-event"
+                              >
+                                <CalendarPlus className="w-4 h-4 mr-2" />
+                                {isEventFull ? '❌ Complet' : "S'inscrire"}
+                              </Button>
+                            )}
                             
-                            <Button
-                              onClick={() => handleUnsubscribeClick(event)}
-                              variant={event.redUnsubscribeButton ? "destructive" : "outline"}
-                              size="lg"
-                              className={`text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl ${
-                                event.redUnsubscribeButton 
-                                  ? 'bg-red-600 text-white hover:bg-red-700 border-red-600' 
-                                  : 'border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400'
-                              }`}
-                              data-testid="button-unsubscribe-event"
-                            >
-                              <UserMinus className="w-4 h-4 mr-2" />
-                              Se désinscrire
-                            </Button>
+                            {/* Unsubscribe Button - Show if buttonMode is "unsubscribe" or "both" */}
+                            {(event.buttonMode === "unsubscribe" || event.buttonMode === "both") && (
+                              <Button
+                                onClick={() => handleUnsubscribeClick(event)}
+                                variant={event.redUnsubscribeButton ? "destructive" : "outline"}
+                                size="lg"
+                                className={`text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl ${
+                                  event.redUnsubscribeButton 
+                                    ? 'bg-red-600 text-white hover:bg-red-700 border-red-600' 
+                                    : 'border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400'
+                                }`}
+                                data-testid="button-unsubscribe-event"
+                              >
+                                <UserMinus className="w-4 h-4 mr-2" />
+                                Se désinscrire
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>

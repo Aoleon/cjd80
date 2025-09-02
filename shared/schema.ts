@@ -90,6 +90,7 @@ export const events = pgTable("events", {
   showAvailableSeats: boolean("show_available_seats").default(true).notNull(), // Afficher le nombre de places disponibles
   allowUnsubscribe: boolean("allow_unsubscribe").default(false).notNull(), // Permet la désinscription (utile pour les plénières)
   redUnsubscribeButton: boolean("red_unsubscribe_button").default(false).notNull(), // Bouton de désinscription rouge (pour les plénières)
+  buttonMode: text("button_mode").default("subscribe").notNull(), // "subscribe", "unsubscribe", ou "both"
   status: text("status").default(EVENT_STATUS.PUBLISHED).notNull(), // draft, published, cancelled, postponed, completed
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -328,7 +329,9 @@ export const insertEventSchema = createInsertSchema(events).pick({
     .transform(val => val ? sanitizeText(val) : undefined),
   showInscriptionsCount: z.boolean().optional(),
   showAvailableSeats: z.boolean().optional(),
+  allowUnsubscribe: z.boolean().optional(),
   redUnsubscribeButton: z.boolean().optional(),
+  buttonMode: z.enum(["subscribe", "unsubscribe", "both"]).optional(),
 });
 
 export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({

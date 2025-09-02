@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Event, InsertEvent } from "@shared/schema";
@@ -38,6 +39,9 @@ export default function EventAdminModal({
     externalRedirectUrl: "",
     showInscriptionsCount: true,
     showAvailableSeats: true,
+    allowUnsubscribe: false,
+    redUnsubscribeButton: false,
+    buttonMode: "subscribe" as "subscribe" | "unsubscribe" | "both",
   });
 
   // Initialize form when modal opens or event changes
@@ -57,6 +61,9 @@ export default function EventAdminModal({
           externalRedirectUrl: event.externalRedirectUrl || "",
           showInscriptionsCount: Boolean(event.showInscriptionsCount),
           showAvailableSeats: Boolean(event.showAvailableSeats),
+          allowUnsubscribe: Boolean(event.allowUnsubscribe),
+          redUnsubscribeButton: Boolean(event.redUnsubscribeButton),
+          buttonMode: (event.buttonMode || "subscribe") as "subscribe" | "unsubscribe" | "both",
         });
       } else {
         // Reset form for create mode
@@ -71,6 +78,9 @@ export default function EventAdminModal({
           externalRedirectUrl: "",
           showInscriptionsCount: true,
           showAvailableSeats: true,
+          allowUnsubscribe: false,
+          redUnsubscribeButton: false,
+          buttonMode: "subscribe",
         });
       }
     }
@@ -173,6 +183,9 @@ export default function EventAdminModal({
       externalRedirectUrl: formData.enableExternalRedirect && formData.externalRedirectUrl.trim() ? formData.externalRedirectUrl.trim() : undefined,
       showInscriptionsCount: formData.showInscriptionsCount,
       showAvailableSeats: formData.showAvailableSeats,
+      allowUnsubscribe: formData.allowUnsubscribe,
+      redUnsubscribeButton: formData.redUnsubscribeButton,
+      buttonMode: formData.buttonMode,
     };
 
 
@@ -422,6 +435,64 @@ export default function EventAdminModal({
                 • Définissez d'abord le <strong>nombre total de places</strong> ci-dessus<br/>
                 • Puis choisissez quelles informations afficher aux utilisateurs<br/>
                 • Le système calcule automatiquement les places restantes en soustrayant les inscriptions
+              </p>
+            </div>
+          </div>
+
+          {/* Button Configuration Section */}
+          <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">🔘 Configuration des boutons</h3>
+            
+            <div>
+              <Label htmlFor="button-mode" className="text-sm font-medium text-gray-700 mb-2 block">
+                Type de bouton à afficher
+              </Label>
+              <Select
+                value={formData.buttonMode}
+                onValueChange={(value) => handleInputChange("buttonMode", value)}
+              >
+                <SelectTrigger className="mt-1 focus:ring-cjd-green focus:border-cjd-green">
+                  <SelectValue placeholder="Choisir le type de bouton" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="subscribe">✅ Seulement "S'inscrire"</SelectItem>
+                  <SelectItem value="unsubscribe">❌ Seulement "Se désinscrire"</SelectItem>
+                  <SelectItem value="both">🔄 Les deux boutons</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 mt-1">
+                Choisissez quel(s) bouton(s) seront visibles pour cet événement
+              </p>
+            </div>
+
+            {(formData.buttonMode === "unsubscribe" || formData.buttonMode === "both") && (
+              <div className="space-y-2">
+                <div className="flex items-start space-x-2">
+                  <Checkbox
+                    id="red-unsubscribe"
+                    checked={formData.redUnsubscribeButton}
+                    onCheckedChange={(checked) => handleInputChange("redUnsubscribeButton", checked as boolean)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <Label 
+                      htmlFor="red-unsubscribe" 
+                      className="text-sm font-medium cursor-pointer leading-relaxed text-gray-700"
+                    >
+                      🔴 Bouton de désinscription rouge (pour les plénières)
+                    </Label>
+                    <p className="text-xs text-gray-500 mt-1">Style rouge vif pour les événements importants</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="p-3 bg-amber-100 rounded-lg border border-amber-200">
+              <p className="text-xs text-amber-800">
+                💡 <strong>Guide d'utilisation :</strong><br/>
+                • <strong>"S'inscrire"</strong> : Événements classiques où les gens s'inscrivent<br/>
+                • <strong>"Se désinscrire"</strong> : Plénières où tout le monde est pré-inscrit<br/>
+                • <strong>"Les deux"</strong> : Flexibilité maximale
               </p>
             </div>
           </div>
