@@ -234,6 +234,7 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
                       onChange={(e) => setCreateForm(prev => ({ ...prev, password: e.target.value }))}
                       required
                       minLength={8}
+                      placeholder="Ex: MonMotDePasse123"
                     />
                     <Button
                       type="button"
@@ -249,6 +250,15 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
                         <Eye className="h-4 w-4" />
                       )}
                     </Button>
+                  </div>
+                  <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded border border-blue-200">
+                    <p className="font-medium text-blue-800">📋 Le mot de passe doit contenir :</p>
+                    <ul className="mt-1 space-y-0.5 text-blue-700">
+                      <li>• Au moins 8 caractères</li>
+                      <li>• 1 majuscule (A-Z)</li>
+                      <li>• 1 minuscule (a-z)</li>
+                      <li>• 1 chiffre (0-9)</li>
+                    </ul>
                   </div>
                 </div>
                 <div className="space-y-2">

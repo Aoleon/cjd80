@@ -180,9 +180,9 @@ export const insertAdminSchema = createInsertSchema(admins).pick({
     .max(100, "Email trop long")
     .transform(sanitizeText),
   password: z.string()
-    .min(8, "Mot de passe trop court (min 8 caractères)")
-    .max(128, "Mot de passe trop long")
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Mot de passe doit contenir au moins: 1 majuscule, 1 minuscule, 1 chiffre"),
+    .min(8, "Le mot de passe doit contenir au moins 8 caractères")
+    .max(128, "Le mot de passe ne peut pas dépasser 128 caractères")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Le mot de passe doit contenir au moins : 1 majuscule (A-Z), 1 minuscule (a-z) et 1 chiffre (0-9)"),
   addedBy: z.string().email().optional().transform(val => val ? sanitizeText(val) : undefined),
   role: z.enum([
     ADMIN_ROLES.SUPER_ADMIN,
@@ -206,9 +206,9 @@ export const updateAdminSchema = z.object({
 
 export const updateAdminPasswordSchema = z.object({
   password: z.string()
-    .min(8, "Mot de passe trop court (min 8 caractères)")
-    .max(128, "Mot de passe trop long")
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Mot de passe doit contenir au moins: 1 majuscule, 1 minuscule, 1 chiffre"),
+    .min(8, "Le mot de passe doit contenir au moins 8 caractères")
+    .max(128, "Le mot de passe ne peut pas dépasser 128 caractères")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Le mot de passe doit contenir au moins : 1 majuscule (A-Z), 1 minuscule (a-z) et 1 chiffre (0-9)"),
 });
 
 export const insertIdeaSchema = createInsertSchema(ideas).pick({
