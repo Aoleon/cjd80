@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, MapPin, Users, CalendarPlus, UserMinus, Loader2, Clock, Star } from "lucide-react";
+import { Calendar, MapPin, Users, CalendarPlus, UserMinus, Loader2, Clock, Star, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import EventRegistrationModal from "./event-registration-modal";
@@ -250,6 +250,19 @@ export default function EventsSection() {
                               >
                                 <UserMinus className="w-4 h-4 mr-2" />
                                 Se désinscrire
+                              </Button>
+                            )}
+                            
+                            {/* Custom Button - Show if buttonMode is "custom" */}
+                            {event.buttonMode === "custom" && (
+                              <Button
+                                variant="outline"
+                                size="lg"
+                                className="text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400"
+                                data-testid="button-custom-event"
+                              >
+                                <MessageCircle className="w-4 h-4 mr-2" />
+                                Voir directement avec Charlotte
                               </Button>
                             )}
                           </div>

@@ -458,6 +458,7 @@ export default function EventAdminModal({
                   <SelectItem value="subscribe">✅ Seulement "S'inscrire"</SelectItem>
                   <SelectItem value="unsubscribe">❌ Seulement "Se désinscrire"</SelectItem>
                   <SelectItem value="both">🔄 Les deux boutons</SelectItem>
+                  <SelectItem value="custom">💬 Bouton personnalisé</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500 mt-1">
@@ -492,7 +493,8 @@ export default function EventAdminModal({
                 💡 <strong>Guide d'utilisation :</strong><br/>
                 • <strong>"S'inscrire"</strong> : Événements classiques où les gens s'inscrivent<br/>
                 • <strong>"Se désinscrire"</strong> : Plénières où tout le monde est pré-inscrit<br/>
-                • <strong>"Les deux"</strong> : Flexibilité maximale
+                • <strong>"Les deux"</strong> : Flexibilité maximale<br/>
+                • <strong>"Bouton personnalisé"</strong> : Affiche "Voir directement avec Charlotte"
               </p>
             </div>
           </div>

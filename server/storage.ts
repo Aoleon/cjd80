@@ -25,7 +25,7 @@ import {
   EVENT_STATUS
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, count, sql } from "drizzle-orm";
+import { eq, desc, and, count, sql, or } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -247,7 +247,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(ideas)
         .leftJoin(votes, eq(ideas.id, votes.ideaId))
-        .where(eq(ideas.status, 'approved')) // Only show approved ideas to public
+        .where(or(eq(ideas.status, 'approved'), eq(ideas.status, 'completed'))) // Show approved and completed ideas to public
         .groupBy(ideas.id)
         .orderBy(desc(ideas.featured), desc(ideas.createdAt)); // Featured en premier, puis par date
       
@@ -379,6 +379,7 @@ export class DatabaseStorage implements IStorage {
           showAvailableSeats: events.showAvailableSeats,
           allowUnsubscribe: events.allowUnsubscribe,
           redUnsubscribeButton: events.redUnsubscribeButton,
+          buttonMode: events.buttonMode,
           status: events.status,
           createdAt: events.createdAt,
           updatedAt: events.updatedAt,
@@ -769,6 +770,7 @@ export class DatabaseStorage implements IStorage {
           showAvailableSeats: events.showAvailableSeats,
           allowUnsubscribe: events.allowUnsubscribe,
           redUnsubscribeButton: events.redUnsubscribeButton,
+          buttonMode: events.buttonMode,
           status: events.status,
           createdAt: events.createdAt,
           updatedAt: events.updatedAt,
