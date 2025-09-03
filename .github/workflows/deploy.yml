@@ -67,3 +67,17 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
           ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "bash /docker/cjd80/deploy.sh"
+
+      - name: Cleanup old Docker containers & images on VPS
+        if: always()
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "
+            echo '🧹 Nettoyage des vieux conteneurs et images...';
+            docker container prune -f;
+            docker image prune -af;
+            docker volume prune -f;
+          "
