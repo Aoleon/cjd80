@@ -15,6 +15,8 @@ export const ADMIN_ROLES = {
 // Admin users table  
 export const admins = pgTable("admins", {
   email: text("email").primaryKey(),
+  firstName: text("first_name").default("Admin").notNull(),
+  lastName: text("last_name").default("User").notNull(),
   password: text("password").notNull(),
   addedBy: text("added_by"),
   role: text("role").default(ADMIN_ROLES.IDEAS_READER).notNull(), // Rôle par défaut : consultation des idées
@@ -170,6 +172,8 @@ const sanitizeText = (text: string) => text
 // Ultra-secure insert schemas with validation
 export const insertAdminSchema = createInsertSchema(admins).pick({
   email: true,
+  firstName: true,
+  lastName: true,
   password: true,
   addedBy: true,
   role: true,
@@ -178,6 +182,14 @@ export const insertAdminSchema = createInsertSchema(admins).pick({
     .email("Email invalide")
     .min(5, "Email trop court")
     .max(100, "Email trop long")
+    .transform(sanitizeText),
+  firstName: z.string()
+    .min(1, "Le prénom est obligatoire")
+    .max(50, "Le prénom ne peut pas dépasser 50 caractères")
+    .transform(sanitizeText),
+  lastName: z.string()
+    .min(1, "Le nom de famille est obligatoire")
+    .max(50, "Le nom de famille ne peut pas dépasser 50 caractères")
     .transform(sanitizeText),
   password: z.string()
     .min(8, "Le mot de passe doit contenir au moins 8 caractères")

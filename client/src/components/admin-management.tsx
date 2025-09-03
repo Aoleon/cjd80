@@ -32,6 +32,8 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
   // État pour le formulaire de création
   const [createForm, setCreateForm] = useState({
     email: "",
+    firstName: "",
+    lastName: "",
     password: "",
     role: "IDEAS_READER" as keyof typeof ADMIN_ROLES
   });
@@ -55,7 +57,7 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
         description: "Le nouvel administrateur a été créé avec succès."
       });
       setIsCreateDialogOpen(false);
-      setCreateForm({ email: "", password: "", role: "IDEAS_READER" });
+      setCreateForm({ email: "", firstName: "", lastName: "", password: "", role: "IDEAS_READER" });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/administrators'] });
     },
     onError: (error: any) => {
@@ -212,6 +214,32 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">Prénom</Label>
+                    <Input
+                      id="firstName"
+                      type="text"
+                      data-testid="input-admin-firstName"
+                      value={createForm.firstName}
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, firstName: e.target.value }))}
+                      required
+                      placeholder="Ex: Jean"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Nom</Label>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      data-testid="input-admin-lastName"
+                      value={createForm.lastName}
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, lastName: e.target.value }))}
+                      required
+                      placeholder="Ex: Dupont"
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -221,6 +249,7 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
                     value={createForm.email}
                     onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))}
                     required
+                    placeholder="Ex: jean.dupont@example.com"
                   />
                 </div>
                 <div className="space-y-2">
@@ -314,7 +343,7 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="font-medium" data-testid={`text-admin-name-${admin.email}`}>
-                    {admin.email}
+                    {admin.firstName && admin.lastName ? `${admin.firstName} ${admin.lastName}` : admin.email}
                   </h3>
                   <span 
                     className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
