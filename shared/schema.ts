@@ -93,6 +93,7 @@ export const events = pgTable("events", {
   allowUnsubscribe: boolean("allow_unsubscribe").default(false).notNull(), // Permet la désinscription (utile pour les plénières)
   redUnsubscribeButton: boolean("red_unsubscribe_button").default(false).notNull(), // Bouton de désinscription rouge (pour les plénières)
   buttonMode: text("button_mode").default("subscribe").notNull(), // "subscribe", "unsubscribe", "both", ou "custom"
+  customButtonText: text("custom_button_text"), // Texte personnalisé pour le bouton quand buttonMode est "custom"
   status: text("status").default(EVENT_STATUS.PUBLISHED).notNull(), // draft, published, cancelled, postponed, completed
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

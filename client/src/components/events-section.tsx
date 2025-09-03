@@ -262,7 +262,7 @@ export default function EventsSection() {
                                 data-testid="button-custom-event"
                               >
                                 <MessageCircle className="w-4 h-4 mr-2" />
-                                Voir directement avec Charlotte
+                                {event.customButtonText || "Contacter l'organisateur"}
                               </Button>
                             )}
                           </div>

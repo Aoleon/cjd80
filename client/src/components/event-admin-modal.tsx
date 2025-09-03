@@ -43,6 +43,7 @@ export default function EventAdminModal({
     allowUnsubscribe: false,
     redUnsubscribeButton: false,
     buttonMode: "subscribe" as "subscribe" | "unsubscribe" | "both",
+    customButtonText: "",
   });
 
   // États pour les sections collapsibles
@@ -69,6 +70,7 @@ export default function EventAdminModal({
           allowUnsubscribe: Boolean(event.allowUnsubscribe),
           redUnsubscribeButton: Boolean(event.redUnsubscribeButton),
           buttonMode: (event.buttonMode || "subscribe") as "subscribe" | "unsubscribe" | "both",
+          customButtonText: event.customButtonText || "",
         });
       } else {
         // Reset form for create mode
@@ -86,6 +88,7 @@ export default function EventAdminModal({
           allowUnsubscribe: false,
           redUnsubscribeButton: false,
           buttonMode: "subscribe",
+          customButtonText: "",
         });
       }
     }
@@ -191,6 +194,7 @@ export default function EventAdminModal({
       allowUnsubscribe: formData.allowUnsubscribe,
       redUnsubscribeButton: formData.redUnsubscribeButton,
       buttonMode: formData.buttonMode,
+      customButtonText: formData.buttonMode === "custom" && formData.customButtonText.trim() ? formData.customButtonText.trim() : undefined,
     };
 
 
@@ -411,6 +415,27 @@ export default function EventAdminModal({
                     <Label htmlFor="red-unsubscribe" className="text-sm text-gray-600 cursor-pointer">
                       Bouton rouge (plénières)
                     </Label>
+                  </div>
+                )}
+
+                {formData.buttonMode === "custom" && (
+                  <div className="mt-2">
+                    <Label htmlFor="custom-button-text" className="text-sm font-medium text-gray-700 block mb-2">
+                      Texte du bouton personnalisé
+                    </Label>
+                    <Input
+                      id="custom-button-text"
+                      type="text"
+                      value={formData.customButtonText}
+                      onChange={(e) => handleInputChange("customButtonText", e.target.value)}
+                      placeholder="Ex: Contacter Charlotte, Voir le lien, etc."
+                      className="focus:ring-cjd-green focus:border-cjd-green"
+                      maxLength={50}
+                      data-testid="input-custom-button-text"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Ce texte apparaîtra sur le bouton (max 50 caractères)
+                    </p>
                   </div>
                 )}
               </div>
