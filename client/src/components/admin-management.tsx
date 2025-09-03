@@ -23,6 +23,12 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Helper pour convertir les valeurs DB vers les clés enum  
+  const getKeyFromValue = (value: string): keyof typeof ADMIN_ROLES => {
+    const entry = Object.entries(ADMIN_ROLES).find(([key, val]) => val === value);
+    return (entry?.[0] || 'IDEAS_READER') as keyof typeof ADMIN_ROLES;
+  };
+
   // État pour le formulaire de création
   const [createForm, setCreateForm] = useState({
     email: "",
@@ -39,7 +45,10 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
   // Mutation pour créer un administrateur
   const createAdminMutation = useMutation({
     mutationFn: (data: typeof createForm) => 
-      apiRequest('POST', '/api/admin/administrators', data),
+      apiRequest('POST', '/api/admin/administrators', {
+        ...data,
+        role: ADMIN_ROLES[data.role] // Convertir la clé en valeur
+      }),
     onSuccess: () => {
       toast({
         title: "Administrateur créé",
@@ -123,8 +132,8 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
     createAdminMutation.mutate(createForm);
   };
 
-  const handleRoleChange = (admin: Admin, newRole: string) => {
-    updateRoleMutation.mutate({ email: admin.email, role: newRole });
+  const handleRoleChange = (admin: Admin, newRole: keyof typeof ADMIN_ROLES) => {
+    updateRoleMutation.mutate({ email: admin.email, role: ADMIN_ROLES[newRole] });
   };
 
   const handleStatusToggle = (admin: Admin) => {
@@ -325,8 +334,8 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
               {admin.email !== currentUser.email && (
                 <div className="flex items-center gap-2">
                   <Select
-                    value={admin.role}
-                    onValueChange={(value) => handleRoleChange(admin, value)}
+                    value={getKeyFromValue(admin.role)}
+                    onValueChange={(value) => handleRoleChange(admin, value as keyof typeof ADMIN_ROLES)}
                     disabled={updateRoleMutation.isPending}
                   >
                     <SelectTrigger className="w-32" data-testid={`select-role-${admin.email}`}>
