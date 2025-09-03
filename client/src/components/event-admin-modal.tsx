@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarPlus, Loader2, Calendar, Edit, Trash2, ExternalLink } from "lucide-react";
+import { CalendarPlus, Loader2, Calendar, Edit, Trash2, ExternalLink, ChevronDown, ChevronRight, Settings, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Event, InsertEvent } from "@shared/schema";
@@ -43,6 +44,10 @@ export default function EventAdminModal({
     redUnsubscribeButton: false,
     buttonMode: "subscribe" as "subscribe" | "unsubscribe" | "both",
   });
+
+  // États pour les sections collapsibles
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [showDisplayOptions, setShowDisplayOptions] = useState(false);
 
   // Initialize form when modal opens or event changes
   useEffect(() => {
@@ -227,307 +232,261 @@ export default function EventAdminModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 mt-4">
-          {/* Title Field */}
-          <div>
-            <Label htmlFor="event-title" className="text-sm sm:text-base font-medium text-gray-700">
-              Titre de l'événement *
-            </Label>
-            <Input
-              id="event-title"
-              type="text"
-              value={formData.title}
-              onChange={(e) => handleInputChange("title", e.target.value)}
-              placeholder="Ex: Afterwork tech & innovation"
-              required
-              className="mt-1 sm:mt-2 text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green"
-              maxLength={200}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Un titre accrocheur pour votre événement (max 200 caractères)
-            </p>
-          </div>
-
-          {/* Date Field */}
-          <div>
-            <Label htmlFor="event-date" className="text-sm sm:text-base font-medium text-gray-700">
-              Date et heure *
-            </Label>
-            <Input
-              id="event-date"
-              type="datetime-local"
-              value={formData.date}
-              onChange={(e) => handleInputChange("date", e.target.value)}
-              required
-              className="mt-1 sm:mt-2 text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green"
-            />
-            <p className="text-xs text-gray-500 mt-1 flex items-center">
-              <Calendar className="h-3 w-3 mr-1 flex-shrink-0" />
-              <span>La date doit être dans le futur</span>
-            </p>
-          </div>
-
-          {/* Description Field */}
-          <div>
-            <Label htmlFor="event-description" className="text-sm sm:text-base font-medium text-gray-700">
-              Description
-            </Label>
-            <Textarea
-              id="event-description"
-              value={formData.description}
-              onChange={(e) => handleInputChange("description", e.target.value)}
-              placeholder="Décrivez l'événement, le programme, les intervenants..."
-              rows={3}
-              className="mt-1 sm:mt-2 text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green resize-none"
-              maxLength={1000}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Optionnel - {1000 - formData.description.length} caractères restants
-            </p>
-          </div>
-
-          {/* Location Field */}
-          <div>
-            <Label htmlFor="event-location" className="text-sm sm:text-base font-medium text-gray-700">
-              Lieu de l'événement (optionnel)
-            </Label>
-            <Input
-              id="event-location"
-              type="text"
-              value={formData.location}
-              onChange={(e) => handleInputChange("location", e.target.value)}
-              placeholder="Ex: Salle de conférence CCI, Amiens"
-              className="mt-1 sm:mt-2 text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green"
-              maxLength={200}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Précisez l'adresse ou le lieu de rendez-vous (max 200 caractères)
-            </p>
-          </div>
-
-          {/* Max Participants Field */}
-          <div>
-            <Label htmlFor="event-max-participants" className="text-sm sm:text-base font-medium text-gray-700">
-              📊 Nombre total de places disponibles (optionnel)
-            </Label>
-            <Input
-              id="event-max-participants"
-              type="number"
-              value={formData.maxParticipants?.toString() || ""}
-              onChange={(e) => handleInputChange("maxParticipants", e.target.value ? parseInt(e.target.value) : undefined)}
-              placeholder="Ex: 50"
-              min="1"
-              max="1000"
-              className="mt-1 sm:mt-2 text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              💡 <strong>Définit le nombre maximum de participants.</strong> Si renseigné, les utilisateurs verront "X inscrits / Y places" et "Z places restantes" (selon les options d'affichage ci-dessous).
-            </p>
-          </div>
-
-          {/* HelloAsso Link Field */}
-          <div>
-            <Label htmlFor="event-helloasso" className="text-sm sm:text-base font-medium text-gray-700">
-              Lien HelloAsso (optionnel)
-            </Label>
-            <Input
-              id="event-helloasso"
-              type="url"
-              value={formData.helloAssoLink}
-              onChange={(e) => handleInputChange("helloAssoLink", e.target.value)}
-              placeholder="https://www.helloasso.com/..."
-              className="mt-1 sm:mt-2 text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Lien vers la billetterie HelloAsso si l'événement est payant
-            </p>
-          </div>
-
-          {/* External Redirect Section */}
-          <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="flex items-start space-x-2">
-              <Checkbox
-                id="enable-redirect"
-                checked={formData.enableExternalRedirect}
-                onCheckedChange={(checked) => handleInputChange("enableExternalRedirect", checked as boolean)}
-                className="mt-1"
-              />
-              <Label 
-                htmlFor="enable-redirect" 
-                className="text-sm sm:text-base font-medium text-gray-700 cursor-pointer leading-relaxed"
-              >
-                <ExternalLink className="inline h-4 w-4 mr-1" />
-                Activer la redirection externe après inscription
-              </Label>
-            </div>
-
-            {formData.enableExternalRedirect && (
-              <div className="ml-4 sm:ml-6 space-y-2">
-                <Label htmlFor="redirect-url" className="text-sm font-medium text-gray-700">
-                  URL de redirection
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          {/* === INFORMATIONS ESSENTIELLES === */}
+          <div className="space-y-4">
+            {/* Titre et Date sur la même ligne */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="event-title" className="text-sm font-medium text-gray-700">
+                  Titre de l'événement *
                 </Label>
                 <Input
-                  id="redirect-url"
-                  type="url"
-                  value={formData.externalRedirectUrl}
-                  onChange={(e) => handleInputChange("externalRedirectUrl", e.target.value)}
-                  placeholder="https://www.helloasso.com/associations/..."
-                  className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green"
-                  required={formData.enableExternalRedirect}
+                  id="event-title"
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  placeholder="Ex: Afterwork tech & innovation"
+                  required
+                  className="mt-1 focus:ring-cjd-green focus:border-cjd-green"
+                  maxLength={200}
+                  data-testid="input-event-title"
                 />
-                <p className="text-xs text-gray-500">
-                  L'utilisateur sera redirigé vers cette URL après avoir complété son inscription
-                </p>
               </div>
-            )}
+              
+              <div>
+                <Label htmlFor="event-date" className="text-sm font-medium text-gray-700">
+                  Date et heure *
+                </Label>
+                <Input
+                  id="event-date"
+                  type="datetime-local"
+                  value={formData.date}
+                  onChange={(e) => handleInputChange("date", e.target.value)}
+                  required
+                  className="mt-1 focus:ring-cjd-green focus:border-cjd-green"
+                  data-testid="input-event-date"
+                />
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <Label htmlFor="event-description" className="text-sm font-medium text-gray-700">
+                Description
+              </Label>
+              <Textarea
+                id="event-description"
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+                placeholder="Décrivez l'événement, le programme, les intervenants..."
+                rows={2}
+                className="mt-1 focus:ring-cjd-green focus:border-cjd-green resize-none"
+                maxLength={1000}
+                data-testid="input-event-description"
+              />
+            </div>
+
+            {/* Lieu et Places sur la même ligne */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="event-location" className="text-sm font-medium text-gray-700">
+                  Lieu
+                </Label>
+                <Input
+                  id="event-location"
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => handleInputChange("location", e.target.value)}
+                  placeholder="Ex: CCI Amiens"
+                  className="mt-1 focus:ring-cjd-green focus:border-cjd-green"
+                  maxLength={200}
+                  data-testid="input-event-location"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="event-max-participants" className="text-sm font-medium text-gray-700">
+                  Nombre de places
+                </Label>
+                <Input
+                  id="event-max-participants"
+                  type="number"
+                  value={formData.maxParticipants?.toString() || ""}
+                  onChange={(e) => handleInputChange("maxParticipants", e.target.value ? parseInt(e.target.value) : undefined)}
+                  placeholder="Ex: 50"
+                  min="1"
+                  max="1000"
+                  className="mt-1 focus:ring-cjd-green focus:border-cjd-green"
+                  data-testid="input-event-max-participants"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Display Options Section */}
-          <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">👁️ Options d'affichage des places</h3>
+          {/* === OPTIONS AVANCÉES (COLLAPSIBLE) === */}
+          <Collapsible open={showAdvancedOptions} onOpenChange={setShowAdvancedOptions}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors" data-testid="toggle-advanced-options">
+              <div className="flex items-center gap-2">
+                <Settings className="h-4 w-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Options avancées</span>
+              </div>
+              {showAdvancedOptions ? 
+                <ChevronDown className="h-4 w-4 text-gray-600" /> : 
+                <ChevronRight className="h-4 w-4 text-gray-600" />
+              }
+            </CollapsibleTrigger>
             
-            <div className="space-y-2 sm:space-y-3">
-              <div className="flex items-start space-x-2">
-                <Checkbox
-                  id="show-inscriptions"
-                  checked={formData.showInscriptionsCount}
-                  onCheckedChange={(checked) => handleInputChange("showInscriptionsCount", checked as boolean)}
-                  className="mt-1"
+            <CollapsibleContent className="space-y-3 mt-2">
+              {/* HelloAsso Link */}
+              <div className="p-3 bg-white rounded border border-gray-200">
+                <Label htmlFor="event-helloasso" className="text-sm font-medium text-gray-700 block mb-2">
+                  Lien HelloAsso
+                </Label>
+                <Input
+                  id="event-helloasso"
+                  type="url"
+                  value={formData.helloAssoLink}
+                  onChange={(e) => handleInputChange("helloAssoLink", e.target.value)}
+                  placeholder="https://www.helloasso.com/..."
+                  className="focus:ring-cjd-green focus:border-cjd-green"
+                  data-testid="input-event-helloasso"
                 />
-                <div className="flex-1">
-                  <Label 
-                    htmlFor="show-inscriptions" 
-                    className="text-sm sm:text-base font-medium cursor-pointer leading-relaxed text-gray-700"
-                  >
-                    Afficher le nombre d'inscrits {formData.maxParticipants ? '("X inscrits / Y places")' : '("X inscrits")'}
-                  </Label>
-                  <p className="text-xs text-gray-500 mt-1">Affiche le nombre d'inscriptions actuelles. {!formData.maxParticipants && 'Sans limite de places, seul le nombre d\'inscrits s\'affiche.'}</p>
-                </div>
               </div>
 
-              <div className="flex items-start space-x-2">
-                <Checkbox
-                  id="show-seats"
-                  checked={formData.showAvailableSeats}
-                  onCheckedChange={(checked) => handleInputChange("showAvailableSeats", checked as boolean)}
-                  className="mt-1"
-                  disabled={!formData.maxParticipants}
-                />
-                <div className="flex-1">
+              {/* Redirection externe */}
+              <div className="p-3 bg-white rounded border border-gray-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Checkbox
+                    id="enable-redirect"
+                    checked={formData.enableExternalRedirect}
+                    onCheckedChange={(checked) => handleInputChange("enableExternalRedirect", checked as boolean)}
+                  />
+                  <Label htmlFor="enable-redirect" className="text-sm font-medium text-gray-700 cursor-pointer">
+                    Redirection après inscription
+                  </Label>
+                </div>
+                
+                {formData.enableExternalRedirect && (
+                  <Input
+                    id="redirect-url"
+                    type="url"
+                    value={formData.externalRedirectUrl}
+                    onChange={(e) => handleInputChange("externalRedirectUrl", e.target.value)}
+                    placeholder="https://www.helloasso.com/..."
+                    className="mt-2 focus:ring-cjd-green focus:border-cjd-green"
+                    required={formData.enableExternalRedirect}
+                    data-testid="input-redirect-url"
+                  />
+                )}
+              </div>
+
+              {/* Type de bouton */}
+              <div className="p-3 bg-white rounded border border-gray-200">
+                <Label htmlFor="button-mode" className="text-sm font-medium text-gray-700 block mb-2">
+                  Type de bouton
+                </Label>
+                <Select
+                  value={formData.buttonMode}
+                  onValueChange={(value) => handleInputChange("buttonMode", value)}
+                >
+                  <SelectTrigger className="focus:ring-cjd-green focus:border-cjd-green" data-testid="select-button-mode">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="subscribe">S'inscrire</SelectItem>
+                    <SelectItem value="unsubscribe">Se désinscrire</SelectItem>
+                    <SelectItem value="both">Les deux</SelectItem>
+                    <SelectItem value="custom">Bouton personnalisé</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                {(formData.buttonMode === "unsubscribe" || formData.buttonMode === "both") && (
+                  <div className="flex items-center space-x-2 mt-2">
+                    <Checkbox
+                      id="red-unsubscribe"
+                      checked={formData.redUnsubscribeButton}
+                      onCheckedChange={(checked) => handleInputChange("redUnsubscribeButton", checked as boolean)}
+                    />
+                    <Label htmlFor="red-unsubscribe" className="text-sm text-gray-600 cursor-pointer">
+                      Bouton rouge (plénières)
+                    </Label>
+                  </div>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* === OPTIONS D'AFFICHAGE (COLLAPSIBLE) === */}
+          <Collapsible open={showDisplayOptions} onOpenChange={setShowDisplayOptions}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors" data-testid="toggle-display-options">
+              <div className="flex items-center gap-2">
+                <Eye className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-gray-700">Options d'affichage des inscriptions</span>
+              </div>
+              {showDisplayOptions ? 
+                <ChevronDown className="h-4 w-4 text-blue-600" /> : 
+                <ChevronRight className="h-4 w-4 text-blue-600" />
+              }
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent className="p-3 mt-2 bg-white rounded border border-blue-200">
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="show-inscriptions"
+                    checked={formData.showInscriptionsCount}
+                    onCheckedChange={(checked) => handleInputChange("showInscriptionsCount", checked as boolean)}
+                  />
+                  <Label htmlFor="show-inscriptions" className="text-sm text-gray-700 cursor-pointer">
+                    Afficher le nombre d'inscrits
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="show-seats"
+                    checked={formData.showAvailableSeats}
+                    onCheckedChange={(checked) => handleInputChange("showAvailableSeats", checked as boolean)}
+                    disabled={!formData.maxParticipants}
+                  />
                   <Label 
                     htmlFor="show-seats" 
-                    className={`text-sm sm:text-base font-medium cursor-pointer leading-relaxed ${
+                    className={`text-sm cursor-pointer ${
                       !formData.maxParticipants ? 'text-gray-400' : 'text-gray-700'
                     }`}
                   >
-                    Afficher le nombre de places restantes ("Z places disponibles")
+                    Afficher les places restantes {!formData.maxParticipants && "(nécessite un nombre de places)"}
                   </Label>
-                  {!formData.maxParticipants && (
-                    <p className="text-xs text-gray-400 mt-1">Nécessite un nombre total de places</p>
-                  )}
                 </div>
               </div>
-            </div>
-            
-            <div className="p-3 bg-blue-100 rounded-lg border border-blue-200">
-              <p className="text-xs text-blue-800">
-                💡 <strong>Comment ça fonctionne :</strong><br/>
-                • Définissez d'abord le <strong>nombre total de places</strong> ci-dessus<br/>
-                • Puis choisissez quelles informations afficher aux utilisateurs<br/>
-                • Le système calcule automatiquement les places restantes en soustrayant les inscriptions
-              </p>
-            </div>
-          </div>
-
-          {/* Button Configuration Section */}
-          <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">🔘 Configuration des boutons</h3>
-            
-            <div>
-              <Label htmlFor="button-mode" className="text-sm font-medium text-gray-700 mb-2 block">
-                Type de bouton à afficher
-              </Label>
-              <Select
-                value={formData.buttonMode}
-                onValueChange={(value) => handleInputChange("buttonMode", value)}
-              >
-                <SelectTrigger className="mt-1 focus:ring-cjd-green focus:border-cjd-green">
-                  <SelectValue placeholder="Choisir le type de bouton" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="subscribe">✅ Seulement "S'inscrire"</SelectItem>
-                  <SelectItem value="unsubscribe">❌ Seulement "Se désinscrire"</SelectItem>
-                  <SelectItem value="both">🔄 Les deux boutons</SelectItem>
-                  <SelectItem value="custom">💬 Bouton personnalisé</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-gray-500 mt-1">
-                Choisissez quel(s) bouton(s) seront visibles pour cet événement
-              </p>
-            </div>
-
-            {(formData.buttonMode === "unsubscribe" || formData.buttonMode === "both") && (
-              <div className="space-y-2">
-                <div className="flex items-start space-x-2">
-                  <Checkbox
-                    id="red-unsubscribe"
-                    checked={formData.redUnsubscribeButton}
-                    onCheckedChange={(checked) => handleInputChange("redUnsubscribeButton", checked as boolean)}
-                    className="mt-1"
-                  />
-                  <div className="flex-1">
-                    <Label 
-                      htmlFor="red-unsubscribe" 
-                      className="text-sm font-medium cursor-pointer leading-relaxed text-gray-700"
-                    >
-                      🔴 Bouton de désinscription rouge (pour les plénières)
-                    </Label>
-                    <p className="text-xs text-gray-500 mt-1">Style rouge vif pour les événements importants</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div className="p-3 bg-amber-100 rounded-lg border border-amber-200">
-              <p className="text-xs text-amber-800">
-                💡 <strong>Guide d'utilisation :</strong><br/>
-                • <strong>"S'inscrire"</strong> : Événements classiques où les gens s'inscrivent<br/>
-                • <strong>"Se désinscrire"</strong> : Plénières où tout le monde est pré-inscrit<br/>
-                • <strong>"Les deux"</strong> : Flexibilité maximale<br/>
-                • <strong>"Bouton personnalisé"</strong> : Affiche "Voir directement avec Charlotte"
-              </p>
-            </div>
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 border-t">
+          <div className="flex gap-3 pt-4 border-t">
             <Button
               type="submit"
               disabled={isPending}
-              className="bg-cjd-green hover:bg-green-700 text-white flex-1 order-2 sm:order-1"
-              size="default"
+              className="bg-cjd-green hover:bg-green-700 text-white flex-1"
+              data-testid="button-submit-event"
             >
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  <span className="hidden sm:inline">
-                    {mode === "create" ? "Création en cours..." : "Modification en cours..."}
-                  </span>
-                  <span className="sm:hidden">En cours...</span>
+                  {mode === "create" ? "Création..." : "Modification..."}
                 </>
               ) : (
                 <>
                   {mode === "create" ? (
                     <>
                       <CalendarPlus className="mr-2 h-4 w-4" />
-                      <span className="hidden sm:inline">Créer l'événement</span>
-                      <span className="sm:hidden">Créer</span>
+                      Créer l'événement
                     </>
                   ) : (
                     <>
                       <Edit className="mr-2 h-4 w-4" />
-                      <span className="hidden sm:inline">Modifier l'événement</span>
-                      <span className="sm:hidden">Modifier</span>
+                      Modifier l'événement
                     </>
                   )}
                 </>
@@ -539,25 +498,13 @@ export default function EventAdminModal({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isPending}
-              className="order-1 sm:order-2 sm:px-8"
-              size="default"
+              className="px-8"
+              data-testid="button-cancel-event"
             >
               Annuler
             </Button>
           </div>
         </form>
-
-        {/* Help Text */}
-        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-          <h4 className="font-medium text-blue-800 mb-2 text-sm sm:text-base">💡 Conseils pour un bon événement</h4>
-          <ul className="text-xs sm:text-sm text-blue-700 space-y-1">
-            <li>• Choisissez un titre accrocheur et explicite</li>
-            <li>• Précisez le lieu dans la description</li>
-            <li>• Mentionnez les intervenants si pertinent</li>
-            <li>• Ajoutez le lien HelloAsso pour les événements payants</li>
-            <li>• Prévenez suffisamment à l'avance</li>
-          </ul>
-        </div>
       </DialogContent>
     </Dialog>
   );
