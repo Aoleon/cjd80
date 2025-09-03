@@ -22,6 +22,12 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [editInfoAdmin, setEditInfoAdmin] = useState<Admin | null>(null);
+  const [resetPasswordAdmin, setResetPasswordAdmin] = useState<Admin | null>(null);
+  
+  // États pour les formulaires d'édition
+  const [editInfoForm, setEditInfoForm] = useState({ firstName: "", lastName: "" });
+  const [newPasswordForm, setNewPasswordForm] = useState({ password: "", confirmPassword: "" });
 
   // Helper pour convertir les valeurs DB vers les clés enum  
   const getKeyFromValue = (value: string): keyof typeof ADMIN_ROLES => {
@@ -129,6 +135,48 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
     }
   });
 
+  // Mutation pour modifier les informations d'un administrateur
+  const updateInfoMutation = useMutation({
+    mutationFn: ({ email, info }: { email: string; info: { firstName: string; lastName: string } }) => 
+      apiRequest('PATCH', `/api/admin/administrators/${encodeURIComponent(email)}/info`, info),
+    onSuccess: () => {
+      toast({
+        title: "Informations mises à jour",
+        description: "Les informations de l'administrateur ont été mises à jour avec succès."
+      });
+      setEditInfoAdmin(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/administrators'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Erreur lors de la mise à jour",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Mutation pour régénérer un mot de passe
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ email, password }: { email: string; password: string }) => 
+      apiRequest('PATCH', `/api/admin/administrators/${encodeURIComponent(email)}/password`, { password }),
+    onSuccess: () => {
+      toast({
+        title: "Mot de passe réinitialisé",
+        description: "Le mot de passe a été mis à jour avec succès."
+      });
+      setResetPasswordAdmin(null);
+      setNewPasswordForm({ password: "", confirmPassword: "" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Erreur lors de la réinitialisation",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createAdminMutation.mutate(createForm);
@@ -145,6 +193,39 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
   const handleDelete = (admin: Admin) => {
     if (confirm(`Êtes-vous sûr de vouloir supprimer l'administrateur ${admin.email} ?`)) {
       deleteAdminMutation.mutate(admin.email);
+    }
+  };
+
+  const handleEditInfo = (admin: Admin) => {
+    setEditInfoAdmin(admin);
+    setEditInfoForm({ 
+      firstName: admin.firstName || "", 
+      lastName: admin.lastName || "" 
+    });
+  };
+
+  const handleSubmitInfoEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editInfoAdmin) {
+      updateInfoMutation.mutate({ 
+        email: editInfoAdmin.email, 
+        info: editInfoForm 
+      });
+    }
+  };
+
+  const handleResetPassword = (admin: Admin) => {
+    setResetPasswordAdmin(admin);
+    setNewPasswordForm({ password: "", confirmPassword: "" });
+  };
+
+  const handleSubmitPasswordReset = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (resetPasswordAdmin && newPasswordForm.password === newPasswordForm.confirmPassword && newPasswordForm.password) {
+      resetPasswordMutation.mutate({ 
+        email: resetPasswordAdmin.email, 
+        password: newPasswordForm.password 
+      });
     }
   };
 
@@ -389,6 +470,28 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
                     </SelectContent>
                   </Select>
                   
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleEditInfo(admin)}
+                    disabled={updateInfoMutation.isPending}
+                    data-testid={`button-edit-info-${admin.email}`}
+                    title="Modifier nom et prénom"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleResetPassword(admin)}
+                    disabled={resetPasswordMutation.isPending}
+                    data-testid={`button-reset-password-${admin.email}`}
+                    title="Réinitialiser le mot de passe"
+                  >
+                    🔑
+                  </Button>
+                  
                   <Button
                     variant="outline"
                     size="sm"
@@ -400,7 +503,7 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
                   </Button>
                   
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
                     onClick={() => handleDelete(admin)}
                     disabled={deleteAdminMutation.isPending}
@@ -420,6 +523,133 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
           )}
         </div>
       </CardContent>
+
+      {/* Modal pour modifier les informations */}
+      <Dialog open={!!editInfoAdmin} onOpenChange={(open) => !open && setEditInfoAdmin(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Modifier les informations</DialogTitle>
+            <DialogDescription>
+              Modifier le nom et prénom de {editInfoAdmin?.firstName} {editInfoAdmin?.lastName}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmitInfoEdit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editFirstName">Prénom</Label>
+                <Input
+                  id="editFirstName"
+                  type="text"
+                  data-testid="input-edit-firstName"
+                  value={editInfoForm.firstName}
+                  onChange={(e) => setEditInfoForm(prev => ({ ...prev, firstName: e.target.value }))}
+                  required
+                  placeholder="Prénom"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editLastName">Nom</Label>
+                <Input
+                  id="editLastName"
+                  type="text"
+                  data-testid="input-edit-lastName"
+                  value={editInfoForm.lastName}
+                  onChange={(e) => setEditInfoForm(prev => ({ ...prev, lastName: e.target.value }))}
+                  required
+                  placeholder="Nom de famille"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setEditInfoAdmin(null)}
+                data-testid="button-cancel-edit-info"
+              >
+                Annuler
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={updateInfoMutation.isPending}
+                data-testid="button-submit-edit-info"
+              >
+                {updateInfoMutation.isPending ? "Modification..." : "Modifier"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal pour réinitialiser le mot de passe */}
+      <Dialog open={!!resetPasswordAdmin} onOpenChange={(open) => !open && setResetPasswordAdmin(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Réinitialiser le mot de passe</DialogTitle>
+            <DialogDescription>
+              Définir un nouveau mot de passe pour {resetPasswordAdmin?.firstName} {resetPasswordAdmin?.lastName}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmitPasswordReset} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">Nouveau mot de passe</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                data-testid="input-new-password"
+                value={newPasswordForm.password}
+                onChange={(e) => setNewPasswordForm(prev => ({ ...prev, password: e.target.value }))}
+                required
+                minLength={8}
+                placeholder="Ex: NouveauMotDePasse123"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                data-testid="input-confirm-password"
+                value={newPasswordForm.confirmPassword}
+                onChange={(e) => setNewPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                required
+                minLength={8}
+                placeholder="Répéter le mot de passe"
+              />
+              {newPasswordForm.password && newPasswordForm.confirmPassword && 
+               newPasswordForm.password !== newPasswordForm.confirmPassword && (
+                <p className="text-sm text-red-600">Les mots de passe ne correspondent pas</p>
+              )}
+            </div>
+            <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded border border-blue-200">
+              <p className="font-medium text-blue-800">📋 Le mot de passe doit contenir :</p>
+              <ul className="mt-1 space-y-0.5 text-blue-700">
+                <li>• Au moins 8 caractères</li>
+                <li>• 1 majuscule (A-Z)</li>
+                <li>• 1 minuscule (a-z)</li>
+                <li>• 1 chiffre (0-9)</li>
+              </ul>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setResetPasswordAdmin(null)}
+                data-testid="button-cancel-reset-password"
+              >
+                Annuler
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={resetPasswordMutation.isPending || newPasswordForm.password !== newPasswordForm.confirmPassword}
+                data-testid="button-submit-reset-password"
+              >
+                {resetPasswordMutation.isPending ? "Modification..." : "Réinitialiser"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

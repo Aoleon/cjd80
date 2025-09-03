@@ -199,6 +199,28 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async updateAdminInfo(email: string, info: { firstName: string; lastName: string }): Promise<Result<Admin>> {
+    try {
+      const [updatedAdmin] = await db
+        .update(admins)
+        .set({ 
+          firstName: info.firstName,
+          lastName: info.lastName,
+          updatedAt: sql`NOW()` 
+        })
+        .where(eq(admins.email, email))
+        .returning();
+
+      if (!updatedAdmin) {
+        return { success: false, error: new NotFoundError("Administrateur non trouvé") };
+      }
+
+      return { success: true, data: updatedAdmin };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour des informations: ${error}`) };
+    }
+  }
+
   async updateAdminPassword(email: string, hashedPassword: string): Promise<Result<void>> {
     try {
       const result = await db

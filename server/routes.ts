@@ -16,6 +16,7 @@ import {
   updateEventStatusSchema,
   insertAdminSchema,
   updateAdminSchema,
+  updateAdminInfoSchema,
   updateAdminPasswordSchema,
   hasPermission,
   ADMIN_ROLES
@@ -740,6 +741,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       res.json({ success: true, data: sanitizedAdmin });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      next(error);
+    }
+  });
+
+  // Mettre à jour les informations d'un administrateur (super admin seulement)
+  app.patch("/api/admin/administrators/:email/info", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const { firstName, lastName } = updateAdminInfoSchema.parse(req.body);
+      
+      // Empêcher la modification de ses propres informations
+      if (req.params.email === req.user!.email) {
+        return res.status(400).json({ message: "Vous ne pouvez pas modifier vos propres informations" });
+      }
+      
+      const result = await storage.updateAdminInfo(req.params.email, { firstName, lastName });
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+
+      res.json({ success: true, data: result.data, message: "Informations mises à jour avec succès" });
     } catch (error) {
       if (error instanceof ZodError) {
         const validationError = fromZodError(error);

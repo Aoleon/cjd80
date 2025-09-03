@@ -216,6 +216,17 @@ export const updateAdminSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+export const updateAdminInfoSchema = z.object({
+  firstName: z.string()
+    .min(1, "Le prénom est obligatoire")
+    .max(50, "Le prénom ne peut pas dépasser 50 caractères")
+    .transform(sanitizeText),
+  lastName: z.string()
+    .min(1, "Le nom de famille est obligatoire")
+    .max(50, "Le nom de famille ne peut pas dépasser 50 caractères")
+    .transform(sanitizeText),
+});
+
 export const updateAdminPasswordSchema = z.object({
   password: z.string()
     .min(8, "Le mot de passe doit contenir au moins 8 caractères")
