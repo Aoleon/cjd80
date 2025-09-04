@@ -77,7 +77,7 @@ export interface IStorage {
   // Inscriptions - Ultra-robust with duplicate protection
   getEventInscriptions(eventId: string): Promise<Result<Inscription[]>>;
   createInscription(inscription: InsertInscription): Promise<Result<Inscription>>;
-  unsubscribeFromEvent(eventId: string, email: string): Promise<Result<void>>;
+  unsubscribeFromEvent(eventId: string, name: string, email: string): Promise<Result<void>>;
   hasUserRegistered(eventId: string, email: string): Promise<boolean>;
   
   // Admin stats
@@ -402,6 +402,7 @@ export class DatabaseStorage implements IStorage {
           allowUnsubscribe: events.allowUnsubscribe,
           redUnsubscribeButton: events.redUnsubscribeButton,
           buttonMode: events.buttonMode,
+          customButtonText: events.customButtonText,
           status: events.status,
           createdAt: events.createdAt,
           updatedAt: events.updatedAt,
@@ -633,23 +634,31 @@ export class DatabaseStorage implements IStorage {
     return !!existingInscription;
   }
 
-  async unsubscribeFromEvent(eventId: string, email: string): Promise<Result<void>> {
+  async unsubscribeFromEvent(eventId: string, name: string, email: string): Promise<Result<void>> {
     try {
-      // Check if user is registered for this event
+      // Check if user is registered for this event with exact name and email
       const [inscription] = await db
         .select()
         .from(inscriptions)
-        .where(and(eq(inscriptions.eventId, eventId), eq(inscriptions.email, email)));
+        .where(and(
+          eq(inscriptions.eventId, eventId), 
+          eq(inscriptions.email, email),
+          eq(inscriptions.name, name)
+        ));
 
       if (!inscription) {
-        return { success: false, error: new NotFoundError("Inscription introuvable") };
+        return { success: false, error: new NotFoundError("Inscription introuvable avec ce nom et cet email") };
       }
 
       await db.transaction(async (tx) => {
         await tx
           .delete(inscriptions)
-          .where(and(eq(inscriptions.eventId, eventId), eq(inscriptions.email, email)));
-        console.log(`[Storage] Désinscription: ${email} de l'événement ${eventId}`);
+          .where(and(
+            eq(inscriptions.eventId, eventId), 
+            eq(inscriptions.email, email),
+            eq(inscriptions.name, name)
+          ));
+        console.log(`[Storage] Désinscription: ${name} (${email}) de l'événement ${eventId}`);
       });
 
       return { success: true, data: undefined };
@@ -793,6 +802,7 @@ export class DatabaseStorage implements IStorage {
           allowUnsubscribe: events.allowUnsubscribe,
           redUnsubscribeButton: events.redUnsubscribeButton,
           buttonMode: events.buttonMode,
+          customButtonText: events.customButtonText,
           status: events.status,
           createdAt: events.createdAt,
           updatedAt: events.updatedAt,

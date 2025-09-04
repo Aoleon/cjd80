@@ -31,12 +31,10 @@ export default function EventRegistrationModal({
     comments: "",
   });
   const isUnsubscribeMode = mode === 'unsubscribe';
-  const [unsubscribeEmail, setUnsubscribeEmail] = useState("");
 
   useEffect(() => {
     if (!open) {
       setFormData({ name: "", email: "", comments: "" });
-      setUnsubscribeEmail("");
     }
   }, [open]);
 
@@ -88,8 +86,8 @@ export default function EventRegistrationModal({
   });
 
   const unsubscribeMutation = useMutation({
-    mutationFn: async ({ eventId, email }: { eventId: string; email: string }) => {
-      const res = await apiRequest("DELETE", `/api/inscriptions/${eventId}/${email}`);
+    mutationFn: async ({ eventId, name, email }: { eventId: string; name: string; email: string }) => {
+      const res = await apiRequest("DELETE", `/api/inscriptions/${eventId}/${encodeURIComponent(name)}/${encodeURIComponent(email)}`);
       if (!res.ok) {
         const errorData = await res.text();
         throw new Error(errorData || "Erreur lors de la désinscription");
@@ -124,10 +122,10 @@ export default function EventRegistrationModal({
 
     if (isUnsubscribeMode) {
       // Désinscription
-      if (!unsubscribeEmail.trim()) {
+      if (!formData.name.trim() || !formData.email.trim()) {
         toast({
-          title: "Email requis",
-          description: "Veuillez saisir votre email pour vous désinscrire",
+          title: "Champs requis",
+          description: "Veuillez saisir votre nom et email pour vous désinscrire",
           variant: "destructive",
         });
         return;
@@ -135,7 +133,8 @@ export default function EventRegistrationModal({
 
       unsubscribeMutation.mutate({
         eventId: event.id,
-        email: unsubscribeEmail.trim(),
+        name: formData.name.trim(),
+        email: formData.email.trim(),
       });
     } else {
       // Inscription
@@ -216,7 +215,7 @@ export default function EventRegistrationModal({
               
               <p className="text-xs sm:text-sm text-gray-600">
                 {isUnsubscribeMode 
-                  ? "Saisissez votre email pour vous désinscrire de cet événement."
+                  ? "Saisissez votre nom et email pour vous désinscrire de cet événement."
                   : "Remplissez les informations ci-dessous pour confirmer votre inscription."}
               </p>
             </div>
@@ -231,10 +230,31 @@ export default function EventRegistrationModal({
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <h3 className="text-red-800 font-medium mb-2">⚠️ Désinscription</h3>
                 <p className="text-red-700 text-sm">
-                  Saisissez l'email utilisé lors de votre inscription pour vous désinscrire de cet événement.
+                  Saisissez exactement le nom et l'email utilisés lors de votre inscription pour vous désinscrire de cet événement.
                 </p>
               </div>
               
+              {/* Name Field for Unsubscription */}
+              <div className="space-y-2">
+                <Label htmlFor="unsubscribe-name" className="text-sm sm:text-base font-medium text-gray-700">
+                  Nom utilisé lors de l'inscription *
+                </Label>
+                <Input
+                  id="unsubscribe-name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  placeholder="Ex: Jean Dupont"
+                  required
+                  className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green h-10 sm:h-11"
+                  maxLength={100}
+                  data-testid="input-unsubscribe-name"
+                />
+                <p className="text-xs text-gray-500">
+                  Utilisez exactement le même nom que lors de votre inscription
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="unsubscribe-email" className="text-sm sm:text-base font-medium text-gray-700">
                   Email d'inscription *
@@ -242,8 +262,8 @@ export default function EventRegistrationModal({
                 <Input
                   id="unsubscribe-email"
                   type="email"
-                  value={unsubscribeEmail}
-                  onChange={(e) => setUnsubscribeEmail(e.target.value)}
+                  value={formData.email}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder="email.utilisé@lors-inscription.com"
                   required
                   className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green h-10 sm:h-11"

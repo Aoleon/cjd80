@@ -254,11 +254,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/inscriptions/:eventId/:email", async (req, res, next) => {
+  app.delete("/api/inscriptions/:eventId/:name/:email", async (req, res, next) => {
     try {
-      const { eventId, email } = req.params;
+      const { eventId, name, email } = req.params;
       
-      const result = await storage.unsubscribeFromEvent(eventId, email);
+      // Décoder les paramètres URL
+      const decodedName = decodeURIComponent(name);
+      const decodedEmail = decodeURIComponent(email);
+      
+      const result = await storage.unsubscribeFromEvent(eventId, decodedName, decodedEmail);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
