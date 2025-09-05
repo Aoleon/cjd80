@@ -24,8 +24,8 @@ interface GitHubErrorResponse {
  */
 export async function createGitHubIssue(request: Omit<InsertDevelopmentRequest, "requestedBy" | "requestedByName"> & { requestedBy: string; requestedByName: string }): Promise<GitHubIssueResponse | null> {
   const token = process.env.GITHUB_TOKEN;
-  const repoOwner = process.env.GITHUB_REPO_OWNER || "cjd-amiens"; // À ajuster selon votre repo
-  const repoName = process.env.GITHUB_REPO_NAME || "boite-a-kiffs"; // À ajuster selon votre repo
+  const repoOwner = process.env.GITHUB_REPO_OWNER || "Aoleon"; 
+  const repoName = process.env.GITHUB_REPO_NAME || "cjd80";
   
   if (!token) {
     console.warn("[GitHub] GITHUB_TOKEN non configuré - création d'issue ignorée");
@@ -92,8 +92,8 @@ export async function createGitHubIssue(request: Omit<InsertDevelopmentRequest, 
  */
 export async function syncGitHubIssueStatus(issueNumber: number): Promise<{ status: string; closed: boolean } | null> {
   const token = process.env.GITHUB_TOKEN;
-  const repoOwner = process.env.GITHUB_REPO_OWNER || "cjd-amiens";
-  const repoName = process.env.GITHUB_REPO_NAME || "boite-a-kiffs";
+  const repoOwner = process.env.GITHUB_REPO_OWNER || "Aoleon";
+  const repoName = process.env.GITHUB_REPO_NAME || "cjd80";
   
   if (!token || !repoOwner || !repoName) {
     return null;
@@ -130,8 +130,8 @@ export async function syncGitHubIssueStatus(issueNumber: number): Promise<{ stat
  */
 export async function closeGitHubIssue(issueNumber: number, reason?: string): Promise<boolean> {
   const token = process.env.GITHUB_TOKEN;
-  const repoOwner = process.env.GITHUB_REPO_OWNER || "cjd-amiens";
-  const repoName = process.env.GITHUB_REPO_NAME || "boite-a-kiffs";
+  const repoOwner = process.env.GITHUB_REPO_OWNER || "Aoleon";
+  const repoName = process.env.GITHUB_REPO_NAME || "cjd80";
   
   if (!token || !repoOwner || !repoName) {
     return false;
@@ -174,8 +174,8 @@ export async function closeGitHubIssue(issueNumber: number, reason?: string): Pr
  */
 export async function addGitHubComment(issueNumber: number, comment: string): Promise<boolean> {
   const token = process.env.GITHUB_TOKEN;
-  const repoOwner = process.env.GITHUB_REPO_OWNER || "cjd-amiens";
-  const repoName = process.env.GITHUB_REPO_NAME || "boite-a-kiffs";
+  const repoOwner = process.env.GITHUB_REPO_OWNER || "Aoleon";
+  const repoName = process.env.GITHUB_REPO_NAME || "cjd80";
   
   if (!token || !repoOwner || !repoName) {
     return false;
