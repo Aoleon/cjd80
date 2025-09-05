@@ -262,7 +262,7 @@ export default function EventsSection() {
                                 data-testid="button-custom-event"
                               >
                                 <MessageCircle className="w-4 h-4 mr-2" />
-                                {event.customButtonText || "Contacter l'organisateur"}
+                                {event.customButtonText?.trim() || "Contacter l'organisateur"}
                               </Button>
                             )}
                           </div>

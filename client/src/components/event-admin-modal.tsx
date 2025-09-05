@@ -194,7 +194,7 @@ export default function EventAdminModal({
       allowUnsubscribe: formData.allowUnsubscribe,
       redUnsubscribeButton: formData.redUnsubscribeButton,
       buttonMode: formData.buttonMode,
-      customButtonText: formData.buttonMode === "custom" && formData.customButtonText.trim() ? formData.customButtonText.trim() : undefined,
+      customButtonText: formData.buttonMode === "custom" ? (formData.customButtonText.trim() || null) : null,
     };
 
 
