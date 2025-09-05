@@ -86,6 +86,8 @@ export interface IStorage {
   // Unsubscriptions - For declaring absence
   getEventUnsubscriptions(eventId: string): Promise<Result<Unsubscription[]>>;
   createUnsubscription(unsubscription: InsertUnsubscription): Promise<Result<Unsubscription>>;
+  deleteUnsubscription(id: string): Promise<Result<void>>;
+  updateUnsubscription(id: string, data: Partial<InsertUnsubscription>): Promise<Result<Unsubscription>>;
   
   // Admin stats
   getStats(): Promise<Result<{
@@ -746,6 +748,58 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: result };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la déclaration d'absence: ${error}`) };
+    }
+  }
+
+  async deleteUnsubscription(id: string): Promise<Result<void>> {
+    try {
+      // Check if unsubscription exists
+      const [unsubscription] = await db
+        .select()
+        .from(unsubscriptions)
+        .where(eq(unsubscriptions.id, id));
+
+      if (!unsubscription) {
+        return { success: false, error: new NotFoundError("Déclaration d'absence introuvable") };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx.delete(unsubscriptions).where(eq(unsubscriptions.id, id));
+        console.log(`[Storage] Déclaration d'absence supprimée: ${id}`);
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression de la déclaration d'absence: ${error}`) };
+    }
+  }
+
+  async updateUnsubscription(id: string, data: Partial<InsertUnsubscription>): Promise<Result<Unsubscription>> {
+    try {
+      // Check if unsubscription exists
+      const [existingUnsubscription] = await db
+        .select()
+        .from(unsubscriptions)
+        .where(eq(unsubscriptions.id, id));
+
+      if (!existingUnsubscription) {
+        return { success: false, error: new NotFoundError("Déclaration d'absence introuvable") };
+      }
+
+      const result = await db.transaction(async (tx) => {
+        const [updatedUnsubscription] = await tx
+          .update(unsubscriptions)
+          .set(data)
+          .where(eq(unsubscriptions.id, id))
+          .returning();
+
+        console.log(`[Storage] Déclaration d'absence modifiée: ${id}`);
+        return updatedUnsubscription;
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la modification de la déclaration d'absence: ${error}`) };
     }
   }
 

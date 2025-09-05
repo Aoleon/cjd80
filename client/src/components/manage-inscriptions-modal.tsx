@@ -58,6 +58,14 @@ export default function ManageInscriptionsModal({
     comments: ""
   });
   
+  // Absence management states
+  const [showAddAbsenceForm, setShowAddAbsenceForm] = useState(false);
+  const [newAbsence, setNewAbsence] = useState({
+    name: "",
+    email: "",
+    comments: ""
+  });
+  
   // Import bulk states
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [bulkText, setBulkText] = useState("");
@@ -95,6 +103,28 @@ export default function ManageInscriptionsModal({
     },
   });
 
+  const deleteUnsubscriptionMutation = useMutation({
+    mutationFn: async (unsubscriptionId: string) => {
+      await apiRequest("DELETE", `/api/admin/unsubscriptions/${unsubscriptionId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/events/${event?.id}/unsubscriptions`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      toast({
+        title: "Absence supprimée",
+        description: "La déclaration d'absence a été supprimée avec succès",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la déclaration d'absence",
+        variant: "destructive",
+      });
+    },
+  });
+
   const addInscriptionMutation = useMutation({
     mutationFn: async (inscription: { eventId: string; name: string; email: string; comments?: string }) => {
       const res = await apiRequest("POST", "/api/admin/inscriptions", inscription);
@@ -113,6 +143,35 @@ export default function ManageInscriptionsModal({
       toast({
         title: "Inscription ajoutée",
         description: "L'inscription a été ajoutée avec succès",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addAbsenceMutation = useMutation({
+    mutationFn: async (absence: { eventId: string; name: string; email: string; comments?: string }) => {
+      const res = await apiRequest("POST", "/api/unsubscriptions", absence);
+      if (!res.ok) {
+        const errorData = await res.text();
+        throw new Error(errorData || "Erreur lors de l'ajout de l'absence");
+      }
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/events/${event?.id}/unsubscriptions`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      setNewAbsence({ name: "", email: "", comments: "" });
+      setShowAddAbsenceForm(false);
+      toast({
+        title: "Absence ajoutée",
+        description: "La déclaration d'absence a été ajoutée avec succès",
       });
     },
     onError: (error: Error) => {
@@ -165,6 +224,8 @@ export default function ManageInscriptionsModal({
     if (!open) {
       setShowAddForm(false);
       setNewInscription({ name: "", email: "", comments: "" });
+      setShowAddAbsenceForm(false);
+      setNewAbsence({ name: "", email: "", comments: "" });
       setShowBulkImport(false);
       setBulkText("");
       setParsedInscriptions([]);
@@ -174,6 +235,12 @@ export default function ManageInscriptionsModal({
   const handleDeleteInscription = (inscriptionId: string, participantName: string) => {
     if (confirm(`Êtes-vous sûr de vouloir supprimer l'inscription de ${participantName} ?`)) {
       deleteInscriptionMutation.mutate(inscriptionId);
+    }
+  };
+
+  const handleDeleteUnsubscription = (unsubscriptionId: string, participantName: string) => {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer la déclaration d'absence de ${participantName} ?`)) {
+      deleteUnsubscriptionMutation.mutate(unsubscriptionId);
     }
   };
 
@@ -193,6 +260,25 @@ export default function ManageInscriptionsModal({
       name: newInscription.name.trim(),
       email: newInscription.email.trim(),
       comments: newInscription.comments.trim() || undefined,
+    });
+  };
+
+  const handleAddAbsence = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!event || !newAbsence.name.trim() || !newAbsence.email.trim()) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir le nom et l'email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addAbsenceMutation.mutate({
+      eventId: event.id,
+      name: newAbsence.name.trim(),
+      email: newAbsence.email.trim(),
+      comments: newAbsence.comments.trim() || undefined,
     });
   };
 
@@ -594,12 +680,99 @@ Claire Dubois,claire@example.com,Commentaire optionnel`}
           {/* Unsubscriptions (Absences) table */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center">
-                <MessageSquare className="w-4 h-4 mr-2 text-orange-500" />
-                Absences déclarées ({unsubscriptions?.length || 0})
-              </CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-base flex items-center">
+                  <MessageSquare className="w-4 h-4 mr-2 text-orange-500" />
+                  Absences déclarées ({unsubscriptions?.length || 0})
+                </CardTitle>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddAbsenceForm(!showAddAbsenceForm)}
+                  data-testid="button-add-absence"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  {showAddAbsenceForm ? "Annuler" : "Ajouter absence"}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
+              {/* Add absence form */}
+              {showAddAbsenceForm && (
+                <form onSubmit={handleAddAbsence} className="space-y-4 p-4 bg-orange-50 border border-orange-200 rounded-lg mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="add-absence-name" className="text-sm font-medium">
+                        Nom complet *
+                      </Label>
+                      <Input
+                        id="add-absence-name"
+                        value={newAbsence.name}
+                        onChange={(e) => setNewAbsence(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Ex: Jean Dupont"
+                        required
+                        data-testid="input-absence-name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="add-absence-email" className="text-sm font-medium">
+                        Email *
+                      </Label>
+                      <Input
+                        id="add-absence-email"
+                        type="email"
+                        value={newAbsence.email}
+                        onChange={(e) => setNewAbsence(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="Ex: jean@example.com"
+                        required
+                        data-testid="input-absence-email"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="add-absence-comments" className="text-sm font-medium">
+                      Raison de l'absence (optionnel)
+                    </Label>
+                    <Textarea
+                      id="add-absence-comments"
+                      value={newAbsence.comments}
+                      onChange={(e) => setNewAbsence(prev => ({ ...prev, comments: e.target.value }))}
+                      placeholder="Ex: empêchement de dernière minute, maladie..."
+                      rows={2}
+                      data-testid="textarea-absence-comments"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="submit"
+                      disabled={addAbsenceMutation.isPending}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                      data-testid="button-submit-absence"
+                    >
+                      {addAbsenceMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Ajout en cours...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Ajouter l'absence
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowAddAbsenceForm(false)}
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                </form>
+              )}
+
               {unsubscriptionsLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
@@ -613,6 +786,7 @@ Claire Dubois,claire@example.com,Commentaire optionnel`}
                         <TableHead>Email</TableHead>
                         <TableHead>Raison de l'absence</TableHead>
                         <TableHead>Date de déclaration</TableHead>
+                        <TableHead className="text-center">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -651,6 +825,18 @@ Claire Dubois,claire@example.com,Commentaire optionnel`}
                               hour: "2-digit",
                               minute: "2-digit",
                             })}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteUnsubscription(unsubscription.id, unsubscription.name)}
+                              disabled={deleteUnsubscriptionMutation.isPending}
+                              className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                              data-testid={`button-delete-absence-${unsubscription.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}

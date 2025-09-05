@@ -251,6 +251,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/admin/unsubscriptions/:id", requireAuth, async (req, res, next) => {
+    try {
+      const result = await storage.deleteUnsubscription(req.params.id);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.status(200).json({ message: "Absence supprimée avec succès" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/admin/unsubscriptions/:id", requireAuth, async (req, res, next) => {
+    try {
+      const validatedData = insertUnsubscriptionSchema.omit({ eventId: true }).parse(req.body);
+      const result = await storage.updateUnsubscription(req.params.id, validatedData);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
   app.post("/api/inscriptions", async (req, res, next) => {
     try {
       const validatedData = insertInscriptionSchema.parse(req.body);
