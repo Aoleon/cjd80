@@ -54,6 +54,7 @@ interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
 
 interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
   inscriptionCount: number;
+  unsubscriptionCount: number;
 }
 
 
@@ -706,7 +707,7 @@ export default function AdminSection() {
                           <TableHead>Date</TableHead>
                           <TableHead>Lieu</TableHead>
                           <TableHead>HelloAsso</TableHead>
-                          <TableHead className="text-center">Inscrits</TableHead>
+                          <TableHead className="text-center">Présents / Absents</TableHead>
                           <TableHead className="text-center">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -752,11 +753,13 @@ export default function AdminSection() {
                                 variant="ghost"
                                 onClick={() => handleManageInscriptions(event)}
                                 className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                                title="Gérer les inscriptions"
+                                title="Gérer les inscriptions et absences"
                               >
                                 <Users className="w-4 h-4 mr-1" />
-                                {event.inscriptionCount}
-                                {event.maxParticipants && ` / ${event.maxParticipants}`}
+                                <div className="flex flex-col items-center text-xs">
+                                  <span className="text-green-600 font-medium">{event.inscriptionCount} présents</span>
+                                  <span className="text-orange-600">{event.unsubscriptionCount} absents</span>
+                                </div>
                               </Button>
                             </TableCell>
                             <TableCell className="text-center">
@@ -857,17 +860,19 @@ export default function AdminSection() {
                             </div>
 
                             <div>
-                              <span className="font-medium text-gray-700">Inscriptions:</span>
+                              <span className="font-medium text-gray-700">Présents / Absents:</span>
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleManageInscriptions(event)}
                                 className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1"
-                                title="Gérer les inscriptions"
+                                title="Gérer les inscriptions et absences"
                               >
                                 <Users className="w-3 h-3 mr-1" />
-                                {event.inscriptionCount}
-                                {event.maxParticipants && ` / ${event.maxParticipants}`}
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className="text-green-600 font-medium">{event.inscriptionCount} présents</span>
+                                  <span className="text-orange-600">{event.unsubscriptionCount} absents</span>
+                                </div>
                               </Button>
                             </div>
                           </div>

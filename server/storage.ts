@@ -75,7 +75,7 @@ export interface IStorage {
   deleteEvent(id: string): Promise<Result<void>>;
   updateEventStatus(id: string, status: string): Promise<Result<void>>;
   isDuplicateEvent(title: string, date: Date): Promise<boolean>;
-  getAllEvents(): Promise<Result<(Event & { inscriptionCount: number })[]>>;
+  getAllEvents(): Promise<Result<(Event & { inscriptionCount: number; unsubscriptionCount: number })[]>>;
   
   // Inscriptions - Ultra-robust with duplicate protection
   getEventInscriptions(eventId: string): Promise<Result<Inscription[]>>;
@@ -843,7 +843,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getAllEvents(): Promise<Result<(Event & { inscriptionCount: number })[]>> {
+  async getAllEvents(): Promise<Result<(Event & { inscriptionCount: number; unsubscriptionCount: number })[]>> {
     try {
       const result = await db
         .select({
@@ -867,15 +867,18 @@ export class DatabaseStorage implements IStorage {
           updatedAt: events.updatedAt,
           updatedBy: events.updatedBy,
           inscriptionCount: count(inscriptions.id),
+          unsubscriptionCount: count(unsubscriptions.id),
         })
         .from(events)
         .leftJoin(inscriptions, eq(events.id, inscriptions.eventId))
+        .leftJoin(unsubscriptions, eq(events.id, unsubscriptions.eventId))
         .groupBy(events.id)
         .orderBy(desc(events.date)); // Admin sees all events, past and future
       
       const formattedResult = result.map(row => ({
         ...row,
         inscriptionCount: Number(row.inscriptionCount),
+        unsubscriptionCount: Number(row.unsubscriptionCount),
       }));
 
       return { success: true, data: formattedResult };
