@@ -12,6 +12,13 @@ export const ADMIN_ROLES = {
   EVENTS_MANAGER: "events_manager"
 } as const;
 
+// Admin status definition
+export const ADMIN_STATUS = {
+  PENDING: "pending",    // En attente de validation
+  ACTIVE: "active",      // Compte validé et actif
+  INACTIVE: "inactive"   // Compte désactivé
+} as const;
+
 // Admin users table  
 export const admins = pgTable("admins", {
   email: text("email").primaryKey(),
@@ -20,11 +27,13 @@ export const admins = pgTable("admins", {
   password: text("password").notNull(),
   addedBy: text("added_by"),
   role: text("role").default(ADMIN_ROLES.IDEAS_READER).notNull(), // Rôle par défaut : consultation des idées
+  status: text("status").default(ADMIN_STATUS.PENDING).notNull(), // Statut par défaut : en attente
   isActive: boolean("is_active").default(true).notNull(), // Permet de désactiver un admin sans le supprimer
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   roleIdx: index("admins_role_idx").on(table.role),
+  statusIdx: index("admins_status_idx").on(table.status),
   activeIdx: index("admins_active_idx").on(table.isActive),
 }));
 

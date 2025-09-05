@@ -41,7 +41,27 @@ function requirePermission(permission: string) {
     }
     
     const user = req.user;
-    if (!user || !hasPermission(user.role, permission)) {
+    if (!user) {
+      return res.status(403).json({ message: "User not found" });
+    }
+    
+    // Vérifier le statut du compte
+    if (user.status === "pending") {
+      return res.status(403).json({ 
+        message: "Votre compte est en attente de validation par un administrateur",
+        status: "pending"
+      });
+    }
+    
+    if (user.status === "inactive") {
+      return res.status(403).json({ 
+        message: "Votre compte a été désactivé",
+        status: "inactive"
+      });
+    }
+    
+    // Vérifier les permissions
+    if (!hasPermission(user.role, permission)) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
     
@@ -827,6 +847,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ success: true, message: "Administrateur supprimé avec succès" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Récupérer les comptes en attente de validation
+  app.get("/api/admin/pending-admins", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.getPendingAdmins();
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+
+      // Masquer les mots de passe des réponses
+      const sanitizedAdmins = result.data.map((admin: any) => ({
+        ...admin,
+        password: undefined
+      }));
+
+      res.json({ success: true, data: sanitizedAdmins });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Créer un nouvel administrateur avec statut actif (super admin seulement)
+  app.post("/api/admin/administrators", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const { email, password, firstName, lastName, role } = insertAdminSchema.parse(req.body);
+      
+      if (!email || !password || !firstName || !lastName || !role) {
+        return res.status(400).json({ message: "Tous les champs sont requis" });
+      }
+
+      // Hasher le mot de passe
+      const hashedPassword = await hashPassword(password);
+      
+      // Créer l'admin avec le statut active (créé par un admin)
+      const result = await storage.createUser({
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        role,
+        status: "active", // Statut actif pour les comptes créés par les admins
+        addedBy: req.user!.email
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+
+      const sanitizedAdmin = {
+        ...result.data,
+        password: undefined
+      };
+
+      res.json({ success: true, data: sanitizedAdmin, message: "Administrateur créé avec succès" });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      next(error);
+    }
+  });
+
+  // Approuver un compte en attente
+  app.patch("/api/admin/administrators/:email/approve", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const { role } = req.body;
+      
+      if (!role || !Object.values(ADMIN_ROLES).includes(role)) {
+        return res.status(400).json({ message: "Rôle valide requis" });
+      }
+
+      const result = await storage.approveAdmin(req.params.email, role);
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+
+      const sanitizedAdmin = {
+        ...result.data,
+        password: undefined
+      };
+
+      res.json({ success: true, data: sanitizedAdmin, message: "Compte approuvé avec succès" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Rejeter un compte en attente
+  app.delete("/api/admin/administrators/:email/reject", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.deleteAdmin(req.params.email);
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+
+      res.json({ success: true, message: "Compte rejeté et supprimé avec succès" });
     } catch (error) {
       next(error);
     }

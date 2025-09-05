@@ -45,6 +45,7 @@ import ManageInscriptionsModal from "./manage-inscriptions-modal";
 import ManageVotesModal from "./manage-votes-modal";
 import AdminLogin from "./admin-login";
 import AdminManagement from "./admin-management";
+import PendingAdminApproval from "./pending-admin-approval";
 import DevelopmentRequestsSection from "./development-requests-section";
 import type { Idea, Event } from "@shared/schema";
 import { IDEA_STATUS, EVENT_STATUS } from "@shared/schema";
@@ -939,7 +940,10 @@ export default function AdminSection() {
 
           {/* Administrators Management Tab */}
           <TabsContent value="admins" className="p-3 sm:p-6">
-            <AdminManagement currentUser={user!} />
+            <div className="space-y-6">
+              <PendingAdminApproval currentUser={user!} />
+              <AdminManagement currentUser={user!} />
+            </div>
           </TabsContent>
 
           {user?.role === "super_admin" && (
@@ -964,7 +968,7 @@ export default function AdminSection() {
         onOpenChange={setEventDetailModalOpen}
         event={selectedEventForDetail}
         onEdit={(event) => {
-          setSelectedEvent(event);
+          setSelectedEvent({...event, unsubscriptionCount: event.unsubscriptionCount || 0});
           setEventModalMode("edit");
           setEventModalOpen(true);
         }}

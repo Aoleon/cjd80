@@ -48,9 +48,12 @@ export interface IStorage {
   
   // Admin management - Pour la gestion des administrateurs par les super-admins
   getAllAdmins(): Promise<Result<Admin[]>>;
+  getPendingAdmins(): Promise<Result<Admin[]>>;
+  approveAdmin(email: string, role: string): Promise<Result<Admin>>;
   updateAdminRole(email: string, role: string): Promise<Result<Admin>>;
   updateAdminStatus(email: string, isActive: boolean): Promise<Result<Admin>>;
   updateAdminPassword(email: string, hashedPassword: string): Promise<Result<void>>;
+  updateAdminInfo(email: string, info: { firstName?: string; lastName?: string }): Promise<Result<Admin>>;
   deleteAdmin(email: string): Promise<Result<void>>;
   
   // Ideas - Ultra-robust with business validation
@@ -173,6 +176,42 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: adminsList };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération des administrateurs: ${error}`) };
+    }
+  }
+
+  async getPendingAdmins(): Promise<Result<Admin[]>> {
+    try {
+      const pendingAdminsList = await db
+        .select()
+        .from(admins)
+        .where(eq(admins.status, "pending"))
+        .orderBy(desc(admins.createdAt));
+      
+      return { success: true, data: pendingAdminsList };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des comptes en attente: ${error}`) };
+    }
+  }
+
+  async approveAdmin(email: string, role: string): Promise<Result<Admin>> {
+    try {
+      const [updatedAdmin] = await db
+        .update(admins)
+        .set({ 
+          status: "active",
+          role,
+          updatedAt: sql`NOW()` 
+        })
+        .where(eq(admins.email, email))
+        .returning();
+
+      if (!updatedAdmin) {
+        return { success: false, error: new NotFoundError("Administrateur non trouvé") };
+      }
+
+      return { success: true, data: updatedAdmin };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de l'approbation du compte: ${error}`) };
     }
   }
 

@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Shield, Settings, Trash2, Eye, EyeOff, Edit } from "lucide-react";
+import { Shield, Settings, Trash2, Eye, EyeOff, Edit, Plus } from "lucide-react";
 import { ADMIN_ROLES, type Admin } from "@shared/schema";
 
 interface AdminManagementProps {
@@ -23,10 +23,19 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
   const [editInfoAdmin, setEditInfoAdmin] = useState<Admin | null>(null);
   const [resetPasswordAdmin, setResetPasswordAdmin] = useState<Admin | null>(null);
+  const [createAdminModalOpen, setCreateAdminModalOpen] = useState(false);
   
   // États pour les formulaires d'édition
   const [editInfoForm, setEditInfoForm] = useState({ firstName: "", lastName: "" });
   const [newPasswordForm, setNewPasswordForm] = useState({ password: "", confirmPassword: "" });
+  const [createAdminForm, setCreateAdminForm] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    firstName: "",
+    lastName: "",
+    role: ADMIN_ROLES.IDEAS_READER
+  });
 
   // Helper pour convertir les valeurs DB vers les clés enum  
   const getKeyFromValue = (value: string): keyof typeof ADMIN_ROLES => {
@@ -141,6 +150,40 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
     }
   });
 
+  // Mutation pour créer un nouvel administrateur
+  const createAdminMutation = useMutation({
+    mutationFn: (adminData: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+      role: string;
+    }) => apiRequest('POST', '/api/admin/administrators', adminData),
+    onSuccess: () => {
+      toast({
+        title: "Administrateur créé",
+        description: "Le nouvel administrateur a été créé avec succès."
+      });
+      setCreateAdminModalOpen(false);
+      setCreateAdminForm({
+        email: "",
+        password: "",
+        confirmPassword: "",
+        firstName: "",
+        lastName: "",
+        role: ADMIN_ROLES.IDEAS_READER
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/administrators'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Erreur lors de la création",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleRoleChange = (admin: Admin, newRole: keyof typeof ADMIN_ROLES) => {
     updateRoleMutation.mutate({ email: admin.email, role: ADMIN_ROLES[newRole] });
   };
@@ -187,6 +230,19 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
     }
   };
 
+  const handleSubmitCreateAdmin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (createAdminForm.password === createAdminForm.confirmPassword) {
+      createAdminMutation.mutate({
+        email: createAdminForm.email,
+        password: createAdminForm.password,
+        firstName: createAdminForm.firstName,
+        lastName: createAdminForm.lastName,
+        role: createAdminForm.role
+      });
+    }
+  };
+
   // Seuls les super admin peuvent voir cette interface
   if (currentUser.role !== 'super_admin') {
     return null;
@@ -222,6 +278,14 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
                 Gérer les comptes administrateurs existants
               </CardDescription>
             </div>
+            <Button
+              onClick={() => setCreateAdminModalOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+              data-testid="button-create-admin"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nouvel Admin
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -397,6 +461,117 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
               </Button>
               <Button type="button" variant="outline" onClick={() => setResetPasswordAdmin(null)}>
                 Annuler
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialogue de création d'un nouvel administrateur */}
+      <Dialog open={createAdminModalOpen} onOpenChange={setCreateAdminModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Créer un Nouvel Administrateur</DialogTitle>
+            <DialogDescription>
+              Créer un compte administrateur avec accès immédiat
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmitCreateAdmin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="createEmail">Email</Label>
+              <Input
+                id="createEmail"
+                type="email"
+                value={createAdminForm.email}
+                onChange={(e) => setCreateAdminForm(prev => ({ ...prev, email: e.target.value }))}
+                required
+                data-testid="input-create-email"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="createFirstName">Prénom</Label>
+                <Input
+                  id="createFirstName"
+                  value={createAdminForm.firstName}
+                  onChange={(e) => setCreateAdminForm(prev => ({ ...prev, firstName: e.target.value }))}
+                  required
+                  data-testid="input-create-firstName"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="createLastName">Nom</Label>
+                <Input
+                  id="createLastName"
+                  value={createAdminForm.lastName}
+                  onChange={(e) => setCreateAdminForm(prev => ({ ...prev, lastName: e.target.value }))}
+                  required
+                  data-testid="input-create-lastName"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="createRole">Rôle</Label>
+              <Select
+                value={createAdminForm.role}
+                onValueChange={(value) => setCreateAdminForm(prev => ({ ...prev, role: value }))}
+              >
+                <SelectTrigger data-testid="select-create-role">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ADMIN_ROLES.IDEAS_READER}>Lecteur d'Idées</SelectItem>
+                  <SelectItem value={ADMIN_ROLES.IDEAS_MANAGER}>Gestionnaire d'Idées</SelectItem>
+                  <SelectItem value={ADMIN_ROLES.EVENTS_READER}>Lecteur d'Événements</SelectItem>
+                  <SelectItem value={ADMIN_ROLES.EVENTS_MANAGER}>Gestionnaire d'Événements</SelectItem>
+                  <SelectItem value={ADMIN_ROLES.SUPER_ADMIN}>Super Administrateur</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="createPassword">Mot de passe</Label>
+              <Input
+                id="createPassword"
+                type="password"
+                value={createAdminForm.password}
+                onChange={(e) => setCreateAdminForm(prev => ({ ...prev, password: e.target.value }))}
+                minLength={8}
+                required
+                data-testid="input-create-password"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="createConfirmPassword">Confirmer le mot de passe</Label>
+              <Input
+                id="createConfirmPassword"
+                type="password"
+                value={createAdminForm.confirmPassword}
+                onChange={(e) => setCreateAdminForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                minLength={8}
+                required
+                data-testid="input-create-confirmPassword"
+              />
+            </div>
+            
+            {createAdminForm.password !== createAdminForm.confirmPassword && createAdminForm.confirmPassword && (
+              <p className="text-red-500 text-sm">Les mots de passe ne correspondent pas</p>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setCreateAdminModalOpen(false)}>
+                Annuler
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={createAdminMutation.isPending || createAdminForm.password !== createAdminForm.confirmPassword}
+                className="bg-blue-600 hover:bg-blue-700"
+                data-testid="button-submit-create-admin"
+              >
+                {createAdminMutation.isPending ? "Création..." : "Créer"}
               </Button>
             </div>
           </form>

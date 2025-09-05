@@ -117,6 +117,7 @@ export function setupAuth(app: Express) {
       const userResult = await storage.createUser({
         ...req.body,
         password: await hashPassword(req.body.password),
+        status: "pending", // Les nouvelles inscriptions sont en attente
       });
 
       if (!userResult.success) {
@@ -142,6 +143,22 @@ export function setupAuth(app: Express) {
       
       if (!user) {
         return res.status(401).json({ message: "Email ou mot de passe incorrect" });
+      }
+      
+      // Vérifier si le compte est en attente de validation
+      if (user.status === "pending") {
+        return res.status(403).json({ 
+          message: "Votre compte est en attente de validation par un administrateur",
+          status: "pending"
+        });
+      }
+      
+      // Vérifier si le compte est inactif
+      if (user.status === "inactive") {
+        return res.status(403).json({ 
+          message: "Votre compte a été désactivé",
+          status: "inactive"
+        });
       }
       
       req.login(user, (loginErr) => {
