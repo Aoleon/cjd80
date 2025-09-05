@@ -116,6 +116,19 @@ export const inscriptions = pgTable("inscriptions", {
   uniqueRegistrationPerEmail: unique().on(table.eventId, table.email),
 }));
 
+// Unsubscriptions table - for people declaring they cannot attend an event
+export const unsubscriptions = pgTable("unsubscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => events.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  comments: text("comments"), // Raison de l'absence, commentaires, etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  // Contrainte unique: un email ne peut se désinscrire qu'une seule fois par événement
+  uniqueUnsubscriptionPerEmail: unique().on(table.eventId, table.email),
+}));
+
 // Push subscriptions table for PWA notifications
 export const pushSubscriptions = pgTable("push_subscriptions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -144,11 +157,19 @@ export const votesRelations = relations(votes, ({ one }) => ({
 
 export const eventsRelations = relations(events, ({ many }) => ({
   inscriptions: many(inscriptions),
+  unsubscriptions: many(unsubscriptions),
 }));
 
 export const inscriptionsRelations = relations(inscriptions, ({ one }) => ({
   event: one(events, {
     fields: [inscriptions.eventId],
+    references: [events.id],
+  }),
+}));
+
+export const unsubscriptionsRelations = relations(unsubscriptions, ({ one }) => ({
+  event: one(events, {
+    fields: [unsubscriptions.eventId],
     references: [events.id],
   }),
 }));
@@ -381,6 +402,29 @@ export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({
     .transform(val => val ? sanitizeText(val) : undefined),
 });
 
+export const insertUnsubscriptionSchema = createInsertSchema(unsubscriptions).pick({
+  eventId: true,
+  name: true,
+  email: true,
+  comments: true,
+}).extend({
+  eventId: z.string()
+    .uuid("L'identifiant de l'événement n'est pas valide")
+    .transform(sanitizeText),
+  name: z.string()
+    .min(2, "Votre nom doit contenir au moins 2 caractères")
+    .max(100, "Votre nom est trop long (maximum 100 caractères)")
+    .transform(sanitizeText),
+  email: z.string()
+    .email("Adresse email invalide. Veuillez saisir une adresse email valide (ex: nom@domaine.fr)")
+    .refine(isValidDomain, "Le domaine de votre adresse email n'est pas autorisé")
+    .transform(sanitizeText),
+  comments: z.string()
+    .max(500, "Votre raison d'absence est trop longue (maximum 500 caractères). Raccourcissez votre message.")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+});
+
 // Types
 export type Admin = typeof admins.$inferSelect;
 export type InsertAdmin = z.infer<typeof insertAdminSchema>;
@@ -397,6 +441,9 @@ export type InsertEvent = z.infer<typeof insertEventSchema>;
 
 export type Inscription = typeof inscriptions.$inferSelect;
 export type InsertInscription = z.infer<typeof insertInscriptionSchema>;
+
+export type Unsubscription = typeof unsubscriptions.$inferSelect;
+export type InsertUnsubscription = z.infer<typeof insertUnsubscriptionSchema>;
 
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;

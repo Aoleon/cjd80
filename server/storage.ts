@@ -4,6 +4,7 @@ import {
   votes, 
   events, 
   inscriptions,
+  unsubscriptions,
   type Admin, 
   type InsertAdmin,
   type User,
@@ -16,6 +17,8 @@ import {
   type InsertEvent,
   type Inscription,
   type InsertInscription,
+  type Unsubscription,
+  type InsertUnsubscription,
   type Result,
   ValidationError,
   DuplicateError,
@@ -79,6 +82,9 @@ export interface IStorage {
   createInscription(inscription: InsertInscription): Promise<Result<Inscription>>;
   unsubscribeFromEvent(eventId: string, name: string, email: string): Promise<Result<void>>;
   hasUserRegistered(eventId: string, email: string): Promise<boolean>;
+  
+  // Unsubscriptions - For declaring absence
+  createUnsubscription(unsubscription: InsertUnsubscription): Promise<Result<Unsubscription>>;
   
   // Admin stats
   getStats(): Promise<Result<{
@@ -687,6 +693,43 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: undefined };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la suppression de l'inscription: ${error}`) };
+    }
+  }
+
+  async createUnsubscription(unsubscription: InsertUnsubscription): Promise<Result<Unsubscription>> {
+    try {
+      // Check if user has already declared absence for this event
+      const [existingUnsubscription] = await db
+        .select()
+        .from(unsubscriptions)
+        .where(and(eq(unsubscriptions.eventId, unsubscription.eventId), eq(unsubscriptions.email, unsubscription.email)));
+
+      if (existingUnsubscription) {
+        return { success: false, error: new DuplicateError("Vous avez déjà déclaré votre absence pour cet événement") };
+      }
+
+      // Check if event exists
+      const eventResult = await this.getEvent(unsubscription.eventId);
+      if (!eventResult.success) {
+        return { success: false, error: eventResult.error };
+      }
+      if (!eventResult.data) {
+        return { success: false, error: new NotFoundError("Événement introuvable") };
+      }
+
+      const result = await db.transaction(async (tx) => {
+        const [newUnsubscription] = await tx
+          .insert(unsubscriptions)
+          .values([unsubscription])
+          .returning();
+        
+        console.log(`[Storage] Nouvelle absence déclarée: ${newUnsubscription.id} pour événement ${unsubscription.eventId}`);
+        return newUnsubscription;
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la déclaration d'absence: ${error}`) };
     }
   }
 

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Event, InsertInscription } from "@shared/schema";
+import type { Event, InsertInscription, InsertUnsubscription } from "@shared/schema";
 
 interface EventRegistrationModalProps {
   open: boolean;
@@ -86,11 +86,11 @@ export default function EventRegistrationModal({
   });
 
   const unsubscribeMutation = useMutation({
-    mutationFn: async ({ eventId, name, email }: { eventId: string; name: string; email: string }) => {
-      const res = await apiRequest("DELETE", `/api/inscriptions/${eventId}/${encodeURIComponent(name)}/${encodeURIComponent(email)}`);
+    mutationFn: async (unsubscription: InsertUnsubscription) => {
+      const res = await apiRequest("POST", "/api/unsubscriptions", unsubscription);
       if (!res.ok) {
         const errorData = await res.text();
-        throw new Error(errorData || "Erreur lors de la désinscription");
+        throw new Error(errorData || "Erreur lors de la déclaration d'absence");
       }
       return await res.json();
     },
@@ -99,8 +99,8 @@ export default function EventRegistrationModal({
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       
       toast({
-        title: "✅ Désinscription confirmée !",
-        description: `Vous êtes maintenant désinscrit(e) de "${event?.title}".`,
+        title: "✅ Absence déclarée !",
+        description: `Votre absence à "${event?.title}" a été enregistrée.`,
         duration: 6000,
       });
       
@@ -108,7 +108,7 @@ export default function EventRegistrationModal({
     },
     onError: (error: Error) => {
       toast({
-        title: "❌ Erreur lors de la désinscription",
+        title: "❌ Erreur lors de la déclaration d'absence",
         description: error.message,
         variant: "destructive",
         duration: 8000,
@@ -121,21 +121,24 @@ export default function EventRegistrationModal({
     if (!event) return;
 
     if (isUnsubscribeMode) {
-      // Désinscription
+      // Déclaration d'absence
       if (!formData.name.trim() || !formData.email.trim()) {
         toast({
           title: "Champs requis",
-          description: "Veuillez saisir votre nom et email pour vous désinscrire",
+          description: "Veuillez saisir votre nom et email pour déclarer votre absence",
           variant: "destructive",
         });
         return;
       }
 
-      unsubscribeMutation.mutate({
+      const unsubscription: InsertUnsubscription = {
         eventId: event.id,
         name: formData.name.trim(),
         email: formData.email.trim(),
-      });
+        comments: formData.comments.trim() || undefined,
+      };
+
+      unsubscribeMutation.mutate(unsubscription);
     } else {
       // Inscription
       if (!formData.name.trim() || !formData.email.trim()) {
@@ -181,7 +184,7 @@ export default function EventRegistrationModal({
         <DialogHeader className="text-left pb-4">
           <DialogTitle className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
             {isUnsubscribeMode 
-              ? "Se désinscrire de l'événement" 
+              ? "Déclarer une absence à l'événement" 
               : "S'inscrire à l'événement"}
           </DialogTitle>
           <DialogDescription asChild>
@@ -215,7 +218,7 @@ export default function EventRegistrationModal({
               
               <p className="text-xs sm:text-sm text-gray-600">
                 {isUnsubscribeMode 
-                  ? "Saisissez votre nom et email pour vous désinscrire de cet événement."
+                  ? "Saisissez votre nom et email pour déclarer votre absence à cet événement."
                   : "Remplissez les informations ci-dessous pour confirmer votre inscription."}
               </p>
             </div>
@@ -227,17 +230,17 @@ export default function EventRegistrationModal({
           {isUnsubscribeMode ? (
             /* Formulaire de désinscription */
             <>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <h3 className="text-red-800 font-medium mb-2">⚠️ Désinscription</h3>
-                <p className="text-red-700 text-sm">
-                  Saisissez exactement le nom et l'email utilisés lors de votre inscription pour vous désinscrire de cet événement.
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h3 className="text-orange-800 font-medium mb-2">📝 Déclaration d'absence</h3>
+                <p className="text-orange-700 text-sm">
+                  Informez-nous que vous ne pourrez pas participer à cet événement. Cette information aide à mieux organiser nos événements.
                 </p>
               </div>
               
               {/* Name Field for Unsubscription */}
               <div className="space-y-2">
                 <Label htmlFor="unsubscribe-name" className="text-sm sm:text-base font-medium text-gray-700">
-                  Nom utilisé lors de l'inscription *
+                  Votre nom *
                 </Label>
                 <Input
                   id="unsubscribe-name"
@@ -251,26 +254,45 @@ export default function EventRegistrationModal({
                   data-testid="input-unsubscribe-name"
                 />
                 <p className="text-xs text-gray-500">
-                  Utilisez exactement le même nom que lors de votre inscription
+                  Indiquez votre nom complet
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="unsubscribe-email" className="text-sm sm:text-base font-medium text-gray-700">
-                  Email d'inscription *
+                  Votre email *
                 </Label>
                 <Input
                   id="unsubscribe-email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  placeholder="email.utilisé@lors-inscription.com"
+                  placeholder="votre.email@exemple.com"
                   required
                   className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green h-10 sm:h-11"
                   data-testid="input-unsubscribe-email"
                 />
                 <p className="text-xs text-gray-500">
-                  Utilisez exactement le même email que lors de votre inscription
+                  Votre adresse email de contact
+                </p>
+              </div>
+
+              {/* Comments Field for Unsubscription */}
+              <div className="space-y-2">
+                <Label htmlFor="absence-reason" className="text-sm sm:text-base font-medium text-gray-700">
+                  Raison de l'absence (optionnel)
+                </Label>
+                <Textarea
+                  id="absence-reason"
+                  value={formData.comments}
+                  onChange={(e) => handleInputChange("comments", e.target.value)}
+                  placeholder="Ex: empêchement de dernière minute, maladie, autre engagement..."
+                  rows={3}
+                  className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green resize-none"
+                  maxLength={500}
+                />
+                <p className="text-xs text-gray-500">
+                  Optionnel - Cela nous aide à mieux comprendre - {500 - formData.comments.length} caractères restants
                 </p>
               </div>
             </>
@@ -359,8 +381,8 @@ export default function EventRegistrationModal({
                 ) : (
                   <>
                     <UserMinus className="mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">Confirmer ma désinscription</span>
-                    <span className="sm:hidden">Se désinscrire</span>
+                    <span className="hidden sm:inline">Déclarer mon absence</span>
+                    <span className="sm:hidden">Déclarer absence</span>
                   </>
                 )
               ) : (

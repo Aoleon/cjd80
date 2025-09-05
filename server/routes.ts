@@ -11,6 +11,7 @@ import {
   insertVoteSchema,
   insertEventSchema,
   insertInscriptionSchema,
+  insertUnsubscriptionSchema,
   updateIdeaStatusSchema,
   updateIdeaSchema,
   updateEventStatusSchema,
@@ -254,21 +255,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/inscriptions/:eventId/:name/:email", async (req, res, next) => {
+  // Unsubscriptions routes
+  app.post("/api/unsubscriptions", async (req, res, next) => {
     try {
-      const { eventId, name, email } = req.params;
+      const validatedData = insertUnsubscriptionSchema.parse(req.body);
       
-      // Décoder les paramètres URL
-      const decodedName = decodeURIComponent(name);
-      const decodedEmail = decodeURIComponent(email);
-      
-      const result = await storage.unsubscribeFromEvent(eventId, decodedName, decodedEmail);
+      const result = await storage.createUnsubscription(validatedData);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
-      
-      res.status(200).json({ message: "Désinscription réussie" });
+      res.status(201).json(result.data);
     } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
       next(error);
     }
   });
