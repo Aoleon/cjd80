@@ -84,6 +84,7 @@ export interface IStorage {
   hasUserRegistered(eventId: string, email: string): Promise<boolean>;
   
   // Unsubscriptions - For declaring absence
+  getEventUnsubscriptions(eventId: string): Promise<Result<Unsubscription[]>>;
   createUnsubscription(unsubscription: InsertUnsubscription): Promise<Result<Unsubscription>>;
   
   // Admin stats
@@ -693,6 +694,21 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: undefined };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la suppression de l'inscription: ${error}`) };
+    }
+  }
+
+  async getEventUnsubscriptions(eventId: string): Promise<Result<Unsubscription[]>> {
+    try {
+      const result = await db
+        .select()
+        .from(unsubscriptions)
+        .where(eq(unsubscriptions.eventId, eventId))
+        .orderBy(desc(unsubscriptions.createdAt));
+
+      console.log(`[Storage] ${result.length} absences récupérées pour l'événement ${eventId}`);
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des absences: ${error}`) };
     }
   }
 

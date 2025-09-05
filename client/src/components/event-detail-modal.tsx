@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Event, Inscription } from "@shared/schema";
+import type { Event, Inscription, Unsubscription } from "@shared/schema";
 
 interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
   inscriptionCount: number;
@@ -30,11 +30,18 @@ export default function EventDetailModal({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showInscriptions, setShowInscriptions] = useState(false);
+  const [showUnsubscriptions, setShowUnsubscriptions] = useState(false);
 
   // Fetch inscriptions for this event
   const { data: inscriptions, isLoading: inscriptionsLoading } = useQuery<Inscription[]>({
     queryKey: [`/api/admin/events/${event?.id}/inscriptions`],
     enabled: !!event && showInscriptions,
+  });
+
+  // Fetch unsubscriptions for this event
+  const { data: unsubscriptions, isLoading: unsubscriptionsLoading } = useQuery<Unsubscription[]>({
+    queryKey: [`/api/admin/events/${event?.id}/unsubscriptions`],
+    enabled: !!event && showUnsubscriptions,
   });
 
   const deleteEventMutation = useMutation({
@@ -256,6 +263,79 @@ export default function EventDetailModal({
                   <div className="p-4 text-center text-gray-500">
                     Aucune inscription pour cet événement
                   </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Unsubscriptions (Absences) Section */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-medium text-gray-700">
+                Absences déclarées ({unsubscriptions?.length || 0})
+              </h4>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setShowUnsubscriptions(!showUnsubscriptions)}
+                  variant="outline"
+                  size="sm"
+                >
+                  {showUnsubscriptions ? "Masquer" : "Afficher"}
+                </Button>
+              </div>
+            </div>
+
+            {showUnsubscriptions && (
+              <div className="border rounded-lg">
+                {unsubscriptionsLoading ? (
+                  <div className="p-4 text-center">
+                    <div className="animate-spin w-6 h-6 border-2 border-cjd-green border-t-transparent rounded-full mx-auto"></div>
+                  </div>
+                ) : unsubscriptions && unsubscriptions.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Nom</TableHead>
+                          <TableHead>Raison de l'absence</TableHead>
+                          <TableHead>Date de déclaration</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {unsubscriptions.map((unsubscription) => (
+                          <TableRow key={unsubscription.id}>
+                            <TableCell className="font-medium">
+                              {unsubscription.email}
+                            </TableCell>
+                            <TableCell>
+                              {unsubscription.name || "-"}
+                            </TableCell>
+                            <TableCell className="max-w-xs">
+                              <div className="truncate" title={unsubscription.comments || ""}>
+                                {unsubscription.comments || "-"}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(unsubscription.createdAt).toLocaleDateString("fr-FR", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 p-4 text-center">
+                    Aucune absence déclarée pour cet événement.
+                  </p>
                 )}
               </div>
             )}

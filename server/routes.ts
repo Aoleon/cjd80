@@ -238,6 +238,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin unsubscriptions routes
+  app.get("/api/admin/events/:id/unsubscriptions", requireAuth, async (req, res, next) => {
+    try {
+      const unsubscriptions = await storage.getEventUnsubscriptions(req.params.id);
+      if (!unsubscriptions.success) {
+        return res.status(400).json({ message: unsubscriptions.error.message });
+      }
+      res.json(unsubscriptions.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.post("/api/inscriptions", async (req, res, next) => {
     try {
       const validatedData = insertInscriptionSchema.parse(req.body);
