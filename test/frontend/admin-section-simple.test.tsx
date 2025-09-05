@@ -257,4 +257,20 @@ describe('Frontend Components Tests - Admin Section', () => {
       expect(typeof event.inscriptionCount).toBe('number');
     });
   });
+
+  // Test de performance des helpers
+  describe('Performance Tests', () => {
+    it('should handle large datasets efficiently', () => {
+      const largeDataset = Array.from({ length: 1000 }, (_, i) => 
+        createMockIdea({ id: i.toString(), title: `Idée ${i}` })
+      );
+      
+      const startTime = performance.now();
+      const sorted = sortIdeas(largeDataset);
+      const endTime = performance.now();
+      
+      expect(sorted).toHaveLength(1000);
+      expect(endTime - startTime).toBeLessThan(100); // Moins de 100ms
+    });
+  });
 });

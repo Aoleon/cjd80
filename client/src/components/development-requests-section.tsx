@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,19 +13,31 @@ import { Loader2, Bug, Lightbulb, ExternalLink, Trash2, GitBranch } from "lucide
 import { apiRequest } from "@/lib/queryClient";
 import type { DevelopmentRequest, InsertDevelopmentRequest } from "@shared/schema";
 
+// Constantes mémorisées pour éviter les re-créations
 const PRIORITY_COLORS = {
   low: "bg-blue-100 text-blue-800",
   medium: "bg-yellow-100 text-yellow-800", 
   high: "bg-orange-100 text-orange-800",
   critical: "bg-red-100 text-red-800"
-};
+} as const;
 
 const STATUS_COLORS = {
   open: "bg-green-100 text-green-800",
   in_progress: "bg-blue-100 text-blue-800",
   closed: "bg-gray-100 text-gray-800",
   cancelled: "bg-red-100 text-red-800"
+} as const;
+
+const INITIAL_FORM_DATA = {
+  title: "",
+  description: "",
+  type: "bug" as const,
+  priority: "medium" as const
 };
+
+// Types optimisés
+type PriorityKey = keyof typeof PRIORITY_COLORS;
+type StatusKey = keyof typeof STATUS_COLORS;
 
 interface DevelopmentRequestsSectionProps {
   userRole: string;
@@ -35,22 +47,36 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Vérification des permissions - Super admin seulement
+  // Early return optimisé avec React.memo 
   if (userRole !== "super_admin") {
     return null;
   }
 
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<Omit<InsertDevelopmentRequest, "requestedBy" | "requestedByName">>({
-    title: "",
-    description: "",
-    type: "bug",
-    priority: "medium"
-  });
+  const [formData, setFormData] = useState<Omit<InsertDevelopmentRequest, "requestedBy" | "requestedByName">>(INITIAL_FORM_DATA);
 
   const { data: requests, isLoading } = useQuery<DevelopmentRequest[]>({
     queryKey: ["/api/admin/development-requests"],
+    staleTime: 30 * 1000, // Cache pendant 30 secondes pour les données admin
   });
+
+  // Données mémorisées et triées
+  const sortedRequests = useMemo(() => {
+    if (!requests) return [];
+    return [...requests].sort((a, b) => {
+      // Trier par priorité puis par date
+      const priorityOrder = { critical: 1, high: 2, medium: 3, low: 4 };
+      const priorityDiff = (priorityOrder[a.priority as keyof typeof priorityOrder] || 5) - 
+                          (priorityOrder[b.priority as keyof typeof priorityOrder] || 5);
+      if (priorityDiff !== 0) return priorityDiff;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [requests]);
+
+  // Validation du formulaire mémorisée 
+  const isFormValid = useMemo(() => {
+    return formData.title.trim().length >= 3 && formData.description.trim().length >= 10;
+  }, [formData.title, formData.description]);
 
   const createRequestMutation = useMutation({
     mutationFn: async (requestData: Omit<InsertDevelopmentRequest, "requestedBy" | "requestedByName">) => {
@@ -63,8 +89,7 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/development-requests"] });
-      setFormData({ title: "", description: "", type: "bug", priority: "medium" });
-      setShowForm(false);
+      resetForm();
       toast({
         title: "Demande créée",
         description: "Votre demande de développement a été créée avec succès.",
@@ -99,7 +124,8 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Handlers mémorisés pour éviter les re-renders inutiles
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.title.trim() || !formData.description.trim()) {
@@ -112,13 +138,18 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
     }
 
     createRequestMutation.mutate(formData);
-  };
+  }, [formData, createRequestMutation, toast]);
 
-  const handleDelete = (requestId: string, title: string) => {
+  const handleDelete = useCallback((requestId: string, title: string) => {
     if (confirm(`Êtes-vous sûr de vouloir supprimer la demande "${title}" ?`)) {
       deleteRequestMutation.mutate(requestId);
     }
-  };
+  }, [deleteRequestMutation]);
+
+  const resetForm = useCallback(() => {
+    setFormData(INITIAL_FORM_DATA);
+    setShowForm(false);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -219,8 +250,8 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
               <div className="flex gap-2 pt-4">
                 <Button
                   type="submit"
-                  disabled={createRequestMutation.isPending}
-                  className="bg-cjd-green hover:bg-cjd-green/90"
+                  disabled={createRequestMutation.isPending || !isFormValid}
+                  className="bg-cjd-green hover:bg-cjd-green/90 disabled:opacity-50"
                   data-testid="button-submit-request"
                 >
                   {createRequestMutation.isPending ? (
@@ -248,7 +279,7 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
       {/* Tableau des demandes */}
       <Card>
         <CardHeader>
-          <CardTitle>Demandes existantes ({requests?.length || 0})</CardTitle>
+          <CardTitle>Demandes existantes ({sortedRequests?.length || 0})</CardTitle>
           <CardDescription>
             Liste des demandes de développement et leur synchronisation avec GitHub
           </CardDescription>
@@ -258,7 +289,7 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
             </div>
-          ) : requests && requests.length > 0 ? (
+          ) : sortedRequests && sortedRequests.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -273,7 +304,7 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {requests.map((request) => (
+                  {sortedRequests.map((request) => (
                     <TableRow key={request.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
