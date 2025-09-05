@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Bug, Lightbulb, ExternalLink, Trash2, GitBranch } from "lucide-react";
+import { Loader2, Bug, Lightbulb, ExternalLink, Trash2, GitBranch, RefreshCw } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { DevelopmentRequest, InsertDevelopmentRequest } from "@shared/schema";
 
@@ -124,6 +124,31 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
     },
   });
 
+  const syncRequestMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      const response = await apiRequest("POST", `/api/admin/development-requests/${requestId}/sync`);
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || "Erreur lors de la synchronisation");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/development-requests"] });
+      toast({
+        title: "Synchronisation réussie",
+        description: "Les données ont été synchronisées avec GitHub.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erreur de synchronisation",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handlers mémorisés pour éviter les re-renders inutiles
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -145,6 +170,12 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
       deleteRequestMutation.mutate(requestId);
     }
   }, [deleteRequestMutation]);
+
+  const handleSync = useCallback((requestId: string, title: string) => {
+    if (confirm(`Synchroniser la demande "${title}" avec GitHub ?`)) {
+      syncRequestMutation.mutate(requestId);
+    }
+  }, [syncRequestMutation]);
 
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_DATA);
@@ -359,16 +390,31 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
                         })}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDelete(request.id, request.title)}
-                          disabled={deleteRequestMutation.isPending}
-                          className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                          data-testid={`button-delete-request-${request.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-1 justify-center">
+                          {request.githubIssueNumber && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleSync(request.id, request.title)}
+                              disabled={syncRequestMutation.isPending}
+                              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                              data-testid={`button-sync-request-${request.id}`}
+                              title="Synchroniser avec GitHub"
+                            >
+                              <RefreshCw className={`w-4 h-4 ${syncRequestMutation.isPending ? 'animate-spin' : ''}`} />
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDelete(request.id, request.title)}
+                            disabled={deleteRequestMutation.isPending}
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                            data-testid={`button-delete-request-${request.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

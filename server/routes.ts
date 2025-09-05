@@ -902,6 +902,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Synchroniser une demande avec GitHub
+  app.post("/api/admin/development-requests/:id/sync", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      // Récupérer la demande
+      const getResult = await storage.getDevelopmentRequests();
+      if (!getResult.success) {
+        return res.status(400).json({ message: getResult.error.message });
+      }
+
+      const request = getResult.data.find(r => r.id === req.params.id);
+      if (!request) {
+        return res.status(404).json({ message: "Demande non trouvée" });
+      }
+
+      if (!request.githubIssueNumber) {
+        return res.status(400).json({ message: "Aucune issue GitHub associée à cette demande" });
+      }
+
+      // Synchroniser avec GitHub
+      const { syncGitHubIssueStatus } = await import("./utils/github-integration");
+      const githubStatus = await syncGitHubIssueStatus(request.githubIssueNumber);
+
+      if (!githubStatus) {
+        return res.status(400).json({ message: "Impossible de récupérer le statut depuis GitHub" });
+      }
+
+      // Mettre à jour le statut local
+      const updateResult = await storage.updateDevelopmentRequest(req.params.id, {
+        githubStatus: githubStatus.status,
+        status: githubStatus.closed ? "closed" : request.status,
+        lastSyncedAt: new Date()
+      });
+
+      if (!updateResult.success) {
+        return res.status(400).json({ message: updateResult.error.message });
+      }
+
+      console.log(`[GitHub] Synchronisation réussie pour la demande ${req.params.id} avec l'issue #${request.githubIssueNumber}`);
+      res.json({ 
+        success: true, 
+        message: "Synchronisation avec GitHub réussie",
+        data: updateResult.data
+      });
+    } catch (error) {
+      console.error("[GitHub] Erreur lors de la synchronisation:", error);
+      next(error);
+    }
+  });
+
   app.delete("/api/admin/development-requests/:id", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       // Récupérer la demande avant suppression pour fermer l'issue GitHub
