@@ -691,41 +691,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Créer un nouvel administrateur (super admin seulement)
-  app.post("/api/admin/administrators", requirePermission('admin.manage'), async (req, res, next) => {
-    try {
-      const validatedData = insertAdminSchema.parse({
-        ...req.body,
-        addedBy: req.user!.email
-      });
-
-      // Hacher le mot de passe
-      const hashedPassword = await hashPassword(validatedData.password);
-      
-      const result = await storage.createUser({
-        ...validatedData,
-        password: hashedPassword
-      });
-
-      if (!result.success) {
-        return res.status(400).json({ message: result.error.message });
-      }
-
-      // Masquer le mot de passe de la réponse
-      const sanitizedAdmin = {
-        ...result.data,
-        password: undefined
-      };
-
-      res.status(201).json({ success: true, data: sanitizedAdmin });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        const validationError = fromZodError(error);
-        return res.status(400).json({ message: validationError.message });
-      }
-      next(error);
-    }
-  });
 
   // Mettre à jour le rôle d'un administrateur (super admin seulement)
   app.patch("/api/admin/administrators/:email/role", requirePermission('admin.manage'), async (req, res, next) => {
