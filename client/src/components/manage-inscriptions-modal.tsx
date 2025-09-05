@@ -23,7 +23,7 @@ import { Trash2, Users, Mail, User, MessageSquare, Plus, Loader2, Upload, FileTe
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Textarea } from "@/components/ui/textarea";
-import type { Event } from "@shared/schema";
+import type { Event, Unsubscription } from "@shared/schema";
 
 interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
   inscriptionCount: number;
@@ -65,6 +65,11 @@ export default function ManageInscriptionsModal({
 
   const { data: inscriptions, isLoading } = useQuery<Inscription[]>({
     queryKey: ["/api/admin/inscriptions", event?.id],
+    enabled: !!event?.id && open,
+  });
+
+  const { data: unsubscriptions, isLoading: unsubscriptionsLoading } = useQuery<Unsubscription[]>({
+    queryKey: [`/api/admin/events/${event?.id}/unsubscriptions`],
     enabled: !!event?.id && open,
   });
 
@@ -581,6 +586,82 @@ Claire Dubois,claire@example.com,Commentaire optionnel`}
                   <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-600 mb-2">Aucune inscription</h3>
                   <p className="text-gray-500">Aucune personne n'est encore inscrite à cet événement.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Unsubscriptions (Absences) table */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center">
+                <MessageSquare className="w-4 h-4 mr-2 text-orange-500" />
+                Absences déclarées ({unsubscriptions?.length || 0})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {unsubscriptionsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
+                </div>
+              ) : unsubscriptions && unsubscriptions.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nom</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Raison de l'absence</TableHead>
+                        <TableHead>Date de déclaration</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {unsubscriptions.map((unsubscription) => (
+                        <TableRow key={unsubscription.id}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center">
+                              <User className="w-4 h-4 mr-2 text-gray-400" />
+                              {unsubscription.name}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              <Mail className="w-4 h-4 mr-2 text-gray-400" />
+                              <a 
+                                href={`mailto:${unsubscription.email}`} 
+                                className="text-blue-600 hover:underline"
+                              >
+                                {unsubscription.email}
+                              </a>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {unsubscription.comments && (
+                              <div className="flex items-start">
+                                <MessageSquare className="w-4 h-4 mr-2 text-gray-400 mt-0.5" />
+                                <span className="text-sm text-gray-600">{unsubscription.comments}</span>
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-500">
+                            {new Date(unsubscription.createdAt).toLocaleDateString("fr-FR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-600 mb-2">Aucune absence déclarée</h3>
+                  <p className="text-gray-500">Personne n'a encore déclaré d'absence pour cet événement.</p>
                 </div>
               )}
             </CardContent>

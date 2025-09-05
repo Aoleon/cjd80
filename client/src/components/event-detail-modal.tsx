@@ -38,10 +38,10 @@ export default function EventDetailModal({
     enabled: !!event && showInscriptions,
   });
 
-  // Fetch unsubscriptions for this event
+  // Fetch unsubscriptions for this event - Always load to get count
   const { data: unsubscriptions, isLoading: unsubscriptionsLoading } = useQuery<Unsubscription[]>({
     queryKey: [`/api/admin/events/${event?.id}/unsubscriptions`],
-    enabled: !!event && showUnsubscriptions,
+    enabled: !!event,
   });
 
   const deleteEventMutation = useMutation({
