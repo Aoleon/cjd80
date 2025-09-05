@@ -16,9 +16,12 @@ jobs:
           VPS_HOST:        ${{ secrets.VPS_HOST }}
           VPS_PORT:        ${{ secrets.VPS_PORT }}
           VPS_USER:        ${{ secrets.VPS_USER }}
+          GITHUB_TOKEN:    ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO_OWNER: ${{ secrets.GITHUB_REPO_OWNER }}
+          GITHUB_REPO_NAME:  ${{ secrets.GITHUB_REPO_NAME }}
         run: |
           set -e
-          for v in VPS_HOST VPS_PORT VPS_USER; do
+          for v in VPS_HOST VPS_PORT VPS_USER GITHUB_TOKEN GITHUB_REPO_OWNER GITHUB_REPO_NAME; do
             if [ -z "${!v}" ]; then echo "::error::Missing secret: $v"; exit 1; fi
           done
           if [ -z "${VPS_SSH_KEY}" ] && [ -z "${VPS_SSH_KEY_B64}" ]; then
@@ -65,8 +68,16 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
           VPS_USER: ${{ secrets.VPS_USER }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO_OWNER: ${{ secrets.GITHUB_REPO_OWNER }}
+          GITHUB_REPO_NAME: ${{ secrets.GITHUB_REPO_NAME }}
         run: |
-          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "bash /docker/cjd80/deploy.sh"
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "
+            export GITHUB_TOKEN='$GITHUB_TOKEN'
+            export GITHUB_REPO_OWNER='$GITHUB_REPO_OWNER'
+            export GITHUB_REPO_NAME='$GITHUB_REPO_NAME'
+            bash /docker/cjd80/deploy.sh
+          "
 
       - name: Cleanup old Docker containers & images on VPS
         if: always()
