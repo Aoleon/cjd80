@@ -35,7 +35,7 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
   };
 
   // Récupérer la liste des administrateurs
-  const { data: admins, isLoading } = useQuery({
+  const { data: admins, isLoading } = useQuery<Admin[]>({
     queryKey: ['/api/admin/administrators'],
     enabled: currentUser.role === 'super_admin'
   });
@@ -209,20 +209,21 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Gestion des Administrateurs
-            </CardTitle>
-            <CardDescription>
-              Gérer les comptes administrateurs existants
-            </CardDescription>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Gestion des Administrateurs
+              </CardTitle>
+              <CardDescription>
+                Gérer les comptes administrateurs existants
+              </CardDescription>
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
         <CardContent>
           {admins && admins.length > 0 ? (
             <div className="overflow-x-auto">
@@ -401,6 +402,6 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
           </form>
         </DialogContent>
       </Dialog>
-    </Card>
+    </>
   );
 }

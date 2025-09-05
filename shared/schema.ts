@@ -615,7 +615,7 @@ export const updateDevelopmentRequestSchema = z.object({
   githubStatus: z.enum(["open", "closed"]).optional(),
   githubIssueNumber: z.number().int().positive().optional(),
   githubIssueUrl: z.string().url().optional(),
-  lastSyncedAt: z.string().optional(),
+  lastSyncedAt: z.date().optional(),
 });
 
 // Type definitions
