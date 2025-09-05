@@ -409,6 +409,10 @@ export const insertEventSchema = createInsertSchema(events).pick({
   allowUnsubscribe: z.boolean().optional(),
   redUnsubscribeButton: z.boolean().optional(),
   buttonMode: z.enum(["subscribe", "unsubscribe", "both", "custom"]).optional(),
+  customButtonText: z.string()
+    .max(50, "Le texte du bouton personnalisé est trop long (maximum 50 caractères)")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
 });
 
 export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({

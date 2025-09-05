@@ -42,7 +42,7 @@ export default function EventAdminModal({
     showAvailableSeats: true,
     allowUnsubscribe: false,
     redUnsubscribeButton: false,
-    buttonMode: "subscribe" as "subscribe" | "unsubscribe" | "both",
+    buttonMode: "subscribe" as "subscribe" | "unsubscribe" | "both" | "custom",
     customButtonText: "",
   });
 
@@ -69,7 +69,7 @@ export default function EventAdminModal({
           showAvailableSeats: Boolean(event.showAvailableSeats),
           allowUnsubscribe: Boolean(event.allowUnsubscribe),
           redUnsubscribeButton: Boolean(event.redUnsubscribeButton),
-          buttonMode: (event.buttonMode || "subscribe") as "subscribe" | "unsubscribe" | "both",
+          buttonMode: (event.buttonMode || "subscribe") as "subscribe" | "unsubscribe" | "both" | "custom",
           customButtonText: event.customButtonText || "",
         });
       } else {
@@ -194,7 +194,7 @@ export default function EventAdminModal({
       allowUnsubscribe: formData.allowUnsubscribe,
       redUnsubscribeButton: formData.redUnsubscribeButton,
       buttonMode: formData.buttonMode,
-      customButtonText: formData.buttonMode === "custom" ? (formData.customButtonText.trim() || null) : null,
+      customButtonText: formData.buttonMode === "custom" ? (formData.customButtonText.trim() || undefined) : undefined,
     };
 
 
