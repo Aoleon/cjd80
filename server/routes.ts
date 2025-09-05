@@ -888,13 +888,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestedByName: `${req.user!.firstName} ${req.user!.lastName}`
       });
       
+      // Créer la demande dans la base de données
       const result = await storage.createDevelopmentRequest(validatedData);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
 
-      // TODO: Créer l'issue GitHub ici
+      // Créer l'issue GitHub en arrière-plan
+      const { createGitHubIssue } = await import("./utils/github-integration");
+      createGitHubIssue(validatedData).then(async (githubIssue) => {
+        if (githubIssue) {
+          // Mettre à jour la demande avec les informations GitHub
+          await storage.updateDevelopmentRequest(result.data.id, {
+            githubIssueNumber: githubIssue.number,
+            githubIssueUrl: githubIssue.html_url
+          });
+          console.log(`[GitHub] Issue #${githubIssue.number} créée et liée à la demande ${result.data.id}`);
+        }
+      }).catch((error) => {
+        console.error("[GitHub] Erreur lors de la création de l'issue:", error);
+      });
+
       res.json(result.data);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -924,6 +939,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/admin/development-requests/:id", requirePermission('admin.manage'), async (req, res, next) => {
     try {
+      // Récupérer la demande avant suppression pour fermer l'issue GitHub
+      const getResult = await storage.getDevelopmentRequests();
+      if (getResult.success) {
+        const request = getResult.data.find(r => r.id === req.params.id);
+        if (request?.githubIssueNumber) {
+          const { closeGitHubIssue } = await import("./utils/github-integration");
+          closeGitHubIssue(request.githubIssueNumber, "not_planned").catch((error) => {
+            console.error(`[GitHub] Erreur fermeture issue #${request.githubIssueNumber}:`, error);
+          });
+        }
+      }
+
       const result = await storage.deleteDevelopmentRequest(req.params.id);
       
       if (!result.success) {
