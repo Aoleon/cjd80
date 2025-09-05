@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { registerRoutes } from "./routes";
 import { setupVite, log } from "./vite";
 import { startPoolMonitoring } from "./utils/db-health";
+import { startAutoSync } from "./utils/auto-sync";
 
 // Support pour ESM (recréer __dirname et __filename)
 const __filename = fileURLToPath(import.meta.url);
@@ -121,5 +122,8 @@ app.use((req, res, next) => {
     // En dev: toutes les 5 minutes, en prod: toutes les 10 minutes
     const monitoringInterval = process.env.NODE_ENV === 'development' ? 300000 : 600000;
     startPoolMonitoring(monitoringInterval);
+    
+    // Démarrer la synchronisation automatique GitHub
+    startAutoSync();
   });
 })();
