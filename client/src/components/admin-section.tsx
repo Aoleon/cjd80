@@ -45,6 +45,7 @@ import ManageInscriptionsModal from "./manage-inscriptions-modal";
 import ManageVotesModal from "./manage-votes-modal";
 import AdminLogin from "./admin-login";
 import AdminManagement from "./admin-management";
+import DevelopmentRequestsSection from "./development-requests-section";
 import type { Idea, Event } from "@shared/schema";
 import { IDEA_STATUS, EVENT_STATUS } from "@shared/schema";
 
@@ -384,7 +385,7 @@ export default function AdminSection() {
       {/* Admin Tabs */}
       <Card>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className={`w-full grid ${user?.role === "super_admin" ? "grid-cols-4" : "grid-cols-3"}`}>
             <TabsTrigger value="ideas" className="text-xs sm:text-sm">
               <Lightbulb className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Gestion des idées</span>
@@ -400,6 +401,13 @@ export default function AdminSection() {
               <span className="hidden sm:inline">Administrateurs</span>
               <span className="sm:hidden">Admins</span>
             </TabsTrigger>
+            {user?.role === "super_admin" && (
+              <TabsTrigger value="dev-requests" className="text-xs sm:text-sm">
+                <Database className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Développement</span>
+                <span className="sm:hidden">Dev</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Ideas Management Tab */}
@@ -933,6 +941,12 @@ export default function AdminSection() {
           <TabsContent value="admins" className="p-3 sm:p-6">
             <AdminManagement currentUser={user!} />
           </TabsContent>
+
+          {user?.role === "super_admin" && (
+            <TabsContent value="dev-requests" className="p-3 sm:p-6">
+              <DevelopmentRequestsSection userRole={user.role} />
+            </TabsContent>
+          )}
 
         </Tabs>
       </Card>

@@ -12,6 +12,8 @@ import {
   insertEventSchema,
   insertInscriptionSchema,
   insertUnsubscriptionSchema,
+  insertDevelopmentRequestSchema,
+  updateDevelopmentRequestSchema,
   updateIdeaStatusSchema,
   updateIdeaSchema,
   updateEventStatusSchema,
@@ -860,6 +862,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ success: true, message: "Administrateur supprimé avec succès" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Development requests routes - Super admin only
+  app.get("/api/admin/development-requests", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.getDevelopmentRequests();
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/development-requests", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = insertDevelopmentRequestSchema.parse({
+        ...req.body,
+        requestedBy: req.user!.email,
+        requestedByName: `${req.user!.firstName} ${req.user!.lastName}`
+      });
+      
+      const result = await storage.createDevelopmentRequest(validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+
+      // TODO: Créer l'issue GitHub ici
+      res.json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/admin/development-requests/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = updateDevelopmentRequestSchema.parse(req.body);
+      const result = await storage.updateDevelopmentRequest(req.params.id, validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+
+      res.json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/admin/development-requests/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.deleteDevelopmentRequest(req.params.id);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+
+      res.json({ success: true, message: "Demande supprimée avec succès" });
     } catch (error) {
       next(error);
     }

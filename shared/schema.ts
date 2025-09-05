@@ -143,6 +143,29 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   emailIdx: index("push_subscriptions_email_idx").on(table.userEmail),
 }));
 
+// Development requests table - For GitHub issues integration
+export const developmentRequests = pgTable("development_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  type: text("type").notNull(), // "bug" or "feature"
+  priority: text("priority").default("medium").notNull(), // "low", "medium", "high", "critical"
+  requestedBy: text("requested_by").notNull(), // Email du super admin qui a fait la demande
+  requestedByName: text("requested_by_name").notNull(), // Nom du demandeur
+  githubIssueNumber: integer("github_issue_number"), // Numéro de l'issue GitHub créée
+  githubIssueUrl: text("github_issue_url"), // URL complète de l'issue GitHub
+  status: text("status").default("open").notNull(), // "open", "in_progress", "closed", "cancelled"
+  githubStatus: text("github_status").default("open").notNull(), // Statut depuis GitHub: "open", "closed"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  lastSyncedAt: timestamp("last_synced_at"), // Dernière synchronisation avec GitHub
+}, (table) => ({
+  typeIdx: index("dev_requests_type_idx").on(table.type),
+  statusIdx: index("dev_requests_status_idx").on(table.status),
+  requestedByIdx: index("dev_requests_requested_by_idx").on(table.requestedBy),
+  githubIssueIdx: index("dev_requests_github_issue_idx").on(table.githubIssueNumber),
+}));
+
 // Relations
 export const ideasRelations = relations(ideas, ({ many }) => ({
   votes: many(votes),
@@ -558,6 +581,46 @@ export const getRolePermissions = (role: string): string[] => {
       return [];
   }
 };
+
+// Development requests validation schemas
+export const insertDevelopmentRequestSchema = createInsertSchema(developmentRequests).pick({
+  title: true,
+  description: true,
+  type: true,
+  priority: true,
+  requestedBy: true,
+  requestedByName: true,
+}).extend({
+  title: z.string()
+    .min(5, "Le titre doit contenir au moins 5 caractères")
+    .max(200, "Le titre ne peut pas dépasser 200 caractères")
+    .transform(sanitizeText),
+  description: z.string()
+    .min(20, "La description doit contenir au moins 20 caractères")
+    .max(3000, "La description ne peut pas dépasser 3000 caractères")
+    .transform(sanitizeText),
+  type: z.enum(["bug", "feature"], {
+    errorMap: () => ({ message: "Le type doit être 'bug' ou 'feature'" })
+  }),
+  priority: z.enum(["low", "medium", "high", "critical"]).default("medium"),
+  requestedBy: z.string().email("Email invalide").transform(sanitizeText),
+  requestedByName: z.string()
+    .min(2, "Le nom doit contenir au moins 2 caractères")
+    .max(100, "Le nom ne peut pas dépasser 100 caractères")
+    .transform(sanitizeText),
+});
+
+export const updateDevelopmentRequestSchema = z.object({
+  status: z.enum(["open", "in_progress", "closed", "cancelled"]).optional(),
+  githubStatus: z.enum(["open", "closed"]).optional(),
+  githubIssueNumber: z.number().int().positive().optional(),
+  githubIssueUrl: z.string().url().optional(),
+  lastSyncedAt: z.string().optional(),
+});
+
+// Type definitions
+export type DevelopmentRequest = typeof developmentRequests.$inferSelect;
+export type InsertDevelopmentRequest = z.infer<typeof insertDevelopmentRequestSchema>;
 
 // Legacy compatibility
 export type AdminUser = Admin;

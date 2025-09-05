@@ -5,6 +5,7 @@ import {
   events, 
   inscriptions,
   unsubscriptions,
+  developmentRequests,
   type Admin, 
   type InsertAdmin,
   type User,
@@ -19,6 +20,8 @@ import {
   type InsertInscription,
   type Unsubscription,
   type InsertUnsubscription,
+  type DevelopmentRequest,
+  type InsertDevelopmentRequest,
   type Result,
   ValidationError,
   DuplicateError,
@@ -96,6 +99,13 @@ export interface IStorage {
     upcomingEvents: number;
     totalInscriptions: number;
   }>>;
+
+  // Development requests
+  getDevelopmentRequests(): Promise<Result<DevelopmentRequest[]>>;
+  createDevelopmentRequest(request: InsertDevelopmentRequest): Promise<Result<DevelopmentRequest>>;
+  updateDevelopmentRequest(id: string, data: Partial<DevelopmentRequest>): Promise<Result<DevelopmentRequest>>;
+  deleteDevelopmentRequest(id: string): Promise<Result<void>>;
+  syncDevelopmentRequestWithGithub(id: string, githubData: { issueNumber: number; issueUrl: string; status: string }): Promise<Result<DevelopmentRequest>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1144,6 +1154,116 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: undefined };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du statut de l'événement: ${error}`) };
+    }
+  }
+
+  // Development requests methods
+  async getDevelopmentRequests(): Promise<Result<DevelopmentRequest[]>> {
+    try {
+      const requests = await db
+        .select()
+        .from(developmentRequests)
+        .orderBy(desc(developmentRequests.createdAt));
+      
+      console.log(`[Storage] ${requests.length} demandes de développement récupérées`);
+      return { success: true, data: requests };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des demandes de développement: ${error}`) };
+    }
+  }
+
+  async createDevelopmentRequest(request: InsertDevelopmentRequest): Promise<Result<DevelopmentRequest>> {
+    try {
+      const result = await db.transaction(async (tx) => {
+        const [newRequest] = await tx
+          .insert(developmentRequests)
+          .values(request)
+          .returning();
+        
+        console.log(`[Storage] Nouvelle demande de développement créée: ${newRequest.id} - ${newRequest.title}`);
+        return newRequest;
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création de la demande de développement: ${error}`) };
+    }
+  }
+
+  async updateDevelopmentRequest(id: string, data: Partial<DevelopmentRequest>): Promise<Result<DevelopmentRequest>> {
+    try {
+      // Check if request exists
+      const [existingRequest] = await db
+        .select()
+        .from(developmentRequests)
+        .where(eq(developmentRequests.id, id));
+
+      if (!existingRequest) {
+        return { success: false, error: new NotFoundError("Demande de développement introuvable") };
+      }
+
+      const result = await db.transaction(async (tx) => {
+        const [updatedRequest] = await tx
+          .update(developmentRequests)
+          .set({ ...data, updatedAt: sql`NOW()` })
+          .where(eq(developmentRequests.id, id))
+          .returning();
+
+        console.log(`[Storage] Demande de développement mise à jour: ${id}`);
+        return updatedRequest;
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la demande de développement: ${error}`) };
+    }
+  }
+
+  async deleteDevelopmentRequest(id: string): Promise<Result<void>> {
+    try {
+      // Check if request exists
+      const [request] = await db
+        .select()
+        .from(developmentRequests)
+        .where(eq(developmentRequests.id, id));
+
+      if (!request) {
+        return { success: false, error: new NotFoundError("Demande de développement introuvable") };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx.delete(developmentRequests).where(eq(developmentRequests.id, id));
+        console.log(`[Storage] Demande de développement supprimée: ${id}`);
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression de la demande de développement: ${error}`) };
+    }
+  }
+
+  async syncDevelopmentRequestWithGithub(id: string, githubData: { issueNumber: number; issueUrl: string; status: string }): Promise<Result<DevelopmentRequest>> {
+    try {
+      const result = await db.transaction(async (tx) => {
+        const [updatedRequest] = await tx
+          .update(developmentRequests)
+          .set({
+            githubIssueNumber: githubData.issueNumber,
+            githubIssueUrl: githubData.issueUrl,
+            githubStatus: githubData.status,
+            lastSyncedAt: sql`NOW()`,
+            updatedAt: sql`NOW()`
+          })
+          .where(eq(developmentRequests.id, id))
+          .returning();
+
+        console.log(`[Storage] Demande synchronisée avec GitHub: ${id} -> Issue #${githubData.issueNumber}`);
+        return updatedRequest;
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la synchronisation avec GitHub: ${error}`) };
     }
   }
 
