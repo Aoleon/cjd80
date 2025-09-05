@@ -38,6 +38,23 @@ export async function createGitHubIssue(request: Omit<InsertDevelopmentRequest, 
   }
 
   try {
+    // Debug: Vérifier d'abord si le repository existe
+    console.log(`[GitHub] Test d'accès au repository ${repoOwner}/${repoName}`);
+    const repoResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+      }
+    });
+    
+    if (!repoResponse.ok) {
+      const repoError = await repoResponse.json();
+      console.error(`[GitHub] Erreur accès repository (${repoResponse.status}):`, repoError);
+      return null;
+    }
+    
+    console.log(`[GitHub] Repository accessible - procédure de création d'issue`);
+
     const labels = [
       request.type === "bug" ? "bug" : "enhancement",
       `priority-${request.priority}`
@@ -61,12 +78,15 @@ export async function createGitHubIssue(request: Omit<InsertDevelopmentRequest, 
       labels
     };
 
+    console.log(`[GitHub] Création issue avec payload:`, JSON.stringify(issuePayload, null, 2));
+
     const response = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/issues`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/vnd.github.v3+json',
         'Content-Type': 'application/json',
+        'User-Agent': 'CJD-Amiens-Bot/1.0'
       },
       body: JSON.stringify(issuePayload)
     });
@@ -74,11 +94,20 @@ export async function createGitHubIssue(request: Omit<InsertDevelopmentRequest, 
     if (!response.ok) {
       const errorData: GitHubErrorResponse = await response.json();
       console.error("[GitHub] Erreur création issue:", response.status, errorData);
+      
+      // Debug supplémentaire
+      console.error("[GitHub] Headers envoyés:", {
+        'Authorization': `Bearer ${token.substring(0, 10)}...`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'CJD-Amiens-Bot/1.0'
+      });
+      
       return null;
     }
 
     const issueData: GitHubIssueResponse = await response.json();
-    console.log(`[GitHub] Issue créée: #${issueData.number} - ${request.title}`);
+    console.log(`[GitHub] Issue créée avec succès: #${issueData.number} - ${request.title}`);
     
     return issueData;
   } catch (error) {

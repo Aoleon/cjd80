@@ -221,7 +221,8 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
               Gérer les comptes administrateurs existants
             </CardDescription>
           </div>
-        </CardHeader>
+        </div>
+      </CardHeader>
         <CardContent>
           {admins && admins.length > 0 ? (
             <div className="overflow-x-auto">
