@@ -8,83 +8,65 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 45  # Timeout global étendu pour les builds longs
     steps:
       - name: Precheck secrets
         env:
-          VPS_SSH_KEY:     ${{ secrets.VPS_SSH_KEY }}
-          VPS_SSH_KEY_B64: ${{ secrets.VPS_SSH_KEY_B64 }}
-          VPS_HOST:        ${{ secrets.VPS_HOST }}
-          VPS_PORT:        ${{ secrets.VPS_PORT }}
-          VPS_USER:        ${{ secrets.VPS_USER }}
-          GH_TOKEN:    ${{ secrets.GH_TOKEN }}
-          GH_REPO_OWNER: ${{ secrets.GH_REPO_OWNER }}
-          GH_REPO_NAME:  ${{ secrets.GH_REPO_NAME }}
-        run: |
-          set -e
-          for v in VPS_HOST VPS_PORT VPS_USER GH_TOKEN GH_REPO_OWNER GH_REPO_NAME; do
-            if [ -z "${!v}" ]; then echo "::error::Missing secret: $v"; exit 1; fi
-          done
-          if [ -z "${VPS_SSH_KEY}" ] && [ -z "${VPS_SSH_KEY_B64}" ]; then
-            echo "::error::Provide VPS_SSH_KEY (OpenSSH) OR VPS_SSH_KEY_B64 (base64)"; exit 1
-          fi
-
-      - name: Write SSH key & start agent (auto-detect raw vs b64)
-        env:
-          VPS_SSH_KEY:     ${{ secrets.VPS_SSH_KEY }}
-          VPS_SSH_KEY_B64: ${{ secrets.VPS_SSH_KEY_B64 }}
-        run: |
-          set -e
-          mkdir -p ~/.ssh
-          umask 077
-
-          if [ -n "$VPS_SSH_KEY" ] && printf '%s' "$VPS_SSH_KEY" | grep -q 'BEGIN OPENSSH'; then
-            # Clé privée brute OpenSSH
-            printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
-          elif [ -n "$VPS_SSH_KEY_B64" ]; then
-            # Variante base64 (une seule ligne)
-            echo "$VPS_SSH_KEY_B64" | tr -d '\r\n ' | base64 -d > ~/.ssh/id_ed25519 || { echo "::error::VPS_SSH_KEY_B64 is not valid base64"; exit 1; }
-          else
-            echo "::error::No valid key provided"; exit 1
-          fi
-
-          # Petit contrôle format
-          head -1 ~/.ssh/id_ed25519 | grep -q 'BEGIN OPENSSH' || { echo "::error::SSH key file header is wrong"; exit 1; }
-          tail -1 ~/.ssh/id_ed25519 | grep -q 'END OPENSSH'   || { echo "::error::SSH key file footer is wrong"; exit 1; }
-
-          # Démarre l'agent et charge la clé
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_ed25519
-
-      - name: Trust VPS host key
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_PORT: ${{ secrets.VPS_PORT }}
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts
-
-      - name: Deploy on VPS
-        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
           VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST_FINGERPRINT: ${{ secrets.VPS_HOST_FINGERPRINT }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GH_REPO_OWNER: ${{ secrets.GH_REPO_OWNER }}
           GH_REPO_NAME: ${{ secrets.GH_REPO_NAME }}
         run: |
-          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            "GITHUB_TOKEN=\"$GH_TOKEN\" GITHUB_REPO_OWNER=\"$GH_REPO_OWNER\" GITHUB_REPO_NAME=\"$GH_REPO_NAME\" bash /docker/cjd80/deploy.sh"
+          set -e
+          for v in VPS_SSH_KEY VPS_HOST VPS_PORT VPS_USER VPS_HOST_FINGERPRINT GH_TOKEN GH_REPO_OWNER GH_REPO_NAME; do
+            if [ -z "${!v}" ]; then echo "::error::Missing secret: $v"; exit 1; fi
+          done
+          echo "✅ Tous les secrets requis sont configurés"
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          fingerprint: ${{ secrets.VPS_HOST_FINGERPRINT }}
+          command_timeout: 45m  # Aligné sur le timeout global
+          script: |
+            set -e
+            
+            # Heartbeat pour éviter les timeouts GitHub Actions
+            (while sleep 60; do echo "[keepalive] $(date)"; done) &
+            HEARTBEAT_PID=$!
+            trap "kill $HEARTBEAT_PID 2>/dev/null || true" EXIT
+            
+            export GITHUB_TOKEN="${{ secrets.GH_TOKEN }}"
+            export GITHUB_REPO_OWNER="${{ secrets.GH_REPO_OWNER }}"
+            export GITHUB_REPO_NAME="${{ secrets.GH_REPO_NAME }}"
+            
+            echo "🚀 Début du déploiement..."
+            bash /docker/cjd80/deploy.sh
+            
+            echo "✅ Déploiement terminé avec succès"
 
       - name: Cleanup old Docker containers & images on VPS
         if: always()
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_PORT: ${{ secrets.VPS_PORT }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-        run: |
-          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "
-            echo '🧹 Nettoyage des vieux conteneurs et images...';
-            docker container prune -f;
-            docker image prune -af;
-            docker volume prune -f;
-          "
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          fingerprint: ${{ secrets.VPS_HOST_FINGERPRINT }}
+          command_timeout: 10m  # 10 minutes pour le nettoyage
+          script: |
+            echo '🧹 Nettoyage des vieux conteneurs et images...'
+            # Nettoyage conservateur pour préserver le cache Docker
+            docker container prune -f
+            docker image prune -f  # Supprime seulement les images "dangling"
+            docker volume prune -f
+            echo '✅ Nettoyage terminé'
