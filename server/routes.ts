@@ -886,14 +886,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hasher le mot de passe
       const hashedPassword = await hashPassword(password);
       
-      // Créer l'admin avec le statut active (créé par un admin)
+      // Créer l'admin (créé par un admin)
       const result = await storage.createUser({
         email,
         password: hashedPassword,
         firstName,
         lastName,
         role,
-        status: "active", // Statut actif pour les comptes créés par les admins
         addedBy: req.user!.email
       });
 

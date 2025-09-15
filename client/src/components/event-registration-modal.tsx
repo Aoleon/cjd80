@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, UserMinus, Loader2, Calendar, Users, MapPin } from "lucide-react";
+import { UserPlus, UserMinus, Loader2, Calendar, Users, MapPin, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { getIdentity, saveIdentity, clearIdentity, createUserIdentity } from "@/lib/user-identity";
 import type { Event, InsertInscription, InsertUnsubscription } from "@shared/schema";
 
 interface EventRegistrationModalProps {
@@ -30,11 +32,22 @@ export default function EventRegistrationModal({
     email: "",
     comments: "",
   });
+  const [rememberMe, setRememberMe] = useState(true);
   const isUnsubscribeMode = mode === 'unsubscribe';
 
   useEffect(() => {
     if (!open) {
       setFormData({ name: "", email: "", comments: "" });
+    } else {
+      // When opening modal, try to prefill from stored identity
+      const storedIdentity = getIdentity();
+      if (storedIdentity) {
+        setFormData(prev => ({
+          ...prev,
+          name: storedIdentity.name,
+          email: storedIdentity.email
+        }));
+      }
     }
   }, [open]);
 
@@ -50,6 +63,18 @@ export default function EventRegistrationModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      
+      // Handle identity saving/clearing based on rememberMe preference
+      try {
+        if (rememberMe && formData.name.trim() && formData.email.trim()) {
+          const identity = createUserIdentity(formData.name.trim(), formData.email.trim());
+          saveIdentity(identity);
+        } else if (!rememberMe) {
+          clearIdentity();
+        }
+      } catch (error) {
+        console.warn('Failed to manage user identity:', error);
+      }
       
       // Vérifier si une redirection externe est configurée
       if (event?.enableExternalRedirect && event?.externalRedirectUrl) {
@@ -97,6 +122,18 @@ export default function EventRegistrationModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      
+      // Handle identity saving/clearing based on rememberMe preference
+      try {
+        if (rememberMe && formData.name.trim() && formData.email.trim()) {
+          const identity = createUserIdentity(formData.name.trim(), formData.email.trim());
+          saveIdentity(identity);
+        } else if (!rememberMe) {
+          clearIdentity();
+        }
+      } catch (error) {
+        console.warn('Failed to manage user identity:', error);
+      }
       
       toast({
         title: "✅ Absence déclarée !",
@@ -359,6 +396,63 @@ export default function EventRegistrationModal({
               </div>
             </>
           )}
+
+          {/* Identity Management Section */}
+          <div className="space-y-3 pt-2 border-t border-gray-200">
+            {/* Remember Me Checkbox */}
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="remember-me"
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
+                className="mt-0.5"
+                data-testid="checkbox-remember-me"
+              />
+              <div className="flex-1">
+                <Label htmlFor="remember-me" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Se souvenir de mes informations
+                </Label>
+                <p className="text-xs text-gray-500 mt-1">
+                  Vos nom et email seront sauvegardés localement pour faciliter vos prochaines inscriptions
+                </p>
+              </div>
+            </div>
+
+            {/* Clear Information Button */}
+            {getIdentity() && (
+              <div className="flex justify-start">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    try {
+                      clearIdentity();
+                      setFormData(prev => ({ ...prev, name: "", email: "" }));
+                      toast({
+                        title: "✅ Informations effacées",
+                        description: "Vos informations personnelles ont été supprimées.",
+                        duration: 3000,
+                      });
+                    } catch (error) {
+                      console.error('Failed to clear identity:', error);
+                      toast({
+                        title: "❌ Erreur",
+                        description: "Impossible d'effacer les informations.",
+                        variant: "destructive",
+                        duration: 3000,
+                      });
+                    }
+                  }}
+                  className="text-xs text-gray-600 hover:text-gray-800 h-auto p-1"
+                  data-testid="button-clear-identity"
+                >
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  Effacer mes informations sauvegardées
+                </Button>
+              </div>
+            )}
+          </div>
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 border-t">
