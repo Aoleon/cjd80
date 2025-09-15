@@ -14,6 +14,7 @@ import {
   insertUnsubscriptionSchema,
   insertDevelopmentRequestSchema,
   updateDevelopmentRequestSchema,
+  updateDevelopmentRequestStatusSchema,
   updateIdeaStatusSchema,
   updateIdeaSchema,
   updateEventStatusSchema,
@@ -1071,6 +1072,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("[GitHub] Erreur lors de la synchronisation:", error);
+      next(error);
+    }
+  });
+
+  // Mettre à jour le statut d'une demande de développement - Réservé au super admin thibault@youcom.io
+  app.patch("/api/admin/development-requests/:id/status", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      // Vérifier que l'utilisateur est le super administrateur autorisé
+      if (req.user!.email !== "thibault@youcom.io") {
+        return res.status(403).json({ message: "Seul le super administrateur thibault@youcom.io peut modifier les statuts des demandes de développement" });
+      }
+
+      const validatedData = updateDevelopmentRequestStatusSchema.parse({
+        ...req.body,
+        lastStatusChangeBy: req.user!.email
+      });
+      
+      const result = await storage.updateDevelopmentRequestStatus(
+        req.params.id,
+        validatedData.status,
+        validatedData.adminComment,
+        validatedData.lastStatusChangeBy
+      );
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+
+      console.log(`[Admin] Statut de la demande de développement mis à jour: ${req.params.id} -> ${validatedData.status} par ${req.user!.email}`);
+      res.json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
       next(error);
     }
   });

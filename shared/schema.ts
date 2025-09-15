@@ -165,6 +165,8 @@ export const developmentRequests = pgTable("development_requests", {
   githubIssueUrl: text("github_issue_url"), // URL complète de l'issue GitHub
   status: text("status").default("open").notNull(), // "open", "in_progress", "closed", "cancelled"
   githubStatus: text("github_status").default("open").notNull(), // Statut depuis GitHub: "open", "closed"
+  adminComment: text("admin_comment"), // Commentaire du super administrateur
+  lastStatusChangeBy: text("last_status_change_by"), // Email de la personne qui a modifié le statut en dernier
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   lastSyncedAt: timestamp("last_synced_at"), // Dernière synchronisation avec GitHub
@@ -629,6 +631,16 @@ export const updateDevelopmentRequestSchema = z.object({
   githubIssueNumber: z.number().int().positive().optional(),
   githubIssueUrl: z.string().url().optional(),
   lastSyncedAt: z.date().optional(),
+});
+
+// Schéma spécial pour les mises à jour de statut par le super administrateur
+export const updateDevelopmentRequestStatusSchema = z.object({
+  status: z.enum(["open", "in_progress", "closed", "cancelled"]),
+  adminComment: z.string()
+    .max(1000, "Le commentaire ne peut pas dépasser 1000 caractères")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  lastStatusChangeBy: z.string().email("Email invalide").transform(sanitizeText),
 });
 
 // Type definitions

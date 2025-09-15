@@ -107,6 +107,7 @@ export interface IStorage {
   getDevelopmentRequests(): Promise<Result<DevelopmentRequest[]>>;
   createDevelopmentRequest(request: InsertDevelopmentRequest): Promise<Result<DevelopmentRequest>>;
   updateDevelopmentRequest(id: string, data: Partial<DevelopmentRequest>): Promise<Result<DevelopmentRequest>>;
+  updateDevelopmentRequestStatus(id: string, status: string, adminComment: string | undefined, updatedBy: string): Promise<Result<DevelopmentRequest>>;
   deleteDevelopmentRequest(id: string): Promise<Result<void>>;
   syncDevelopmentRequestWithGithub(id: string, githubData: { issueNumber: number; issueUrl: string; status: string }): Promise<Result<DevelopmentRequest>>;
 }
@@ -1255,6 +1256,40 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: result };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la demande de développement: ${error}`) };
+    }
+  }
+
+  async updateDevelopmentRequestStatus(id: string, status: string, adminComment: string | undefined, updatedBy: string): Promise<Result<DevelopmentRequest>> {
+    try {
+      // Check if request exists
+      const [existingRequest] = await db
+        .select()
+        .from(developmentRequests)
+        .where(eq(developmentRequests.id, id));
+
+      if (!existingRequest) {
+        return { success: false, error: new NotFoundError("Demande de développement introuvable") };
+      }
+
+      const result = await db.transaction(async (tx) => {
+        const [updatedRequest] = await tx
+          .update(developmentRequests)
+          .set({
+            status,
+            adminComment,
+            lastStatusChangeBy: updatedBy,
+            updatedAt: sql`NOW()`
+          })
+          .where(eq(developmentRequests.id, id))
+          .returning();
+
+        console.log(`[Storage] Statut de la demande de développement mis à jour: ${id} -> ${status} par ${updatedBy}`);
+        return updatedRequest;
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du statut de la demande de développement: ${error}`) };
     }
   }
 

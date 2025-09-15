@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Bug, Lightbulb, ExternalLink, Trash2, GitBranch, RefreshCw } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { Loader2, Bug, Lightbulb, ExternalLink, Trash2, GitBranch, RefreshCw, Edit } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { DevelopmentRequest, InsertDevelopmentRequest } from "@shared/schema";
 
@@ -46,6 +48,7 @@ interface DevelopmentRequestsSectionProps {
 export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequestsSectionProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   // Early return optimisé avec React.memo 
   if (userRole !== "super_admin") {
@@ -54,6 +57,19 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
 
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<Omit<InsertDevelopmentRequest, "requestedBy" | "requestedByName">>(INITIAL_FORM_DATA);
+  
+  // États pour l'édition de statut
+  const [editingStatus, setEditingStatus] = useState<string | null>(null);
+  const [statusData, setStatusData] = useState<{
+    status: string;
+    adminComment: string;
+  }>({
+    status: "",
+    adminComment: ""
+  });
+  
+  // Vérifier si l'utilisateur peut modifier les statuts
+  const canEditStatus = user?.email === "thibault@youcom.io";
 
   const { data: requests, isLoading } = useQuery<DevelopmentRequest[]>({
     queryKey: ["/api/admin/development-requests"],
@@ -149,6 +165,36 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
     },
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ requestId, status, adminComment }: { requestId: string; status: string; adminComment?: string }) => {
+      const response = await apiRequest("PATCH", `/api/admin/development-requests/${requestId}/status`, {
+        status,
+        adminComment
+      });
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || "Erreur lors de la mise à jour du statut");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/development-requests"] });
+      setEditingStatus(null);
+      setStatusData({ status: "", adminComment: "" });
+      toast({
+        title: "Statut mis à jour",
+        description: "Le statut de la demande a été mis à jour avec succès.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erreur de mise à jour",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handlers mémorisés pour éviter les re-renders inutiles
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -180,6 +226,36 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_DATA);
     setShowForm(false);
+  }, []);
+
+  const handleEditStatus = useCallback((request: DevelopmentRequest) => {
+    setEditingStatus(request.id);
+    setStatusData({
+      status: request.status,
+      adminComment: request.adminComment || ""
+    });
+  }, []);
+
+  const handleUpdateStatus = useCallback((requestId: string) => {
+    if (!statusData.status) {
+      toast({
+        title: "Statut requis",
+        description: "Veuillez sélectionner un statut",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    updateStatusMutation.mutate({
+      requestId,
+      status: statusData.status,
+      adminComment: statusData.adminComment || undefined
+    });
+  }, [statusData, updateStatusMutation, toast]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingStatus(null);
+    setStatusData({ status: "", adminComment: "" });
   }, []);
 
   return (
@@ -329,6 +405,7 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
                     <TableHead>Titre</TableHead>
                     <TableHead>Priorité</TableHead>
                     <TableHead>Statut</TableHead>
+                    <TableHead>Commentaire Admin</TableHead>
                     <TableHead>GitHub</TableHead>
                     <TableHead>Créé le</TableHead>
                     <TableHead className="text-center">Actions</TableHead>
@@ -363,9 +440,55 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={STATUS_COLORS[request.status as keyof typeof STATUS_COLORS]}>
-                          {request.status === "in_progress" ? "En cours" : request.status}
-                        </Badge>
+                        {editingStatus === request.id ? (
+                          <div className="space-y-2">
+                            <Select 
+                              value={statusData.status} 
+                              onValueChange={(value) => setStatusData(prev => ({ ...prev, status: value }))}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="open">Open</SelectItem>
+                                <SelectItem value="in_progress">En cours</SelectItem>
+                                <SelectItem value="closed">Fermé</SelectItem>
+                                <SelectItem value="cancelled">Annulé</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <Badge className={STATUS_COLORS[request.status as keyof typeof STATUS_COLORS]}>
+                            {request.status === "in_progress" ? "En cours" : request.status}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingStatus === request.id ? (
+                          <Textarea
+                            value={statusData.adminComment}
+                            onChange={(e) => setStatusData(prev => ({ ...prev, adminComment: e.target.value }))}
+                            placeholder="Commentaire administrateur..."
+                            className="min-h-[60px] w-64"
+                          />
+                        ) : (
+                          <div className="max-w-xs">
+                            {request.adminComment ? (
+                              <div className="text-sm">
+                                <p className="truncate" title={request.adminComment}>
+                                  {request.adminComment}
+                                </p>
+                                {request.lastStatusChangeBy && (
+                                  <p className="text-gray-500 text-xs mt-1">
+                                    Par: {request.lastStatusChangeBy}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-sm">Aucun commentaire</span>
+                            )}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         {request.githubIssueUrl ? (
@@ -391,29 +514,72 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center gap-1 justify-center">
-                          {request.githubIssueNumber && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleSync(request.id, request.title)}
-                              disabled={syncRequestMutation.isPending}
-                              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                              data-testid={`button-sync-request-${request.id}`}
-                              title="Synchroniser avec GitHub"
-                            >
-                              <RefreshCw className={`w-4 h-4 ${syncRequestMutation.isPending ? 'animate-spin' : ''}`} />
-                            </Button>
+                          {editingStatus === request.id ? (
+                            // Boutons de sauvegarde/annulation
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={() => handleUpdateStatus(request.id)}
+                                disabled={updateStatusMutation.isPending}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                data-testid={`button-save-status-${request.id}`}
+                              >
+                                {updateStatusMutation.isPending ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  "Sauvegarder"
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleCancelEdit}
+                                disabled={updateStatusMutation.isPending}
+                                data-testid={`button-cancel-edit-${request.id}`}
+                              >
+                                Annuler
+                              </Button>
+                            </>
+                          ) : (
+                            // Boutons normaux
+                            <>
+                              {canEditStatus && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditStatus(request)}
+                                  className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                                  data-testid={`button-edit-status-${request.id}`}
+                                  title="Modifier le statut (réservé au super admin)"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                              )}
+                              {request.githubIssueNumber && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleSync(request.id, request.title)}
+                                  disabled={syncRequestMutation.isPending}
+                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                  data-testid={`button-sync-request-${request.id}`}
+                                  title="Synchroniser avec GitHub"
+                                >
+                                  <RefreshCw className={`w-4 h-4 ${syncRequestMutation.isPending ? 'animate-spin' : ''}`} />
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDelete(request.id, request.title)}
+                                disabled={deleteRequestMutation.isPending}
+                                className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                data-testid={`button-delete-request-${request.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
                           )}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(request.id, request.title)}
-                            disabled={deleteRequestMutation.isPending}
-                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                            data-testid={`button-delete-request-${request.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
