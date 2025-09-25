@@ -5,6 +5,7 @@ import { setupAuth } from "./auth";
 import { dbMonitoringMiddleware, getPoolStatsEndpoint } from "./middleware/db-monitoring";
 import { checkDatabaseHealth } from "./utils/db-health";
 import { notificationService } from "./notification-service";
+import { emailNotificationService } from "./email-notification-service";
 import { hashPassword } from "./auth";
 import { 
   insertIdeaSchema,
@@ -112,14 +113,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: result.error.message });
       }
       
-      // Envoyer notification pour nouvelle idée
+      // Envoyer notifications pour nouvelle idée
       try {
+        // Notification push web
         await notificationService.notifyNewIdea({
           title: result.data.title,
           proposedBy: result.data.proposedBy
         });
+        
+        // Notification email aux administrateurs
+        await emailNotificationService.notifyNewIdea(result.data);
       } catch (notifError) {
-        console.error('[Notifications] Erreur envoi notification nouvelle idée:', notifError);
+        console.error('[Notifications] Erreur envoi notifications nouvelle idée:', notifError);
       }
       
       res.status(201).json(result.data);
@@ -208,19 +213,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: result.error.message });
       }
       
-      // Envoyer notification pour nouvel événement
+      // Envoyer notifications pour nouvel événement
       try {
         const dateString = typeof result.data.date === 'string' 
           ? result.data.date 
           : result.data.date.toISOString();
         
+        // Notification push web
         await notificationService.notifyNewEvent({
           title: result.data.title,
           date: dateString,
           location: result.data.location || 'Lieu à définir'
         });
+        
+        // Notification email aux administrateurs
+        const organizerName = req.user?.firstName && req.user?.lastName 
+          ? `${req.user.firstName} ${req.user.lastName}` 
+          : req.user?.email || 'Organisateur inconnu';
+        await emailNotificationService.notifyNewEvent(result.data, organizerName);
       } catch (notifError) {
-        console.error('[Notifications] Erreur envoi notification nouvel événement:', notifError);
+        console.error('[Notifications] Erreur envoi notifications nouvel événement:', notifError);
       }
       
       res.status(201).json(result.data);
