@@ -42,6 +42,47 @@ Extended the platform with a complete CRM (Customer Relationship Management) sys
 - E2E test suite covering full CRM workflow: patron creation, donation tracking, idea-patron linking, status updates
 - All tests passing with expected UI/UX behavior
 
+### Members CRM System
+Extended the platform with a complete Members CRM to track and manage community member activity and engagement:
+
+**Database Schema** (2 new tables):
+- `members`: Store member information (email, firstName, lastName, company, phone, role, notes) with automatic tracking of engagementScore, activityCount, firstSeenAt, lastActivityAt
+- `member_activities`: Track all member actions (idea_proposed, vote_cast, event_registered, event_unregistered, patron_suggested) with timestamps and metadata
+
+**Engagement Scoring System:**
+- `idea_proposed`: +10 points
+- `vote_cast`: +2 points
+- `event_registered`: +5 points
+- `event_unregistered`: -3 points
+- `patron_suggested`: +8 points
+
+**Backend API** (4 secure routes):
+- Members CRUD: GET/PATCH `/api/admin/members`, GET `/api/admin/members/:email`, GET `/api/admin/members/:email/activities`
+- All routes protected with `requirePermission('admin.view')` (accessible to all admin roles, not just super_admin)
+- Automatic member creation/update via `trackMemberActivity()` middleware integrated into existing routes (ideas, votes, events, patrons)
+
+**Frontend Features**:
+- `/admin/members`: Dedicated Members CRM page with responsive list/detail layout
+- Real-time search functionality (filter by name, email, or company)
+- Member cards displaying engagement score badges with color coding
+- 3 tabs: Informations (editable profile), Activité (timeline with icons), Statistiques (engagement breakdown)
+- Sortable by engagement score (highest first)
+- Admin navigation updated: "Membres" link visible for all admin roles
+
+**Form Enrichment**:
+- Added optional `company` and `phone` fields to idea proposal forms (`/propose` page and homepage section)
+- Added optional `company` and `phone` fields to event registration modal
+- Automatic member profile creation/enrichment when users interact with the platform
+
+**Bug Fixes**:
+- Fixed TanStack Query data extraction: queries now correctly use `Member[]` type instead of nested `{ success: boolean; data: Member[] }`
+- Corrected data-testid naming: changed `member-item-${email}` to `card-member-${email}` for consistency
+- Fixed permission guard: `admin.view` permission now returns true for all admin roles
+
+**Testing**:
+- E2E test suite covering complete Members CRM workflow: member creation via idea proposal, admin access, search, profile viewing, activity timeline, statistics, profile editing, and persistence
+- All tests passing with expected UI/UX behavior
+
 ## User Preferences
 ### Primary Communication Rule
 **🎯 CRITICAL**: Les remarques de l'utilisateur concernent **TOUJOURS** ce qu'il voit dans l'interface utilisateur (UI/frontend), sauf indication contraire explicite. Interpréter systématiquement depuis la perspective visuelle de l'utilisateur.

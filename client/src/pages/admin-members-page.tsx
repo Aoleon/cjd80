@@ -74,26 +74,20 @@ export default function AdminMembersPage() {
 
   const hasViewPermission = user && hasPermission(user.role, 'admin.view');
 
-  const { data: membersResponse, isLoading: membersLoading } = useQuery<{ success: boolean; data: Member[] }>({
+  const { data: members = [], isLoading: membersLoading } = useQuery<Member[]>({
     queryKey: ["/api/admin/members"],
     enabled: !!hasViewPermission,
   });
 
-  const members = membersResponse?.data || [];
-
-  const { data: memberResponse, isLoading: memberLoading } = useQuery<{ success: boolean; data: Member }>({
+  const { data: selectedMember, isLoading: memberLoading } = useQuery<Member>({
     queryKey: ["/api/admin/members", selectedEmail],
     enabled: !!hasViewPermission && !!selectedEmail,
   });
 
-  const selectedMember = memberResponse?.data;
-
-  const { data: activitiesResponse, isLoading: activitiesLoading } = useQuery<{ success: boolean; data: MemberActivity[] }>({
+  const { data: activities = [], isLoading: activitiesLoading } = useQuery<MemberActivity[]>({
     queryKey: ["/api/admin/members", selectedEmail, "activities"],
     enabled: !!hasViewPermission && !!selectedEmail,
   });
-
-  const activities = activitiesResponse?.data || [];
 
   const filteredMembers = useMemo(() => {
     if (!searchQuery.trim()) return members;
@@ -321,7 +315,7 @@ export default function AdminMembersPage() {
                               ? "bg-accent border-cjd-green dark:bg-accent dark:border-cjd-green"
                               : "hover:bg-gray-50 dark:hover:bg-gray-900"
                           }`}
-                          data-testid={`member-item-${member.email}`}
+                          data-testid={`card-member-${member.email}`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
@@ -337,7 +331,7 @@ export default function AdminMembersPage() {
                                 </div>
                               )}
                             </div>
-                            <Badge className={getScoreBadgeColor(member.engagementScore)}>
+                            <Badge className={getScoreBadgeColor(member.engagementScore)} data-testid={`badge-engagement-${member.email}`}>
                               {member.engagementScore}
                             </Badge>
                           </div>
