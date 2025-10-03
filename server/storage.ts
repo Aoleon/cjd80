@@ -9,6 +9,8 @@ import {
   patrons,
   patronDonations,
   ideaPatronProposals,
+  members,
+  memberActivities,
   type Admin, 
   type InsertAdmin,
   type User,
@@ -31,6 +33,10 @@ import {
   type InsertPatronDonation,
   type IdeaPatronProposal,
   type InsertIdeaPatronProposal,
+  type Member,
+  type InsertMember,
+  type MemberActivity,
+  type InsertMemberActivity,
   type Result,
   ValidationError,
   DuplicateError,
@@ -39,7 +45,8 @@ import {
   IDEA_STATUS,
   EVENT_STATUS,
   updatePatronSchema,
-  updateIdeaPatronProposalSchema
+  updateIdeaPatronProposalSchema,
+  updateMemberSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";
@@ -144,6 +151,18 @@ export interface IStorage {
   getPatronProposals(patronId: string): Promise<Result<IdeaPatronProposal[]>>;
   updateIdeaPatronProposal(id: string, data: z.infer<typeof updateIdeaPatronProposalSchema>): Promise<Result<IdeaPatronProposal>>;
   deleteIdeaPatronProposal(id: string): Promise<Result<void>>;
+  
+  // Gestion des membres
+  createOrUpdateMember(memberData: Partial<InsertMember> & { email: string }): Promise<Result<Member>>;
+  getMembers(): Promise<Result<Member[]>>;
+  getMemberByEmail(email: string): Promise<Result<Member | null>>;
+  updateMember(email: string, data: z.infer<typeof updateMemberSchema>): Promise<Result<Member>>;
+  deleteMember(email: string): Promise<Result<void>>;
+
+  // Gestion des activités membres
+  trackMemberActivity(activity: InsertMemberActivity): Promise<Result<MemberActivity>>;
+  getMemberActivities(memberEmail: string): Promise<Result<MemberActivity[]>>;
+  getAllActivities(): Promise<Result<MemberActivity[]>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1682,6 +1701,195 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: undefined };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la suppression de la proposition: ${error}`) };
+    }
+  }
+
+  async createOrUpdateMember(memberData: Partial<InsertMember> & { email: string }): Promise<Result<Member>> {
+    try {
+      const [existingMember] = await db
+        .select()
+        .from(members)
+        .where(eq(members.email, memberData.email));
+
+      const now = new Date();
+
+      if (existingMember) {
+        const updateData: any = {
+          lastActivityAt: now,
+          updatedAt: now
+        };
+        
+        if (memberData.firstName !== undefined) updateData.firstName = memberData.firstName;
+        if (memberData.lastName !== undefined) updateData.lastName = memberData.lastName;
+        if (memberData.company !== undefined) updateData.company = memberData.company;
+        if (memberData.phone !== undefined) updateData.phone = memberData.phone;
+        if (memberData.role !== undefined) updateData.role = memberData.role;
+
+        const [updatedMember] = await db
+          .update(members)
+          .set(updateData)
+          .where(eq(members.email, memberData.email))
+          .returning();
+
+        console.log(`[Storage] Membre mis à jour: ${memberData.email}`);
+        return { success: true, data: updatedMember };
+      } else {
+        const newMemberData = {
+          email: memberData.email,
+          firstName: memberData.firstName || '',
+          lastName: memberData.lastName || '',
+          company: memberData.company,
+          phone: memberData.phone,
+          role: memberData.role,
+          notes: memberData.notes,
+          engagementScore: 0,
+          firstSeenAt: now,
+          lastActivityAt: now,
+          activityCount: 0
+        };
+
+        const [newMember] = await db
+          .insert(members)
+          .values(newMemberData)
+          .returning();
+
+        console.log(`[Storage] Nouveau membre créé: ${memberData.email}`);
+        return { success: true, data: newMember };
+      }
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création/mise à jour du membre: ${error}`) };
+    }
+  }
+
+  async getMembers(): Promise<Result<Member[]>> {
+    try {
+      const membersList = await db
+        .select()
+        .from(members)
+        .orderBy(desc(members.lastActivityAt));
+
+      return { success: true, data: membersList };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des membres: ${error}`) };
+    }
+  }
+
+  async getMemberByEmail(email: string): Promise<Result<Member | null>> {
+    try {
+      const [member] = await db
+        .select()
+        .from(members)
+        .where(eq(members.email, email));
+
+      return { success: true, data: member || null };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération du membre: ${error}`) };
+    }
+  }
+
+  async updateMember(email: string, data: z.infer<typeof updateMemberSchema>): Promise<Result<Member>> {
+    try {
+      const [existingMember] = await db
+        .select()
+        .from(members)
+        .where(eq(members.email, email));
+
+      if (!existingMember) {
+        return { success: false, error: new NotFoundError("Membre introuvable") };
+      }
+
+      const [updatedMember] = await db
+        .update(members)
+        .set({
+          ...data,
+          updatedAt: sql`NOW()`
+        })
+        .where(eq(members.email, email))
+        .returning();
+
+      console.log(`[Storage] Membre mis à jour: ${email}`);
+      return { success: true, data: updatedMember };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du membre: ${error}`) };
+    }
+  }
+
+  async deleteMember(email: string): Promise<Result<void>> {
+    try {
+      const [member] = await db
+        .select()
+        .from(members)
+        .where(eq(members.email, email));
+
+      if (!member) {
+        return { success: false, error: new NotFoundError("Membre introuvable") };
+      }
+
+      await db
+        .delete(members)
+        .where(eq(members.email, email));
+
+      console.log(`[Storage] Membre supprimé: ${email}`);
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression du membre: ${error}`) };
+    }
+  }
+
+  async trackMemberActivity(activity: InsertMemberActivity): Promise<Result<MemberActivity>> {
+    try {
+      const result = await db.transaction(async (tx) => {
+        const [newActivity] = await tx
+          .insert(memberActivities)
+          .values(activity)
+          .returning();
+        
+        await tx
+          .update(members)
+          .set({
+            engagementScore: sql`${members.engagementScore} + ${activity.scoreImpact}`,
+            lastActivityAt: newActivity.occurredAt,
+            activityCount: sql`${members.activityCount} + 1`,
+            updatedAt: sql`NOW()`
+          })
+          .where(eq(members.email, activity.memberEmail));
+
+        console.log(`[Storage] Activité enregistrée pour ${activity.memberEmail}: ${activity.activityType} (score: ${activity.scoreImpact})`);
+        
+        return newActivity;
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de l'enregistrement de l'activité: ${error}`) };
+    }
+  }
+
+  async getMemberActivities(memberEmail: string): Promise<Result<MemberActivity[]>> {
+    try {
+      const activities = await db
+        .select()
+        .from(memberActivities)
+        .where(eq(memberActivities.memberEmail, memberEmail))
+        .orderBy(desc(memberActivities.occurredAt));
+
+      return { success: true, data: activities };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des activités du membre: ${error}`) };
+    }
+  }
+
+  async getAllActivities(): Promise<Result<MemberActivity[]>> {
+    try {
+      const activities = await db
+        .select()
+        .from(memberActivities)
+        .orderBy(desc(memberActivities.occurredAt))
+        .limit(500);
+
+      return { success: true, data: activities };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération de toutes les activités: ${error}`) };
     }
   }
 
