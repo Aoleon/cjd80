@@ -154,6 +154,7 @@ export interface IStorage {
   
   // Gestion des membres
   createOrUpdateMember(memberData: Partial<InsertMember> & { email: string }): Promise<Result<Member>>;
+  proposeMember(memberData: Partial<InsertMember> & { email: string; firstName: string; lastName: string; proposedBy: string }): Promise<Result<Member>>;
   getMembers(): Promise<Result<Member[]>>;
   getMemberByEmail(email: string): Promise<Result<Member | null>>;
   updateMember(email: string, data: z.infer<typeof updateMemberSchema>): Promise<Result<Member>>;
@@ -1758,6 +1759,47 @@ export class DatabaseStorage implements IStorage {
       }
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la création/mise à jour du membre: ${error}`) };
+    }
+  }
+
+  async proposeMember(memberData: Partial<InsertMember> & { email: string; firstName: string; lastName: string; proposedBy: string }): Promise<Result<Member>> {
+    try {
+      const [existingMember] = await db
+        .select()
+        .from(members)
+        .where(eq(members.email, memberData.email));
+      
+      if (existingMember) {
+        return { success: false, error: new DuplicateError("Un membre avec cet email existe déjà") };
+      }
+      
+      const now = new Date();
+      const newMemberData = {
+        email: memberData.email,
+        firstName: memberData.firstName,
+        lastName: memberData.lastName,
+        company: memberData.company,
+        phone: memberData.phone,
+        role: memberData.role,
+        notes: memberData.notes,
+        status: 'proposed' as const,
+        proposedBy: memberData.proposedBy,
+        engagementScore: 0,
+        firstSeenAt: now,
+        lastActivityAt: now,
+        activityCount: 0
+      };
+      
+      const [newMember] = await db
+        .insert(members)
+        .values(newMemberData)
+        .returning();
+      
+      console.log(`[Storage] Membre potentiel proposé: ${memberData.email} par ${memberData.proposedBy}`);
+      return { success: true, data: newMember };
+    } catch (error) {
+      console.error("[Storage] Erreur lors de la proposition d'un membre:", error);
+      return { success: false, error: new DatabaseError("Erreur lors de la proposition du membre") };
     }
   }
 

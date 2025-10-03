@@ -791,6 +791,17 @@ export const updateMemberSchema = z.object({
   notes: z.string().max(2000).transform(sanitizeText).optional(),
 });
 
+export const proposeMemberSchema = z.object({
+  email: z.string().email("Adresse email invalide").transform(sanitizeText),
+  firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères").max(100).transform(sanitizeText),
+  lastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères").max(100).transform(sanitizeText),
+  company: z.string().max(200).optional().transform(val => val ? sanitizeText(val) : undefined),
+  phone: z.string().max(20).optional().transform(val => val ? sanitizeText(val) : undefined),
+  role: z.string().max(100).optional().transform(val => val ? sanitizeText(val) : undefined),
+  notes: z.string().max(2000).optional().transform(val => val ? sanitizeText(val) : undefined),
+  proposedBy: z.string().email("Email du proposeur invalide").transform(sanitizeText),
+});
+
 // Types
 export type Admin = typeof admins.$inferSelect;
 export type InsertAdmin = z.infer<typeof insertAdminSchema>;

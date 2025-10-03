@@ -28,6 +28,7 @@ import {
   insertPatronDonationSchema,
   insertIdeaPatronProposalSchema,
   updateIdeaPatronProposalSchema,
+  proposeMemberSchema,
   hasPermission,
   ADMIN_ROLES
 } from "@shared/schema";
@@ -1644,6 +1645,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Proposer un membre potentiel (accessible à tous)
+  app.post("/api/members/propose", async (req, res, next) => {
+    try {
+      const validatedData = proposeMemberSchema.parse(req.body);
+      
+      const result = await storage.proposeMember({
+        email: validatedData.email,
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+        company: validatedData.company,
+        phone: validatedData.phone,
+        role: validatedData.role,
+        notes: validatedData.notes,
+        proposedBy: validatedData.proposedBy,
+      });
+      
+      if (!result.success) {
+        if (result.error.code === "DUPLICATE") {
+          return res.status(409).json({ message: result.error.message });
+        }
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json({ success: true, data: result.data });
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({ message: fromZodError(error).toString() });
