@@ -177,9 +177,60 @@ export const developmentRequests = pgTable("development_requests", {
   githubIssueIdx: index("dev_requests_github_issue_idx").on(table.githubIssueNumber),
 }));
 
+// Patrons table - CRM pour la gestion des mécènes
+export const patrons = pgTable("patrons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  role: text("role"), // Fonction du mécène
+  company: text("company"), // Société
+  phone: text("phone"), // Téléphone
+  email: text("email").notNull().unique(), // Email unique pour éviter les doublons
+  notes: text("notes"), // Informations complémentaires
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdBy: text("created_by"), // Email admin qui a ajouté le mécène
+}, (table) => ({
+  emailIdx: index("patrons_email_idx").on(table.email),
+  createdByIdx: index("patrons_created_by_idx").on(table.createdBy),
+  createdAtIdx: index("patrons_created_at_idx").on(table.createdAt),
+}));
+
+// Patron donations table - Historique des dons
+export const patronDonations = pgTable("patron_donations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  patronId: varchar("patron_id").references(() => patrons.id, { onDelete: "cascade" }).notNull(),
+  donatedAt: timestamp("donated_at").notNull(), // Date du don
+  amount: integer("amount").notNull(), // Montant en centimes
+  occasion: text("occasion").notNull(), // À quelle occasion : événement, projet, etc.
+  recordedBy: text("recorded_by").notNull(), // Email admin qui enregistre
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  patronIdIdx: index("patron_donations_patron_id_idx").on(table.patronId),
+  donatedAtIdx: index("patron_donations_donated_at_idx").on(table.donatedAt.desc()),
+}));
+
+// Idea patron proposals table - Propositions mécènes-idées
+export const ideaPatronProposals = pgTable("idea_patron_proposals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ideaId: varchar("idea_id").references(() => ideas.id, { onDelete: "cascade" }).notNull(),
+  patronId: varchar("patron_id").references(() => patrons.id, { onDelete: "cascade" }).notNull(),
+  proposedByAdminEmail: text("proposed_by_admin_email").notNull(), // Email du membre qui propose
+  proposedAt: timestamp("proposed_at").defaultNow().notNull(),
+  status: text("status").default("proposed").notNull(), // 'proposed', 'contacted', 'declined', 'converted'
+  comments: text("comments"), // Notes de suivi
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueIdeaPatron: unique().on(table.ideaId, table.patronId),
+  ideaIdIdx: index("idea_patron_proposals_idea_id_idx").on(table.ideaId),
+  patronIdIdx: index("idea_patron_proposals_patron_id_idx").on(table.patronId),
+  statusIdx: index("idea_patron_proposals_status_idx").on(table.status),
+}));
+
 // Relations
 export const ideasRelations = relations(ideas, ({ many }) => ({
   votes: many(votes),
+  patronProposals: many(ideaPatronProposals),
 }));
 
 export const votesRelations = relations(votes, ({ one }) => ({
@@ -205,6 +256,29 @@ export const unsubscriptionsRelations = relations(unsubscriptions, ({ one }) => 
   event: one(events, {
     fields: [unsubscriptions.eventId],
     references: [events.id],
+  }),
+}));
+
+export const patronsRelations = relations(patrons, ({ many }) => ({
+  donations: many(patronDonations),
+  proposals: many(ideaPatronProposals),
+}));
+
+export const patronDonationsRelations = relations(patronDonations, ({ one }) => ({
+  patron: one(patrons, {
+    fields: [patronDonations.patronId],
+    references: [patrons.id],
+  }),
+}));
+
+export const ideaPatronProposalsRelations = relations(ideaPatronProposals, ({ one }) => ({
+  idea: one(ideas, {
+    fields: [ideaPatronProposals.ideaId],
+    references: [ideas.id],
+  }),
+  patron: one(patrons, {
+    fields: [ideaPatronProposals.patronId],
+    references: [patrons.id],
   }),
 }));
 
@@ -463,6 +537,136 @@ export const insertUnsubscriptionSchema = createInsertSchema(unsubscriptions).pi
     .transform(val => val ? sanitizeText(val) : undefined),
 });
 
+export const insertPatronSchema = createInsertSchema(patrons).pick({
+  firstName: true,
+  lastName: true,
+  role: true,
+  company: true,
+  phone: true,
+  email: true,
+  notes: true,
+  createdBy: true,
+}).extend({
+  firstName: z.string()
+    .min(2, "Le prénom doit contenir au moins 2 caractères")
+    .max(100, "Le prénom ne peut pas dépasser 100 caractères")
+    .transform(sanitizeText),
+  lastName: z.string()
+    .min(2, "Le nom doit contenir au moins 2 caractères")
+    .max(100, "Le nom ne peut pas dépasser 100 caractères")
+    .transform(sanitizeText),
+  role: z.string()
+    .max(100, "La fonction ne peut pas dépasser 100 caractères")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  company: z.string()
+    .max(200, "Le nom de la société ne peut pas dépasser 200 caractères")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  phone: z.string()
+    .max(20, "Le numéro de téléphone ne peut pas dépasser 20 caractères")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  email: z.string()
+    .email("Adresse email invalide")
+    .transform(sanitizeText),
+  notes: z.string()
+    .max(2000, "Les notes ne peuvent pas dépasser 2000 caractères")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  createdBy: z.string()
+    .email("Email de l'administrateur invalide")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+});
+
+export const insertPatronDonationSchema = createInsertSchema(patronDonations).pick({
+  patronId: true,
+  donatedAt: true,
+  amount: true,
+  occasion: true,
+  recordedBy: true,
+}).extend({
+  patronId: z.string()
+    .uuid("L'identifiant du mécène n'est pas valide")
+    .transform(sanitizeText),
+  donatedAt: z.string().datetime("La date du don n'est pas valide"),
+  amount: z.number()
+    .int("Le montant doit être un nombre entier")
+    .min(0, "Le montant ne peut pas être négatif"),
+  occasion: z.string()
+    .min(3, "L'occasion doit contenir au moins 3 caractères")
+    .max(200, "L'occasion ne peut pas dépasser 200 caractères")
+    .transform(sanitizeText),
+  recordedBy: z.string()
+    .email("Email de l'administrateur invalide")
+    .transform(sanitizeText),
+});
+
+export const insertIdeaPatronProposalSchema = createInsertSchema(ideaPatronProposals).pick({
+  ideaId: true,
+  patronId: true,
+  proposedByAdminEmail: true,
+  status: true,
+  comments: true,
+}).extend({
+  ideaId: z.string()
+    .uuid("L'identifiant de l'idée n'est pas valide")
+    .transform(sanitizeText),
+  patronId: z.string()
+    .uuid("L'identifiant du mécène n'est pas valide")
+    .transform(sanitizeText),
+  proposedByAdminEmail: z.string()
+    .email("Email de l'administrateur invalide")
+    .transform(sanitizeText),
+  status: z.enum(["proposed", "contacted", "declined", "converted"]).default("proposed"),
+  comments: z.string()
+    .max(1000, "Les commentaires ne peuvent pas dépasser 1000 caractères")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+});
+
+export const updatePatronSchema = z.object({
+  firstName: z.string()
+    .min(2, "Le prénom doit contenir au moins 2 caractères")
+    .max(100, "Le prénom ne peut pas dépasser 100 caractères")
+    .transform(sanitizeText)
+    .optional(),
+  lastName: z.string()
+    .min(2, "Le nom doit contenir au moins 2 caractères")
+    .max(100, "Le nom ne peut pas dépasser 100 caractères")
+    .transform(sanitizeText)
+    .optional(),
+  role: z.string()
+    .max(100, "La fonction ne peut pas dépasser 100 caractères")
+    .transform(val => sanitizeText(val))
+    .optional(),
+  company: z.string()
+    .max(200, "Le nom de la société ne peut pas dépasser 200 caractères")
+    .transform(val => sanitizeText(val))
+    .optional(),
+  phone: z.string()
+    .max(20, "Le numéro de téléphone ne peut pas dépasser 20 caractères")
+    .transform(val => sanitizeText(val))
+    .optional(),
+  email: z.string()
+    .email("Adresse email invalide")
+    .transform(sanitizeText)
+    .optional(),
+  notes: z.string()
+    .max(2000, "Les notes ne peuvent pas dépasser 2000 caractères")
+    .transform(val => sanitizeText(val))
+    .optional(),
+});
+
+export const updateIdeaPatronProposalSchema = z.object({
+  status: z.enum(["proposed", "contacted", "declined", "converted"]).optional(),
+  comments: z.string()
+    .max(1000, "Les commentaires ne peuvent pas dépasser 1000 caractères")
+    .transform(val => sanitizeText(val))
+    .optional(),
+});
+
 // Types
 export type Admin = typeof admins.$inferSelect;
 export type InsertAdmin = z.infer<typeof insertAdminSchema>;
@@ -485,6 +689,15 @@ export type InsertUnsubscription = z.infer<typeof insertUnsubscriptionSchema>;
 
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
+
+export type Patron = typeof patrons.$inferSelect;
+export type InsertPatron = z.infer<typeof insertPatronSchema>;
+
+export type PatronDonation = typeof patronDonations.$inferSelect;
+export type InsertPatronDonation = z.infer<typeof insertPatronDonationSchema>;
+
+export type IdeaPatronProposal = typeof ideaPatronProposals.$inferSelect;
+export type InsertIdeaPatronProposal = z.infer<typeof insertIdeaPatronProposalSchema>;
 
 // For compatibility with existing auth system
 export const users = admins;
