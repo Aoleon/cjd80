@@ -3,6 +3,45 @@
 ## Overview
 This project is an internal web application for the "Centre des Jeunes Dirigeants (CJD) d'Amiens". Its primary purpose is to facilitate collaborative idea sharing ("Boîte à Kiffs"), enable voting on proposals, and manage events with HelloAsso integration. The application serves internal CJD Amiens members (business leaders, entrepreneurs). The project involves migrating from an existing Firestore-based system to a modern, responsive, and optimized architecture, aiming for high performance and a user-friendly interface.
 
+## Recent Changes (October 2025)
+### CRM System for Patron Management
+Extended the platform with a complete CRM (Customer Relationship Management) system to track and manage potential patrons/donors for the organization:
+
+**Database Schema** (3 new tables):
+- `patrons`: Store patron information (firstName, lastName, email, company, phone, role, notes)
+- `patron_donations`: Track donation history with amounts in cents, dates (YYYY-MM-DD format), and occasions
+- `idea_patron_proposals`: Link ideas with potential patron sponsors, track proposal status (proposed, contacted, declined, converted)
+
+**Backend API** (16 secure routes):
+- Patron CRUD: GET/POST/PATCH/DELETE `/api/patrons`, GET `/api/patrons/:id`
+- Donations: GET/POST `/api/patrons/:id/donations`
+- Proposals: GET `/api/patrons/:id/proposals`, PATCH `/api/proposals/:id`
+- All routes protected with `requirePermission('admin.manage')` (super-admin only)
+
+**Frontend Features**:
+- `/admin/patrons`: Dedicated CRM page with responsive list/detail layout
+- Search functionality with local filtering
+- Tabs for patron details, donation history, and proposal timeline
+- Quick patron creation dialog accessible from idea proposal form
+- Euro formatting for amounts (automatic conversion from cents)
+- French date formatting (dd/MM/yyyy)
+- Status badges with colors (proposed=orange, contacted=blue, declined=red, converted=green)
+
+**Integration**:
+- Patron selector added to idea proposal form (`/propose`) with autocomplete and quick creation
+- Admin navigation updated: "Mécènes" link visible only for super-admin role
+- TanStack Query integration with proper cache invalidation
+- Full TypeScript coverage with Zod validation schemas
+
+**Bug Fixes**:
+- Fixed date validation: `donatedAt` now accepts YYYY-MM-DD format (was expecting datetime)
+- Corrected TanStack Query keys to use complete URLs for proper cache management
+- Added permission guards on all queries to prevent unauthorized API calls
+
+**Testing**:
+- E2E test suite covering full CRM workflow: patron creation, donation tracking, idea-patron linking, status updates
+- All tests passing with expected UI/UX behavior
+
 ## User Preferences
 ### Primary Communication Rule
 **🎯 CRITICAL**: Les remarques de l'utilisateur concernent **TOUJOURS** ce qu'il voit dans l'interface utilisateur (UI/frontend), sauf indication contraire explicite. Interpréter systématiquement depuis la perspective visuelle de l'utilisateur.
