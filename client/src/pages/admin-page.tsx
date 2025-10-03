@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import AdminSection from "@/components/admin-section";
 import AdminLogin from "@/components/admin-login";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, Shield, Menu, X, Home, Lightbulb, Calendar, Plus } from "lucide-react";
+import { Loader2, Shield, Menu, X, Home, Lightbulb, Calendar, Plus, Users } from "lucide-react";
 import cjdLogo from "@assets/logo-cjd-social_1756108273665.jpg";
 
 export default function AdminPage() {
@@ -13,12 +13,17 @@ export default function AdminPage() {
   const [, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const menuItems = [
+  const baseMenuItems = [
     { id: "home", label: "Accueil", icon: Home, path: "/" },
     { id: "ideas", label: "Voter pour des idées", icon: Lightbulb, path: "/" },
     { id: "propose", label: "Proposer une idée", icon: Plus, path: "/propose" },
     { id: "events", label: "Événements", icon: Calendar, path: "/" },
   ];
+
+  // Ajouter le lien Mécènes uniquement pour les super-admins
+  const menuItems = user?.role === "super_admin" 
+    ? [...baseMenuItems, { id: "patrons", label: "Mécènes", icon: Users, path: "/admin/patrons" }]
+    : baseMenuItems;
 
   const handleNavigation = (path: string) => {
     setLocation(path);
