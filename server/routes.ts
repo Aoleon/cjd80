@@ -183,8 +183,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'idea',
         result.data.id,
         result.data.title,
-        undefined, // company field not in schema
-        undefined  // phone field not in schema
+        validatedData.company,
+        validatedData.phone
       );
       
       // Envoyer notifications pour nouvelle idée
@@ -430,8 +430,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'event',
         result.data.id,
         eventTitle,
-        undefined, // company field not in schema
-        undefined  // phone field not in schema
+        validatedData.company,
+        validatedData.phone
       );
       
       res.status(201).json(result.data);

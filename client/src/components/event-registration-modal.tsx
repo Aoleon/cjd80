@@ -30,6 +30,8 @@ export default function EventRegistrationModal({
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    company: "",
+    phone: "",
     comments: "",
   });
   const [rememberMe, setRememberMe] = useState(true);
@@ -37,7 +39,7 @@ export default function EventRegistrationModal({
 
   useEffect(() => {
     if (!open) {
-      setFormData({ name: "", email: "", comments: "" });
+      setFormData({ name: "", email: "", company: "", phone: "", comments: "" });
     } else {
       // When opening modal, try to prefill from stored identity
       const storedIdentity = getIdentity();
@@ -191,6 +193,8 @@ export default function EventRegistrationModal({
         eventId: event.id,
         name: formData.name.trim(),
         email: formData.email.trim(),
+        company: formData.company.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
         comments: formData.comments.trim() || undefined,
       };
 
@@ -370,10 +374,45 @@ export default function EventRegistrationModal({
                   required
                   className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green h-10 sm:h-11"
                   maxLength={100}
+                  data-testid="input-participant-email"
                 />
                 <p className="text-xs text-gray-500">
                   Pour recevoir les informations et confirmations de l'événement
                 </p>
+              </div>
+
+              {/* Company Field */}
+              <div className="space-y-2">
+                <Label htmlFor="participant-company" className="text-sm sm:text-base font-medium text-gray-700">
+                  Société (optionnel)
+                </Label>
+                <Input
+                  id="participant-company"
+                  type="text"
+                  value={formData.company}
+                  onChange={(e) => handleInputChange("company", e.target.value)}
+                  placeholder="Votre société"
+                  className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green h-10 sm:h-11"
+                  maxLength={100}
+                  data-testid="input-company-event"
+                />
+              </div>
+
+              {/* Phone Field */}
+              <div className="space-y-2">
+                <Label htmlFor="participant-phone" className="text-sm sm:text-base font-medium text-gray-700">
+                  Téléphone (optionnel)
+                </Label>
+                <Input
+                  id="participant-phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
+                  placeholder="06 12 34 56 78"
+                  className="text-sm sm:text-base focus:ring-cjd-green focus:border-cjd-green h-10 sm:h-11"
+                  maxLength={20}
+                  data-testid="input-phone-event"
+                />
               </div>
 
               {/* Comments Field (Optional) */}

@@ -118,6 +118,8 @@ export const inscriptions = pgTable("inscriptions", {
   eventId: varchar("event_id").references(() => events.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   email: text("email").notNull(),
+  company: text("company"), // Société (optionnel)
+  phone: text("phone"), // Téléphone (optionnel)
   comments: text("comments"), // Commentaires lors de l'inscription (accompagnants, régime alimentaire, etc.)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
@@ -553,6 +555,8 @@ export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({
   eventId: true,
   name: true,
   email: true,
+  company: true,
+  phone: true,
   comments: true,
 }).extend({
   eventId: z.string()

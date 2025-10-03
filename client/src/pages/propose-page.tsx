@@ -61,6 +61,7 @@ export default function ProposePage() {
       description: "",
       proposedBy: "",
       proposedByEmail: "",
+      company: "",
       deadline: undefined,
     },
   });
@@ -319,6 +320,28 @@ export default function ProposePage() {
                     <FormDescription>
                       Pour vous contacter en cas de suivi de l'idée
                     </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Company Field */}
+              <FormField
+                control={form.control}
+                name="company"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base font-medium">
+                      Société (optionnel)
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Votre société"
+                        className="text-base"
+                        data-testid="input-company"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

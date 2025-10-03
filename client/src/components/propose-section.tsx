@@ -18,6 +18,7 @@ export default function ProposeSection() {
     description: "",
     proposedBy: "",
     proposedByEmail: "",
+    company: "",
   });
 
   const createIdeaMutation = useMutation({
@@ -27,7 +28,7 @@ export default function ProposeSection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/ideas"] });
-      setFormData({ title: "", description: "", proposedBy: "", proposedByEmail: "" });
+      setFormData({ title: "", description: "", proposedBy: "", proposedByEmail: "", company: "" });
       toast({
         title: "Idée soumise avec succès !",
         description: "Votre idée a été ajoutée à la boîte à kiffs",
@@ -142,6 +143,20 @@ export default function ProposeSection() {
                     className="h-11 text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-cjd-green/20 focus:border-cjd-green transition-all duration-200 hover:border-gray-300 bg-white"
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="proposer-company" className="text-base font-medium text-gray-700">
+                  Société (optionnel)
+                </Label>
+                <Input
+                  id="proposer-company"
+                  type="text"
+                  value={formData.company}
+                  onChange={(e) => handleInputChange("company", e.target.value)}
+                  placeholder="Votre société"
+                  className="h-11 text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-cjd-green/20 focus:border-cjd-green transition-all duration-200 hover:border-gray-300 bg-white"
+                  data-testid="input-company-homepage"
+                />
               </div>
               <p className="text-sm text-gray-600">
                 Ces informations resteront privées et ne seront utilisées que pour vous contacter si nécessaire.
