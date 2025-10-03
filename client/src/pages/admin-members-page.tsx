@@ -90,6 +90,9 @@ export default function AdminMembersPage() {
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddSubscriptionDialog, setShowAddSubscriptionDialog] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'proposed'>('all');
+  const [scoreFilter, setScoreFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const [activityFilter, setActivityFilter] = useState<'all' | 'recent' | 'inactive'>('all');
 
   const hasViewPermission = user && hasPermission(user.role, 'admin.view');
 
@@ -114,16 +117,55 @@ export default function AdminMembersPage() {
   });
 
   const filteredMembers = useMemo(() => {
-    if (!searchQuery.trim()) return members;
-    const query = searchQuery.toLowerCase();
-    return members.filter(
-      (member) =>
-        member.firstName.toLowerCase().includes(query) ||
-        member.lastName.toLowerCase().includes(query) ||
-        member.email.toLowerCase().includes(query) ||
-        member.company?.toLowerCase().includes(query)
-    );
-  }, [members, searchQuery]);
+    let result = members;
+
+    // Filtre de recherche textuelle
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (member) =>
+          member.firstName.toLowerCase().includes(query) ||
+          member.lastName.toLowerCase().includes(query) ||
+          member.email.toLowerCase().includes(query) ||
+          member.company?.toLowerCase().includes(query)
+      );
+    }
+
+    // Filtre par statut
+    if (statusFilter !== 'all') {
+      result = result.filter((member) => member.status === statusFilter);
+    }
+
+    // Filtre par score d'engagement
+    if (scoreFilter !== 'all') {
+      result = result.filter((member) => {
+        if (scoreFilter === 'high') return member.engagementScore >= 50;
+        if (scoreFilter === 'medium') return member.engagementScore >= 10 && member.engagementScore < 50;
+        if (scoreFilter === 'low') return member.engagementScore < 10;
+        return true;
+      });
+    }
+
+    // Filtre par activité récente
+    if (activityFilter !== 'all') {
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      
+      result = result.filter((member) => {
+        if (!member.lastActivityAt) return activityFilter === 'inactive';
+        const lastActivity = new Date(member.lastActivityAt);
+        
+        if (activityFilter === 'recent') {
+          return lastActivity >= thirtyDaysAgo;
+        } else if (activityFilter === 'inactive') {
+          return lastActivity < thirtyDaysAgo;
+        }
+        return true;
+      });
+    }
+
+    return result;
+  }, [members, searchQuery, statusFilter, scoreFilter, activityFilter]);
 
   const sortedMembers = useMemo(() => {
     return [...filteredMembers].sort((a, b) => b.engagementScore - a.engagementScore);
@@ -374,6 +416,121 @@ export default function AdminMembersPage() {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Section des filtres */}
+                <div className="flex flex-wrap gap-3 mb-4">
+                  {/* Filtre Statut */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Statut:</span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant={statusFilter === 'all' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setStatusFilter('all')}
+                        data-testid="filter-status-all"
+                      >
+                        Tous
+                      </Button>
+                      <Button
+                        variant={statusFilter === 'active' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setStatusFilter('active')}
+                        data-testid="filter-status-active"
+                      >
+                        Actifs
+                      </Button>
+                      <Button
+                        variant={statusFilter === 'proposed' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setStatusFilter('proposed')}
+                        data-testid="filter-status-proposed"
+                      >
+                        Propositions
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Separator orientation="vertical" className="h-8" />
+
+                  {/* Filtre Score d'engagement */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Score:</span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant={scoreFilter === 'all' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setScoreFilter('all')}
+                        data-testid="filter-score-all"
+                      >
+                        Tous
+                      </Button>
+                      <Button
+                        variant={scoreFilter === 'high' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setScoreFilter('high')}
+                        data-testid="filter-score-high"
+                      >
+                        Élevé (≥50)
+                      </Button>
+                      <Button
+                        variant={scoreFilter === 'medium' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setScoreFilter('medium')}
+                        data-testid="filter-score-medium"
+                      >
+                        Moyen (10-49)
+                      </Button>
+                      <Button
+                        variant={scoreFilter === 'low' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setScoreFilter('low')}
+                        data-testid="filter-score-low"
+                      >
+                        {"Faible (<10)"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Separator orientation="vertical" className="h-8" />
+
+                  {/* Filtre Activité */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Activité:</span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant={activityFilter === 'all' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setActivityFilter('all')}
+                        data-testid="filter-activity-all"
+                      >
+                        Tous
+                      </Button>
+                      <Button
+                        variant={activityFilter === 'recent' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setActivityFilter('recent')}
+                        data-testid="filter-activity-recent"
+                      >
+                        Actifs (30j)
+                      </Button>
+                      <Button
+                        variant={activityFilter === 'inactive' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setActivityFilter('inactive')}
+                        data-testid="filter-activity-inactive"
+                      >
+                        Inactifs
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Compteur de résultats */}
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  {sortedMembers.length} membre{sortedMembers.length > 1 ? 's' : ''} affiché{sortedMembers.length > 1 ? 's' : ''}
+                  {(statusFilter !== 'all' || scoreFilter !== 'all' || activityFilter !== 'all' || searchQuery) && 
+                    ` sur ${members.length} au total`}
+                </div>
+
                 <ScrollArea className="h-[600px]">
                   {sortedMembers.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
