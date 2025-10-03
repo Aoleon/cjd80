@@ -120,6 +120,51 @@ Added optional subscription management to track member contributions and payment
 **Bug Fixes**:
 - Fixed TypeScript errors in routes.ts: replaced `result.error.code === "DUPLICATE"` with `result.error instanceof DuplicateError` for proper type safety (lines 1297, 1749)
 
+### Admin Dashboard
+Added a comprehensive dashboard as the default landing page for administrators to get a quick overview of platform activity:
+
+**Database Schema** (no new tables):
+- Leverages existing tables: `members`, `patrons`, `ideas`, `events`
+
+**Backend API** (1 new route):
+- GET `/api/admin/stats`: Retrieve aggregated platform statistics
+- All routes protected with `requirePermission('admin.view')` (accessible to all admin roles)
+- **Performance Optimized**: Uses SQL COUNT queries with WHERE filters instead of loading entire tables
+- 12 optimized COUNT queries for: members (total, active, proposed, recent), patrons (total, active, proposed), ideas (total, pending, approved), events (total, upcoming)
+
+**Frontend Features**:
+- `/admin` (default tab): Dashboard with 4 statistics cards + quick actions section
+- **Statistics Cards**:
+  - Membres: total count, active, proposed, recent activity (30 days) - clickable to `/admin/members`
+  - Mécènes: total count, active, proposed - clickable to `/admin/patrons` (super_admin only)
+  - Idées: total count, pending, approved
+  - Événements: total count, upcoming events
+- **Quick Actions Section**:
+  - "Propositions en attente" button with badge (members + patrons pending count)
+  - "Nouvelles souscriptions" button linking to Members CRM
+  - "Idées en attente" button with badge (pending ideas count)
+- **UX Features**:
+  - Responsive design: 1 col mobile, 2 cols tablet, 4 cols desktop
+  - Hover effects on clickable cards
+  - Loading state with spinner
+  - Error state with retry button
+  - Dark mode support
+  - Modern design with icons (UserCircle, Users, Lightbulb, Calendar, TrendingUp)
+
+**Performance**:
+- Backend uses targeted SQL COUNT queries to avoid memory overload
+- Scalable for production with large datasets
+- No in-memory filtering - all calculations done at database level
+
+**Error Handling**:
+- Graceful error display with AlertCircle icon
+- Retry button to invalidate cache and refetch
+- Toast notifications for user feedback
+
+**Bug Fixes**:
+- Harmonized `EventWithInscriptions` type across admin-section.tsx and event-detail-modal.tsx
+- Added missing `unsubscriptionCount` property to prevent TypeScript errors
+
 ## User Preferences
 ### Primary Communication Rule
 **🎯 CRITICAL**: Les remarques de l'utilisateur concernent **TOUJOURS** ce qu'il voit dans l'interface utilisateur (UI/frontend), sauf indication contraire explicite. Interpréter systématiquement depuis la perspective visuelle de l'utilisateur.
