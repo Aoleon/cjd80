@@ -892,6 +892,9 @@ export const hasPermission = (userRole: string, permission: string): boolean => 
     case 'events.delete':
     case 'events.manage':
       return userRole === ADMIN_ROLES.EVENTS_MANAGER;
+    case 'admin.view':
+      // Tous les admins peuvent voir les membres
+      return true;
     case 'admin.manage':
       return userRole === ADMIN_ROLES.SUPER_ADMIN;
     default:
