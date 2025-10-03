@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
-import { insertIdeaSchema, insertPatronSchema, type InsertIdea, type InsertPatron, type Patron } from "@shared/schema";
+import { insertIdeaSchema, insertPatronSchema, proposeMemberSchema, type InsertIdea, type InsertPatron, type Patron } from "@shared/schema";
 
 // Form schema with client-side validation matching server schema
 const proposeIdeaFormSchema = insertIdeaSchema.extend({
@@ -44,11 +44,28 @@ type PatronForm = {
   role?: string;
 };
 
+// Form schema for member proposal with required fields
+const proposeMembreFormSchema = proposeMemberSchema.omit({ proposedBy: true });
+
+type ProposeMemberForm = {
+  email: string;
+  firstName: string;
+  lastName: string;
+  company?: string;
+  phone?: string;
+  role?: string;
+  notes?: string;
+};
+
 export default function ProposePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  
+  // Proposal type state
+  type ProposalType = 'idea' | 'patron' | 'member';
+  const [proposalType, setProposalType] = useState<ProposalType>('idea');
   
   // Patron-related state
   const [selectedPatronId, setSelectedPatronId] = useState<string | null>(null);
@@ -202,7 +219,11 @@ export default function ProposePage() {
             <Lightbulb className="h-8 w-8 text-cjd-green" />
           </div>
         </div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Proposer une idée</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          {proposalType === 'idea' && 'Proposer une idée'}
+          {proposalType === 'patron' && 'Proposer un mécène'}
+          {proposalType === 'member' && 'Proposer un membre'}
+        </h1>
         <p className="text-gray-600 max-w-lg mx-auto">
           Partagez vos idées avec la section CJD Amiens. Votre proposition sera immédiatement visible 
           et pourra recevoir les votes des autres membres.
@@ -223,6 +244,55 @@ export default function ProposePage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Proposal Type Selector */}
+              <FormItem>
+                <FormLabel className="text-base font-medium">
+                  Type de proposition *
+                </FormLabel>
+                <Select 
+                  value={proposalType} 
+                  onValueChange={(value) => setProposalType(value as ProposalType)}
+                >
+                  <SelectTrigger data-testid="select-proposal-type">
+                    <SelectValue placeholder="Choisissez le type de proposition" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="idea" data-testid="option-proposal-idea">
+                      <Lightbulb className="inline h-4 w-4 mr-2" />
+                      Idée
+                    </SelectItem>
+                    <SelectItem value="patron" data-testid="option-proposal-patron">
+                      <UserPlus className="inline h-4 w-4 mr-2" />
+                      Mécène potentiel
+                    </SelectItem>
+                    <SelectItem value="member" data-testid="option-proposal-member">
+                      <UserPlus className="inline h-4 w-4 mr-2" />
+                      Membre potentiel
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  Sélectionnez ce que vous souhaitez proposer
+                </FormDescription>
+              </FormItem>
+
+              {/* Conditional Messages */}
+              {proposalType === 'idea' && (
+                <p className="text-sm text-gray-600 p-3 bg-blue-50 rounded">
+                  Vous allez proposer une nouvelle idée à la communauté CJD Amiens
+                </p>
+              )}
+              {proposalType === 'patron' && (
+                <p className="text-sm text-gray-600 p-3 bg-purple-50 rounded">
+                  Vous allez suggérer un mécène potentiel pour soutenir les projets
+                </p>
+              )}
+              {proposalType === 'member' && (
+                <p className="text-sm text-gray-600 p-3 bg-green-50 rounded">
+                  Vous allez proposer un nouveau membre pour rejoindre le CJD Amiens
+                </p>
+              )}
+
               {/* Title Field */}
               <FormField
                 control={form.control}
