@@ -436,6 +436,14 @@ export const insertIdeaSchema = createInsertSchema(ideas).pick({
   proposedByEmail: z.string()
     .email("Adresse email invalide. Veuillez saisir une adresse email valide (ex: nom@domaine.fr)")
     .transform(sanitizeText),
+  company: z.string()
+    .max(100, "Le nom de la société est trop long (maximum 100 caractères)")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  phone: z.string()
+    .max(20, "Le numéro de téléphone est trop long (maximum 20 caractères)")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
   deadline: z.string().datetime().optional(),
 });
 
@@ -558,6 +566,14 @@ export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({
     .email("Adresse email invalide. Veuillez saisir une adresse email valide (ex: nom@domaine.fr)")
     .refine(isValidDomain, "Le domaine de votre adresse email n'est pas autorisé")
     .transform(sanitizeText),
+  company: z.string()
+    .max(100, "Le nom de la société est trop long (maximum 100 caractères)")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  phone: z.string()
+    .max(20, "Le numéro de téléphone est trop long (maximum 20 caractères)")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
   comments: z.string()
     .max(500, "Vos commentaires sont trop longs (maximum 500 caractères). Raccourcissez votre message.")
     .optional()
