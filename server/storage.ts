@@ -6,6 +6,9 @@ import {
   inscriptions,
   unsubscriptions,
   developmentRequests,
+  patrons,
+  patronDonations,
+  ideaPatronProposals,
   type Admin, 
   type InsertAdmin,
   type User,
@@ -22,14 +25,23 @@ import {
   type InsertUnsubscription,
   type DevelopmentRequest,
   type InsertDevelopmentRequest,
+  type Patron,
+  type InsertPatron,
+  type PatronDonation,
+  type InsertPatronDonation,
+  type IdeaPatronProposal,
+  type InsertIdeaPatronProposal,
   type Result,
   ValidationError,
   DuplicateError,
   DatabaseError,
   NotFoundError,
   IDEA_STATUS,
-  EVENT_STATUS
+  EVENT_STATUS,
+  updatePatronSchema,
+  updateIdeaPatronProposalSchema
 } from "@shared/schema";
+import { z } from "zod";
 import { db } from "./db";
 import { eq, desc, and, count, sql, or } from "drizzle-orm";
 import session from "express-session";
@@ -110,6 +122,28 @@ export interface IStorage {
   updateDevelopmentRequestStatus(id: string, status: string, adminComment: string | undefined, updatedBy: string): Promise<Result<DevelopmentRequest>>;
   deleteDevelopmentRequest(id: string): Promise<Result<void>>;
   syncDevelopmentRequestWithGithub(id: string, githubData: { issueNumber: number; issueUrl: string; status: string }): Promise<Result<DevelopmentRequest>>;
+  
+  // Gestion des mécènes
+  createPatron(patron: InsertPatron): Promise<Result<Patron>>;
+  getPatrons(): Promise<Result<Patron[]>>;
+  getPatronById(id: string): Promise<Result<Patron | null>>;
+  getPatronByEmail(email: string): Promise<Result<Patron | null>>;
+  updatePatron(id: string, data: z.infer<typeof updatePatronSchema>): Promise<Result<Patron>>;
+  deletePatron(id: string): Promise<Result<void>>;
+  
+  // Gestion des dons
+  createPatronDonation(donation: InsertPatronDonation): Promise<Result<PatronDonation>>;
+  getPatronDonations(patronId: string): Promise<Result<PatronDonation[]>>;
+  getAllDonations(): Promise<Result<PatronDonation[]>>;
+  updatePatronDonation(id: string, data: Partial<InsertPatronDonation>): Promise<Result<PatronDonation>>;
+  deletePatronDonation(id: string): Promise<Result<void>>;
+  
+  // Gestion des propositions mécène-idée
+  createIdeaPatronProposal(proposal: InsertIdeaPatronProposal): Promise<Result<IdeaPatronProposal>>;
+  getIdeaPatronProposals(ideaId: string): Promise<Result<IdeaPatronProposal[]>>;
+  getPatronProposals(patronId: string): Promise<Result<IdeaPatronProposal[]>>;
+  updateIdeaPatronProposal(id: string, data: z.infer<typeof updateIdeaPatronProposalSchema>): Promise<Result<IdeaPatronProposal>>;
+  deleteIdeaPatronProposal(id: string): Promise<Result<void>>;
 }
 
 export class DatabaseStorage implements IStorage {
