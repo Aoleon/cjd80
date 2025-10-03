@@ -239,6 +239,8 @@ export const members = pgTable("members", {
   phone: text("phone"),
   role: text("role"),
   notes: text("notes"),
+  status: text("status").default("active").notNull(),
+  proposedBy: text("proposed_by"),
   engagementScore: integer("engagement_score").default(0).notNull(),
   firstSeenAt: timestamp("first_seen_at").notNull(),
   lastActivityAt: timestamp("last_activity_at").notNull(),
@@ -249,6 +251,7 @@ export const members = pgTable("members", {
   emailIdx: index("members_email_idx").on(table.email),
   lastActivityAtIdx: index("members_last_activity_at_idx").on(table.lastActivityAt.desc()),
   engagementScoreIdx: index("members_engagement_score_idx").on(table.engagementScore.desc()),
+  statusIdx: index("members_status_idx").on(table.status),
 }));
 
 // Member activities table - Journal d'activité des membres
@@ -747,6 +750,8 @@ export const insertMemberSchema = createInsertSchema(members).pick({
   phone: true,
   role: true,
   notes: true,
+  status: true,
+  proposedBy: true,
 }).extend({
   email: z.string().email().transform(sanitizeText),
   firstName: z.string().min(2).max(100).transform(sanitizeText),
@@ -755,6 +760,8 @@ export const insertMemberSchema = createInsertSchema(members).pick({
   phone: z.string().max(20).optional().transform(val => val ? sanitizeText(val) : undefined),
   role: z.string().max(100).optional().transform(val => val ? sanitizeText(val) : undefined),
   notes: z.string().max(2000).optional().transform(val => val ? sanitizeText(val) : undefined),
+  status: z.enum(['active', 'proposed']).default('active'),
+  proposedBy: z.string().email().optional().transform(val => val ? sanitizeText(val) : undefined),
 });
 
 export const insertMemberActivitySchema = createInsertSchema(memberActivities).pick({
