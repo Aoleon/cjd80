@@ -590,7 +590,9 @@ export const insertPatronDonationSchema = createInsertSchema(patronDonations).pi
   patronId: z.string()
     .uuid("L'identifiant du mécène n'est pas valide")
     .transform(sanitizeText),
-  donatedAt: z.string().datetime("La date du don n'est pas valide"),
+  donatedAt: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "La date doit être au format YYYY-MM-DD")
+    .transform((val) => new Date(val + 'T00:00:00.000Z')),
   amount: z.number()
     .int("Le montant doit être un nombre entier")
     .min(0, "Le montant ne peut pas être négatif"),
