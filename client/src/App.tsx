@@ -11,6 +11,7 @@ import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import ProposePage from "@/pages/propose-page";
 import AdminPage from "@/pages/admin-page";
+import AdminPatronsPage from "@/pages/admin-patrons-page";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 import { PWAUtils } from "@/lib/pwa-utils";
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/propose" component={ProposePage} />
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/admin" component={AdminPage} />
+      <ProtectedRoute path="/admin/patrons" component={AdminPatronsPage} />
       <Route component={NotFound} />
     </Switch>
   );
