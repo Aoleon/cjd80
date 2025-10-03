@@ -29,8 +29,10 @@ import {
   insertIdeaPatronProposalSchema,
   updateIdeaPatronProposalSchema,
   proposeMemberSchema,
+  insertMemberSubscriptionSchema,
   hasPermission,
-  ADMIN_ROLES
+  ADMIN_ROLES,
+  DuplicateError
 } from "@shared/schema";
 import { ZodError, z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -1293,7 +1295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (!result.success) {
-        if (result.error.code === "DUPLICATE") {
+        if (result.error instanceof DuplicateError) {
           return res.status(409).json({ message: result.error.message });
         }
         return res.status(400).json({ message: result.error.message });
@@ -1663,6 +1665,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/admin/members/:email/subscriptions - Récupérer les souscriptions d'un membre
+  app.get("/api/admin/members/:email/subscriptions", requirePermission('admin.view'), async (req, res) => {
+    try {
+      const { email } = req.params;
+      const subscriptions = await storage.getSubscriptionsByMember(email);
+      res.json({ success: true, data: subscriptions });
+    } catch (error) {
+      console.error("Error fetching member subscriptions:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Erreur lors de la récupération des souscriptions" 
+      });
+    }
+  });
+
+  // POST /api/admin/members/:email/subscriptions - Créer une souscription
+  app.post("/api/admin/members/:email/subscriptions", requirePermission('admin.view'), async (req, res) => {
+    try {
+      const { email } = req.params;
+      
+      // Validation avec Zod
+      const validatedData = insertMemberSubscriptionSchema.parse({
+        ...req.body,
+        memberEmail: email,
+      });
+      
+      const subscription = await storage.createSubscription(validatedData);
+      res.status(201).json({ success: true, data: subscription });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          error: "Données invalides", 
+          details: error.errors 
+        });
+        return;
+      }
+      console.error("Error creating subscription:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Erreur lors de la création de la souscription" 
+      });
+    }
+  });
+
   // Mettre à jour les informations d'un membre
   app.patch("/api/admin/members/:email", requirePermission('admin.view'), async (req, res, next) => {
     try {
@@ -1700,7 +1747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (!result.success) {
-        if (result.error.code === "DUPLICATE") {
+        if (result.error instanceof DuplicateError) {
           return res.status(409).json({ message: result.error.message });
         }
         return res.status(400).json({ message: result.error.message });

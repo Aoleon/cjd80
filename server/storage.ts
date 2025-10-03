@@ -11,6 +11,7 @@ import {
   ideaPatronProposals,
   members,
   memberActivities,
+  memberSubscriptions,
   type Admin, 
   type InsertAdmin,
   type User,
@@ -37,6 +38,8 @@ import {
   type InsertMember,
   type MemberActivity,
   type InsertMemberActivity,
+  type MemberSubscription,
+  type InsertMemberSubscription,
   type Result,
   ValidationError,
   DuplicateError,
@@ -165,6 +168,10 @@ export interface IStorage {
   trackMemberActivity(activity: InsertMemberActivity): Promise<Result<MemberActivity>>;
   getMemberActivities(memberEmail: string): Promise<Result<MemberActivity[]>>;
   getAllActivities(): Promise<Result<MemberActivity[]>>;
+  
+  // Member Subscriptions
+  getSubscriptionsByMember(memberEmail: string): Promise<MemberSubscription[]>;
+  createSubscription(subscription: InsertMemberSubscription): Promise<MemberSubscription>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1965,6 +1972,20 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération de toutes les activités: ${error}`) };
     }
+  }
+
+  async getSubscriptionsByMember(memberEmail: string): Promise<MemberSubscription[]> {
+    return await db.query.memberSubscriptions.findMany({
+      where: eq(memberSubscriptions.memberEmail, memberEmail),
+      orderBy: [desc(memberSubscriptions.startDate)],
+    });
+  }
+
+  async createSubscription(subscription: InsertMemberSubscription): Promise<MemberSubscription> {
+    const [created] = await db.insert(memberSubscriptions)
+      .values(subscription)
+      .returning();
+    return created;
   }
 
   // Ultra-robust Stats method with Result pattern
