@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, boolean, unique, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, boolean, unique, index, serial, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -272,6 +272,19 @@ export const memberActivities = pgTable("member_activities", {
   activityTypeIdx: index("member_activities_activity_type_idx").on(table.activityType),
 }));
 
+// Member subscriptions table - Historique des souscriptions des membres
+export const memberSubscriptions = pgTable("member_subscriptions", {
+  id: serial("id").primaryKey(),
+  memberEmail: varchar("member_email", { length: 255 }).notNull().references(() => members.email),
+  amountInCents: integer("amount_in_cents").notNull(), // Stocké en centimes comme pour les donations
+  startDate: date("start_date").notNull(), // Format YYYY-MM-DD
+  endDate: date("end_date").notNull(), // Format YYYY-MM-DD
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  memberEmailIdx: index("member_subscriptions_member_email_idx").on(table.memberEmail),
+  startDateIdx: index("member_subscriptions_start_date_idx").on(table.startDate.desc()),
+}));
+
 // Relations
 export const ideasRelations = relations(ideas, ({ many }) => ({
   votes: many(votes),
@@ -329,11 +342,19 @@ export const ideaPatronProposalsRelations = relations(ideaPatronProposals, ({ on
 
 export const membersRelations = relations(members, ({ many }) => ({
   activities: many(memberActivities),
+  subscriptions: many(memberSubscriptions),
 }));
 
 export const memberActivitiesRelations = relations(memberActivities, ({ one }) => ({
   member: one(members, {
     fields: [memberActivities.memberEmail],
+    references: [members.email],
+  }),
+}));
+
+export const memberSubscriptionsRelations = relations(memberSubscriptions, ({ one }) => ({
+  member: one(members, {
+    fields: [memberSubscriptions.memberEmail],
     references: [members.email],
   }),
 }));
@@ -1004,6 +1025,15 @@ export const updateDevelopmentRequestStatusSchema = z.object({
 // Type definitions
 export type DevelopmentRequest = typeof developmentRequests.$inferSelect;
 export type InsertDevelopmentRequest = z.infer<typeof insertDevelopmentRequestSchema>;
+
+// Member subscriptions schemas
+export const insertMemberSubscriptionSchema = createInsertSchema(memberSubscriptions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertMemberSubscription = z.infer<typeof insertMemberSubscriptionSchema>;
+export type MemberSubscription = typeof memberSubscriptions.$inferSelect;
 
 // Legacy compatibility
 export type AdminUser = Admin;
