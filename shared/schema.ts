@@ -227,6 +227,45 @@ export const ideaPatronProposals = pgTable("idea_patron_proposals", {
   statusIdx: index("idea_patron_proposals_status_idx").on(table.status),
 }));
 
+// Members table - CRM pour la gestion des membres
+export const members = pgTable("members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  company: text("company"),
+  phone: text("phone"),
+  role: text("role"),
+  notes: text("notes"),
+  engagementScore: integer("engagement_score").default(0).notNull(),
+  firstSeenAt: timestamp("first_seen_at").notNull(),
+  lastActivityAt: timestamp("last_activity_at").notNull(),
+  activityCount: integer("activity_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  emailIdx: index("members_email_idx").on(table.email),
+  lastActivityAtIdx: index("members_last_activity_at_idx").on(table.lastActivityAt.desc()),
+  engagementScoreIdx: index("members_engagement_score_idx").on(table.engagementScore.desc()),
+}));
+
+// Member activities table - Journal d'activité des membres
+export const memberActivities = pgTable("member_activities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  memberEmail: text("member_email").references(() => members.email, { onDelete: "cascade" }).notNull(),
+  activityType: text("activity_type").notNull(), // 'idea_proposed', 'vote_cast', 'event_registered', 'event_unregistered', 'patron_suggested'
+  entityType: text("entity_type").notNull(), // 'idea', 'vote', 'event', 'patron'
+  entityId: varchar("entity_id"),
+  entityTitle: text("entity_title"),
+  metadata: text("metadata"),
+  scoreImpact: integer("score_impact").notNull(),
+  occurredAt: timestamp("occurred_at").defaultNow().notNull(),
+}, (table) => ({
+  memberEmailIdx: index("member_activities_member_email_idx").on(table.memberEmail),
+  occurredAtIdx: index("member_activities_occurred_at_idx").on(table.occurredAt.desc()),
+  activityTypeIdx: index("member_activities_activity_type_idx").on(table.activityType),
+}));
+
 // Relations
 export const ideasRelations = relations(ideas, ({ many }) => ({
   votes: many(votes),
@@ -279,6 +318,17 @@ export const ideaPatronProposalsRelations = relations(ideaPatronProposals, ({ on
   patron: one(patrons, {
     fields: [ideaPatronProposals.patronId],
     references: [patrons.id],
+  }),
+}));
+
+export const membersRelations = relations(members, ({ many }) => ({
+  activities: many(memberActivities),
+}));
+
+export const memberActivitiesRelations = relations(memberActivities, ({ one }) => ({
+  member: one(members, {
+    fields: [memberActivities.memberEmail],
+    references: [members.email],
   }),
 }));
 
@@ -669,6 +719,51 @@ export const updateIdeaPatronProposalSchema = z.object({
     .optional(),
 });
 
+export const insertMemberSchema = createInsertSchema(members).pick({
+  email: true,
+  firstName: true,
+  lastName: true,
+  company: true,
+  phone: true,
+  role: true,
+  notes: true,
+}).extend({
+  email: z.string().email().transform(sanitizeText),
+  firstName: z.string().min(2).max(100).transform(sanitizeText),
+  lastName: z.string().min(2).max(100).transform(sanitizeText),
+  company: z.string().max(200).optional().transform(val => val ? sanitizeText(val) : undefined),
+  phone: z.string().max(20).optional().transform(val => val ? sanitizeText(val) : undefined),
+  role: z.string().max(100).optional().transform(val => val ? sanitizeText(val) : undefined),
+  notes: z.string().max(2000).optional().transform(val => val ? sanitizeText(val) : undefined),
+});
+
+export const insertMemberActivitySchema = createInsertSchema(memberActivities).pick({
+  memberEmail: true,
+  activityType: true,
+  entityType: true,
+  entityId: true,
+  entityTitle: true,
+  metadata: true,
+  scoreImpact: true,
+}).extend({
+  memberEmail: z.string().email().transform(sanitizeText),
+  activityType: z.enum(['idea_proposed', 'vote_cast', 'event_registered', 'event_unregistered', 'patron_suggested']),
+  entityType: z.enum(['idea', 'vote', 'event', 'patron']),
+  entityId: z.string().uuid().optional(),
+  entityTitle: z.string().max(500).optional().transform(val => val ? sanitizeText(val) : undefined),
+  metadata: z.string().optional(),
+  scoreImpact: z.number().int(),
+});
+
+export const updateMemberSchema = z.object({
+  firstName: z.string().min(2).max(100).transform(sanitizeText).optional(),
+  lastName: z.string().min(2).max(100).transform(sanitizeText).optional(),
+  company: z.string().max(200).transform(sanitizeText).optional(),
+  phone: z.string().max(20).transform(sanitizeText).optional(),
+  role: z.string().max(100).transform(sanitizeText).optional(),
+  notes: z.string().max(2000).transform(sanitizeText).optional(),
+});
+
 // Types
 export type Admin = typeof admins.$inferSelect;
 export type InsertAdmin = z.infer<typeof insertAdminSchema>;
@@ -700,6 +795,12 @@ export type InsertPatronDonation = z.infer<typeof insertPatronDonationSchema>;
 
 export type IdeaPatronProposal = typeof ideaPatronProposals.$inferSelect;
 export type InsertIdeaPatronProposal = z.infer<typeof insertIdeaPatronProposalSchema>;
+
+export type Member = typeof members.$inferSelect;
+export type InsertMember = z.infer<typeof insertMemberSchema>;
+
+export type MemberActivity = typeof memberActivities.$inferSelect;
+export type InsertMemberActivity = z.infer<typeof insertMemberActivitySchema>;
 
 // For compatibility with existing auth system
 export const users = admins;
