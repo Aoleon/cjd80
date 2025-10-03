@@ -46,12 +46,21 @@ import {
   Heart, 
   Save,
   TrendingUp,
-  Activity as ActivityIcon
+  Activity as ActivityIcon,
+  Euro
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { hasPermission } from "@shared/schema";
-import type { Member, MemberActivity } from "@shared/schema";
+import type { Member, MemberActivity, MemberSubscription } from "@shared/schema";
 
 const updateMemberFormSchema = z.object({
   firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
@@ -64,6 +73,15 @@ const updateMemberFormSchema = z.object({
 
 type UpdateMemberFormValues = z.infer<typeof updateMemberFormSchema>;
 
+const subscriptionFormSchema = z.object({
+  amountInEuros: z.coerce.number().min(0.01, "Le montant doit être supérieur à 0"),
+  startDate: z.string().min(1, "Date de début requise"),
+  endDate: z.string().min(1, "Date de fin requise"),
+}).refine(data => new Date(data.endDate) > new Date(data.startDate), {
+  message: "La date de fin doit être après la date de début",
+  path: ["endDate"],
+});
+
 export default function AdminMembersPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
@@ -71,6 +89,7 @@ export default function AdminMembersPage() {
   
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAddSubscriptionDialog, setShowAddSubscriptionDialog] = useState(false);
 
   const hasViewPermission = user && hasPermission(user.role, 'admin.view');
 
@@ -86,6 +105,11 @@ export default function AdminMembersPage() {
 
   const { data: activities = [], isLoading: activitiesLoading } = useQuery<MemberActivity[]>({
     queryKey: ["/api/admin/members", selectedEmail, "activities"],
+    enabled: !!hasViewPermission && !!selectedEmail,
+  });
+
+  const { data: subscriptions = [], isLoading: subscriptionsLoading } = useQuery<MemberSubscription[]>({
+    queryKey: ["/api/admin/members", selectedEmail, "subscriptions"],
     enabled: !!hasViewPermission && !!selectedEmail,
   });
 
@@ -117,6 +141,15 @@ export default function AdminMembersPage() {
     },
   });
 
+  const subscriptionForm = useForm<z.infer<typeof subscriptionFormSchema>>({
+    resolver: zodResolver(subscriptionFormSchema),
+    defaultValues: {
+      amountInEuros: 0,
+      startDate: "",
+      endDate: "",
+    },
+  });
+
   const updateMutation = useMutation({
     mutationFn: async (data: UpdateMemberFormValues) => {
       if (!selectedEmail) throw new Error("Aucun membre sélectionné");
@@ -132,6 +165,29 @@ export default function AdminMembersPage() {
       toast({
         title: "Erreur",
         description: error.message || "Impossible de mettre à jour le membre",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createSubscriptionMutation = useMutation({
+    mutationFn: async (data: { amountInCents: number; startDate: string; endDate: string }) => {
+      if (!selectedEmail) throw new Error("Aucun membre sélectionné");
+      return apiRequest("POST", `/api/admin/members/${selectedEmail}/subscriptions`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/members", selectedEmail, "subscriptions"] });
+      toast({
+        title: "✅ Souscription ajoutée",
+        description: "La souscription a été enregistrée avec succès",
+      });
+      setShowAddSubscriptionDialog(false);
+      subscriptionForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "❌ Erreur",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -155,6 +211,14 @@ export default function AdminMembersPage() {
   const handleUpdateMember = (data: UpdateMemberFormValues) => {
     updateMutation.mutate(data);
   };
+
+  const handleAddSubscription = subscriptionForm.handleSubmit((data) => {
+    createSubscriptionMutation.mutate({
+      amountInCents: Math.round(data.amountInEuros * 100),
+      startDate: data.startDate,
+      endDate: data.endDate,
+    });
+  });
 
   const getScoreBadgeColor = (score: number) => {
     if (score >= 50) return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
@@ -208,6 +272,17 @@ export default function AdminMembersPage() {
 
   const formatFullDate = (date: Date | string) => {
     return format(new Date(date), "dd MMMM yyyy", { locale: fr });
+  };
+
+  const formatEuros = (cents: number) => `${(cents / 100).toFixed(2)} €`;
+
+  const formatShortDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return new Intl.DateTimeFormat('fr-FR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    }).format(date);
   };
 
   const activityStats = useMemo(() => {
@@ -387,12 +462,15 @@ export default function AdminMembersPage() {
                     </div>
                   ) : (
                     <Tabs defaultValue="info" className="w-full">
-                      <TabsList className="grid w-full grid-cols-3">
+                      <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="info" data-testid="tab-info">
                           Informations
                         </TabsTrigger>
                         <TabsTrigger value="activity" data-testid="tab-activity">
                           Activité ({activities.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="subscriptions" data-testid="tab-subscriptions">
+                          Souscriptions
                         </TabsTrigger>
                         <TabsTrigger value="stats" data-testid="tab-stats">
                           Statistiques
@@ -582,6 +660,156 @@ export default function AdminMembersPage() {
                                     </div>
                                   </div>
                                 </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        )}
+                      </TabsContent>
+
+                      <TabsContent value="subscriptions" className="space-y-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold">Historique des souscriptions</h3>
+                          <Dialog open={showAddSubscriptionDialog} onOpenChange={setShowAddSubscriptionDialog}>
+                            <DialogTrigger asChild>
+                              <Button data-testid="button-add-subscription">
+                                Ajouter une souscription
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Ajouter une souscription</DialogTitle>
+                                <DialogDescription>
+                                  Enregistrez une nouvelle souscription pour {selectedMember.firstName} {selectedMember.lastName}
+                                </DialogDescription>
+                              </DialogHeader>
+                              <Form {...subscriptionForm}>
+                                <form onSubmit={handleAddSubscription} className="space-y-4">
+                                  <FormField
+                                    control={subscriptionForm.control}
+                                    name="amountInEuros"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Montant (en euros)</FormLabel>
+                                        <FormControl>
+                                          <Input 
+                                            type="number" 
+                                            step="0.01" 
+                                            placeholder="0.00"
+                                            {...field}
+                                            data-testid="input-subscription-amount"
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={subscriptionForm.control}
+                                    name="startDate"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Date de début</FormLabel>
+                                        <FormControl>
+                                          <Input 
+                                            type="date" 
+                                            {...field}
+                                            data-testid="input-subscription-start"
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={subscriptionForm.control}
+                                    name="endDate"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Date de fin</FormLabel>
+                                        <FormControl>
+                                          <Input 
+                                            type="date" 
+                                            {...field}
+                                            data-testid="input-subscription-end"
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <Button
+                                    type="submit"
+                                    disabled={createSubscriptionMutation.isPending}
+                                    data-testid="button-submit-subscription"
+                                    className="w-full"
+                                  >
+                                    {createSubscriptionMutation.isPending ? (
+                                      <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Enregistrement...
+                                      </>
+                                    ) : (
+                                      "Ajouter"
+                                    )}
+                                  </Button>
+                                </form>
+                              </Form>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+
+                        {subscriptionsLoading ? (
+                          <div className="space-y-2">
+                            <Skeleton className="h-24 w-full" />
+                            <Skeleton className="h-24 w-full" />
+                          </div>
+                        ) : subscriptions.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            Aucune souscription enregistrée
+                          </div>
+                        ) : (
+                          <ScrollArea className="h-[500px]">
+                            <div className="space-y-3">
+                              {subscriptions.map((subscription, index) => (
+                                <Card key={subscription.id} data-testid={`card-subscription-${index}`}>
+                                  <CardContent className="pt-6">
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <Euro className="h-5 w-5 text-green-600" />
+                                        <div>
+                                          <p className="text-sm text-muted-foreground">Montant</p>
+                                          <p className="text-lg font-semibold text-green-600">
+                                            {formatEuros(subscription.amountInCents)}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <Separator />
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex items-center gap-2">
+                                          <Calendar className="h-4 w-4 text-blue-600" />
+                                          <div>
+                                            <p className="text-xs text-muted-foreground">Début</p>
+                                            <p className="text-sm font-medium">
+                                              {formatShortDate(subscription.startDate)}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <Calendar className="h-4 w-4 text-orange-600" />
+                                          <div>
+                                            <p className="text-xs text-muted-foreground">Fin</p>
+                                            <p className="text-sm font-medium">
+                                              {formatShortDate(subscription.endDate)}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        Ajoutée {formatDate(subscription.createdAt)}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
                               ))}
                             </div>
                           </ScrollArea>
