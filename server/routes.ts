@@ -31,8 +31,17 @@ import {
   hasPermission,
   ADMIN_ROLES
 } from "@shared/schema";
-import { ZodError } from "zod";
+import { ZodError, z } from "zod";
 import { fromZodError } from "zod-validation-error";
+
+const updateMemberSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  company: z.string().optional(),
+  phone: z.string().optional(),
+  role: z.string().optional(),
+  notes: z.string().optional(),
+});
 
 async function trackMemberActivity(
   storage: IStorage,
@@ -1568,6 +1577,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(204).send();
     } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== GESTION DES MEMBRES (CRM) ====================
+
+  // Lister tous les membres avec leur score d'engagement et dernière activité
+  app.get("/api/admin/members", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storage.getMembers();
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Récupérer les détails d'un membre spécifique
+  app.get("/api/admin/members/:email", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storage.getMemberByEmail(req.params.email);
+      
+      if (!result.success) {
+        return res.status(404).json({ message: result.error.message });
+      }
+      
+      if (!result.data) {
+        return res.status(404).json({ message: "Membre non trouvé" });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Récupérer l'historique des activités d'un membre
+  app.get("/api/admin/members/:email/activities", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storage.getMemberActivities(req.params.email);
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Mettre à jour les informations d'un membre
+  app.patch("/api/admin/members/:email", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const validatedData = updateMemberSchema.parse(req.body);
+      
+      const result = await storage.updateMember(req.params.email, validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
       next(error);
     }
   });
