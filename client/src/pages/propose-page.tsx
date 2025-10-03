@@ -339,10 +339,10 @@ export default function ProposePage() {
         <CardContent>
           {/* Proposal Type Selector */}
           <div className="space-y-6 mb-6">
-            <FormItem>
-              <FormLabel className="text-base font-medium">
+            <div className="space-y-2">
+              <label className="text-base font-medium">
                 Type de proposition *
-              </FormLabel>
+              </label>
               <Select 
                 value={proposalType} 
                 onValueChange={(value) => setProposalType(value as ProposalType)}
@@ -365,10 +365,10 @@ export default function ProposePage() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <FormDescription>
+              <p className="text-sm text-muted-foreground">
                 Sélectionnez ce que vous souhaitez proposer
-              </FormDescription>
-            </FormItem>
+              </p>
+            </div>
 
             {/* Conditional Messages */}
             {proposalType === 'idea' && (
