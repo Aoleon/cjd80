@@ -83,7 +83,7 @@ export default function ProposePage() {
     },
   });
 
-  // Separate form for patron creation
+  // Separate form for patron creation (used in dialog)
   const patronForm = useForm<PatronForm>({
     resolver: zodResolver(patronFormSchema),
     defaultValues: {
@@ -93,6 +93,33 @@ export default function ProposePage() {
       company: "",
       phone: "",
       role: "",
+    },
+  });
+
+  // Formulaire pour proposition de mécène (tout en un)
+  const patronProposalForm = useForm<PatronForm>({
+    resolver: zodResolver(patronFormSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      company: "",
+      phone: "",
+      role: "",
+    },
+  });
+
+  // Formulaire pour proposition de membre
+  const memberProposalForm = useForm<ProposeMemberForm>({
+    resolver: zodResolver(proposeMembreFormSchema),
+    defaultValues: {
+      email: "",
+      firstName: "",
+      lastName: "",
+      company: "",
+      phone: "",
+      role: "",
+      notes: "",
     },
   });
 
@@ -242,56 +269,61 @@ export default function ProposePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Proposal Type Selector */}
-              <FormItem>
-                <FormLabel className="text-base font-medium">
-                  Type de proposition *
-                </FormLabel>
-                <Select 
-                  value={proposalType} 
-                  onValueChange={(value) => setProposalType(value as ProposalType)}
-                >
-                  <SelectTrigger data-testid="select-proposal-type">
-                    <SelectValue placeholder="Choisissez le type de proposition" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="idea" data-testid="option-proposal-idea">
-                      <Lightbulb className="inline h-4 w-4 mr-2" />
-                      Idée
-                    </SelectItem>
-                    <SelectItem value="patron" data-testid="option-proposal-patron">
-                      <UserPlus className="inline h-4 w-4 mr-2" />
-                      Mécène potentiel
-                    </SelectItem>
-                    <SelectItem value="member" data-testid="option-proposal-member">
-                      <UserPlus className="inline h-4 w-4 mr-2" />
-                      Membre potentiel
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  Sélectionnez ce que vous souhaitez proposer
-                </FormDescription>
-              </FormItem>
+          {/* Proposal Type Selector */}
+          <div className="space-y-6 mb-6">
+            <FormItem>
+              <FormLabel className="text-base font-medium">
+                Type de proposition *
+              </FormLabel>
+              <Select 
+                value={proposalType} 
+                onValueChange={(value) => setProposalType(value as ProposalType)}
+              >
+                <SelectTrigger data-testid="select-proposal-type">
+                  <SelectValue placeholder="Choisissez le type de proposition" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="idea" data-testid="option-proposal-idea">
+                    <Lightbulb className="inline h-4 w-4 mr-2" />
+                    Idée
+                  </SelectItem>
+                  <SelectItem value="patron" data-testid="option-proposal-patron">
+                    <UserPlus className="inline h-4 w-4 mr-2" />
+                    Mécène potentiel
+                  </SelectItem>
+                  <SelectItem value="member" data-testid="option-proposal-member">
+                    <UserPlus className="inline h-4 w-4 mr-2" />
+                    Membre potentiel
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Sélectionnez ce que vous souhaitez proposer
+              </FormDescription>
+            </FormItem>
 
-              {/* Conditional Messages */}
-              {proposalType === 'idea' && (
-                <p className="text-sm text-gray-600 p-3 bg-blue-50 rounded">
-                  Vous allez proposer une nouvelle idée à la communauté CJD Amiens
-                </p>
-              )}
-              {proposalType === 'patron' && (
-                <p className="text-sm text-gray-600 p-3 bg-purple-50 rounded">
-                  Vous allez suggérer un mécène potentiel pour soutenir les projets
-                </p>
-              )}
-              {proposalType === 'member' && (
-                <p className="text-sm text-gray-600 p-3 bg-green-50 rounded">
-                  Vous allez proposer un nouveau membre pour rejoindre le CJD Amiens
-                </p>
-              )}
+            {/* Conditional Messages */}
+            {proposalType === 'idea' && (
+              <p className="text-sm text-gray-600 p-3 bg-blue-50 rounded">
+                Vous allez proposer une nouvelle idée à la communauté CJD Amiens
+              </p>
+            )}
+            {proposalType === 'patron' && (
+              <p className="text-sm text-gray-600 p-3 bg-purple-50 rounded">
+                Vous allez suggérer un mécène potentiel pour soutenir les projets
+              </p>
+            )}
+            {proposalType === 'member' && (
+              <p className="text-sm text-gray-600 p-3 bg-green-50 rounded">
+                Vous allez proposer un nouveau membre pour rejoindre le CJD Amiens
+              </p>
+            )}
+          </div>
+
+          {/* Conditional Forms */}
+          {proposalType === 'idea' && (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 
               {/* Title Field */}
               <FormField
@@ -485,41 +517,289 @@ export default function ProposePage() {
                 </FormItem>
               )}
 
-              {/* Submit Button */}
-              <div className="flex gap-4 pt-4">
-                <Button
-                  type="submit"
-                  disabled={proposeIdeaMutation.isPending}
-                  className="bg-cjd-green hover:bg-green-700 text-white flex-1"
-                  size="lg"
-                  data-testid="button-submit-idea"
-                >
-                  {proposeIdeaMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Envoi en cours...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Proposer cette idée
-                    </>
+                {/* Submit Button */}
+                <div className="flex gap-4 pt-4">
+                  <Button
+                    type="submit"
+                    disabled={proposeIdeaMutation.isPending}
+                    className="bg-cjd-green hover:bg-green-700 text-white flex-1"
+                    size="lg"
+                    data-testid="button-submit-idea"
+                  >
+                    {proposeIdeaMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Envoi en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" />
+                        Proposer cette idée
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setLocation("/")}
+                    className="px-8"
+                    size="lg"
+                    data-testid="button-cancel"
+                  >
+                    Annuler
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          )}
+
+          {proposalType === 'patron' && (
+            <Form {...patronProposalForm}>
+              <form onSubmit={patronProposalForm.handleSubmit((data) => console.log("Patron:", data))} className="space-y-6">
+                <FormField
+                  control={patronProposalForm.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Prénom *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Marie" {...field} data-testid="input-patron-firstname" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </Button>
+                />
                 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setLocation("/")}
-                  className="px-8"
-                  size="lg"
-                  data-testid="button-cancel"
-                >
-                  Annuler
-                </Button>
-              </div>
-            </form>
-          </Form>
+                <FormField
+                  control={patronProposalForm.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Nom *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Martin" {...field} data-testid="input-patron-lastname" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={patronProposalForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Email *</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="marie.martin@entreprise.com" {...field} data-testid="input-patron-email" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={patronProposalForm.control}
+                  name="company"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Société</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nom de l'entreprise" {...field} data-testid="input-patron-company" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={patronProposalForm.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Téléphone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="06 12 34 56 78" {...field} data-testid="input-patron-phone" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={patronProposalForm.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Fonction</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Directeur Général" {...field} data-testid="input-patron-role" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex gap-4 pt-4">
+                  <Button
+                    type="submit"
+                    className="bg-cjd-green hover:bg-green-700 text-white flex-1"
+                    size="lg"
+                    data-testid="button-submit-patron"
+                  >
+                    <Send className="mr-2 h-4 w-4" />
+                    Proposer ce mécène
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setLocation("/")}
+                    className="px-8"
+                    size="lg"
+                    data-testid="button-cancel"
+                  >
+                    Annuler
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          )}
+
+          {proposalType === 'member' && (
+            <Form {...memberProposalForm}>
+              <form onSubmit={memberProposalForm.handleSubmit((data) => console.log("Member:", data))} className="space-y-6">
+                <FormField
+                  control={memberProposalForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Email *</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="jean.dupont@entreprise.com" {...field} data-testid="input-member-email" />
+                      </FormControl>
+                      <FormDescription>Email du membre potentiel</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={memberProposalForm.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Prénom *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Jean" {...field} data-testid="input-member-firstname" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={memberProposalForm.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Nom *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Dupont" {...field} data-testid="input-member-lastname" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={memberProposalForm.control}
+                  name="company"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Société</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nom de l'entreprise" {...field} data-testid="input-member-company" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={memberProposalForm.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Téléphone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="06 12 34 56 78" {...field} data-testid="input-member-phone" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={memberProposalForm.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Fonction</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Chef d'entreprise" {...field} data-testid="input-member-role" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={memberProposalForm.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Notes</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Pourquoi proposez-vous ce membre ? Qui l'a recommandé ?" 
+                          className="min-h-24"
+                          {...field}
+                          data-testid="input-member-notes"
+                        />
+                      </FormControl>
+                      <FormDescription>Informations complémentaires sur cette proposition</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex gap-4 pt-4">
+                  <Button
+                    type="submit"
+                    className="bg-cjd-green hover:bg-green-700 text-white flex-1"
+                    size="lg"
+                    data-testid="button-submit-member"
+                  >
+                    <Send className="mr-2 h-4 w-4" />
+                    Proposer ce membre
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setLocation("/")}
+                    className="px-8"
+                    size="lg"
+                    data-testid="button-cancel"
+                  >
+                    Annuler
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          )}
         </CardContent>
       </Card>
 
