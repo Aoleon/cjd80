@@ -1375,6 +1375,316 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // ===== GESTION DES MÉCÈNES (6 méthodes) =====
+  
+  async createPatron(patron: InsertPatron): Promise<Result<Patron>> {
+    try {
+      const [newPatron] = await db
+        .insert(patrons)
+        .values(patron)
+        .returning();
+      
+      console.log(`[DB Query] Nouveau mécène créé: ${newPatron.id} - ${newPatron.firstName} ${newPatron.lastName}`);
+      return { success: true, data: newPatron };
+    } catch (error: any) {
+      if (error.code === '23505' && error.constraint === 'patrons_email_unique') {
+        return { success: false, error: new DuplicateError("Un mécène avec cet email existe déjà") };
+      }
+      return { success: false, error: new DatabaseError(`Erreur lors de la création du mécène: ${error}`) };
+    }
+  }
+
+  async getPatrons(): Promise<Result<Patron[]>> {
+    try {
+      console.log('[DB Query] select * from "patrons" order by "created_at" desc');
+      const patronsList = await db
+        .select()
+        .from(patrons)
+        .orderBy(desc(patrons.createdAt));
+      
+      return { success: true, data: patronsList };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des mécènes: ${error}`) };
+    }
+  }
+
+  async getPatronById(id: string): Promise<Result<Patron | null>> {
+    try {
+      console.log(`[DB Query] select * from "patrons" where "id" = '${id}'`);
+      const [patron] = await db
+        .select()
+        .from(patrons)
+        .where(eq(patrons.id, id));
+      
+      return { success: true, data: patron || null };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération du mécène: ${error}`) };
+    }
+  }
+
+  async getPatronByEmail(email: string): Promise<Result<Patron | null>> {
+    try {
+      console.log(`[DB Query] select * from "patrons" where lower("email") = lower('${email}')`);
+      const [patron] = await db
+        .select()
+        .from(patrons)
+        .where(sql`lower(${patrons.email}) = lower(${email})`);
+      
+      return { success: true, data: patron || null };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération du mécène par email: ${error}`) };
+    }
+  }
+
+  async updatePatron(id: string, data: z.infer<typeof updatePatronSchema>): Promise<Result<Patron>> {
+    try {
+      const patronResult = await this.getPatronById(id);
+      if (!patronResult.success) {
+        return { success: false, error: patronResult.error };
+      }
+      if (!patronResult.data) {
+        return { success: false, error: new NotFoundError("Mécène introuvable") };
+      }
+
+      const [updatedPatron] = await db
+        .update(patrons)
+        .set({ 
+          ...data,
+          updatedAt: sql`NOW()` 
+        })
+        .where(eq(patrons.id, id))
+        .returning();
+
+      console.log(`[DB Query] Mécène mis à jour: ${id}`);
+      return { success: true, data: updatedPatron };
+    } catch (error: any) {
+      if (error.code === '23505' && error.constraint === 'patrons_email_unique') {
+        return { success: false, error: new DuplicateError("Un mécène avec cet email existe déjà") };
+      }
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du mécène: ${error}`) };
+    }
+  }
+
+  async deletePatron(id: string): Promise<Result<void>> {
+    try {
+      const patronResult = await this.getPatronById(id);
+      if (!patronResult.success) {
+        return { success: false, error: patronResult.error };
+      }
+      if (!patronResult.data) {
+        return { success: false, error: new NotFoundError("Mécène introuvable") };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx.delete(patrons).where(eq(patrons.id, id));
+        console.log(`[DB Query] Mécène supprimé: ${id} (CASCADE supprime dons et propositions)`);
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression du mécène: ${error}`) };
+    }
+  }
+
+  // ===== GESTION DES DONS (5 méthodes) =====
+  
+  async createPatronDonation(donation: InsertPatronDonation): Promise<Result<PatronDonation>> {
+    try {
+      const donationData = {
+        ...donation,
+        donatedAt: new Date(donation.donatedAt)
+      };
+
+      const [newDonation] = await db
+        .insert(patronDonations)
+        .values(donationData)
+        .returning();
+      
+      console.log(`[DB Query] Nouveau don créé: ${newDonation.id} - ${newDonation.amount}€ pour ${newDonation.occasion}`);
+      return { success: true, data: newDonation };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création du don: ${error}`) };
+    }
+  }
+
+  async getPatronDonations(patronId: string): Promise<Result<PatronDonation[]>> {
+    try {
+      console.log(`[DB Query] select * from "patron_donations" where "patron_id" = '${patronId}' order by "donated_at" desc`);
+      const donations = await db
+        .select()
+        .from(patronDonations)
+        .where(eq(patronDonations.patronId, patronId))
+        .orderBy(desc(patronDonations.donatedAt));
+      
+      return { success: true, data: donations };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des dons du mécène: ${error}`) };
+    }
+  }
+
+  async getAllDonations(): Promise<Result<PatronDonation[]>> {
+    try {
+      console.log('[DB Query] select * from "patron_donations" order by "donated_at" desc');
+      const donations = await db
+        .select()
+        .from(patronDonations)
+        .orderBy(desc(patronDonations.donatedAt));
+      
+      return { success: true, data: donations };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des dons: ${error}`) };
+    }
+  }
+
+  async updatePatronDonation(id: string, data: Partial<InsertPatronDonation>): Promise<Result<PatronDonation>> {
+    try {
+      const [existingDonation] = await db
+        .select()
+        .from(patronDonations)
+        .where(eq(patronDonations.id, id));
+
+      if (!existingDonation) {
+        return { success: false, error: new NotFoundError("Don introuvable") };
+      }
+
+      const updateData: any = { ...data };
+      if (data.donatedAt) {
+        updateData.donatedAt = new Date(data.donatedAt);
+      }
+
+      const [updatedDonation] = await db
+        .update(patronDonations)
+        .set(updateData)
+        .where(eq(patronDonations.id, id))
+        .returning();
+
+      console.log(`[DB Query] Don mis à jour: ${id}`);
+      return { success: true, data: updatedDonation };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du don: ${error}`) };
+    }
+  }
+
+  async deletePatronDonation(id: string): Promise<Result<void>> {
+    try {
+      const [donation] = await db
+        .select()
+        .from(patronDonations)
+        .where(eq(patronDonations.id, id));
+
+      if (!donation) {
+        return { success: false, error: new NotFoundError("Don introuvable") };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx.delete(patronDonations).where(eq(patronDonations.id, id));
+        console.log(`[DB Query] Don supprimé: ${id}`);
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression du don: ${error}`) };
+    }
+  }
+
+  // ===== GESTION DES PROPOSITIONS MÉCÈNE-IDÉE (5 méthodes) =====
+  
+  async createIdeaPatronProposal(proposal: InsertIdeaPatronProposal): Promise<Result<IdeaPatronProposal>> {
+    try {
+      const [newProposal] = await db
+        .insert(ideaPatronProposals)
+        .values(proposal)
+        .returning();
+      
+      console.log(`[DB Query] Nouvelle proposition créée: ${newProposal.id} - idée ${newProposal.ideaId} pour mécène ${newProposal.patronId}`);
+      return { success: true, data: newProposal };
+    } catch (error: any) {
+      if (error.code === '23505' && error.constraint === 'idea_patron_proposals_idea_id_patron_id_unique') {
+        return { success: false, error: new DuplicateError("Une proposition existe déjà pour ce mécène et cette idée") };
+      }
+      return { success: false, error: new DatabaseError(`Erreur lors de la création de la proposition: ${error}`) };
+    }
+  }
+
+  async getIdeaPatronProposals(ideaId: string): Promise<Result<IdeaPatronProposal[]>> {
+    try {
+      console.log(`[DB Query] select * from "idea_patron_proposals" where "idea_id" = '${ideaId}' order by "proposed_at" desc`);
+      const proposals = await db
+        .select()
+        .from(ideaPatronProposals)
+        .where(eq(ideaPatronProposals.ideaId, ideaId))
+        .orderBy(desc(ideaPatronProposals.proposedAt));
+      
+      return { success: true, data: proposals };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des propositions de l'idée: ${error}`) };
+    }
+  }
+
+  async getPatronProposals(patronId: string): Promise<Result<IdeaPatronProposal[]>> {
+    try {
+      console.log(`[DB Query] select * from "idea_patron_proposals" where "patron_id" = '${patronId}' order by "proposed_at" desc`);
+      const proposals = await db
+        .select()
+        .from(ideaPatronProposals)
+        .where(eq(ideaPatronProposals.patronId, patronId))
+        .orderBy(desc(ideaPatronProposals.proposedAt));
+      
+      return { success: true, data: proposals };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des propositions du mécène: ${error}`) };
+    }
+  }
+
+  async updateIdeaPatronProposal(id: string, data: z.infer<typeof updateIdeaPatronProposalSchema>): Promise<Result<IdeaPatronProposal>> {
+    try {
+      const [existingProposal] = await db
+        .select()
+        .from(ideaPatronProposals)
+        .where(eq(ideaPatronProposals.id, id));
+
+      if (!existingProposal) {
+        return { success: false, error: new NotFoundError("Proposition introuvable") };
+      }
+
+      const [updatedProposal] = await db
+        .update(ideaPatronProposals)
+        .set({ 
+          ...data,
+          updatedAt: sql`NOW()` 
+        })
+        .where(eq(ideaPatronProposals.id, id))
+        .returning();
+
+      console.log(`[DB Query] Proposition mise à jour: ${id} - nouveau statut: ${data.status || 'inchangé'}`);
+      return { success: true, data: updatedProposal };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la proposition: ${error}`) };
+    }
+  }
+
+  async deleteIdeaPatronProposal(id: string): Promise<Result<void>> {
+    try {
+      const [proposal] = await db
+        .select()
+        .from(ideaPatronProposals)
+        .where(eq(ideaPatronProposals.id, id));
+
+      if (!proposal) {
+        return { success: false, error: new NotFoundError("Proposition introuvable") };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx.delete(ideaPatronProposals).where(eq(ideaPatronProposals.id, id));
+        console.log(`[DB Query] Proposition supprimée: ${id}`);
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression de la proposition: ${error}`) };
+    }
+  }
+
   // Ultra-robust Stats method with Result pattern
   async getStats(): Promise<Result<{
     totalIdeas: number;
