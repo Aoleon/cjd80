@@ -331,9 +331,18 @@ export default function AdminMembersPage() {
                                 </div>
                               )}
                             </div>
-                            <Badge className={getScoreBadgeColor(member.engagementScore)} data-testid={`badge-engagement-${member.email}`}>
-                              {member.engagementScore}
-                            </Badge>
+                            <div className="flex flex-col items-end gap-1">
+                              <Badge 
+                                variant={member.status === 'active' ? 'default' : 'secondary'}
+                                className={member.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'}
+                                data-testid={`badge-status-${member.email}`}
+                              >
+                                {member.status === 'active' ? 'Actif' : 'Proposition'}
+                              </Badge>
+                              <Badge className={getScoreBadgeColor(member.engagementScore)} data-testid={`badge-engagement-${member.email}`}>
+                                {member.engagementScore}
+                              </Badge>
+                            </div>
                           </div>
                           <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
                             <span>{member.activityCount} activité{member.activityCount > 1 ? 's' : ''}</span>
@@ -391,6 +400,13 @@ export default function AdminMembersPage() {
                       </TabsList>
 
                       <TabsContent value="info" className="space-y-4">
+                        {selectedMember.status === 'proposed' && selectedMember.proposedBy && (
+                          <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-950 rounded-lg border-l-4 border-orange-400">
+                            <p className="text-sm text-orange-800 dark:text-orange-200">
+                              <strong>Membre proposé par:</strong> {selectedMember.proposedBy}
+                            </p>
+                          </div>
+                        )}
                         <Form {...memberForm}>
                           <form onSubmit={memberForm.handleSubmit(handleUpdateMember)} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">

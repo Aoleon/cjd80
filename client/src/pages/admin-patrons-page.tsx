@@ -54,6 +54,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Loader2, Search, Plus, Edit, Trash2, Euro, Calendar, User, Building2, Phone, Mail, FileText } from "lucide-react";
@@ -70,6 +71,7 @@ type Patron = {
   phone: string | null;
   email: string;
   notes: string | null;
+  status: string;
   createdAt: Date | string;
   updatedAt: Date | string;
   createdBy: string | null;
@@ -444,17 +446,28 @@ export default function AdminPatronsPage() {
                         }`}
                         data-testid={`patron-item-${patron.id}`}
                       >
-                        <div className="font-medium">
-                          {patron.firstName} {patron.lastName}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {patron.company || "Particulier"}
-                        </div>
-                        {patron.role && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {patron.role}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium">
+                              {patron.firstName} {patron.lastName}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {patron.company || "Particulier"}
+                            </div>
+                            {patron.role && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {patron.role}
+                              </div>
+                            )}
                           </div>
-                        )}
+                          <Badge 
+                            variant={patron.status === 'active' ? 'default' : 'secondary'}
+                            className={patron.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}
+                            data-testid={`badge-patron-status-${patron.id}`}
+                          >
+                            {patron.status === 'active' ? 'Actif' : 'Proposition'}
+                          </Badge>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -519,6 +532,13 @@ export default function AdminPatronsPage() {
                       </TabsList>
 
                       <TabsContent value="info" className="space-y-4">
+                        {selectedPatron.status === 'proposed' && selectedPatron.createdBy && (
+                          <div className="mb-4 p-3 bg-orange-50 rounded-lg border-l-4 border-orange-400">
+                            <p className="text-sm text-orange-800">
+                              <strong>Mécène proposé par:</strong> {selectedPatron.createdBy}
+                            </p>
+                          </div>
+                        )}
                         <div className="grid gap-4">
                           {selectedPatron.role && (
                             <div className="flex items-start gap-3">
