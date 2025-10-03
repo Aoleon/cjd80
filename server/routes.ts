@@ -743,6 +743,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/stats", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const stats = await storage.getAdminStats();
+      if (!stats.success) {
+        return res.status(500).json({ 
+          success: false, 
+          error: stats.error.message 
+        });
+      }
+      res.json({ success: true, data: stats.data });
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Erreur lors de la récupération des statistiques" 
+      });
+    }
+  });
+
   // Routes pour les notifications push
   app.get("/api/notifications/vapid-key", (req, res) => {
     try {

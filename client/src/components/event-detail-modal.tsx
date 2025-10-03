@@ -12,6 +12,7 @@ import type { Event, Inscription, Unsubscription } from "@shared/schema";
 
 interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
   inscriptionCount: number;
+  unsubscriptionCount: number;
 }
 
 interface EventDetailModalProps {

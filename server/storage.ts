@@ -124,6 +124,13 @@ export interface IStorage {
     upcomingEvents: number;
     totalInscriptions: number;
   }>>;
+  
+  getAdminStats(): Promise<Result<{
+    members: { total: number; active: number; proposed: number; recentActivity: number };
+    patrons: { total: number; active: number; proposed: number };
+    ideas: { total: number; pending: number; approved: number };
+    events: { total: number; upcoming: number };
+  }>>;
 
   // Development requests
   getDevelopmentRequests(): Promise<Result<DevelopmentRequest[]>>;
@@ -2011,6 +2018,91 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: stats };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération des statistiques: ${error}`) };
+    }
+  }
+
+  async getAdminStats(): Promise<Result<{
+    members: { total: number; active: number; proposed: number; recentActivity: number };
+    patrons: { total: number; active: number; proposed: number };
+    ideas: { total: number; pending: number; approved: number };
+    events: { total: number; upcoming: number };
+  }>> {
+    try {
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      // Requêtes SQL optimisées avec COUNT et WHERE
+      
+      // Membres
+      const [membersTotal] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(members);
+      const [membersActive] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(members)
+        .where(eq(members.status, 'active'));
+      const [membersProposed] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(members)
+        .where(eq(members.status, 'proposed'));
+      const [membersRecent] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(members)
+        .where(sql`${members.lastActivityAt} >= ${thirtyDaysAgo.toISOString()}`);
+
+      // Mécènes
+      const [patronsTotal] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(patrons);
+      const [patronsActive] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(patrons)
+        .where(eq(patrons.status, 'active'));
+      const [patronsProposed] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(patrons)
+        .where(eq(patrons.status, 'proposed'));
+
+      // Idées
+      const [ideasTotal] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(ideas);
+      const [ideasPending] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(ideas)
+        .where(eq(ideas.status, 'pending'));
+      const [ideasApproved] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(ideas)
+        .where(eq(ideas.status, 'approved'));
+
+      // Événements
+      const [eventsTotal] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(events);
+      const [eventsUpcoming] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(events)
+        .where(and(
+          eq(events.status, 'published'),
+          sql`${events.date} >= ${now.toISOString()}`
+        ));
+
+      return {
+        success: true,
+        data: {
+          members: {
+            total: membersTotal.count,
+            active: membersActive.count,
+            proposed: membersProposed.count,
+            recentActivity: membersRecent.count,
+          },
+          patrons: {
+            total: patronsTotal.count,
+            active: patronsActive.count,
+            proposed: patronsProposed.count,
+          },
+          ideas: {
+            total: ideasTotal.count,
+            pending: ideasPending.count,
+            approved: ideasApproved.count,
+          },
+          events: {
+            total: eventsTotal.count,
+            upcoming: eventsUpcoming.count,
+          },
+        },
+      };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des statistiques admin: ${error}`) };
     }
   }
 }
