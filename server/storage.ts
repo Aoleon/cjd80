@@ -132,6 +132,7 @@ export interface IStorage {
   
   // Gestion des mécènes
   createPatron(patron: InsertPatron): Promise<Result<Patron>>;
+  proposePatron(data: InsertPatron): Promise<Result<Patron>>;
   getPatrons(): Promise<Result<Patron[]>>;
   getPatronById(id: string): Promise<Result<Patron | null>>;
   getPatronByEmail(email: string): Promise<Result<Patron | null>>;
@@ -1411,6 +1412,37 @@ export class DatabaseStorage implements IStorage {
         return { success: false, error: new DuplicateError("Un mécène avec cet email existe déjà") };
       }
       return { success: false, error: new DatabaseError(`Erreur lors de la création du mécène: ${error}`) };
+    }
+  }
+
+  async proposePatron(data: InsertPatron): Promise<Result<Patron>> {
+    try {
+      const existing = await db
+        .select()
+        .from(patrons)
+        .where(eq(patrons.email, data.email))
+        .limit(1);
+
+      if (existing.length > 0) {
+        console.log(`[Storage] Mécène ${data.email} existe déjà`);
+        return {
+          success: false,
+          error: new DuplicateError("Un mécène avec cet email existe déjà"),
+        };
+      }
+
+      const [newPatron] = await db
+        .insert(patrons)
+        .values({
+          ...data,
+          status: "proposed",
+        })
+        .returning();
+
+      console.log(`[Storage] Mécène proposé créé: ${newPatron.id}`);
+      return { success: true, data: newPatron };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la proposition du mécène: ${error}`) };
     }
   }
 

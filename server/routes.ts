@@ -1278,6 +1278,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== GESTION DES MÉCÈNES ====================
   
+  // Proposer un mécène potentiel (accessible à tous les utilisateurs connectés)
+  app.post("/api/patrons/propose", async (req, res, next) => {
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentification requise pour proposer un mécène" });
+    }
+
+    try {
+      const validatedData = insertPatronSchema.parse(req.body);
+      
+      const result = await storage.proposePatron({
+        ...validatedData,
+        createdBy: req.user?.email || validatedData.createdBy || "anonymous",
+      });
+      
+      if (!result.success) {
+        if (result.error.code === "DUPLICATE") {
+          return res.status(409).json({ message: result.error.message });
+        }
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+  
   // Lister tous les mécènes
   app.get("/api/patrons", requirePermission('admin.manage'), async (req, res, next) => {
     try {

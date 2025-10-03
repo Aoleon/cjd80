@@ -165,6 +165,74 @@ export default function ProposePage() {
     },
   });
 
+  const proposePatronMutation = useMutation({
+    mutationFn: async (patronData: PatronForm) => {
+      const dataWithCreatedBy = {
+        ...patronData,
+        createdBy: user?.email || "anonymous",
+      };
+      const res = await apiRequest("POST", "/api/patrons/propose", dataWithCreatedBy);
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Erreur proposition mécène");
+      }
+      return await res.json();
+    },
+    onSuccess: (newPatron) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/patrons"] });
+      patronProposalForm.reset();
+      toast({
+        title: "✅ Mécène proposé !",
+        description: `${newPatron.firstName} ${newPatron.lastName} a été ajouté au CRM`,
+        duration: 5000,
+      });
+      setLocation("/");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "❌ Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const proposeMemberMutation = useMutation({
+    mutationFn: async (memberData: ProposeMemberForm) => {
+      const dataWithProposer = {
+        ...memberData,
+        proposedBy: user?.email || "anonymous",
+      };
+      const res = await apiRequest("POST", "/api/members/propose", dataWithProposer);
+      if (!res.ok) {
+        const errorText = await res.text();
+        if (res.status === 409) {
+          throw new Error("Ce membre existe déjà dans le système");
+        }
+        throw new Error(errorText || "Erreur proposition membre");
+      }
+      return await res.json();
+    },
+    onSuccess: (newMember) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
+      memberProposalForm.reset();
+      toast({
+        title: "✅ Membre proposé !",
+        description: `${newMember.data.firstName} ${newMember.data.lastName} a été proposé avec succès`,
+        duration: 5000,
+      });
+      setLocation("/");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "❌ Erreur",
+        description: error.message,
+        variant: "destructive",
+        duration: 8000,
+      });
+    },
+  });
+
   const proposeIdeaMutation = useMutation({
     mutationFn: async (data: ProposeIdeaForm) => {
       const res = await apiRequest("POST", "/api/ideas", data);
@@ -556,7 +624,7 @@ export default function ProposePage() {
 
           {proposalType === 'patron' && (
             <Form {...patronProposalForm}>
-              <form onSubmit={patronProposalForm.handleSubmit((data) => console.log("Patron:", data))} className="space-y-6">
+              <form onSubmit={patronProposalForm.handleSubmit((data) => proposePatronMutation.mutate(data))} className="space-y-6">
                 <FormField
                   control={patronProposalForm.control}
                   name="firstName"
@@ -644,12 +712,22 @@ export default function ProposePage() {
                 <div className="flex gap-4 pt-4">
                   <Button
                     type="submit"
+                    disabled={proposePatronMutation.isPending}
                     className="bg-cjd-green hover:bg-green-700 text-white flex-1"
                     size="lg"
                     data-testid="button-submit-patron"
                   >
-                    <Send className="mr-2 h-4 w-4" />
-                    Proposer ce mécène
+                    {proposePatronMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Envoi en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" />
+                        Proposer ce mécène
+                      </>
+                    )}
                   </Button>
                   
                   <Button
@@ -669,7 +747,7 @@ export default function ProposePage() {
 
           {proposalType === 'member' && (
             <Form {...memberProposalForm}>
-              <form onSubmit={memberProposalForm.handleSubmit((data) => console.log("Member:", data))} className="space-y-6">
+              <form onSubmit={memberProposalForm.handleSubmit((data) => proposeMemberMutation.mutate(data))} className="space-y-6">
                 <FormField
                   control={memberProposalForm.control}
                   name="email"
@@ -778,12 +856,22 @@ export default function ProposePage() {
                 <div className="flex gap-4 pt-4">
                   <Button
                     type="submit"
+                    disabled={proposeMemberMutation.isPending}
                     className="bg-cjd-green hover:bg-green-700 text-white flex-1"
                     size="lg"
                     data-testid="button-submit-member"
                   >
-                    <Send className="mr-2 h-4 w-4" />
-                    Proposer ce membre
+                    {proposeMemberMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Envoi en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" />
+                        Proposer ce membre
+                      </>
+                    )}
                   </Button>
                   
                   <Button

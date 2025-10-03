@@ -189,6 +189,7 @@ export const patrons = pgTable("patrons", {
   phone: text("phone"), // Téléphone
   email: text("email").notNull().unique(), // Email unique pour éviter les doublons
   notes: text("notes"), // Informations complémentaires
+  status: text("status").notNull().default("active"), // 'active' | 'proposed'
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   createdBy: text("created_by"), // Email admin qui a ajouté le mécène
