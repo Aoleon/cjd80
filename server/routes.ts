@@ -23,6 +23,11 @@ import {
   updateAdminSchema,
   updateAdminInfoSchema,
   updateAdminPasswordSchema,
+  insertPatronSchema,
+  updatePatronSchema,
+  insertPatronDonationSchema,
+  insertIdeaPatronProposalSchema,
+  updateIdeaPatronProposalSchema,
   hasPermission,
   ADMIN_ROLES
 } from "@shared/schema";
@@ -1142,6 +1147,298 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ success: true, message: "Demande supprimée avec succès" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== GESTION DES MÉCÈNES ====================
+  
+  // Lister tous les mécènes
+  app.get("/api/patrons", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.getPatrons();
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Chercher un mécène par email (pour éviter doublons)
+  app.get("/api/patrons/search/email", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const email = req.query.email as string;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email requis" });
+      }
+      
+      const result = await storage.getPatronByEmail(email);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Récupérer un mécène par ID
+  app.get("/api/patrons/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.getPatronById(req.params.id);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      if (!result.data) {
+        return res.status(404).json({ message: "Mécène non trouvé" });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Créer un nouveau mécène
+  app.post("/api/patrons", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = insertPatronSchema.parse({
+        ...req.body,
+        createdBy: req.user!.email
+      });
+      
+      const result = await storage.createPatron(validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Mettre à jour un mécène
+  app.patch("/api/patrons/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = updatePatronSchema.parse(req.body);
+      
+      const result = await storage.updatePatron(req.params.id, validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Supprimer un mécène
+  app.delete("/api/patrons/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.deletePatron(req.params.id);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== GESTION DES DONS ====================
+
+  // Créer un nouveau don pour un mécène
+  app.post("/api/patrons/:id/donations", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = insertPatronDonationSchema.parse({
+        ...req.body,
+        patronId: req.params.id,
+        recordedBy: req.user!.email
+      });
+      
+      const result = await storage.createPatronDonation(validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Récupérer les dons d'un mécène
+  app.get("/api/patrons/:id/donations", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.getPatronDonations(req.params.id);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Récupérer tous les dons
+  app.get("/api/donations", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.getAllDonations();
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Mettre à jour un don
+  app.patch("/api/donations/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.updatePatronDonation(req.params.id, req.body);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Supprimer un don
+  app.delete("/api/donations/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.deletePatronDonation(req.params.id);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== GESTION DES PROPOSITIONS MÉCÈNE-IDÉE ====================
+
+  // Proposer un mécène pour une idée
+  app.post("/api/ideas/:id/patrons", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = insertIdeaPatronProposalSchema.parse({
+        ...req.body,
+        ideaId: req.params.id,
+        proposedByAdminEmail: req.user!.email
+      });
+      
+      const result = await storage.createIdeaPatronProposal(validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Récupérer les mécènes proposés pour une idée
+  app.get("/api/ideas/:id/patrons", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.getIdeaPatronProposals(req.params.id);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Récupérer les idées où un mécène a été proposé
+  app.get("/api/patrons/:id/proposals", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.getPatronProposals(req.params.id);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Mettre à jour une proposition (statut, commentaires)
+  app.patch("/api/proposals/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = updateIdeaPatronProposalSchema.parse(req.body);
+      
+      const result = await storage.updateIdeaPatronProposal(req.params.id, validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Supprimer une proposition
+  app.delete("/api/proposals/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.deleteIdeaPatronProposal(req.params.id);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(204).send();
     } catch (error) {
       next(error);
     }
