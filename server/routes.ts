@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, type IStorage } from "./storage";
 import { setupAuth } from "./auth";
 import { dbMonitoringMiddleware, getPoolStatsEndpoint } from "./middleware/db-monitoring";
 import { checkDatabaseHealth } from "./utils/db-health";
@@ -33,6 +33,53 @@ import {
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+
+async function trackMemberActivity(
+  storage: IStorage,
+  email: string,
+  name: string,
+  activityType: 'idea_proposed' | 'vote_cast' | 'event_registered' | 'event_unregistered' | 'patron_suggested',
+  entityType: 'idea' | 'vote' | 'event' | 'patron',
+  entityId: string,
+  entityTitle: string,
+  company?: string,
+  phone?: string
+) {
+  try {
+    // 1. Créer ou mettre à jour le membre
+    await storage.createOrUpdateMember({
+      email,
+      firstName: name.split(' ')[0] || name,
+      lastName: name.split(' ').slice(1).join(' ') || '',
+      company,
+      phone,
+    });
+
+    // 2. Calculer l'impact sur le score selon le type d'activité
+    const scoreImpact = {
+      idea_proposed: 10,
+      vote_cast: 2,
+      event_registered: 5,
+      event_unregistered: -3,
+      patron_suggested: 8,
+    }[activityType];
+
+    // 3. Enregistrer l'activité
+    await storage.trackMemberActivity({
+      memberEmail: email,
+      activityType,
+      entityType,
+      entityId,
+      entityTitle,
+      scoreImpact,
+    });
+
+    console.log(`[Member Activity] Tracked ${activityType} for ${email}`);
+  } catch (error) {
+    console.error(`[Member Activity] Error tracking activity:`, error);
+    // Ne pas faire échouer la requête principale si le tracking échoue
+  }
+}
 
 function requireAuth(req: any, res: any, next: any) {
   if (!req.isAuthenticated()) {
@@ -118,6 +165,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: result.error.message });
       }
       
+      // Track member activity
+      await trackMemberActivity(
+        storage,
+        result.data.proposedByEmail,
+        result.data.proposedBy,
+        'idea_proposed',
+        'idea',
+        result.data.id,
+        result.data.title,
+        undefined, // company field not in schema
+        undefined  // phone field not in schema
+      );
+      
       // Envoyer notifications pour nouvelle idée
       try {
         // Notification push web
@@ -189,8 +249,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, error: "Vous avez déjà voté pour cette idée" });
       }
 
-      const vote = await storage.createVote(validatedData);
-      res.status(201).json({ success: true, data: vote });
+      const result = await storage.createVote(validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ success: false, error: result.error.message });
+      }
+      
+      // Get idea title for activity
+      const ideaResult = await storage.getIdea(validatedData.ideaId);
+      const ideaTitle = ideaResult.success ? ideaResult.data?.title || 'Idée' : 'Idée';
+      
+      // Track member activity
+      await trackMemberActivity(
+        storage,
+        validatedData.voterEmail,
+        validatedData.voterName,
+        'vote_cast',
+        'vote',
+        result.data.id,
+        ideaTitle
+      );
+      
+      res.status(201).json({ success: true, data: result.data });
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({ success: false, error: fromZodError(error).toString() });
@@ -327,6 +407,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
+      
+      // Get event title for activity
+      const eventResult = await storage.getEvent(validatedData.eventId);
+      const eventTitle = eventResult.success ? eventResult.data?.title || 'Événement' : 'Événement';
+      
+      // Track member activity
+      await trackMemberActivity(
+        storage,
+        validatedData.email,
+        validatedData.name,
+        'event_registered',
+        'event',
+        result.data.id,
+        eventTitle,
+        undefined, // company field not in schema
+        undefined  // phone field not in schema
+      );
+      
       res.status(201).json(result.data);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -345,6 +443,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
+      
+      // Get event title for activity
+      const eventResult = await storage.getEvent(validatedData.eventId);
+      const eventTitle = eventResult.success ? eventResult.data?.title || 'Événement' : 'Événement';
+      
+      // Track member activity
+      await trackMemberActivity(
+        storage,
+        validatedData.email,
+        validatedData.name,
+        'event_unregistered',
+        'event',
+        result.data.id,
+        eventTitle
+      );
+      
       res.status(201).json(result.data);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -1369,6 +1483,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
+      
+      // Track member activity for the admin who suggested the patron
+      const ideaResult = await storage.getIdea(validatedData.ideaId);
+      const ideaTitle = ideaResult.success && ideaResult.data ? ideaResult.data.title : 'Idée';
+      
+      await trackMemberActivity(
+        storage,
+        req.user!.email,
+        `${req.user!.firstName} ${req.user!.lastName}`,
+        'patron_suggested',
+        'patron',
+        result.data.id,
+        `Mécène suggéré pour "${ideaTitle}"`
+      );
       
       res.status(201).json(result.data);
     } catch (error) {
