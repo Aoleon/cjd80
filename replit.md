@@ -83,6 +83,43 @@ Extended the platform with a complete Members CRM to track and manage community 
 - E2E test suite covering complete Members CRM workflow: member creation via idea proposal, admin access, search, profile viewing, activity timeline, statistics, profile editing, and persistence
 - All tests passing with expected UI/UX behavior
 
+### Member Subscription Management System
+Added optional subscription management to track member contributions and payment history:
+
+**Database Schema** (1 new table):
+- `member_subscriptions`: Track subscription history with memberEmail (foreign key to members), amountInCents (stored in cents), startDate, endDate (YYYY-MM-DD format), createdAt
+
+**Backend API** (2 secure routes):
+- GET `/api/admin/members/:email/subscriptions`: Retrieve member's subscription history
+- POST `/api/admin/members/:email/subscriptions`: Create new subscription record
+- All routes protected with `requirePermission('admin.view')` (accessible to all admin roles)
+- Validation with `insertMemberSubscriptionSchema` from drizzle-zod
+- Subscriptions ordered by startDate (most recent first)
+
+**Frontend Features**:
+- New "Souscriptions" tab in Members CRM (`/admin/members`)
+- Subscription history display with:
+  - Euro formatting (automatic cents → euros conversion, e.g., "150.00 €")
+  - French date formatting (dd/MM/yyyy, e.g., "01/01/2025")
+  - Icons for visual clarity (Euro, Calendar)
+  - ScrollArea for long histories
+  - Empty state message when no subscriptions
+- "Ajouter une souscription" dialog with:
+  - Amount input (in euros, validated >= 0.01)
+  - Start date and end date pickers (type="date")
+  - Validation: end date must be after start date
+  - Loading states during submission
+  - Success/error toasts
+
+**Data Handling**:
+- Backend stores amounts in cents (integer) for precision
+- Frontend converts euros ↔ cents automatically (Math.round for conversion)
+- Dates stored as YYYY-MM-DD strings, displayed in French format
+- TanStack Query integration with cache invalidation on mutations
+
+**Bug Fixes**:
+- Fixed TypeScript errors in routes.ts: replaced `result.error.code === "DUPLICATE"` with `result.error instanceof DuplicateError` for proper type safety (lines 1297, 1749)
+
 ## User Preferences
 ### Primary Communication Rule
 **🎯 CRITICAL**: Les remarques de l'utilisateur concernent **TOUJOURS** ce qu'il voit dans l'interface utilisateur (UI/frontend), sauf indication contraire explicite. Interpréter systématiquement depuis la perspective visuelle de l'utilisateur.
