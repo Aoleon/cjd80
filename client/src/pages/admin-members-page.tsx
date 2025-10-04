@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SimplePagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
@@ -61,6 +62,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { hasPermission } from "@shared/schema";
 import type { Member, MemberActivity, MemberSubscription } from "@shared/schema";
+
+interface PaginatedMembersResponse {
+  success: boolean;
+  data: Member[];
+  total: number;
+  page: number;
+  limit: number;
+}
 
 const updateMemberFormSchema = z.object({
   firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
@@ -93,13 +102,24 @@ export default function AdminMembersPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'proposed'>('all');
   const [scoreFilter, setScoreFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [activityFilter, setActivityFilter] = useState<'all' | 'recent' | 'inactive'>('all');
+  const [page, setPage] = useState(1);
+  const limit = 20;
 
   const hasViewPermission = user && hasPermission(user.role, 'admin.view');
 
-  const { data: members = [], isLoading: membersLoading } = useQuery<Member[]>({
-    queryKey: ["/api/admin/members"],
+  const { data: membersResponse, isLoading: membersLoading } = useQuery<PaginatedMembersResponse>({
+    queryKey: ["/api/admin/members", page, limit],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/members?page=${page}&limit=${limit}`);
+      if (!res.ok) throw new Error('Failed to fetch members');
+      return res.json();
+    },
     enabled: !!hasViewPermission,
   });
+
+  const members = membersResponse?.data || [];
+  const total = membersResponse?.total || 0;
+  const totalPages = Math.ceil(total / limit);
 
   const { data: selectedMember, isLoading: memberLoading } = useQuery<Member>({
     queryKey: ["/api/admin/members", selectedEmail],
@@ -585,6 +605,18 @@ export default function AdminMembersPage() {
                     </div>
                   )}
                 </ScrollArea>
+                
+                {/* Pagination */}
+                {!membersLoading && members && members.length > 0 && totalPages > 1 && (
+                  <div className="mt-4">
+                    <SimplePagination
+                      currentPage={page}
+                      totalPages={totalPages}
+                      totalItems={total}
+                      onPageChange={setPage}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

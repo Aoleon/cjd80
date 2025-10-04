@@ -55,6 +55,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { SimplePagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Loader2, Search, Plus, Edit, Trash2, Euro, Calendar, User, Building2, Phone, Mail, FileText } from "lucide-react";
@@ -123,6 +124,14 @@ const donationFormSchema = z.object({
 type PatronFormValues = z.infer<typeof patronFormSchema>;
 type DonationFormValues = z.infer<typeof donationFormSchema>;
 
+interface PaginatedPatronsResponse {
+  success: boolean;
+  data: Patron[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export default function AdminPatronsPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
@@ -134,15 +143,26 @@ export default function AdminPatronsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDonationDialogOpen, setIsDonationDialogOpen] = useState(false);
   const [deletePatronId, setDeletePatronId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const limit = 20;
 
   // Vérifier les permissions - super-admin uniquement
   const isSuperAdmin = user?.role === "super_admin";
 
   // Queries
-  const { data: patrons = [], isLoading: patronsLoading } = useQuery<Patron[]>({
-    queryKey: ["/api/patrons"],
+  const { data: patronsResponse, isLoading: patronsLoading } = useQuery<PaginatedPatronsResponse>({
+    queryKey: ["/api/patrons", page, limit],
+    queryFn: async () => {
+      const res = await fetch(`/api/patrons?page=${page}&limit=${limit}`);
+      if (!res.ok) throw new Error('Failed to fetch patrons');
+      return res.json();
+    },
     enabled: isSuperAdmin,
   });
+
+  const patrons = patronsResponse?.data || [];
+  const total = patronsResponse?.total || 0;
+  const totalPages = Math.ceil(total / limit);
 
   const { data: selectedPatron, isLoading: patronLoading } = useQuery<Patron>({
     queryKey: [`/api/patrons/${selectedPatronId}`],
@@ -470,6 +490,18 @@ export default function AdminPatronsPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+                
+                {/* Pagination */}
+                {!patronsLoading && patrons && patrons.length > 0 && totalPages > 1 && (
+                  <div className="mt-4">
+                    <SimplePagination
+                      currentPage={page}
+                      totalPages={totalPages}
+                      totalItems={total}
+                      onPageChange={setPage}
+                    />
                   </div>
                 )}
               </CardContent>

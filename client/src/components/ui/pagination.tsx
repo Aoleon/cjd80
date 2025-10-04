@@ -115,3 +115,74 @@ export {
   PaginationNext,
   PaginationPrevious,
 }
+
+interface SimplePaginationProps {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+  className?: string;
+}
+
+export function SimplePagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  onPageChange,
+  className
+}: SimplePaginationProps) {
+  const canGoPrevious = currentPage > 1;
+  const canGoNext = currentPage < totalPages;
+
+  return (
+    <div className={cn("flex flex-col sm:flex-row items-center justify-between gap-4 py-4", className)}>
+      <div className="text-sm text-muted-foreground">
+        Total : <span className="font-medium">{totalItems}</span> élément{totalItems !== 1 ? 's' : ''}
+      </div>
+      
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <button
+              onClick={() => canGoPrevious && onPageChange(currentPage - 1)}
+              disabled={!canGoPrevious}
+              data-testid="button-prev-page"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "default" }),
+                "gap-1 pl-2.5",
+                !canGoPrevious && "opacity-50 cursor-not-allowed"
+              )}
+              aria-label="Aller à la page précédente"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Précédent</span>
+            </button>
+          </PaginationItem>
+
+          <PaginationItem>
+            <span className="text-sm px-4" data-testid="text-page-info">
+              Page <span className="font-medium">{currentPage}</span> sur <span className="font-medium">{totalPages}</span>
+            </span>
+          </PaginationItem>
+
+          <PaginationItem>
+            <button
+              onClick={() => canGoNext && onPageChange(currentPage + 1)}
+              disabled={!canGoNext}
+              data-testid="button-next-page"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "default" }),
+                "gap-1 pr-2.5",
+                !canGoNext && "opacity-50 cursor-not-allowed"
+              )}
+              aria-label="Aller à la page suivante"
+            >
+              <span>Suivant</span>
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    </div>
+  );
+}

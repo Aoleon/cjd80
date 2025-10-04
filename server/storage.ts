@@ -79,7 +79,12 @@ export interface IStorage {
   deleteAdmin(email: string): Promise<Result<void>>;
   
   // Ideas - Ultra-robust with business validation
-  getIdeas(): Promise<Result<(Idea & { voteCount: number })[]>>;
+  getIdeas(options?: { page?: number; limit?: number }): Promise<Result<{
+    data: (Idea & { voteCount: number })[];
+    total: number;
+    page: number;
+    limit: number;
+  }>>;
   getIdea(id: string): Promise<Result<Idea | null>>;
   createIdea(idea: InsertIdea): Promise<Result<Idea>>;
   deleteIdea(id: string): Promise<Result<void>>;
@@ -87,7 +92,12 @@ export interface IStorage {
   updateIdea(id: string, ideaData: { title?: string; description?: string | null; proposedBy?: string; proposedByEmail?: string }): Promise<Result<Idea>>;
   transformIdeaToEvent(ideaId: string): Promise<Result<Event>>;
   isDuplicateIdea(title: string): Promise<boolean>;
-  getAllIdeas(): Promise<Result<(Idea & { voteCount: number })[]>>;
+  getAllIdeas(options?: { page?: number; limit?: number }): Promise<Result<{
+    data: (Idea & { voteCount: number })[];
+    total: number;
+    page: number;
+    limit: number;
+  }>>;
   
   // Votes - Ultra-robust with duplicate protection
   getVotesByIdea(ideaId: string): Promise<Result<Vote[]>>;
@@ -96,14 +106,24 @@ export interface IStorage {
   hasUserVoted(ideaId: string, email: string): Promise<boolean>;
   
   // Events - Ultra-robust with validation
-  getEvents(): Promise<Result<(Event & { inscriptionCount: number })[]>>;
+  getEvents(options?: { page?: number; limit?: number }): Promise<Result<{
+    data: (Event & { inscriptionCount: number })[];
+    total: number;
+    page: number;
+    limit: number;
+  }>>;
   getEvent(id: string): Promise<Result<Event | null>>;
   createEvent(event: InsertEvent): Promise<Result<Event>>;
   updateEvent(id: string, event: Partial<InsertEvent>): Promise<Result<Event>>;
   deleteEvent(id: string): Promise<Result<void>>;
   updateEventStatus(id: string, status: string): Promise<Result<void>>;
   isDuplicateEvent(title: string, date: Date): Promise<boolean>;
-  getAllEvents(): Promise<Result<(Event & { inscriptionCount: number; unsubscriptionCount: number })[]>>;
+  getAllEvents(options?: { page?: number; limit?: number }): Promise<Result<{
+    data: (Event & { inscriptionCount: number; unsubscriptionCount: number })[];
+    total: number;
+    page: number;
+    limit: number;
+  }>>;
   
   // Inscriptions - Ultra-robust with duplicate protection
   getEventInscriptions(eventId: string): Promise<Result<Inscription[]>>;
@@ -143,7 +163,12 @@ export interface IStorage {
   // Gestion des mécènes
   createPatron(patron: InsertPatron): Promise<Result<Patron>>;
   proposePatron(data: InsertPatron): Promise<Result<Patron>>;
-  getPatrons(): Promise<Result<Patron[]>>;
+  getPatrons(options?: { page?: number; limit?: number }): Promise<Result<{
+    data: Patron[];
+    total: number;
+    page: number;
+    limit: number;
+  }>>;
   getPatronById(id: string): Promise<Result<Patron | null>>;
   getPatronByEmail(email: string): Promise<Result<Patron | null>>;
   updatePatron(id: string, data: z.infer<typeof updatePatronSchema>): Promise<Result<Patron>>;
@@ -166,7 +191,12 @@ export interface IStorage {
   // Gestion des membres
   createOrUpdateMember(memberData: Partial<InsertMember> & { email: string }): Promise<Result<Member>>;
   proposeMember(memberData: Partial<InsertMember> & { email: string; firstName: string; lastName: string; proposedBy: string }): Promise<Result<Member>>;
-  getMembers(): Promise<Result<Member[]>>;
+  getMembers(options?: { page?: number; limit?: number }): Promise<Result<{
+    data: Member[];
+    total: number;
+    page: number;
+    limit: number;
+  }>>;
   getMemberByEmail(email: string): Promise<Result<Member | null>>;
   updateMember(email: string, data: z.infer<typeof updateMemberSchema>): Promise<Result<Member>>;
   deleteMember(email: string): Promise<Result<void>>;
@@ -378,8 +408,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Ultra-robust Ideas methods with Result pattern and business validation
-  async getIdeas(): Promise<Result<(Idea & { voteCount: number })[]>> {
+  async getIdeas(options?: { page?: number; limit?: number }): Promise<Result<{
+    data: (Idea & { voteCount: number })[];
+    total: number;
+    page: number;
+    limit: number;
+  }>> {
     try {
+      const page = Math.max(1, options?.page || 1);
+      const limit = Math.min(100, Math.max(1, options?.limit || 20));
+      const offset = (page - 1) * limit;
+
+      // Count total
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(ideas)
+        .where(or(eq(ideas.status, 'approved'), eq(ideas.status, 'completed')));
+
+      // Get paginated results
       const result = await db
         .select({
           id: ideas.id,
@@ -397,16 +443,26 @@ export class DatabaseStorage implements IStorage {
         })
         .from(ideas)
         .leftJoin(votes, eq(ideas.id, votes.ideaId))
-        .where(or(eq(ideas.status, 'approved'), eq(ideas.status, 'completed'))) // Show approved and completed ideas to public
+        .where(or(eq(ideas.status, 'approved'), eq(ideas.status, 'completed')))
         .groupBy(ideas.id)
-        .orderBy(desc(ideas.featured), desc(ideas.createdAt)); // Featured en premier, puis par date
+        .orderBy(desc(ideas.featured), desc(ideas.createdAt))
+        .limit(limit)
+        .offset(offset);
       
       const formattedResult = result.map(row => ({
         ...row,
         voteCount: Number(row.voteCount),
       }));
 
-      return { success: true, data: formattedResult };
+      return { 
+        success: true, 
+        data: {
+          data: formattedResult,
+          total: countResult.count,
+          page,
+          limit
+        }
+      };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération des idées: ${error}`) };
     }
@@ -512,8 +568,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Ultra-robust Events methods with Result pattern and business validation
-  async getEvents(): Promise<Result<(Event & { inscriptionCount: number })[]>> {
+  async getEvents(options?: { page?: number; limit?: number }): Promise<Result<{
+    data: (Event & { inscriptionCount: number })[];
+    total: number;
+    page: number;
+    limit: number;
+  }>> {
     try {
+      const page = Math.max(1, options?.page || 1);
+      const limit = Math.min(100, Math.max(1, options?.limit || 20));
+      const offset = (page - 1) * limit;
+
+      // Count total
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(events)
+        .where(sql`${events.date} > NOW()`);
+
+      // Get paginated results
       const result = await db
         .select({
           id: events.id,
@@ -539,16 +611,26 @@ export class DatabaseStorage implements IStorage {
         })
         .from(events)
         .leftJoin(inscriptions, eq(events.id, inscriptions.eventId))
-        .where(sql`${events.date} > NOW()`) // Only show future events to public
+        .where(sql`${events.date} > NOW()`)
         .groupBy(events.id)
-        .orderBy(events.date);
+        .orderBy(events.date)
+        .limit(limit)
+        .offset(offset);
       
       const formattedResult = result.map(row => ({
         ...row,
         inscriptionCount: Number(row.inscriptionCount),
       }));
 
-      return { success: true, data: formattedResult };
+      return { 
+        success: true, 
+        data: {
+          data: formattedResult,
+          total: countResult.count,
+          page,
+          limit
+        }
+      };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération des événements: ${error}`) };
     }
@@ -983,8 +1065,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Admin-only methods for complete data access and moderation
-  async getAllIdeas(): Promise<Result<(Idea & { voteCount: number })[]>> {
+  async getAllIdeas(options?: { page?: number; limit?: number }): Promise<Result<{
+    data: (Idea & { voteCount: number })[];
+    total: number;
+    page: number;
+    limit: number;
+  }>> {
     try {
+      const page = Math.max(1, options?.page || 1);
+      const limit = Math.min(100, Math.max(1, options?.limit || 20));
+      const offset = (page - 1) * limit;
+
+      // Count total
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(ideas);
+
+      // Get paginated results
       const result = await db
         .select({
           id: ideas.id,
@@ -1003,21 +1100,46 @@ export class DatabaseStorage implements IStorage {
         .from(ideas)
         .leftJoin(votes, eq(ideas.id, votes.ideaId))
         .groupBy(ideas.id)
-        .orderBy(desc(ideas.featured), desc(ideas.createdAt)); // Featured en premier
+        .orderBy(desc(ideas.featured), desc(ideas.createdAt))
+        .limit(limit)
+        .offset(offset);
       
       const formattedResult = result.map(row => ({
         ...row,
         voteCount: Number(row.voteCount),
       }));
 
-      return { success: true, data: formattedResult };
+      return { 
+        success: true, 
+        data: {
+          data: formattedResult,
+          total: countResult.count,
+          page,
+          limit
+        }
+      };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération admin des idées: ${error}`) };
     }
   }
 
-  async getAllEvents(): Promise<Result<(Event & { inscriptionCount: number; unsubscriptionCount: number })[]>> {
+  async getAllEvents(options?: { page?: number; limit?: number }): Promise<Result<{
+    data: (Event & { inscriptionCount: number; unsubscriptionCount: number })[];
+    total: number;
+    page: number;
+    limit: number;
+  }>> {
     try {
+      const page = Math.max(1, options?.page || 1);
+      const limit = Math.min(100, Math.max(1, options?.limit || 20));
+      const offset = (page - 1) * limit;
+
+      // Count total
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(events);
+
+      // Get paginated results
       const result = await db
         .select({
           id: events.id,
@@ -1046,7 +1168,9 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(inscriptions, eq(events.id, inscriptions.eventId))
         .leftJoin(unsubscriptions, eq(events.id, unsubscriptions.eventId))
         .groupBy(events.id)
-        .orderBy(desc(events.date)); // Admin sees all events, past and future
+        .orderBy(desc(events.date))
+        .limit(limit)
+        .offset(offset);
       
       const formattedResult = result.map(row => ({
         ...row,
@@ -1054,7 +1178,15 @@ export class DatabaseStorage implements IStorage {
         unsubscriptionCount: Number(row.unsubscriptionCount),
       }));
 
-      return { success: true, data: formattedResult };
+      return { 
+        success: true, 
+        data: {
+          data: formattedResult,
+          total: countResult.count,
+          page,
+          limit
+        }
+      };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération admin des événements: ${error}`) };
     }
@@ -1460,15 +1592,41 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPatrons(): Promise<Result<Patron[]>> {
+  async getPatrons(options?: { page?: number; limit?: number }): Promise<Result<{
+    data: Patron[];
+    total: number;
+    page: number;
+    limit: number;
+  }>> {
     try {
-      console.log('[DB Query] select * from "patrons" order by "created_at" desc');
+      const page = Math.max(1, options?.page || 1);
+      const limit = Math.min(100, Math.max(1, options?.limit || 20));
+      const offset = (page - 1) * limit;
+
+      // Count total
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(patrons);
+
+      console.log('[DB Query] select * from "patrons" order by "created_at" desc limit', limit, 'offset', offset);
+      
+      // Get paginated results
       const patronsList = await db
         .select()
         .from(patrons)
-        .orderBy(desc(patrons.createdAt));
+        .orderBy(desc(patrons.createdAt))
+        .limit(limit)
+        .offset(offset);
       
-      return { success: true, data: patronsList };
+      return { 
+        success: true, 
+        data: {
+          data: patronsList,
+          total: countResult.count,
+          page,
+          limit
+        }
+      };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération des mécènes: ${error}`) };
     }
@@ -1849,14 +2007,39 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getMembers(): Promise<Result<Member[]>> {
+  async getMembers(options?: { page?: number; limit?: number }): Promise<Result<{
+    data: Member[];
+    total: number;
+    page: number;
+    limit: number;
+  }>> {
     try {
+      const page = Math.max(1, options?.page || 1);
+      const limit = Math.min(100, Math.max(1, options?.limit || 20));
+      const offset = (page - 1) * limit;
+
+      // Count total
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(members);
+
+      // Get paginated results
       const membersList = await db
         .select()
         .from(members)
-        .orderBy(desc(members.lastActivityAt));
+        .orderBy(desc(members.lastActivityAt))
+        .limit(limit)
+        .offset(offset);
 
-      return { success: true, data: membersList };
+      return { 
+        success: true, 
+        data: {
+          data: membersList,
+          total: countResult.count,
+          page,
+          limit
+        }
+      };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération des membres: ${error}`) };
     }

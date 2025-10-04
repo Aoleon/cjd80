@@ -161,7 +161,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Ideas routes
   app.get("/api/ideas", async (req, res, next) => {
     try {
-      const ideas = await storage.getIdeas();
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      const ideas = await storage.getIdeas({ page, limit });
       res.json(ideas);
     } catch (error) {
       next(error);
@@ -294,7 +297,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Events routes
   app.get("/api/events", async (req, res, next) => {
     try {
-      const events = await storage.getEvents();
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      const events = await storage.getEvents({ page, limit });
       res.json(events);
     } catch (error) {
       next(error);
@@ -1332,7 +1338,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lister tous les mécènes
   app.get("/api/patrons", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.getPatrons();
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      const result = await storage.getPatrons({ page, limit });
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1638,13 +1647,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lister tous les membres avec leur score d'engagement et dernière activité
   app.get("/api/admin/members", requirePermission('admin.view'), async (req, res, next) => {
     try {
-      const result = await storage.getMembers();
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      const result = await storage.getMembers({ page, limit });
       
       if (!result.success) {
         return res.status(500).json({ message: result.error.message });
       }
       
-      res.json({ success: true, data: result.data });
+      res.json({ success: true, ...result.data });
     } catch (error) {
       next(error);
     }

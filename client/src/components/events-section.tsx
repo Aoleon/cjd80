@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Calendar, MapPin, Users, CalendarPlus, UserMinus, Loader2, Clock, Star, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { SimplePagination } from "@/components/ui/pagination";
 import EventRegistrationModal from "./event-registration-modal";
 import type { Event } from "@shared/schema";
 
@@ -10,14 +11,35 @@ interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
   inscriptionCount: number;
 }
 
+interface PaginatedEventsResponse {
+  success: boolean;
+  data: {
+    data: EventWithInscriptions[];
+    total: number;
+    page: number;
+    limit: number;
+  };
+}
+
 export default function EventsSection() {
   const [selectedEvent, setSelectedEvent] = useState<EventWithInscriptions | null>(null);
   const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'register' | 'unsubscribe'>('register');
+  const [page, setPage] = useState(1);
+  const limit = 20;
 
-  const { data: events, isLoading, error } = useQuery<EventWithInscriptions[]>({
-    queryKey: ["/api/events"],
+  const { data: response, isLoading, error } = useQuery<PaginatedEventsResponse>({
+    queryKey: ["/api/events", page, limit],
+    queryFn: async () => {
+      const res = await fetch(`/api/events?page=${page}&limit=${limit}`);
+      if (!res.ok) throw new Error('Failed to fetch events');
+      return res.json();
+    }
   });
+
+  const events = response?.data?.data || [];
+  const total = response?.data?.total || 0;
+  const totalPages = Math.ceil(total / limit);
 
   if (error) {
     return (
@@ -288,6 +310,16 @@ export default function EventsSection() {
             <p className="text-blue-700 text-sm font-medium">💡 En attendant, n'hésitez pas à proposer vos propres idées d'événements !</p>
           </div>
         </div>
+      )}
+
+      {/* Pagination */}
+      {!isLoading && events && events.length > 0 && totalPages > 1 && (
+        <SimplePagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={total}
+          onPageChange={setPage}
+        />
       )}
 
       <EventRegistrationModal

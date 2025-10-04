@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ThumbsUp, Lightbulb, Loader2, Vote, Plus, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { SimplePagination } from "@/components/ui/pagination";
 import VoteModal from "./vote-modal";
 import type { Idea } from "@shared/schema";
 import { IDEA_STATUS } from "@shared/schema";
@@ -10,6 +11,16 @@ import boiteKiffImage from "@assets/boite-kiff_1756106212980.jpeg";
 
 interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
   voteCount: number;
+}
+
+interface PaginatedIdeasResponse {
+  success: boolean;
+  data: {
+    data: IdeaWithVotes[];
+    total: number;
+    page: number;
+    limit: number;
+  };
 }
 
 const getStatusColor = (status: string) => {
@@ -58,29 +69,21 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
   const [selectedIdea, setSelectedIdea] = useState<IdeaWithVotes | null>(null);
   const [voteModalOpen, setVoteModalOpen] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const limit = 20;
 
-  const { data: rawIdeas, isLoading, error } = useQuery<IdeaWithVotes[]>({
-    queryKey: ["/api/ideas"],
+  const { data: response, isLoading, error } = useQuery<PaginatedIdeasResponse>({
+    queryKey: ["/api/ideas", page, limit],
+    queryFn: async () => {
+      const res = await fetch(`/api/ideas?page=${page}&limit=${limit}`);
+      if (!res.ok) throw new Error('Failed to fetch ideas');
+      return res.json();
+    }
   });
 
-  // Trier les idées : idées soumises au vote d'abord, puis réalisées, puis autres
-  const ideas = rawIdeas ? [...rawIdeas].sort((a, b) => {
-    const aApproved = a.status === IDEA_STATUS.APPROVED;
-    const bApproved = b.status === IDEA_STATUS.APPROVED;
-    const aCompleted = a.status === IDEA_STATUS.COMPLETED;
-    const bCompleted = b.status === IDEA_STATUS.COMPLETED;
-    
-    // 1. Idées approuvées (soumises au vote) en premier
-    if (aApproved && !bApproved) return -1;
-    if (!aApproved && bApproved) return 1;
-    
-    // 2. Idées réalisées juste après les approuvées
-    if (aCompleted && !bCompleted && !bApproved) return -1;
-    if (!aCompleted && bCompleted && !aApproved) return 1;
-    
-    // 3. Sinon, conserver l'ordre original (par date de création descendante)
-    return 0;
-  }) : [];
+  const ideas = response?.data?.data || [];
+  const total = response?.data?.total || 0;
+  const totalPages = Math.ceil(total / limit);
 
   if (error) {
     return (
@@ -210,6 +213,16 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
           <h3 className="text-lg font-medium text-gray-600 mb-2">Aucune idée pour le moment</h3>
           <p className="text-gray-500">Soyez le premier à proposer une idée !</p>
         </div>
+      )}
+
+      {/* Pagination */}
+      {!isLoading && ideas && ideas.length > 0 && totalPages > 1 && (
+        <SimplePagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={total}
+          onPageChange={setPage}
+        />
       )}
 
       {/* Add Idea Section */}
