@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import AdminHeader from "@/components/admin-header";
 import {
   Card,
   CardContent,
@@ -395,24 +396,7 @@ export default function AdminMembersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <header className="bg-cjd-green text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">Gestion des Membres</h1>
-              <p className="text-green-100">Consultez et gérez les membres de votre communauté CJD</p>
-            </div>
-            <Button
-              variant="secondary"
-              onClick={() => setLocation("/admin")}
-              data-testid="button-back-admin"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour admin
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AdminHeader />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-6">

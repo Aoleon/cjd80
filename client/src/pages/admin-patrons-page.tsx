@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import AdminHeader from "@/components/admin-header";
 import {
   Card,
   CardContent,
@@ -402,23 +403,7 @@ export default function AdminPatronsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-cjd-green text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">Gestion des Mécènes</h1>
-              <p className="text-green-100">CRM - Relations entreprises</p>
-            </div>
-            <Button
-              variant="secondary"
-              onClick={() => setLocation("/admin")}
-              data-testid="button-back-admin"
-            >
-              Retour admin
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AdminHeader />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-6">

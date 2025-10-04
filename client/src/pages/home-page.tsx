@@ -1,15 +1,16 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import Header from "@/components/header";
 import IdeasSection from "@/components/ideas-section";
 import ProposeSection from "@/components/propose-section";
 import EventsSection from "@/components/events-section";
-import AdminSection from "@/components/admin-section";
 import ToolsPage from "@/pages/tools-page";
 
-type Section = "ideas" | "propose" | "events" | "tools" | "admin";
+type Section = "ideas" | "propose" | "events" | "tools";
 
 export default function HomePage() {
   const [activeSection, setActiveSection] = useState<Section>("ideas");
+  const [, setLocation] = useLocation();
 
   return (
     <div className="font-lato bg-gray-50 min-h-screen">
@@ -32,7 +33,6 @@ export default function HomePage() {
         {activeSection === "propose" && <ProposeSection />}
         {activeSection === "events" && <EventsSection />}
         {activeSection === "tools" && <ToolsPage />}
-        {activeSection === "admin" && <AdminSection />}
       </main>
 
       <footer className="bg-gray-800 text-white py-6 sm:py-8 mt-12 sm:mt-16">
@@ -49,7 +49,7 @@ export default function HomePage() {
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
               <button
-                onClick={() => setActiveSection("admin")}
+                onClick={() => setLocation("/admin")}
                 className="text-xs sm:text-sm text-gray-400 hover:text-cjd-green transition-colors duration-200 underline"
                 data-testid="link-admin"
               >

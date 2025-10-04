@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import cjdLogo from "@assets/logo-cjd-social_1756108273665.jpg";
 
 interface HeaderProps {
-  activeSection: "ideas" | "propose" | "events" | "tools" | "admin";
-  setActiveSection: (section: "ideas" | "propose" | "events" | "tools" | "admin") => void;
+  activeSection: "ideas" | "propose" | "events" | "tools";
+  setActiveSection: (section: "ideas" | "propose" | "events" | "tools") => void;
 }
 
 export default function Header({ activeSection, setActiveSection }: HeaderProps) {
