@@ -1,169 +1,7 @@
 # CJD Amiens - Application Web Interne "Boîte à Kiffs"
 
 ## Overview
-This project is an internal web application for the "Centre des Jeunes Dirigeants (CJD) d'Amiens". Its primary purpose is to facilitate collaborative idea sharing ("Boîte à Kiffs"), enable voting on proposals, and manage events with HelloAsso integration. The application serves internal CJD Amiens members (business leaders, entrepreneurs). The project involves migrating from an existing Firestore-based system to a modern, responsive, and optimized architecture, aiming for high performance and a user-friendly interface.
-
-## Recent Changes (October 2025)
-### CRM System for Patron Management
-Extended the platform with a complete CRM (Customer Relationship Management) system to track and manage potential patrons/donors for the organization:
-
-**Database Schema** (3 new tables):
-- `patrons`: Store patron information (firstName, lastName, email, company, phone, role, notes)
-- `patron_donations`: Track donation history with amounts in cents, dates (YYYY-MM-DD format), and occasions
-- `idea_patron_proposals`: Link ideas with potential patron sponsors, track proposal status (proposed, contacted, declined, converted)
-
-**Backend API** (16 secure routes):
-- Patron CRUD: GET/POST/PATCH/DELETE `/api/patrons`, GET `/api/patrons/:id`
-- Donations: GET/POST `/api/patrons/:id/donations`
-- Proposals: GET `/api/patrons/:id/proposals`, PATCH `/api/proposals/:id`
-- All routes protected with `requirePermission('admin.manage')` (super-admin only)
-
-**Frontend Features**:
-- `/admin/patrons`: Dedicated CRM page with responsive list/detail layout
-- Search functionality with local filtering
-- Tabs for patron details, donation history, and proposal timeline
-- Quick patron creation dialog accessible from idea proposal form
-- Euro formatting for amounts (automatic conversion from cents)
-- French date formatting (dd/MM/yyyy)
-- Status badges with colors (proposed=orange, contacted=blue, declined=red, converted=green)
-
-**Integration**:
-- Patron selector added to idea proposal form (`/propose`) with autocomplete and quick creation
-- Admin navigation updated: "Mécènes" link visible only for super-admin role
-- TanStack Query integration with proper cache invalidation
-- Full TypeScript coverage with Zod validation schemas
-
-**Bug Fixes**:
-- Fixed date validation: `donatedAt` now accepts YYYY-MM-DD format (was expecting datetime)
-- Corrected TanStack Query keys to use complete URLs for proper cache management
-- Added permission guards on all queries to prevent unauthorized API calls
-
-**Testing**:
-- E2E test suite covering full CRM workflow: patron creation, donation tracking, idea-patron linking, status updates
-- All tests passing with expected UI/UX behavior
-
-### Members CRM System
-Extended the platform with a complete Members CRM to track and manage community member activity and engagement:
-
-**Database Schema** (2 new tables):
-- `members`: Store member information (email, firstName, lastName, company, phone, role, notes) with automatic tracking of engagementScore, activityCount, firstSeenAt, lastActivityAt
-- `member_activities`: Track all member actions (idea_proposed, vote_cast, event_registered, event_unregistered, patron_suggested) with timestamps and metadata
-
-**Engagement Scoring System:**
-- `idea_proposed`: +10 points
-- `vote_cast`: +2 points
-- `event_registered`: +5 points
-- `event_unregistered`: -3 points
-- `patron_suggested`: +8 points
-
-**Backend API** (4 secure routes):
-- Members CRUD: GET/PATCH `/api/admin/members`, GET `/api/admin/members/:email`, GET `/api/admin/members/:email/activities`
-- All routes protected with `requirePermission('admin.view')` (accessible to all admin roles, not just super_admin)
-- Automatic member creation/update via `trackMemberActivity()` middleware integrated into existing routes (ideas, votes, events, patrons)
-
-**Frontend Features**:
-- `/admin/members`: Dedicated Members CRM page with responsive list/detail layout
-- Real-time search functionality (filter by name, email, or company)
-- Member cards displaying engagement score badges with color coding
-- 3 tabs: Informations (editable profile), Activité (timeline with icons), Statistiques (engagement breakdown)
-- Sortable by engagement score (highest first)
-- Admin navigation updated: "Membres" link visible for all admin roles
-
-**Form Enrichment**:
-- Added optional `company` and `phone` fields to idea proposal forms (`/propose` page and homepage section)
-- Added optional `company` and `phone` fields to event registration modal
-- Automatic member profile creation/enrichment when users interact with the platform
-
-**Bug Fixes**:
-- Fixed TanStack Query data extraction: queries now correctly use `Member[]` type instead of nested `{ success: boolean; data: Member[] }`
-- Corrected data-testid naming: changed `member-item-${email}` to `card-member-${email}` for consistency
-- Fixed permission guard: `admin.view` permission now returns true for all admin roles
-
-**Testing**:
-- E2E test suite covering complete Members CRM workflow: member creation via idea proposal, admin access, search, profile viewing, activity timeline, statistics, profile editing, and persistence
-- All tests passing with expected UI/UX behavior
-
-### Member Subscription Management System
-Added optional subscription management to track member contributions and payment history:
-
-**Database Schema** (1 new table):
-- `member_subscriptions`: Track subscription history with memberEmail (foreign key to members), amountInCents (stored in cents), startDate, endDate (YYYY-MM-DD format), createdAt
-
-**Backend API** (2 secure routes):
-- GET `/api/admin/members/:email/subscriptions`: Retrieve member's subscription history
-- POST `/api/admin/members/:email/subscriptions`: Create new subscription record
-- All routes protected with `requirePermission('admin.view')` (accessible to all admin roles)
-- Validation with `insertMemberSubscriptionSchema` from drizzle-zod
-- Subscriptions ordered by startDate (most recent first)
-
-**Frontend Features**:
-- New "Souscriptions" tab in Members CRM (`/admin/members`)
-- Subscription history display with:
-  - Euro formatting (automatic cents → euros conversion, e.g., "150.00 €")
-  - French date formatting (dd/MM/yyyy, e.g., "01/01/2025")
-  - Icons for visual clarity (Euro, Calendar)
-  - ScrollArea for long histories
-  - Empty state message when no subscriptions
-- "Ajouter une souscription" dialog with:
-  - Amount input (in euros, validated >= 0.01)
-  - Start date and end date pickers (type="date")
-  - Validation: end date must be after start date
-  - Loading states during submission
-  - Success/error toasts
-
-**Data Handling**:
-- Backend stores amounts in cents (integer) for precision
-- Frontend converts euros ↔ cents automatically (Math.round for conversion)
-- Dates stored as YYYY-MM-DD strings, displayed in French format
-- TanStack Query integration with cache invalidation on mutations
-
-**Bug Fixes**:
-- Fixed TypeScript errors in routes.ts: replaced `result.error.code === "DUPLICATE"` with `result.error instanceof DuplicateError` for proper type safety (lines 1297, 1749)
-
-### Admin Dashboard
-Added a comprehensive dashboard as the default landing page for administrators to get a quick overview of platform activity:
-
-**Database Schema** (no new tables):
-- Leverages existing tables: `members`, `patrons`, `ideas`, `events`
-
-**Backend API** (1 new route):
-- GET `/api/admin/stats`: Retrieve aggregated platform statistics
-- All routes protected with `requirePermission('admin.view')` (accessible to all admin roles)
-- **Performance Optimized**: Uses SQL COUNT queries with WHERE filters instead of loading entire tables
-- 12 optimized COUNT queries for: members (total, active, proposed, recent), patrons (total, active, proposed), ideas (total, pending, approved), events (total, upcoming)
-
-**Frontend Features**:
-- `/admin` (default tab): Dashboard with 4 statistics cards + quick actions section
-- **Statistics Cards**:
-  - Membres: total count, active, proposed, recent activity (30 days) - clickable to `/admin/members`
-  - Mécènes: total count, active, proposed - clickable to `/admin/patrons` (super_admin only)
-  - Idées: total count, pending, approved
-  - Événements: total count, upcoming events
-- **Quick Actions Section**:
-  - "Propositions en attente" button with badge (members + patrons pending count)
-  - "Nouvelles souscriptions" button linking to Members CRM
-  - "Idées en attente" button with badge (pending ideas count)
-- **UX Features**:
-  - Responsive design: 1 col mobile, 2 cols tablet, 4 cols desktop
-  - Hover effects on clickable cards
-  - Loading state with spinner
-  - Error state with retry button
-  - Dark mode support
-  - Modern design with icons (UserCircle, Users, Lightbulb, Calendar, TrendingUp)
-
-**Performance**:
-- Backend uses targeted SQL COUNT queries to avoid memory overload
-- Scalable for production with large datasets
-- No in-memory filtering - all calculations done at database level
-
-**Error Handling**:
-- Graceful error display with AlertCircle icon
-- Retry button to invalidate cache and refetch
-- Toast notifications for user feedback
-
-**Bug Fixes**:
-- Harmonized `EventWithInscriptions` type across admin-section.tsx and event-detail-modal.tsx
-- Added missing `unsubscriptionCount` property to prevent TypeScript errors
+This project is an internal web application for the "Centre des Jeunes Dirigeants (CJD) d'Amiens". Its primary purpose is to facilitate collaborative idea sharing ("Boîte à Kiffs"), enable voting on proposals, and manage events with HelloAsso integration. The application serves internal CJD Amiens members (business leaders, entrepreneurs). The project involves migrating from an existing Firestore-based system to a modern, responsive, and optimized architecture, aiming for high performance and a user-friendly interface. It includes a comprehensive CRM for patron and member management, an engagement scoring system, subscription tracking, and an admin dashboard for quick overviews.
 
 ## User Preferences
 ### Primary Communication Rule
@@ -171,7 +9,7 @@ Added a comprehensive dashboard as the default landing page for administrators t
 
 ### Response Format
 - **Langage**: Simple et quotidien, éviter le jargon technique complexe
-- **Structure**: 
+- **Structure**:
   1. Expliquer d'abord ce que vous allez faire et pourquoi
   2. Décomposer les tâches complexes en étapes claires (max 5 étapes)
   3. Utiliser des listes à puces (✓) pour montrer les progrès
@@ -194,39 +32,43 @@ Added a comprehensive dashboard as the default landing page for administrators t
 ## System Architecture
 ### Tech Stack
 - **Frontend**: React 18.3, TypeScript 5.6, Vite 6, Tailwind CSS 3.4, shadcn/ui
-- **Backend**: Express.js 4.21, TypeScript, Passport.js, compression, helmet
+- **Backend**: Express.js 4.21, TypeScript, Passport.js
 - **Database**: PostgreSQL 16 (Neon) with Drizzle ORM
 - **State Management**: TanStack Query v5 (server), Zustand (client), Context (auth)
 - **Testing**: Vitest, React Testing Library, Playwright, MSW
 
 ### Core Architectural Principles
 - **Test-Driven Development**: "Test First, Code Second, Refactor Third" with a 90% test coverage target across unit, integration, and E2E tests.
-- **Strict TypeScript**: Enforced strict mode, no implicit `any`, strict null checks, and unused variable/parameter detection.
+- **Strict TypeScript**: Enforced strict mode, no implicit `any`, strict null checks.
 - **Component Pattern**: Standardized functional components with explicit types, early returns, custom hooks, effects with cleanup, memoized values, and useCallback for event handlers.
 - **API Pattern**: Use of `Result` type for all API operations for consistent error handling.
 - **Database Transactions**: All related database operations must use transactions for data integrity and automatic rollback on failure.
 - **Anti-Pattern Prevention**: Strategies to detect and prevent common issues like state mutation, missing list keys, incorrect `useEffect` dependencies, unhandled promises, and SQL injection.
 
-### Performance Optimizations
-- **Database**: Connection pooling (min=2, max=20), optimized indexes, prepared statements, and query execution times under 1ms.
-- **Frontend**: Code splitting, image lazy loading, virtual scrolling, memoization, and Service Worker caching.
-- **Backend**: Response compression, ETag caching, rate limiting (100 req/min), and circuit breakers for external services.
+### Feature Specifications
+- **Admin Interface**: Separate visual and functional admin interface with distinct navigation, user info display, and responsive design.
+- **Pagination**: Backend pagination support for lists (ideas, events, members, patrons) and a reusable frontend pagination component.
+- **CRM Systems**:
+    - **Patron Management**: Database schema for patrons, donations, and idea proposals; secure API routes for CRUD and related actions; frontend CRM page with search, tabs, and integration into idea proposal forms.
+    - **Member Management**: Database schema for members and activities; engagement scoring system; secure API routes; frontend CRM page with search, member cards, activity timelines, and statistics.
+    - **Member Subscriptions**: Database schema for subscriptions; secure API routes for retrieving and adding subscriptions; frontend "Souscriptions" tab in Members CRM with display and add functionality.
+- **Admin Dashboard**: Aggregated platform statistics from members, patrons, ideas, and events; quick actions section; responsive design with modern UI elements.
+- **Performance Optimizations**: Consolidated database queries (e.g., dashboard stats), composite indexes, CSS cleanup, and backend/frontend optimizations for speed and scalability.
 
 ### Security Measures
-- **Authentication**: Scrypt password hashing, 24h rolling session timeout, CSRF tokens, and login rate limiting.
-- **Data Protection**: Zod schema validation on all endpoints, Drizzle ORM for SQL injection prevention, XSS prevention via React auto-escaping and CSP headers, and environment variables for secrets management.
+- **Authentication**: Scrypt password hashing, rolling session timeout, CSRF tokens, login rate limiting.
+- **Data Protection**: Zod schema validation on all endpoints, Drizzle ORM for SQL injection prevention, XSS prevention, and environment variables for secrets.
 
 ### Monitoring & Observability
-- Integrated performance monitoring for database queries (logging slow queries), API calls, and error capture with context.
+- Integrated performance monitoring for database queries, API calls, and error capture.
 
 ### Deployment Strategy
-- **Autoscale Deployments**: Preferred for web applications and APIs with variable traffic and horizontal scalability.
-- **Reserved VM Deployments**: For background processes, persistent connections, and real-time systems.
-- **Deployment Process**: Local testing, staging deployment, performance validation, production deployment with auto-scaling, and continuous monitoring.
+- **Autoscale Deployments**: Preferred for web applications and APIs.
+- **Reserved VM Deployments**: For background processes and real-time systems.
+- **Process**: Local testing, staging, performance validation, production with auto-scaling, and continuous monitoring.
 
 ## External Dependencies
 - **Core**: `react`, `typescript`, `vite`, `express`, `postgresql`
 - **UI**: `tailwindcss`, `@shadcn/ui`, `@radix-ui`, `lucide-react`
 - **State Management**: `@tanstack/react-query`, `zustand`, `react-hook-form`, `zod`
 - **Testing**: `vitest`, `@testing-library/react`, `playwright`, `msw`
-```
