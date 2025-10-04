@@ -110,6 +110,7 @@ export const events = pgTable("events", {
 }, (table) => ({
   statusIdx: index("events_status_idx").on(table.status),
   dateIdx: index("events_date_idx").on(table.date),
+  statusDateIdx: index("events_status_date_idx").on(table.status, table.date),
 }));
 
 // Inscriptions table  
