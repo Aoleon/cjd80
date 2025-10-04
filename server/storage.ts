@@ -2031,73 +2031,58 @@ export class DatabaseStorage implements IStorage {
       const now = new Date();
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-      // Requêtes SQL optimisées avec COUNT et WHERE
+      // Requêtes SQL consolidées avec COUNT FILTER (12 → 4 requêtes)
       
-      // Membres
-      const [membersTotal] = await db.select({ count: sql<number>`count(*)::int` })
-        .from(members);
-      const [membersActive] = await db.select({ count: sql<number>`count(*)::int` })
-        .from(members)
-        .where(eq(members.status, 'active'));
-      const [membersProposed] = await db.select({ count: sql<number>`count(*)::int` })
-        .from(members)
-        .where(eq(members.status, 'proposed'));
-      const [membersRecent] = await db.select({ count: sql<number>`count(*)::int` })
-        .from(members)
-        .where(sql`${members.lastActivityAt} >= ${thirtyDaysAgo.toISOString()}`);
+      // Membres - 1 seule requête avec COUNT FILTER
+      const [membersStats] = await db.select({
+        total: sql<number>`count(*)::int`,
+        active: sql<number>`count(*) FILTER (WHERE ${members.status} = 'active')::int`,
+        proposed: sql<number>`count(*) FILTER (WHERE ${members.status} = 'proposed')::int`,
+        recentActivity: sql<number>`count(*) FILTER (WHERE ${members.lastActivityAt} >= ${thirtyDaysAgo.toISOString()})::int`,
+      }).from(members);
 
-      // Mécènes
-      const [patronsTotal] = await db.select({ count: sql<number>`count(*)::int` })
-        .from(patrons);
-      const [patronsActive] = await db.select({ count: sql<number>`count(*)::int` })
-        .from(patrons)
-        .where(eq(patrons.status, 'active'));
-      const [patronsProposed] = await db.select({ count: sql<number>`count(*)::int` })
-        .from(patrons)
-        .where(eq(patrons.status, 'proposed'));
+      // Mécènes - 1 seule requête avec COUNT FILTER
+      const [patronsStats] = await db.select({
+        total: sql<number>`count(*)::int`,
+        active: sql<number>`count(*) FILTER (WHERE ${patrons.status} = 'active')::int`,
+        proposed: sql<number>`count(*) FILTER (WHERE ${patrons.status} = 'proposed')::int`,
+      }).from(patrons);
 
-      // Idées
-      const [ideasTotal] = await db.select({ count: sql<number>`count(*)::int` })
-        .from(ideas);
-      const [ideasPending] = await db.select({ count: sql<number>`count(*)::int` })
-        .from(ideas)
-        .where(eq(ideas.status, 'pending'));
-      const [ideasApproved] = await db.select({ count: sql<number>`count(*)::int` })
-        .from(ideas)
-        .where(eq(ideas.status, 'approved'));
+      // Idées - 1 seule requête avec COUNT FILTER
+      const [ideasStats] = await db.select({
+        total: sql<number>`count(*)::int`,
+        pending: sql<number>`count(*) FILTER (WHERE ${ideas.status} = 'pending')::int`,
+        approved: sql<number>`count(*) FILTER (WHERE ${ideas.status} = 'approved')::int`,
+      }).from(ideas);
 
-      // Événements
-      const [eventsTotal] = await db.select({ count: sql<number>`count(*)::int` })
-        .from(events);
-      const [eventsUpcoming] = await db.select({ count: sql<number>`count(*)::int` })
-        .from(events)
-        .where(and(
-          eq(events.status, 'published'),
-          sql`${events.date} >= ${now.toISOString()}`
-        ));
+      // Événements - 1 seule requête avec COUNT FILTER
+      const [eventsStats] = await db.select({
+        total: sql<number>`count(*)::int`,
+        upcoming: sql<number>`count(*) FILTER (WHERE ${events.status} = 'published' AND ${events.date} >= ${now.toISOString()})::int`,
+      }).from(events);
 
       return {
         success: true,
         data: {
           members: {
-            total: membersTotal.count,
-            active: membersActive.count,
-            proposed: membersProposed.count,
-            recentActivity: membersRecent.count,
+            total: membersStats.total,
+            active: membersStats.active,
+            proposed: membersStats.proposed,
+            recentActivity: membersStats.recentActivity,
           },
           patrons: {
-            total: patronsTotal.count,
-            active: patronsActive.count,
-            proposed: patronsProposed.count,
+            total: patronsStats.total,
+            active: patronsStats.active,
+            proposed: patronsStats.proposed,
           },
           ideas: {
-            total: ideasTotal.count,
-            pending: ideasPending.count,
-            approved: ideasApproved.count,
+            total: ideasStats.total,
+            pending: ideasStats.pending,
+            approved: ideasStats.approved,
           },
           events: {
-            total: eventsTotal.count,
-            upcoming: eventsUpcoming.count,
+            total: eventsStats.total,
+            upcoming: eventsStats.upcoming,
           },
         },
       };
