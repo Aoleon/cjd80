@@ -26,6 +26,7 @@ import {
   insertPatronSchema,
   updatePatronSchema,
   insertPatronDonationSchema,
+  insertPatronUpdateSchema,
   insertIdeaPatronProposalSchema,
   updateIdeaPatronProposalSchema,
   proposeMemberSchema,
@@ -43,6 +44,16 @@ const updateMemberSchema = z.object({
   company: z.string().optional(),
   phone: z.string().optional(),
   role: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+const updatePatronUpdateSchema = z.object({
+  subject: z.string().optional(),
+  type: z.enum(["meeting", "email", "call", "lunch", "event"]).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "La date doit être au format YYYY-MM-DD").optional(),
+  startTime: z.string().optional(),
+  duration: z.number().int().min(0).optional(),
+  description: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -1633,6 +1644,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await storage.deleteIdeaPatronProposal(req.params.id);
       
       if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== GESTION DES ACTUALITÉS MÉCÈNES ====================
+
+  // Créer une actualité pour un mécène
+  app.post("/api/patrons/:id/updates", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = insertPatronUpdateSchema.parse({
+        ...req.body,
+        patronId: req.params.id,
+        createdBy: req.user!.email
+      });
+      
+      const result = await storage.createPatronUpdate(validatedData);
+      
+      if (!result.success) {
+        if (result.error instanceof DuplicateError) {
+          return res.status(409).json({ message: result.error.message });
+        }
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Récupérer les actualités d'un mécène
+  app.get("/api/patrons/:id/updates", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.getPatronUpdates(req.params.id);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Mettre à jour une actualité
+  app.patch("/api/patron-updates/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = updatePatronUpdateSchema.parse(req.body);
+      
+      const result = await storage.updatePatronUpdate(req.params.id, validatedData);
+      
+      if (!result.success) {
+        if (result.error.name === 'NotFoundError') {
+          return res.status(404).json({ message: result.error.message });
+        }
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Supprimer une actualité
+  app.delete("/api/patron-updates/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.deletePatronUpdate(req.params.id);
+      
+      if (!result.success) {
+        if (result.error.name === 'NotFoundError') {
+          return res.status(404).json({ message: result.error.message });
+        }
         return res.status(400).json({ message: result.error.message });
       }
       
