@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Lightbulb, Calendar, Send, Loader2, UserPlus } from "lucide-react";
+import Layout from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -306,24 +307,25 @@ export default function ProposePage() {
   });
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <div className="flex justify-center mb-4">
-          <div className="bg-cjd-green/10 p-3 rounded-full">
-            <Lightbulb className="h-8 w-8 text-cjd-green" />
+    <Layout>
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="bg-cjd-green/10 p-3 rounded-full">
+              <Lightbulb className="h-8 w-8 text-cjd-green" />
+            </div>
           </div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            {proposalType === 'idea' && 'Proposer une idée'}
+            {proposalType === 'patron' && 'Proposer un mécène'}
+            {proposalType === 'member' && 'Proposer un membre'}
+          </h1>
+          <p className="text-gray-600 max-w-lg mx-auto">
+            Partagez vos idées avec la section CJD Amiens. Votre proposition sera immédiatement visible 
+            et pourra recevoir les votes des autres membres.
+          </p>
         </div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          {proposalType === 'idea' && 'Proposer une idée'}
-          {proposalType === 'patron' && 'Proposer un mécène'}
-          {proposalType === 'member' && 'Proposer un membre'}
-        </h1>
-        <p className="text-gray-600 max-w-lg mx-auto">
-          Partagez vos idées avec la section CJD Amiens. Votre proposition sera immédiatement visible 
-          et pourra recevoir les votes des autres membres.
-        </p>
-      </div>
 
       {/* Form Card */}
       <Card>
@@ -1048,6 +1050,7 @@ export default function ProposePage() {
           <li>• N'hésitez pas à proposer votre aide pour la réalisation</li>
         </ul>
       </div>
-    </div>
+      </div>
+    </Layout>
   );
 }

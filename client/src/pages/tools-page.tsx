@@ -1,8 +1,10 @@
 import { Wrench, Calendar, Users, ChartBar, Lightbulb } from "lucide-react";
+import Layout from "@/components/layout";
 
 export default function ToolsPage() {
   return (
-    <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
+    <Layout>
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
       {/* En-tête de la page */}
       <div className="text-center mb-8 sm:mb-12">
         <div className="flex justify-center mb-4">
@@ -101,6 +103,7 @@ export default function ToolsPage() {
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </Layout>
   );
 }

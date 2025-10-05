@@ -1,21 +1,28 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import cjdLogo from "@assets/logo-cjd-social_1756108273665.jpg";
 
-interface HeaderProps {
-  activeSection: "ideas" | "propose" | "events" | "tools";
-  setActiveSection: (section: "ideas" | "propose" | "events" | "tools") => void;
-}
-
-export default function Header({ activeSection, setActiveSection }: HeaderProps) {
+export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [location, setLocation] = useLocation();
+
+  // Map routes to section names
+  const getActiveSection = (): "ideas" | "propose" | "events" | "tools" => {
+    if (location === "/propose") return "propose";
+    if (location === "/events") return "events";
+    if (location === "/tools") return "tools";
+    return "ideas";
+  };
+
+  const activeSection = getActiveSection();
 
   const menuItems = [
-    { id: "ideas" as const, label: "Voter pour des idées" },
-    { id: "propose" as const, label: "Proposer une idée" },
-    { id: "events" as const, label: "Événements" },
-    { id: "tools" as const, label: "Les outils du dirigeants" },
+    { id: "ideas" as const, label: "Voter pour des idées", route: "/" },
+    { id: "propose" as const, label: "Proposer une idée", route: "/propose" },
+    { id: "events" as const, label: "Événements", route: "/events" },
+    { id: "tools" as const, label: "Les outils du dirigeants", route: "/tools" },
   ];
 
   return (
@@ -24,7 +31,7 @@ export default function Header({ activeSection, setActiveSection }: HeaderProps)
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
             <button 
-              onClick={() => setActiveSection("ideas")}
+              onClick={() => setLocation("/")}
               className="hover:opacity-80 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 rounded flex items-center space-x-3"
               aria-label="Retour à la page d'accueil - Voter pour des idées"
             >
@@ -41,7 +48,7 @@ export default function Header({ activeSection, setActiveSection }: HeaderProps)
             {menuItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => setActiveSection(item.id)}
+                onClick={() => setLocation(item.route)}
                 className={`hover:text-green-200 transition-colors duration-200 font-medium text-sm xl:text-base whitespace-nowrap ${
                   activeSection === item.id ? "border-b-2 border-white pb-1" : ""
                 }`}
@@ -72,7 +79,7 @@ export default function Header({ activeSection, setActiveSection }: HeaderProps)
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveSection(item.id);
+                  setLocation(item.route);
                   setMobileMenuOpen(false);
                 }}
                 className={`block w-full text-left py-3 px-2 rounded hover:bg-green-600 transition-colors duration-200 ${

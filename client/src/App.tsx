@@ -10,6 +10,8 @@ import { PWAInstallTooltip } from "@/components/pwa-install-tooltip";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import ProposePage from "@/pages/propose-page";
+import EventsPage from "@/pages/events-page";
+import ToolsPage from "@/pages/tools-page";
 import AdminPage from "@/pages/admin-page";
 import AdminPatronsPage from "@/pages/admin-patrons-page";
 import AdminMembersPage from "@/pages/admin-members-page";
@@ -23,6 +25,8 @@ function Router() {
     <Switch>
       <Route path="/" component={HomePage} />
       <Route path="/propose" component={ProposePage} />
+      <Route path="/events" component={EventsPage} />
+      <Route path="/tools" component={ToolsPage} />
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/admin" component={AdminPage} />
       <ProtectedRoute path="/admin/patrons" component={AdminPatronsPage} />
