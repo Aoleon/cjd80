@@ -8,6 +8,7 @@ import {
   developmentRequests,
   patrons,
   patronDonations,
+  patronUpdates,
   ideaPatronProposals,
   members,
   memberActivities,
@@ -32,6 +33,8 @@ import {
   type InsertPatron,
   type PatronDonation,
   type InsertPatronDonation,
+  type PatronUpdate,
+  type InsertPatronUpdate,
   type IdeaPatronProposal,
   type InsertIdeaPatronProposal,
   type Member,
@@ -180,6 +183,12 @@ export interface IStorage {
   getAllDonations(): Promise<Result<PatronDonation[]>>;
   updatePatronDonation(id: string, data: Partial<InsertPatronDonation>): Promise<Result<PatronDonation>>;
   deletePatronDonation(id: string): Promise<Result<void>>;
+  
+  // Gestion des actualités mécènes
+  createPatronUpdate(update: InsertPatronUpdate): Promise<Result<PatronUpdate>>;
+  getPatronUpdates(patronId: string): Promise<Result<PatronUpdate[]>>;
+  updatePatronUpdate(id: string, data: Partial<InsertPatronUpdate>): Promise<Result<PatronUpdate>>;
+  deletePatronUpdate(id: string): Promise<Result<void>>;
   
   // Gestion des propositions mécène-idée
   createIdeaPatronProposal(proposal: InsertIdeaPatronProposal): Promise<Result<IdeaPatronProposal>>;
@@ -1808,6 +1817,86 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: undefined };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la suppression du don: ${error}`) };
+    }
+  }
+
+  // ===== GESTION DES ACTUALITÉS MÉCÈNES (4 méthodes) =====
+  
+  async createPatronUpdate(update: InsertPatronUpdate): Promise<Result<PatronUpdate>> {
+    try {
+      const [newUpdate] = await db
+        .insert(patronUpdates)
+        .values(update)
+        .returning();
+      
+      console.log(`[DB Query] Nouvelle actualité mécène créée: ${newUpdate.id} - ${newUpdate.type} pour ${newUpdate.patronId}`);
+      return { success: true, data: newUpdate };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création de l'actualité: ${error}`) };
+    }
+  }
+
+  async getPatronUpdates(patronId: string): Promise<Result<PatronUpdate[]>> {
+    try {
+      console.log(`[DB Query] select * from "patron_updates" where "patron_id" = '${patronId}' order by "date" desc, "created_at" desc`);
+      const updates = await db
+        .select()
+        .from(patronUpdates)
+        .where(eq(patronUpdates.patronId, patronId))
+        .orderBy(desc(patronUpdates.date), desc(patronUpdates.createdAt));
+      
+      return { success: true, data: updates };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des actualités du mécène: ${error}`) };
+    }
+  }
+
+  async updatePatronUpdate(id: string, data: Partial<InsertPatronUpdate>): Promise<Result<PatronUpdate>> {
+    try {
+      const [existingUpdate] = await db
+        .select()
+        .from(patronUpdates)
+        .where(eq(patronUpdates.id, id));
+
+      if (!existingUpdate) {
+        return { success: false, error: new NotFoundError("Actualité introuvable") };
+      }
+
+      const [updatedUpdate] = await db
+        .update(patronUpdates)
+        .set({ 
+          ...data,
+          updatedAt: sql`NOW()` 
+        })
+        .where(eq(patronUpdates.id, id))
+        .returning();
+
+      console.log(`[DB Query] Actualité mise à jour: ${id}`);
+      return { success: true, data: updatedUpdate };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de l'actualité: ${error}`) };
+    }
+  }
+
+  async deletePatronUpdate(id: string): Promise<Result<void>> {
+    try {
+      const [update] = await db
+        .select()
+        .from(patronUpdates)
+        .where(eq(patronUpdates.id, id));
+
+      if (!update) {
+        return { success: false, error: new NotFoundError("Actualité introuvable") };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx.delete(patronUpdates).where(eq(patronUpdates.id, id));
+        console.log(`[DB Query] Actualité supprimée: ${id}`);
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression de l'actualité: ${error}`) };
     }
   }
 
