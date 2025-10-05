@@ -27,8 +27,8 @@ type ProposeIdeaForm = InsertIdea & {
   deadline?: string;
 };
 
-// Form schema for patron creation with required fields
-const patronFormSchema = insertPatronSchema.pick({
+// Form schema for admin patron creation in dialog (NO proposer fields)
+const adminPatronFormSchema = insertPatronSchema.pick({
   firstName: true,
   lastName: true,
   email: true,
@@ -36,19 +36,43 @@ const patronFormSchema = insertPatronSchema.pick({
   phone: true,
   role: true,
 }).extend({
-  proposerFirstName: z.string().min(2, "Prénom requis"),
-  proposerLastName: z.string().min(2, "Nom requis"),
-  proposerEmail: z.string().email("Email invalide"),
-  proposerCompany: z.string().optional(),
+  notes: z.string().optional(),
 });
 
-type PatronForm = {
+type AdminPatronForm = {
   firstName: string;
   lastName: string;
   email: string;
   company?: string;
   phone?: string;
   role?: string;
+  notes?: string;
+};
+
+// Form schema for PUBLIC patron proposal (WITH proposer fields)
+const patronProposalFormSchema = insertPatronSchema.pick({
+  firstName: true,
+  lastName: true,
+  email: true,
+  company: true,
+  phone: true,
+  role: true,
+}).extend({
+  notes: z.string().optional(),
+  proposerFirstName: z.string().min(2, "Prénom requis"),
+  proposerLastName: z.string().min(2, "Nom requis"),
+  proposerEmail: z.string().email("Email invalide"),
+  proposerCompany: z.string().optional(),
+});
+
+type PatronProposalForm = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  company?: string;
+  phone?: string;
+  role?: string;
+  notes?: string;
   proposerFirstName: string;
   proposerLastName: string;
   proposerEmail: string;
@@ -103,9 +127,9 @@ export default function ProposePage() {
     },
   });
 
-  // Separate form for patron creation (used in dialog)
-  const patronForm = useForm<PatronForm>({
-    resolver: zodResolver(patronFormSchema),
+  // Separate form for patron creation (used in admin dialog - NO proposer fields)
+  const patronForm = useForm<AdminPatronForm>({
+    resolver: zodResolver(adminPatronFormSchema),
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -113,12 +137,13 @@ export default function ProposePage() {
       company: "",
       phone: "",
       role: "",
+      notes: "",
     },
   });
 
-  // Formulaire pour proposition de mécène (tout en un)
-  const patronProposalForm = useForm<PatronForm>({
-    resolver: zodResolver(patronFormSchema),
+  // Formulaire pour proposition de mécène (public form - WITH proposer fields)
+  const patronProposalForm = useForm<PatronProposalForm>({
+    resolver: zodResolver(patronProposalFormSchema),
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -126,6 +151,7 @@ export default function ProposePage() {
       company: "",
       phone: "",
       role: "",
+      notes: "",
       proposerFirstName: "",
       proposerLastName: "",
       proposerEmail: "",
@@ -160,9 +186,9 @@ export default function ProposePage() {
     enabled: isAdmin,
   });
 
-  // Mutation to create a new patron
+  // Mutation to create a new patron (admin dialog - NO proposer fields)
   const createPatronMutation = useMutation({
-    mutationFn: async (patronData: PatronForm) => {
+    mutationFn: async (patronData: AdminPatronForm) => {
       const dataWithCreatedBy = {
         ...patronData,
         createdBy: user?.email,
@@ -194,13 +220,17 @@ export default function ProposePage() {
   });
 
   const proposePatronMutation = useMutation({
-    mutationFn: async (patronData: PatronForm) => {
+    mutationFn: async (patronData: PatronProposalForm) => {
       const { proposerFirstName, proposerLastName, proposerEmail, proposerCompany, ...patronInfo } = patronData;
+      
       const dataToSend = {
         ...patronInfo,
         createdBy: proposerEmail,
-        notes: `Proposé par: ${proposerFirstName} ${proposerLastName} (${proposerCompany || 'N/A'})`,
+        notes: patronInfo.notes 
+          ? `${patronInfo.notes}\n\nProposé par: ${proposerFirstName} ${proposerLastName}${proposerCompany ? ` (${proposerCompany})` : ''}`
+          : `Proposé par: ${proposerFirstName} ${proposerLastName}${proposerCompany ? ` (${proposerCompany})` : ''}`,
       };
+      
       const res = await apiRequest("POST", "/api/patrons/propose", dataToSend);
       if (!res.ok) {
         const errorText = await res.text();
