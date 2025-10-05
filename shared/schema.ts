@@ -214,6 +214,27 @@ export const patronDonations = pgTable("patron_donations", {
   donatedAtIdx: index("patron_donations_donated_at_idx").on(table.donatedAt.desc()),
 }));
 
+// Patron updates table - Actualités et contacts avec les mécènes
+export const patronUpdates = pgTable("patron_updates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  patronId: varchar("patron_id").references(() => patrons.id, { onDelete: "cascade" }).notNull(),
+  type: text("type").notNull(), // 'meeting', 'email', 'call', 'lunch', 'event'
+  subject: text("subject").notNull(), // Titre/sujet de l'actualité
+  date: date("date").notNull(), // Date du contact (format YYYY-MM-DD)
+  startTime: text("start_time"), // Heure de début (format HH:MM, optionnel)
+  duration: integer("duration"), // Durée en minutes (optionnel)
+  description: text("description").notNull(), // Description détaillée
+  notes: text("notes"), // Notes additionnelles (optionnel)
+  createdBy: text("created_by").notNull(), // Email de l'admin qui a créé
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  patronIdIdx: index("patron_updates_patron_id_idx").on(table.patronId),
+  typeIdx: index("patron_updates_type_idx").on(table.type),
+  dateIdx: index("patron_updates_date_idx").on(table.date.desc()),
+  createdAtIdx: index("patron_updates_created_at_idx").on(table.createdAt.desc()),
+}));
+
 // Idea patron proposals table - Propositions mécènes-idées
 export const ideaPatronProposals = pgTable("idea_patron_proposals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -321,11 +342,19 @@ export const unsubscriptionsRelations = relations(unsubscriptions, ({ one }) => 
 export const patronsRelations = relations(patrons, ({ many }) => ({
   donations: many(patronDonations),
   proposals: many(ideaPatronProposals),
+  updates: many(patronUpdates),
 }));
 
 export const patronDonationsRelations = relations(patronDonations, ({ one }) => ({
   patron: one(patrons, {
     fields: [patronDonations.patronId],
+    references: [patrons.id],
+  }),
+}));
+
+export const patronUpdatesRelations = relations(patronUpdates, ({ one }) => ({
+  patron: one(patrons, {
+    fields: [patronUpdates.patronId],
     references: [patrons.id],
   }),
 }));
@@ -701,6 +730,77 @@ export const insertPatronDonationSchema = createInsertSchema(patronDonations).pi
     .transform(sanitizeText),
 });
 
+export const insertPatronUpdateSchema = createInsertSchema(patronUpdates).pick({
+  patronId: true,
+  type: true,
+  subject: true,
+  date: true,
+  startTime: true,
+  duration: true,
+  description: true,
+  notes: true,
+  createdBy: true,
+}).extend({
+  patronId: z.string()
+    .uuid("L'identifiant du mécène n'est pas valide")
+    .transform(sanitizeText),
+  type: z.enum(["meeting", "email", "call", "lunch", "event"], {
+    errorMap: () => ({ message: "Le type doit être 'meeting', 'email', 'call', 'lunch' ou 'event'" })
+  }),
+  subject: z.string()
+    .min(3, "Le sujet doit contenir au moins 3 caractères")
+    .max(200, "Le sujet ne peut pas dépasser 200 caractères")
+    .transform(sanitizeText),
+  date: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "La date doit être au format YYYY-MM-DD"),
+  startTime: z.string()
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  duration: z.number()
+    .int("La durée doit être un nombre entier")
+    .min(0, "La durée ne peut pas être négative")
+    .optional(),
+  description: z.string()
+    .min(1, "La description est obligatoire")
+    .max(3000, "La description ne peut pas dépasser 3000 caractères")
+    .transform(sanitizeText),
+  notes: z.string()
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  createdBy: z.string()
+    .email("Email de l'administrateur invalide")
+    .transform(sanitizeText),
+});
+
+export const updatePatronUpdateSchema = z.object({
+  type: z.enum(["meeting", "email", "call", "lunch", "event"]).optional(),
+  subject: z.string()
+    .min(3, "Le sujet doit contenir au moins 3 caractères")
+    .max(200, "Le sujet ne peut pas dépasser 200 caractères")
+    .transform(sanitizeText)
+    .optional(),
+  date: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "La date doit être au format YYYY-MM-DD")
+    .optional(),
+  startTime: z.string()
+    .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "L'heure doit être au format HH:MM")
+    .transform(val => sanitizeText(val))
+    .optional(),
+  duration: z.number()
+    .int("La durée doit être un nombre entier")
+    .min(0, "La durée ne peut pas être négative")
+    .optional(),
+  description: z.string()
+    .min(1, "La description est obligatoire")
+    .max(3000, "La description ne peut pas dépasser 3000 caractères")
+    .transform(sanitizeText)
+    .optional(),
+  notes: z.string()
+    .max(2000, "Les notes ne peuvent pas dépasser 2000 caractères")
+    .transform(val => sanitizeText(val))
+    .optional(),
+});
+
 export const insertIdeaPatronProposalSchema = createInsertSchema(ideaPatronProposals).pick({
   ideaId: true,
   patronId: true,
@@ -853,6 +953,9 @@ export type InsertPatron = z.infer<typeof insertPatronSchema>;
 
 export type PatronDonation = typeof patronDonations.$inferSelect;
 export type InsertPatronDonation = z.infer<typeof insertPatronDonationSchema>;
+
+export type PatronUpdate = typeof patronUpdates.$inferSelect;
+export type InsertPatronUpdate = z.infer<typeof insertPatronUpdateSchema>;
 
 export type IdeaPatronProposal = typeof ideaPatronProposals.$inferSelect;
 export type InsertIdeaPatronProposal = z.infer<typeof insertIdeaPatronProposalSchema>;
