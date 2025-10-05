@@ -59,7 +59,7 @@ import { Badge } from "@/components/ui/badge";
 import { SimplePagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Loader2, Search, Plus, Edit, Trash2, Euro, Calendar, User, Building2, Phone, Mail, FileText } from "lucide-react";
+import { Loader2, Search, Plus, Edit, Trash2, Euro, Calendar, User, Building2, Phone, Mail, FileText, Coffee, Star } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 
@@ -89,20 +89,19 @@ type PatronDonation = {
   createdAt: Date | string;
 };
 
-type IdeaPatronProposal = {
+type PatronUpdate = {
   id: string;
-  ideaId: string;
   patronId: string;
-  proposedByAdminEmail: string;
-  proposedAt: Date | string;
-  status: "proposed" | "contacted" | "declined" | "converted";
-  comments: string | null;
+  type: "meeting" | "email" | "call" | "lunch" | "event";
+  subject: string;
+  date: string;
+  startTime: string | null;
+  duration: number | null;
+  description: string;
+  notes: string | null;
+  createdBy: string;
+  createdAt: Date | string;
   updatedAt: Date | string;
-  idea?: {
-    id: string;
-    title: string;
-    description: string | null;
-  };
 };
 
 // Form schemas
@@ -122,8 +121,23 @@ const donationFormSchema = z.object({
   occasion: z.string().min(3, "L'occasion doit contenir au moins 3 caractères"),
 });
 
+const updateFormSchema = z.object({
+  type: z.enum(["meeting", "email", "call", "lunch", "event"], {
+    errorMap: () => ({ message: "Veuillez sélectionner un type" })
+  }),
+  subject: z.string().min(3, "Le sujet doit contenir au moins 3 caractères"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide"),
+  startTime: z.string().optional(),
+  duration: z.string()
+    .optional()
+    .transform(val => val ? parseInt(val, 10) : undefined),
+  description: z.string().min(1, "La description est obligatoire"),
+  notes: z.string().optional(),
+});
+
 type PatronFormValues = z.infer<typeof patronFormSchema>;
 type DonationFormValues = z.infer<typeof donationFormSchema>;
+type UpdateFormValues = z.infer<typeof updateFormSchema>;
 
 interface PaginatedPatronsResponse {
   success: boolean;
@@ -143,6 +157,7 @@ export default function AdminPatronsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDonationDialogOpen, setIsDonationDialogOpen] = useState(false);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const [deletePatronId, setDeletePatronId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const limit = 20;
@@ -175,8 +190,8 @@ export default function AdminPatronsPage() {
     enabled: isSuperAdmin && !!selectedPatronId,
   });
 
-  const { data: proposals = [], isLoading: proposalsLoading } = useQuery<IdeaPatronProposal[]>({
-    queryKey: [`/api/patrons/${selectedPatronId}/proposals`],
+  const { data: updates = [], isLoading: updatesLoading } = useQuery<PatronUpdate[]>({
+    queryKey: [`/api/patrons/${selectedPatronId}/updates`],
     enabled: isSuperAdmin && !!selectedPatronId,
   });
 
@@ -213,6 +228,19 @@ export default function AdminPatronsPage() {
       amount: 0,
       donatedAt: new Date().toISOString().split('T')[0],
       occasion: "",
+    },
+  });
+
+  const updateForm = useForm<UpdateFormValues>({
+    resolver: zodResolver(updateFormSchema),
+    defaultValues: {
+      type: "meeting",
+      subject: "",
+      date: new Date().toISOString().split('T')[0],
+      startTime: "",
+      duration: undefined,
+      description: "",
+      notes: "",
     },
   });
 
@@ -293,17 +321,46 @@ export default function AdminPatronsPage() {
     },
   });
 
-  const updateProposalMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      apiRequest("PATCH", `/api/proposals/${id}`, { status }),
+  const addUpdateMutation = useMutation({
+    mutationFn: (data: UpdateFormValues) => {
+      return apiRequest("POST", `/api/patrons/${selectedPatronId}/updates`, {
+        ...data,
+        createdBy: user?.email,
+      });
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/patrons/${selectedPatronId}/proposals`] });
-      toast({ title: "Statut mis à jour" });
+      queryClient.invalidateQueries({ queryKey: [`/api/patrons/${selectedPatronId}/updates`] });
+      setIsUpdateDialogOpen(false);
+      updateForm.reset({
+        type: "meeting",
+        subject: "",
+        date: new Date().toISOString().split('T')[0],
+        startTime: "",
+        duration: undefined,
+        description: "",
+        notes: "",
+      });
+      toast({ title: "Actualité ajoutée avec succès" });
     },
     onError: (error: any) => {
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de mettre à jour le statut",
+        description: error.message || "Impossible d'ajouter l'actualité",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteUpdateMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/patron-updates/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/patrons/${selectedPatronId}/updates`] });
+      toast({ title: "Actualité supprimée avec succès" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer l'actualité",
         variant: "destructive",
       });
     },
@@ -342,6 +399,10 @@ export default function AdminPatronsPage() {
     addDonationMutation.mutate(data);
   };
 
+  const handleAddUpdate = (data: UpdateFormValues) => {
+    addUpdateMutation.mutate(data);
+  };
+
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -353,24 +414,27 @@ export default function AdminPatronsPage() {
     return format(new Date(date), 'dd MMMM yyyy', { locale: fr });
   };
 
-  const getStatusLabel = (status: string) => {
+  const getUpdateTypeLabel = (type: string) => {
     const labels = {
-      proposed: "Proposé",
-      contacted: "Contacté",
-      declined: "Refusé",
-      converted: "Converti",
+      meeting: "Réunion",
+      email: "Email",
+      call: "Appel",
+      lunch: "Déjeuner",
+      event: "Événement",
     };
-    return labels[status as keyof typeof labels] || status;
+    return labels[type as keyof typeof labels] || type;
   };
 
-  const getStatusColor = (status: string) => {
-    const colors = {
-      proposed: "bg-blue-100 text-blue-800",
-      contacted: "bg-yellow-100 text-yellow-800",
-      declined: "bg-red-100 text-red-800",
-      converted: "bg-green-100 text-green-800",
+  const getUpdateTypeIcon = (type: string) => {
+    const icons = {
+      meeting: Calendar,
+      email: Mail,
+      call: Phone,
+      lunch: Coffee,
+      event: Star,
     };
-    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
+    const Icon = icons[type as keyof typeof icons] || Calendar;
+    return <Icon className="h-4 w-4" />;
   };
 
   if (patronsLoading) {
@@ -543,8 +607,8 @@ export default function AdminPatronsPage() {
                         <TabsTrigger value="donations" data-testid="tab-donations">
                           Dons ({donations.length})
                         </TabsTrigger>
-                        <TabsTrigger value="proposals" data-testid="tab-proposals">
-                          Propositions ({proposals.length})
+                        <TabsTrigger value="updates" data-testid="tab-updates">
+                          Actualités ({updates.length})
                         </TabsTrigger>
                       </TabsList>
 
@@ -665,67 +729,87 @@ export default function AdminPatronsPage() {
                         )}
                       </TabsContent>
 
-                      <TabsContent value="proposals" className="space-y-4">
-                        <div>
-                          <h3 className="font-medium mb-4">Idées proposées</h3>
-                          {proposalsLoading ? (
-                            <div className="flex justify-center py-8">
-                              <Loader2 className="h-6 w-6 animate-spin" />
-                            </div>
-                          ) : proposals.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground">
-                              Aucune proposition enregistrée
-                            </div>
-                          ) : (
-                            <div className="space-y-3">
-                              {proposals.map((proposal) => (
+                      <TabsContent value="updates" className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="font-medium">Historique des actualités</h3>
+                          <Button
+                            size="sm"
+                            onClick={() => setIsUpdateDialogOpen(true)}
+                            data-testid="button-add-update"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Ajouter
+                          </Button>
+                        </div>
+                        {updatesLoading ? (
+                          <div className="flex justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                          </div>
+                        ) : updates.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            Aucune actualité enregistrée
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {[...updates]
+                              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                              .map((update) => (
                                 <div
-                                  key={proposal.id}
+                                  key={update.id}
                                   className="p-4 border rounded-lg"
-                                  data-testid={`proposal-${proposal.id}`}
+                                  data-testid={`update-${update.id}`}
                                 >
                                   <div className="flex items-start justify-between mb-2">
                                     <div className="flex-1">
-                                      {proposal.idea && (
-                                        <div className="font-medium" data-testid={`proposal-idea-title-${proposal.id}`}>
-                                          {proposal.idea.title}
+                                      <div className="flex items-center gap-2 mb-1">
+                                        {getUpdateTypeIcon(update.type)}
+                                        <span className="font-medium text-sm" data-testid={`update-type-${update.id}`}>
+                                          {getUpdateTypeLabel(update.type)}
+                                        </span>
+                                      </div>
+                                      <div className="font-medium" data-testid={`update-subject-${update.id}`}>
+                                        {update.subject}
+                                      </div>
+                                      <div className="text-sm text-muted-foreground mt-1">
+                                        <div className="flex items-center gap-2">
+                                          <Calendar className="h-3 w-3" />
+                                          <span data-testid={`update-date-${update.id}`}>
+                                            {formatDate(update.date)}
+                                          </span>
+                                          {update.startTime && (
+                                            <span data-testid={`update-time-${update.id}`}>
+                                              à {update.startTime}
+                                            </span>
+                                          )}
+                                          {update.duration && (
+                                            <span data-testid={`update-duration-${update.id}`}>
+                                              ({update.duration} min)
+                                            </span>
+                                          )}
                                         </div>
-                                      )}
-                                      <div className="text-sm text-muted-foreground">
-                                        Proposé le {formatDate(proposal.proposedAt)}
                                       </div>
                                     </div>
-                                  </div>
-                                  <div className="flex items-center gap-2 mt-3">
-                                    <span className="text-sm">Statut :</span>
-                                    <Select
-                                      value={proposal.status}
-                                      onValueChange={(status) =>
-                                        updateProposalMutation.mutate({ id: proposal.id, status })
-                                      }
-                                      data-testid={`select-proposal-status-${proposal.id}`}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => deleteUpdateMutation.mutate(update.id)}
+                                      data-testid={`button-delete-update-${update.id}`}
                                     >
-                                      <SelectTrigger className={`w-[140px] ${getStatusColor(proposal.status)}`}>
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="proposed">Proposé</SelectItem>
-                                        <SelectItem value="contacted">Contacté</SelectItem>
-                                        <SelectItem value="declined">Refusé</SelectItem>
-                                        <SelectItem value="converted">Converti</SelectItem>
-                                      </SelectContent>
-                                    </Select>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
                                   </div>
-                                  {proposal.comments && (
-                                    <div className="mt-2 text-sm text-muted-foreground" data-testid={`proposal-comments-${proposal.id}`}>
-                                      {proposal.comments}
+                                  <div className="text-sm mt-2" data-testid={`update-description-${update.id}`}>
+                                    {update.description}
+                                  </div>
+                                  {update.notes && (
+                                    <div className="text-sm text-muted-foreground mt-2 border-t pt-2" data-testid={`update-notes-${update.id}`}>
+                                      <strong>Notes:</strong> {update.notes}
                                     </div>
                                   )}
                                 </div>
                               ))}
-                            </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </TabsContent>
                     </Tabs>
                   )}
@@ -1093,6 +1177,176 @@ export default function AdminPatronsPage() {
                   data-testid="button-submit-donation"
                 >
                   {addDonationMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Enregistrer
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Ajouter une actualité */}
+      <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Ajouter une actualité</DialogTitle>
+            <DialogDescription>
+              Enregistrer un contact ou une actualité pour ce mécène
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...updateForm}>
+            <form onSubmit={updateForm.handleSubmit(handleAddUpdate)} className="space-y-4">
+              <FormField
+                control={updateForm.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-update-type">
+                          <SelectValue placeholder="Sélectionnez un type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="meeting">Réunion</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="call">Appel</SelectItem>
+                        <SelectItem value="lunch">Déjeuner</SelectItem>
+                        <SelectItem value="event">Événement</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={updateForm.control}
+                name="subject"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sujet *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Titre ou sujet de l'actualité"
+                        data-testid="input-update-subject"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={updateForm.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                          data-testid="input-update-date"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={updateForm.control}
+                  name="startTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Heure de début</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="time"
+                          {...field}
+                          data-testid="input-update-starttime"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={updateForm.control}
+                name="duration"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Durée (en minutes)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                        value={field.value || ""}
+                        placeholder="Ex: 60"
+                        data-testid="input-update-duration"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={updateForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description *</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        rows={4}
+                        placeholder="Détails de l'actualité ou du contact..."
+                        data-testid="input-update-description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={updateForm.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        rows={3}
+                        placeholder="Notes additionnelles (optionnel)..."
+                        data-testid="input-update-notes"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsUpdateDialogOpen(false)}
+                  data-testid="button-cancel-update"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={addUpdateMutation.isPending}
+                  data-testid="button-submit-update"
+                >
+                  {addUpdateMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   Enregistrer
