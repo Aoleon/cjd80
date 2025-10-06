@@ -120,8 +120,8 @@ export default function AdminSection() {
       [IDEA_STATUS.UNDER_REVIEW]: 2,
       [IDEA_STATUS.APPROVED]: 3,
       [IDEA_STATUS.POSTPONED]: 4,
-      [IDEA_STATUS.COMPLETED]: 5,
-      [IDEA_STATUS.REJECTED]: 6,
+      [IDEA_STATUS.REJECTED]: 5,
+      [IDEA_STATUS.COMPLETED]: 6,
     };
 
     return [...ideas].sort((a, b) => {
