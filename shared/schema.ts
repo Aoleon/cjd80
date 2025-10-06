@@ -1039,6 +1039,9 @@ export const hasPermission = (userRole: string, permission: string): boolean => 
     case 'admin.view':
       // Tous les admins peuvent voir les membres
       return true;
+    case 'admin.edit':
+      // Les gestionnaires et super admins peuvent éditer les données (inscriptions, votes, etc.)
+      return [ADMIN_ROLES.SUPER_ADMIN, ADMIN_ROLES.IDEAS_MANAGER, ADMIN_ROLES.EVENTS_MANAGER].includes(userRole as any);
     case 'admin.manage':
       return userRole === ADMIN_ROLES.SUPER_ADMIN;
     default:
@@ -1070,11 +1073,11 @@ export const getRolePermissions = (role: string): string[] => {
     case ADMIN_ROLES.IDEAS_READER:
       return ['Consultation des idées'];
     case ADMIN_ROLES.IDEAS_MANAGER:
-      return ['Consultation des idées', 'Modification des idées', 'Suppression des idées'];
+      return ['Consultation des idées', 'Modification des idées', 'Suppression des idées', 'Gestion des votes'];
     case ADMIN_ROLES.EVENTS_READER:
       return ['Consultation des événements'];
     case ADMIN_ROLES.EVENTS_MANAGER:
-      return ['Consultation des événements', 'Modification des événements', 'Suppression des événements'];
+      return ['Consultation des événements', 'Modification des événements', 'Suppression des événements', 'Gestion des inscriptions et absences'];
     default:
       return [];
   }

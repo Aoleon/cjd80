@@ -388,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin unsubscriptions routes
-  app.get("/api/admin/events/:id/unsubscriptions", requireAuth, async (req, res, next) => {
+  app.get("/api/admin/events/:id/unsubscriptions", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const unsubscriptions = await storage.getEventUnsubscriptions(req.params.id);
       if (!unsubscriptions.success) {
@@ -400,7 +400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/unsubscriptions/:id", requireAuth, async (req, res, next) => {
+  app.delete("/api/admin/unsubscriptions/:id", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const result = await storage.deleteUnsubscription(req.params.id);
       if (!result.success) {
@@ -412,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/admin/unsubscriptions/:id", requireAuth, async (req, res, next) => {
+  app.put("/api/admin/unsubscriptions/:id", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const validatedData = insertUnsubscriptionSchema.omit({ eventId: true }).parse(req.body);
       const result = await storage.updateUnsubscription(req.params.id, validatedData);
@@ -498,28 +498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
-  app.get("/api/admin/stats", requireAuth, async (req, res, next) => {
-    try {
-      const stats = await storage.getStats();
-      res.json(stats);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  app.get("/api/admin/ideas", requireAuth, async (req, res, next) => {
-    try {
-      const result = await storage.getAllIdeas();
-      if (!result.success) {
-        return res.status(400).json({ message: result.error.message });
-      }
-      res.json(result.data);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  app.get("/api/admin/events", requireAuth, async (req, res, next) => {
+  app.get("/api/admin/events", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const result = await storage.getAllEvents();
       if (!result.success) {
@@ -532,7 +511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get inscriptions for a specific event (admin only)
-  app.get("/api/admin/events/:eventId/inscriptions", requireAuth, async (req, res, next) => {
+  app.get("/api/admin/events/:eventId/inscriptions", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const { eventId } = req.params;
       const inscriptionsResult = await storage.getEventInscriptions(eventId);
@@ -546,7 +525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes for managing inscriptions
-  app.get("/api/admin/inscriptions/:eventId", requireAuth, async (req, res, next) => {
+  app.get("/api/admin/inscriptions/:eventId", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const inscriptionsResult = await storage.getEventInscriptions(req.params.eventId);
       if (!inscriptionsResult.success) {
@@ -558,7 +537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/inscriptions", requireAuth, async (req, res, next) => {
+  app.post("/api/admin/inscriptions", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const inscriptionData = req.body;
       const result = await storage.createInscription(inscriptionData);
@@ -571,7 +550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/inscriptions/:inscriptionId", requireAuth, async (req, res, next) => {
+  app.delete("/api/admin/inscriptions/:inscriptionId", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const result = await storage.deleteInscription(req.params.inscriptionId);
       if (!result.success) {
@@ -584,7 +563,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bulk import inscriptions
-  app.post("/api/admin/inscriptions/bulk", requireAuth, async (req, res, next) => {
+  app.post("/api/admin/inscriptions/bulk", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const { eventId, inscriptions } = req.body;
       
@@ -628,7 +607,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes for managing votes
-  app.get("/api/admin/votes/:ideaId", requireAuth, async (req, res, next) => {
+  app.get("/api/admin/votes/:ideaId", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const votesResult = await storage.getIdeaVotes(req.params.ideaId);
       if (!votesResult.success) {
@@ -640,7 +619,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/votes", requireAuth, async (req, res, next) => {
+  app.post("/api/admin/votes", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const voteData = req.body;
       const result = await storage.createVote(voteData);
@@ -653,7 +632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/votes/:voteId", requireAuth, async (req, res, next) => {
+  app.delete("/api/admin/votes/:voteId", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const result = await storage.deleteVote(req.params.voteId);
       if (!result.success) {
@@ -666,7 +645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get votes for a specific idea (admin only)
-  app.get("/api/admin/ideas/:ideaId/votes", requireAuth, async (req, res, next) => {
+  app.get("/api/admin/ideas/:ideaId/votes", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const { ideaId } = req.params;
       const votesResult = await storage.getIdeaVotes(ideaId);
@@ -679,7 +658,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/ideas/:id/status", requireAuth, async (req, res, next) => {
+  app.patch("/api/admin/ideas/:id/status", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const validatedData = updateIdeaStatusSchema.parse(req.body);
       const result = await storage.updateIdeaStatus(req.params.id, validatedData.status);
@@ -692,7 +671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/ideas/:id/featured", requireAuth, async (req, res, next) => {
+  app.patch("/api/admin/ideas/:id/featured", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const result = await storage.toggleIdeaFeatured(req.params.id);
       if (!result.success) {
@@ -705,7 +684,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Transform idea to event (admin only)
-  app.post("/api/admin/ideas/:id/transform-to-event", requireAuth, async (req, res, next) => {
+  app.post("/api/admin/ideas/:id/transform-to-event", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const result = await storage.transformIdeaToEvent(req.params.id);
       if (!result.success) {
@@ -718,7 +697,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update idea content (admin only)
-  app.put("/api/admin/ideas/:id", requireAuth, async (req, res, next) => {
+  app.put("/api/admin/ideas/:id", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const validatedData = updateIdeaSchema.parse(req.body);
       const result = await storage.updateIdea(req.params.id, validatedData);
@@ -734,7 +713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/events/:id/status", requireAuth, async (req, res, next) => {
+  app.patch("/api/admin/events/:id/status", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const validatedData = updateEventStatusSchema.parse(req.body);
       const result = await storage.updateEventStatus(req.params.id, validatedData.status);
@@ -748,10 +727,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Pool de connexions stats (admin seulement)
-  app.get("/api/admin/pool-stats", requireAuth, getPoolStatsEndpoint);
+  app.get("/api/admin/pool-stats", requirePermission('admin.view'), getPoolStatsEndpoint);
 
   // Health check de la base de données (admin seulement)
-  app.get("/api/admin/db-health", requireAuth, async (req, res, next) => {
+  app.get("/api/admin/db-health", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const health = await checkDatabaseHealth();
       res.json(health);
