@@ -1,7 +1,7 @@
 # CJD Amiens - Application Web Interne "Boîte à Kiffs"
 
 ## Overview
-This project is an internal web application for the "Centre des Jeunes Dirigeants (CJD) d'Amiens". Its primary purpose is to facilitate collaborative idea sharing ("Boîte à Kiffs"), enable voting on proposals, and manage events with HelloAsso integration. The application serves internal CJD Amiens members (business leaders, entrepreneurs). The project involves migrating from an existing Firestore-based system to a modern, responsive, and optimized architecture, aiming for high performance and a user-friendly interface. It includes a comprehensive CRM for patron and member management, an engagement scoring system, subscription tracking, and an admin dashboard for quick overviews.
+This project is an internal web application for the "Centre des Jeunes Dirigeants (CJD) d'Amiens." Its primary purpose is to facilitate collaborative idea sharing ("Boîte à Kiffs"), enable voting on proposals, and manage events with HelloAsso integration. The application serves internal CJD Amiens members (business leaders, entrepreneurs). The project involves migrating from an existing Firestore-based system to a modern, responsive, and optimized architecture, aiming for high performance and a user-friendly interface. It includes a comprehensive CRM for patron and member management, an engagement scoring system, subscription tracking, and an admin dashboard for quick overviews.
 
 ## User Preferences
 ### Primary Communication Rule
@@ -38,7 +38,7 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
 - **Testing**: Vitest, React Testing Library, Playwright, MSW
 
 ### Core Architectural Principles
-- **Test-Driven Development**: "Test First, Code Second, Refactor Third" with a 90% test coverage target across unit, integration, and E2E tests.
+- **Test-Driven Development**: "Test First, Code Second, Refactor Third" with a 90% test coverage target.
 - **Strict TypeScript**: Enforced strict mode, no implicit `any`, strict null checks.
 - **Component Pattern**: Standardized functional components with explicit types, early returns, custom hooks, effects with cleanup, memoized values, and useCallback for event handlers.
 - **API Pattern**: Use of `Result` type for all API operations for consistent error handling.
@@ -49,11 +49,11 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
 - **Admin Interface**: Separate visual and functional admin interface with distinct navigation, user info display, and responsive design.
 - **Pagination**: Backend pagination support for lists (ideas, events, members, patrons) and a reusable frontend pagination component.
 - **CRM Systems**:
-    - **Patron Management**: Database schema for patrons, donations, and idea proposals; secure API routes for CRUD and related actions; frontend CRM page with search, tabs, and integration into idea proposal forms.
+    - **Patron Management**: Database schema for patrons, donations, and idea proposals; secure API routes for CRUD; frontend CRM page with search, tabs, and integration.
     - **Member Management**: Database schema for members and activities; engagement scoring system; secure API routes; frontend CRM page with search, member cards, activity timelines, and statistics.
-    - **Member Subscriptions**: Database schema for subscriptions; secure API routes for retrieving and adding subscriptions; frontend "Souscriptions" tab in Members CRM with display and add functionality.
-- **Admin Dashboard**: Aggregated platform statistics from members, patrons, ideas, and events; quick actions section; responsive design with modern UI elements.
-- **Performance Optimizations**: Consolidated database queries (e.g., dashboard stats), composite indexes, CSS cleanup, and backend/frontend optimizations for speed and scalability.
+    - **Member Subscriptions**: Database schema for subscriptions; secure API routes; frontend "Souscriptions" tab in Members CRM.
+- **Admin Dashboard**: Aggregated platform statistics from members, patrons, ideas, and events; quick actions section; responsive design.
+- **Performance Optimizations**: Consolidated database queries, composite indexes, CSS cleanup, and backend/frontend optimizations for speed and scalability.
 
 ### Security Measures
 - **Authentication**: Scrypt password hashing, rolling session timeout, CSRF tokens, login rate limiting.
