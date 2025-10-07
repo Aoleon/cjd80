@@ -103,6 +103,27 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
 - **Test Files**: 3 passing / 5 total
 - **Known Issues**: 2 minor test mocking issues (non-functional)
 
+### 🎭 E2E Testing & Automated Bug Reporting (October 2025)
+- **Playwright Integration**: 13 E2E tests configured (5 pagination + 8 workflow tests)
+- **Automated Bug Reporting System**:
+  - Custom Playwright reporter detects test failures
+  - Automatically creates bug reports with error details, stack traces, screenshots
+  - Saves reports to `test-results/bug-reports/` as JSON files
+  - Import script authenticates and creates development requests via API
+  - Auto-prioritization: Critical (pagination/data), High (workflow/timeout), Medium (default)
+  - Seamless GitHub integration: bugs auto-create GitHub issues with proper labels
+- **Usage**:
+  - `npx playwright test` - Run all tests
+  - `./test/run-tests-and-report.sh` - Run tests + auto-import bugs
+  - `tsx test/import-bug-reports.ts` - Manually import pending bug reports
+  - Access bugs in Admin → Développement tab (prefix: `[E2E]`)
+- **Files**:
+  - `test/e2e/*.spec.ts` - Test suites
+  - `test/playwright-reporter.ts` - Custom reporter
+  - `test/import-bug-reports.ts` - Import script
+  - `test/run-tests-and-report.sh` - Wrapper script
+  - `playwright.config.ts` - Playwright configuration
+
 ### 🎯 Future Enhancements (Deferred)
 - Standardize form management (consolidate useState → react-hook-form)
 - Implement rate limiting on sensitive endpoints
