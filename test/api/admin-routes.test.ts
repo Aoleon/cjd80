@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi, beforeAll } from 'vitest';
 import express from 'express';
+import request from 'supertest';
 
 // Mock storage functions
 const mockStorage = {

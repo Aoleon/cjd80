@@ -1,4 +1,53 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Helper functions
+function createMockIdea(overrides: Partial<{
+  id: string;
+  title: string;
+  status: string;
+  createdAt: Date;
+  voteCount: number;
+  description?: string;
+  proposedBy?: string;
+  featured?: boolean;
+  updatedAt?: Date;
+}> = {}) {
+  return {
+    id: 'mock-id',
+    title: 'Mock Title',
+    status: 'pending',
+    createdAt: new Date(),
+    voteCount: 0,
+    description: 'Mock description',
+    proposedBy: 'Mock User',
+    featured: false,
+    updatedAt: new Date(),
+    ...overrides
+  };
+}
+
+function sortIdeas(ideas: Array<{
+  id: string;
+  title: string;
+  status: string;
+  createdAt: Date;
+  voteCount: number;
+}>) {
+  const statusOrder: Record<string, number> = {
+    'pending': 1,
+    'under_review': 2,
+    'approved': 3,
+    'postponed': 4,
+    'completed': 5,
+    'rejected': 6,
+  };
+
+  return [...ideas].sort((a, b) => {
+    const statusDiff = (statusOrder[a.status] || 999) - (statusOrder[b.status] || 999);
+    if (statusDiff !== 0) return statusDiff;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
 
 // Tests simplifiés des composants frontend
 describe('Frontend Components Tests - Admin Section', () => {
