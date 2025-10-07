@@ -555,7 +555,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes
   app.get("/api/admin/ideas", requirePermission('admin.view'), async (req, res, next) => {
     try {
-      const result = await storage.getAllIdeas();
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const result = await storage.getAllIdeas({ page, limit });
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -567,7 +569,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/events", requirePermission('admin.view'), async (req, res, next) => {
     try {
-      const result = await storage.getAllEvents();
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const result = await storage.getAllEvents({ page, limit });
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }

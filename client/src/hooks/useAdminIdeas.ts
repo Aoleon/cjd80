@@ -14,8 +14,7 @@ export function useAdminIdeas(enabled: boolean = true) {
     queryFn: async () => {
       const res = await fetch('/api/admin/ideas?limit=1000');
       if (!res.ok) throw new Error('Failed to fetch ideas');
-      const result = await res.json();
-      return result.data;
+      return res.json();
     },
     enabled,
   });
