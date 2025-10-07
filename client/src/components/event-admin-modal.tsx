@@ -128,7 +128,7 @@ export default function EventAdminModal({
     mutationFn: async (eventData: Partial<InsertEvent>) => {
       if (!event) throw new Error("Aucun événement à modifier");
       
-      const res = await apiRequest("PUT", `/api/admin/events/${event.id}`, eventData);
+      const res = await apiRequest("PUT", `/api/events/${event.id}`, eventData);
       if (!res.ok) {
         const errorData = await res.text();
         throw new Error(errorData || "Erreur lors de la modification de l'événement");
