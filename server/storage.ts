@@ -813,17 +813,22 @@ export class DatabaseStorage implements IStorage {
 
   async updateEvent(id: string, eventData: Partial<InsertEvent>): Promise<Result<Event>> {
     try {
+      logger.info('UpdateEvent called', { id, eventData });
+      
       // Check if event exists
       const eventResult = await this.getEvent(id);
       if (!eventResult.success) {
+        logger.error('UpdateEvent: getEvent failed', { error: eventResult.error });
         return { success: false, error: eventResult.error };
       }
       if (!eventResult.data) {
+        logger.error('UpdateEvent: event not found', { id });
         return { success: false, error: new NotFoundError("Événement introuvable") };
       }
 
       // Validate date if being updated
       if (eventData.date && new Date(eventData.date) <= new Date()) {
+        logger.error('UpdateEvent: date validation failed', { date: eventData.date });
         return { success: false, error: new ValidationError("La date de l'événement doit être dans le futur") };
       }
 
@@ -839,18 +844,27 @@ export class DatabaseStorage implements IStorage {
           formattedData.date = new Date(eventData.date);
         }
         
+        logger.info('UpdateEvent: executing update', { id, formattedData });
+        
         const [updatedEvent] = await tx
           .update(events)
           .set(formattedData)
           .where(eq(events.id, id))
           .returning();
         
-        logger.info('Event updated', { eventId: id, updates: Object.keys(eventData) });
+        logger.info('UpdateEvent: update returned', { updatedEvent });
+        
+        if (!updatedEvent) {
+          throw new Error("Aucune ligne mise à jour");
+        }
+        
         return updatedEvent;
       });
 
+      logger.info('Event updated successfully', { eventId: id, updates: Object.keys(eventData) });
       return { success: true, data: result };
     } catch (error) {
+      logger.error('UpdateEvent failed with exception', { error, message: String(error) });
       return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de l'événement: ${error}`) };
     }
   }
