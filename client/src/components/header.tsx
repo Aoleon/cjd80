@@ -3,10 +3,13 @@ import { useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import cjdLogo from "@assets/logo-cjd-social_1756108273665.jpg";
+import { useAuth } from "@/hooks/use-auth";
+import { hasPermission } from "@shared/schema";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [location, setLocation] = useLocation();
+  const { user } = useAuth();
 
   // Map routes to section names
   const getActiveSection = (): "ideas" | "propose" | "events" | "tools" => {
@@ -18,12 +21,18 @@ export default function Header() {
 
   const activeSection = getActiveSection();
 
-  const menuItems = [
+  // Vérifier si l'utilisateur est admin
+  const isAdmin = user && hasPermission(user.role, 'admin.view');
+
+  // Filtrer les items de menu : les admins ne voient aucun onglet
+  const allMenuItems = [
     { id: "ideas" as const, label: "Voter pour des idées", route: "/" },
     { id: "propose" as const, label: "Proposer une idée", route: "/propose" },
     { id: "events" as const, label: "Événements", route: "/events" },
     { id: "tools" as const, label: "Les outils du dirigeants", route: "/tools" },
   ];
+
+  const menuItems = isAdmin ? [] : allMenuItems;
 
   return (
     <header className="bg-cjd-green text-white shadow-lg">

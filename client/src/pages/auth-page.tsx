@@ -15,7 +15,9 @@ export default function AuthPage() {
 
   // Redirect if already logged in (after hooks are called)
   if (!isLoading && user) {
-    return <Redirect to="/" />;
+    // Rediriger les admins vers la page d'administration
+    const isAdmin = user.role === 'super_admin' || user.role === 'admin' || user.role === 'moderator';
+    return <Redirect to={isAdmin ? "/admin" : "/"} />;
   }
 
   if (isLoading) {
