@@ -14,6 +14,33 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Security measure: Sanitize sensitive data from logs to prevent exposure of passwords, tokens, and secrets
+function sanitizeLogData(data: any): any {
+  if (!data || typeof data !== 'object') return data;
+  
+  const sensitiveFields = ['password', 'token', 'sessionid', 'apikey', 'secret', 'passwordhash', 'sessiontoken', 'accesstoken', 'refreshtoken', 'bearertoken'];
+  
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeLogData(item));
+  }
+  
+  const sanitized = { ...data };
+  
+  for (const key in sanitized) {
+    // Normalize key by removing non-alphanumeric characters and converting to lowercase
+    const normalizedKey = key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    
+    // Check if normalized key contains any sensitive field
+    if (sensitiveFields.some(field => normalizedKey.includes(field))) {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+      sanitized[key] = sanitizeLogData(sanitized[key]);
+    }
+  }
+  
+  return sanitized;
+}
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -30,7 +57,7 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        logLine += ` :: ${JSON.stringify(sanitizeLogData(capturedJsonResponse))}`;
       }
 
       if (logLine.length > 80) {
