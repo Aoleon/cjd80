@@ -784,6 +784,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/admin/events/:id", requirePermission('admin.edit'), async (req, res, next) => {
+    try {
+      const validatedData = insertEventSchema.parse(req.body);
+      const result = await storage.updateEvent(req.params.id, validatedData);
+      if (!result.success) {
+        return res.status(404).json({ message: result.error.message });
+      }
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
   app.patch("/api/admin/events/:id/status", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const validatedData = updateEventStatusSchema.parse(req.body);
