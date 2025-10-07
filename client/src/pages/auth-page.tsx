@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Users, Lightbulb, Calendar, Shield } from "lucide-react";
+import { hasPermission } from "@shared/schema";
 
 export default function AuthPage() {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
@@ -16,7 +17,7 @@ export default function AuthPage() {
   // Redirect if already logged in (after hooks are called)
   if (!isLoading && user) {
     // Rediriger les admins vers la page d'administration
-    const isAdmin = user.role === 'super_admin' || user.role === 'admin' || user.role === 'moderator';
+    const isAdmin = hasPermission(user.role, 'admin.view');
     return <Redirect to={isAdmin ? "/admin" : "/"} />;
   }
 
