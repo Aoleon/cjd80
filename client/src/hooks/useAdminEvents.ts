@@ -9,6 +9,12 @@ export function useAdminEvents(enabled: boolean = true) {
 
   const eventsQuery = useQuery<EventWithInscriptions[]>({
     queryKey: ["/api/admin/events"],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/events?limit=1000');
+      if (!res.ok) throw new Error('Failed to fetch events');
+      const result = await res.json();
+      return result.data;
+    },
     enabled,
   });
 
