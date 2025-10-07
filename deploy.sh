@@ -5,19 +5,26 @@
 
 echo "🧹 Nettoyage du cache avant déploiement..."
 
-# Nettoyer le dossier de build existant
+# 1. Invalider le cache client (force le rechargement chez les utilisateurs)
+if [ -f "invalidate-cache.sh" ]; then
+  bash invalidate-cache.sh
+else
+  echo "⚠️  Script invalidate-cache.sh non trouvé"
+fi
+
+# 2. Nettoyer le dossier de build existant
 if [ -d "dist" ]; then
   echo "  → Suppression du dossier dist..."
   rm -rf dist
 fi
 
-# Nettoyer le cache de Vite
+# 3. Nettoyer le cache de Vite
 if [ -d "node_modules/.vite" ]; then
   echo "  → Suppression du cache Vite..."
   rm -rf node_modules/.vite
 fi
 
-# Nettoyer le cache du navigateur (service workers)
+# 4. Nettoyer le cache du navigateur (service workers)
 if [ -d "dist/public" ]; then
   echo "  → Nettoyage des service workers..."
   find dist/public -name "*.js" -type f -exec rm {} \;

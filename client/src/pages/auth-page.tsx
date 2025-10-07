@@ -12,7 +12,13 @@ import { hasPermission } from "@shared/schema";
 export default function AuthPage() {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
-  const [registerForm, setRegisterForm] = useState({ email: "", password: "", confirmPassword: "" });
+  const [registerForm, setRegisterForm] = useState({ 
+    email: "", 
+    firstName: "", 
+    lastName: "", 
+    password: "", 
+    confirmPassword: "" 
+  });
 
   // Redirect if already logged in (after hooks are called)
   if (!isLoading && user) {
@@ -42,7 +48,10 @@ export default function AuthPage() {
     }
     registerMutation.mutate({
       email: registerForm.email,
+      firstName: registerForm.firstName,
+      lastName: registerForm.lastName,
       password: registerForm.password,
+      role: "ideas_reader" as const,
     });
   };
 
@@ -131,6 +140,28 @@ export default function AuthPage() {
                         type="email"
                         value={registerForm.email}
                         onChange={(e) => setRegisterForm(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                        className="focus:ring-cjd-green focus:border-cjd-green"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="register-firstName">Prénom</Label>
+                      <Input
+                        id="register-firstName"
+                        type="text"
+                        value={registerForm.firstName}
+                        onChange={(e) => setRegisterForm(prev => ({ ...prev, firstName: e.target.value }))}
+                        required
+                        className="focus:ring-cjd-green focus:border-cjd-green"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="register-lastName">Nom</Label>
+                      <Input
+                        id="register-lastName"
+                        type="text"
+                        value={registerForm.lastName}
+                        onChange={(e) => setRegisterForm(prev => ({ ...prev, lastName: e.target.value }))}
                         required
                         className="focus:ring-cjd-green focus:border-cjd-green"
                       />
