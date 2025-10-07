@@ -553,13 +553,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
+  app.get("/api/admin/ideas", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storage.getAllIdeas();
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      res.json(result.data.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get("/api/admin/events", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const result = await storage.getAllEvents();
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
-      res.json(result.data);
+      res.json(result.data.data);
     } catch (error) {
       next(error);
     }
