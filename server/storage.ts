@@ -408,10 +408,17 @@ export class DatabaseStorage implements IStorage {
     try {
       const result = await db
         .delete(admins)
-        .where(eq(admins.email, email));
+        .where(eq(admins.email, email))
+        .returning();
 
+      if (result.length === 0) {
+        return { success: false, error: new NotFoundError("Administrateur introuvable") };
+      }
+
+      console.log(`[Storage] Administrateur supprimé: ${email}`);
       return { success: true, data: undefined };
     } catch (error) {
+      console.error('Erreur lors de la suppression de l\'administrateur:', error);
       return { success: false, error: new DatabaseError(`Erreur lors de la suppression de l'administrateur: ${error}`) };
     }
   }
