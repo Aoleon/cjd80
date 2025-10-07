@@ -172,7 +172,7 @@ describe('API Routes Tests - Admin Inscriptions/Votes', () => {
       const mockCreatedInscription = {
         id: 'new-inscription-id',
         ...inscriptionData,
-        createdAt: new Date()
+        createdAt: new Date().toISOString()
       };
 
       mockStorage.createInscription.mockResolvedValue({
@@ -236,8 +236,8 @@ describe('API Routes Tests - Admin Inscriptions/Votes', () => {
   describe('GET /api/admin/votes/:ideaId', () => {
     it('should return idea votes for admin', async () => {
       const mockVotes = [
-        { id: '1', ideaId: 'idea-1', voterEmail: 'voter1@test.com', createdAt: new Date() },
-        { id: '2', ideaId: 'idea-1', voterEmail: 'voter2@test.com', createdAt: new Date() }
+        { id: '1', ideaId: 'idea-1', voterEmail: 'voter1@test.com', createdAt: new Date().toISOString() },
+        { id: '2', ideaId: 'idea-1', voterEmail: 'voter2@test.com', createdAt: new Date().toISOString() }
       ];
 
       mockStorage.getIdeaVotes.mockResolvedValue({
@@ -264,7 +264,7 @@ describe('API Routes Tests - Admin Inscriptions/Votes', () => {
       const mockCreatedVote = {
         id: 'new-vote-id',
         ...voteData,
-        createdAt: new Date()
+        createdAt: new Date().toISOString()
       };
 
       mockStorage.createVote.mockResolvedValue({

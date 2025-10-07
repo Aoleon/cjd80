@@ -180,7 +180,7 @@ describe('Frontend Components Tests - Admin Section', () => {
   describe('Component Props and State', () => {
     it('should handle loading states', () => {
       const isLoading = true;
-      const ideas = null;
+      const ideas: any[] | null = null;
 
       // Simuler l'affichage conditionnel
       if (isLoading) {
