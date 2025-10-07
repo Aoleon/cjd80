@@ -72,6 +72,7 @@ export const ideas = pgTable("ideas", {
   statusIdx: index("ideas_status_idx").on(table.status),
   emailIdx: index("ideas_email_idx").on(table.proposedByEmail),
   featuredIdx: index("ideas_featured_idx").on(table.featured),
+  createdAtIdx: index("ideas_created_at_idx").on(table.createdAt),
 }));
 
 // Votes table
@@ -84,6 +85,7 @@ export const votes = pgTable("votes", {
 }, (table) => ({
   // Contrainte unique: un email ne peut voter qu'une seule fois par idée
   uniqueVotePerEmail: unique().on(table.ideaId, table.voterEmail),
+  ideaIdIdx: index("votes_idea_id_idx").on(table.ideaId),
 }));
 
 // Events table - Flexible status workflow management  
@@ -126,6 +128,7 @@ export const inscriptions = pgTable("inscriptions", {
 }, (table) => ({
   // Contrainte unique: un email ne peut s'inscrire qu'une seule fois par événement
   uniqueRegistrationPerEmail: unique().on(table.eventId, table.email),
+  eventIdIdx: index("inscriptions_event_id_idx").on(table.eventId),
 }));
 
 // Unsubscriptions table - for people declaring they cannot attend an event
