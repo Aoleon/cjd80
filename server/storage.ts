@@ -60,6 +60,7 @@ import { eq, desc, and, count, sql, or } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
+import { logger } from "./lib/logger";
 
 const PostgresSessionStore = connectPg(session);
 
@@ -232,7 +233,7 @@ export class DatabaseStorage implements IStorage {
       tableName: 'user_sessions',
       pruneSessionInterval: 3600, // 1 heure - moins fréquent
       errorLog: (error) => {
-        console.error('[Session Store] Erreur:', error.message);
+        logger.error('Session store error', { error });
       },
       // Configuration du schéma
       schemaName: 'public',
@@ -415,10 +416,10 @@ export class DatabaseStorage implements IStorage {
         return { success: false, error: new NotFoundError("Administrateur introuvable") };
       }
 
-      console.log(`[Storage] Administrateur supprimé: ${email}`);
+      logger.info('Admin deleted', { email });
       return { success: true, data: undefined };
     } catch (error) {
-      console.error('Erreur lors de la suppression de l\'administrateur:', error);
+      logger.error('Admin deletion failed', { email, error });
       return { success: false, error: new DatabaseError(`Erreur lors de la suppression de l'administrateur: ${error}`) };
     }
   }
@@ -502,7 +503,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
       return !!existing;
     } catch (error) {
-      console.error('[Storage] Erreur vérification duplicate idée:', error);
+      logger.error('Duplicate idea check failed', { title, error });
       return false; // Fail safe - allow creation
     }
   }
@@ -528,7 +529,7 @@ export class DatabaseStorage implements IStorage {
           .returning();
         
         // Log audit trail
-        console.log(`[Storage] Nouvelle idée créée: ${newIdea.id} par ${idea.proposedBy}`);
+        logger.info('Idea created', { ideaId: newIdea.id, proposedBy: idea.proposedBy, title: newIdea.title });
         
         return newIdea;
       });
@@ -553,7 +554,7 @@ export class DatabaseStorage implements IStorage {
       // Transaction for atomic deletion (cascade will handle votes)
       await db.transaction(async (tx) => {
         await tx.delete(ideas).where(eq(ideas.id, id));
-        console.log(`[Storage] Idée supprimée: ${id}`);
+        logger.info('Idea deleted', { ideaId: id });
       });
 
       return { success: true, data: undefined };
@@ -673,7 +674,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
       return !!existing;
     } catch (error) {
-      console.error('[Storage] Erreur vérification duplicate événement:', error);
+      logger.error('Duplicate event check failed', { title, date, error });
       return false; // Fail safe - allow creation
     }
   }
@@ -705,7 +706,7 @@ export class DatabaseStorage implements IStorage {
           .values([eventData])
           .returning();
         
-        console.log(`[Storage] Nouvel événement créé: ${newEvent.id} - ${newEvent.title}`);
+        logger.info('Event created', { eventId: newEvent.id, title: newEvent.title, date: newEvent.date });
         return newEvent;
       });
 
@@ -749,7 +750,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(events.id, id))
           .returning();
         
-        console.log(`[Storage] Événement mis à jour: ${id}`);
+        logger.info('Event updated', { eventId: id, updates: Object.keys(event) });
         return updatedEvent;
       });
 
@@ -773,7 +774,7 @@ export class DatabaseStorage implements IStorage {
       // Transaction for atomic deletion (cascade will handle inscriptions)
       await db.transaction(async (tx) => {
         await tx.delete(events).where(eq(events.id, id));
-        console.log(`[Storage] Événement supprimé: ${id}`);
+        logger.info('Event deleted', { eventId: id });
       });
 
       return { success: true, data: undefined };
@@ -842,7 +843,7 @@ export class DatabaseStorage implements IStorage {
           .values([inscription])
           .returning();
         
-        console.log(`[Storage] Nouvelle inscription créée: ${newInscription.id} pour événement ${inscription.eventId}`);
+        logger.info('Event registration created', { inscriptionId: newInscription.id, eventId: inscription.eventId, name: inscription.name });
         return newInscription;
       });
 
@@ -884,7 +885,7 @@ export class DatabaseStorage implements IStorage {
             eq(inscriptions.email, email),
             eq(inscriptions.name, name)
           ));
-        console.log(`[Storage] Désinscription: ${name} (${email}) de l'événement ${eventId}`);
+        logger.info('Event unregistration', { eventId, name, email });
       });
 
       return { success: true, data: undefined };
@@ -907,7 +908,7 @@ export class DatabaseStorage implements IStorage {
 
       await db.transaction(async (tx) => {
         await tx.delete(inscriptions).where(eq(inscriptions.id, inscriptionId));
-        console.log(`[Storage] Inscription supprimée: ${inscriptionId}`);
+        logger.info('Event registration deleted', { inscriptionId });
       });
 
       return { success: true, data: undefined };
@@ -924,7 +925,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(unsubscriptions.eventId, eventId))
         .orderBy(desc(unsubscriptions.createdAt));
 
-      console.log(`[Storage] ${result.length} absences récupérées pour l'événement ${eventId}`);
+      logger.debug('Event unsubscriptions retrieved', { eventId, count: result.length });
       return { success: true, data: result };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération des absences: ${error}`) };
@@ -958,7 +959,7 @@ export class DatabaseStorage implements IStorage {
           .values([unsubscription])
           .returning();
         
-        console.log(`[Storage] Nouvelle absence déclarée: ${newUnsubscription.id} pour événement ${unsubscription.eventId}`);
+        logger.info('Event unsubscription created', { unsubscriptionId: newUnsubscription.id, eventId: unsubscription.eventId, name: unsubscription.name });
         return newUnsubscription;
       });
 
@@ -982,7 +983,7 @@ export class DatabaseStorage implements IStorage {
 
       await db.transaction(async (tx) => {
         await tx.delete(unsubscriptions).where(eq(unsubscriptions.id, id));
-        console.log(`[Storage] Déclaration d'absence supprimée: ${id}`);
+        logger.info('Event unsubscription deleted', { unsubscriptionId: id });
       });
 
       return { success: true, data: undefined };
@@ -1010,7 +1011,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(unsubscriptions.id, id))
           .returning();
 
-        console.log(`[Storage] Déclaration d'absence modifiée: ${id}`);
+        logger.info('Event unsubscription updated', { unsubscriptionId: id, updates: Object.keys(data) });
         return updatedUnsubscription;
       });
 
@@ -1047,7 +1048,7 @@ export class DatabaseStorage implements IStorage {
           .values([vote])
           .returning();
         
-        console.log(`[Storage] Nouveau vote créé: ${newVote.id} pour idée ${vote.ideaId}`);
+        logger.info('Vote created', { voteId: newVote.id, ideaId: vote.ideaId, voterEmail: vote.voterEmail });
         return newVote;
       });
 
@@ -1071,7 +1072,7 @@ export class DatabaseStorage implements IStorage {
 
       await db.transaction(async (tx) => {
         await tx.delete(votes).where(eq(votes.id, voteId));
-        console.log(`[Storage] Vote supprimé: ${voteId}`);
+        logger.info('Vote deleted', { voteId });
       });
 
       return { success: true, data: undefined };
@@ -1229,7 +1230,7 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(ideas.id, id));
         
-        console.log(`[Storage] Statut de l'idée mis à jour: ${id} -> ${status}`);
+        logger.info('Idea status updated', { ideaId: id, newStatus: status });
       });
 
       return { success: true, data: undefined };
@@ -1275,7 +1276,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(ideas.id, id))
           .returning();
         
-        console.log(`[Storage] Idée mise à jour: ${id} - ${ideaData.title || 'contenu modifié'}`);
+        logger.info('Idea updated', { ideaId: id, title: ideaData.title || 'content modified', updates: Object.keys(ideaData) });
         return updatedIdea;
       });
 
@@ -1308,7 +1309,7 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(ideas.id, id));
         
-        console.log(`[Storage] Featured idée mis à jour: ${id} -> ${newFeaturedStatus}`);
+        logger.info('Idea featured status updated', { ideaId: id, featured: newFeaturedStatus });
       });
 
       return { success: true, data: newFeaturedStatus };
@@ -1373,13 +1374,13 @@ export class DatabaseStorage implements IStorage {
             .where(eq(ideas.id, ideaId));
         }
 
-        console.log(`[Storage] Idée transformée en événement: ${ideaId} -> ${newEvent.id}`);
+        logger.info('Idea transformed to event', { ideaId, eventId: newEvent.id, title: newEvent.title });
         return newEvent;
       });
 
       return { success: true, data: result };
     } catch (error) {
-      console.error('[Storage] Erreur transformation idée vers événement:', error);
+      logger.error('Idea to event transformation failed', { ideaId, error });
       return { success: false, error: new DatabaseError(`Erreur lors de la transformation de l'idée en événement: ${error}`) };
     }
   }
@@ -1405,7 +1406,7 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(events.id, id));
         
-        console.log(`[Storage] Statut de l'événement mis à jour: ${id} -> ${status}`);
+        logger.info('Event status updated', { eventId: id, newStatus: status });
       });
 
       return { success: true, data: undefined };
@@ -1422,7 +1423,7 @@ export class DatabaseStorage implements IStorage {
         .from(developmentRequests)
         .orderBy(desc(developmentRequests.createdAt));
       
-      console.log(`[Storage] ${requests.length} demandes de développement récupérées`);
+      logger.debug('Development requests retrieved', { count: requests.length });
       return { success: true, data: requests };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération des demandes de développement: ${error}`) };
@@ -1437,7 +1438,7 @@ export class DatabaseStorage implements IStorage {
           .values(request)
           .returning();
         
-        console.log(`[Storage] Nouvelle demande de développement créée: ${newRequest.id} - ${newRequest.title}`);
+        logger.info('Development request created', { requestId: newRequest.id, title: newRequest.title, requestedBy: request.requestedBy });
         return newRequest;
       });
 
@@ -1466,7 +1467,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(developmentRequests.id, id))
           .returning();
 
-        console.log(`[Storage] Demande de développement mise à jour: ${id}`);
+        logger.info('Development request updated', { requestId: id, updates: Object.keys(data) });
         return updatedRequest;
       });
 
@@ -1500,7 +1501,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(developmentRequests.id, id))
           .returning();
 
-        console.log(`[Storage] Statut de la demande de développement mis à jour: ${id} -> ${status} par ${updatedBy}`);
+        logger.info('Development request status updated', { requestId: id, newStatus: status, updatedBy });
         return updatedRequest;
       });
 
@@ -1524,7 +1525,7 @@ export class DatabaseStorage implements IStorage {
 
       await db.transaction(async (tx) => {
         await tx.delete(developmentRequests).where(eq(developmentRequests.id, id));
-        console.log(`[Storage] Demande de développement supprimée: ${id}`);
+        logger.info('Development request deleted', { requestId: id });
       });
 
       return { success: true, data: undefined };
@@ -1548,7 +1549,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(developmentRequests.id, id))
           .returning();
 
-        console.log(`[Storage] Demande synchronisée avec GitHub: ${id} -> Issue #${githubData.issueNumber}`);
+        logger.info('Development request synced with GitHub', { requestId: id, issueNumber: githubData.issueNumber, issueUrl: githubData.issueUrl });
         return updatedRequest;
       });
 
@@ -1567,7 +1568,7 @@ export class DatabaseStorage implements IStorage {
         .values(patron)
         .returning();
       
-      console.log(`[DB Query] Nouveau mécène créé: ${newPatron.id} - ${newPatron.firstName} ${newPatron.lastName}`);
+      logger.info('Patron created', { patronId: newPatron.id, name: `${newPatron.firstName} ${newPatron.lastName}`, email: newPatron.email });
       return { success: true, data: newPatron };
     } catch (error: any) {
       if (error.code === '23505' && error.constraint === 'patrons_email_unique') {
@@ -1586,7 +1587,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
 
       if (existing.length > 0) {
-        console.log(`[Storage] Mécène ${data.email} existe déjà`);
+        logger.warn('Patron already exists', { email: data.email });
         return {
           success: false,
           error: new DuplicateError("Un mécène avec cet email existe déjà"),
@@ -1601,7 +1602,7 @@ export class DatabaseStorage implements IStorage {
         })
         .returning();
 
-      console.log(`[Storage] Mécène proposé créé: ${newPatron.id}`);
+      logger.info('Patron proposed', { patronId: newPatron.id, email: data.email, proposedBy: data.proposedBy });
       return { success: true, data: newPatron };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la proposition du mécène: ${error}`) };
@@ -1624,7 +1625,7 @@ export class DatabaseStorage implements IStorage {
         .select({ count: sql<number>`count(*)::int` })
         .from(patrons);
 
-      console.log('[DB Query] select * from "patrons" order by "created_at" desc limit', limit, 'offset', offset);
+      logger.debug('Patrons retrieved', { limit, offset, page });
       
       // Get paginated results
       const patronsList = await db
@@ -1650,7 +1651,7 @@ export class DatabaseStorage implements IStorage {
 
   async getPatronById(id: string): Promise<Result<Patron | null>> {
     try {
-      console.log(`[DB Query] select * from "patrons" where "id" = '${id}'`);
+      logger.debug('Patron retrieved by ID', { patronId: id });
       const [patron] = await db
         .select()
         .from(patrons)
@@ -1664,7 +1665,7 @@ export class DatabaseStorage implements IStorage {
 
   async getPatronByEmail(email: string): Promise<Result<Patron | null>> {
     try {
-      console.log(`[DB Query] select * from "patrons" where lower("email") = lower('${email}')`);
+      logger.debug('Patron retrieved by email', { email });
       const [patron] = await db
         .select()
         .from(patrons)
@@ -1695,7 +1696,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(patrons.id, id))
         .returning();
 
-      console.log(`[DB Query] Mécène mis à jour: ${id}`);
+      logger.info('Patron updated', { patronId: id, updates: Object.keys(data) });
       return { success: true, data: updatedPatron };
     } catch (error: any) {
       if (error.code === '23505' && error.constraint === 'patrons_email_unique') {
@@ -1717,7 +1718,7 @@ export class DatabaseStorage implements IStorage {
 
       await db.transaction(async (tx) => {
         await tx.delete(patrons).where(eq(patrons.id, id));
-        console.log(`[DB Query] Mécène supprimé: ${id} (CASCADE supprime dons et propositions)`);
+        logger.info('Patron deleted with cascade', { patronId: id });
       });
 
       return { success: true, data: undefined };
@@ -1740,7 +1741,7 @@ export class DatabaseStorage implements IStorage {
         .values(donationData)
         .returning();
       
-      console.log(`[DB Query] Nouveau don créé: ${newDonation.id} - ${newDonation.amount}€ pour ${newDonation.occasion}`);
+      logger.info('Patron donation created', { donationId: newDonation.id, patronId: newDonation.patronId, amount: newDonation.amount, occasion: newDonation.occasion });
       return { success: true, data: newDonation };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la création du don: ${error}`) };
@@ -1749,7 +1750,7 @@ export class DatabaseStorage implements IStorage {
 
   async getPatronDonations(patronId: string): Promise<Result<PatronDonation[]>> {
     try {
-      console.log(`[DB Query] select * from "patron_donations" where "patron_id" = '${patronId}' order by "donated_at" desc`);
+      logger.debug('Patron donations retrieved', { patronId });
       const donations = await db
         .select()
         .from(patronDonations)
@@ -1764,7 +1765,7 @@ export class DatabaseStorage implements IStorage {
 
   async getAllDonations(): Promise<Result<PatronDonation[]>> {
     try {
-      console.log('[DB Query] select * from "patron_donations" order by "donated_at" desc');
+      logger.debug('All donations retrieved');
       const donations = await db
         .select()
         .from(patronDonations)
@@ -1798,7 +1799,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(patronDonations.id, id))
         .returning();
 
-      console.log(`[DB Query] Don mis à jour: ${id}`);
+      logger.info('Patron donation updated', { donationId: id, updates: Object.keys(data) });
       return { success: true, data: updatedDonation };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du don: ${error}`) };
@@ -1818,7 +1819,7 @@ export class DatabaseStorage implements IStorage {
 
       await db.transaction(async (tx) => {
         await tx.delete(patronDonations).where(eq(patronDonations.id, id));
-        console.log(`[DB Query] Don supprimé: ${id}`);
+        logger.info('Patron donation deleted', { donationId: id });
       });
 
       return { success: true, data: undefined };
@@ -1836,7 +1837,7 @@ export class DatabaseStorage implements IStorage {
         .values(update)
         .returning();
       
-      console.log(`[DB Query] Nouvelle actualité mécène créée: ${newUpdate.id} - ${newUpdate.type} pour ${newUpdate.patronId}`);
+      logger.info('Patron update created', { updateId: newUpdate.id, patronId: newUpdate.patronId, type: newUpdate.type, subject: newUpdate.subject });
       return { success: true, data: newUpdate };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la création de l'actualité: ${error}`) };
@@ -1845,7 +1846,7 @@ export class DatabaseStorage implements IStorage {
 
   async getPatronUpdates(patronId: string): Promise<Result<PatronUpdate[]>> {
     try {
-      console.log(`[DB Query] select * from "patron_updates" where "patron_id" = '${patronId}' order by "date" desc, "created_at" desc`);
+      logger.debug('Patron updates retrieved', { patronId });
       const updates = await db
         .select()
         .from(patronUpdates)
@@ -1878,7 +1879,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(patronUpdates.id, id))
         .returning();
 
-      console.log(`[DB Query] Actualité mise à jour: ${id}`);
+      logger.info('Patron update updated', { updateId: id, updates: Object.keys(data) });
       return { success: true, data: updatedUpdate };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de l'actualité: ${error}`) };
@@ -1898,7 +1899,7 @@ export class DatabaseStorage implements IStorage {
 
       await db.transaction(async (tx) => {
         await tx.delete(patronUpdates).where(eq(patronUpdates.id, id));
-        console.log(`[DB Query] Actualité supprimée: ${id}`);
+        logger.info('Patron update deleted', { updateId: id });
       });
 
       return { success: true, data: undefined };
@@ -1916,7 +1917,7 @@ export class DatabaseStorage implements IStorage {
         .values(proposal)
         .returning();
       
-      console.log(`[DB Query] Nouvelle proposition créée: ${newProposal.id} - idée ${newProposal.ideaId} pour mécène ${newProposal.patronId}`);
+      logger.info('Idea-patron proposal created', { proposalId: newProposal.id, ideaId: newProposal.ideaId, patronId: newProposal.patronId });
       return { success: true, data: newProposal };
     } catch (error: any) {
       if (error.code === '23505' && error.constraint === 'idea_patron_proposals_idea_id_patron_id_unique') {
@@ -1928,7 +1929,7 @@ export class DatabaseStorage implements IStorage {
 
   async getIdeaPatronProposals(ideaId: string): Promise<Result<IdeaPatronProposal[]>> {
     try {
-      console.log(`[DB Query] select * from "idea_patron_proposals" where "idea_id" = '${ideaId}' order by "proposed_at" desc`);
+      logger.debug('Idea patron proposals retrieved', { ideaId });
       const proposals = await db
         .select()
         .from(ideaPatronProposals)
@@ -1943,7 +1944,7 @@ export class DatabaseStorage implements IStorage {
 
   async getPatronProposals(patronId: string): Promise<Result<IdeaPatronProposal[]>> {
     try {
-      console.log(`[DB Query] select * from "idea_patron_proposals" where "patron_id" = '${patronId}' order by "proposed_at" desc`);
+      logger.debug('Patron proposals retrieved', { patronId });
       const proposals = await db
         .select()
         .from(ideaPatronProposals)
@@ -1976,7 +1977,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(ideaPatronProposals.id, id))
         .returning();
 
-      console.log(`[DB Query] Proposition mise à jour: ${id} - nouveau statut: ${data.status || 'inchangé'}`);
+      logger.info('Idea-patron proposal updated', { proposalId: id, newStatus: data.status || 'unchanged', updates: Object.keys(data) });
       return { success: true, data: updatedProposal };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la proposition: ${error}`) };
@@ -1996,7 +1997,7 @@ export class DatabaseStorage implements IStorage {
 
       await db.transaction(async (tx) => {
         await tx.delete(ideaPatronProposals).where(eq(ideaPatronProposals.id, id));
-        console.log(`[DB Query] Proposition supprimée: ${id}`);
+        logger.info('Idea-patron proposal deleted', { proposalId: id });
       });
 
       return { success: true, data: undefined };
@@ -2032,7 +2033,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(members.email, memberData.email))
           .returning();
 
-        console.log(`[Storage] Membre mis à jour: ${memberData.email}`);
+        logger.info('Member updated', { email: memberData.email, updates: Object.keys(memberData) });
         return { success: true, data: updatedMember };
       } else {
         const newMemberData = {
@@ -2054,7 +2055,7 @@ export class DatabaseStorage implements IStorage {
           .values(newMemberData)
           .returning();
 
-        console.log(`[Storage] Nouveau membre créé: ${memberData.email}`);
+        logger.info('Member created', { email: memberData.email, name: `${memberData.firstName} ${memberData.lastName}` });
         return { success: true, data: newMember };
       }
     } catch (error) {
@@ -2095,10 +2096,10 @@ export class DatabaseStorage implements IStorage {
         .values(newMemberData)
         .returning();
       
-      console.log(`[Storage] Membre potentiel proposé: ${memberData.email} par ${memberData.proposedBy}`);
+      logger.info('Member proposed', { email: memberData.email, proposedBy: memberData.proposedBy, name: `${memberData.firstName} ${memberData.lastName}` });
       return { success: true, data: newMember };
     } catch (error) {
-      console.error("[Storage] Erreur lors de la proposition d'un membre:", error);
+      logger.error('Member proposal failed', { email: memberData.email, error });
       return { success: false, error: new DatabaseError("Erreur lors de la proposition du membre") };
     }
   }
@@ -2174,7 +2175,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(members.email, email))
         .returning();
 
-      console.log(`[Storage] Membre mis à jour: ${email}`);
+      logger.info('Member updated', { email, updates: Object.keys(data) });
       return { success: true, data: updatedMember };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du membre: ${error}`) };
@@ -2196,7 +2197,7 @@ export class DatabaseStorage implements IStorage {
         .delete(members)
         .where(eq(members.email, email));
 
-      console.log(`[Storage] Membre supprimé: ${email}`);
+      logger.info('Member deleted', { email });
       return { success: true, data: undefined };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la suppression du membre: ${error}`) };
@@ -2221,7 +2222,7 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(members.email, activity.memberEmail));
 
-        console.log(`[Storage] Activité enregistrée pour ${activity.memberEmail}: ${activity.activityType} (score: ${activity.scoreImpact})`);
+        logger.info('Member activity tracked', { memberEmail: activity.memberEmail, activityType: activity.activityType, scoreImpact: activity.scoreImpact, entityType: activity.entityType });
         
         return newActivity;
       });

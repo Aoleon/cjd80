@@ -37,6 +37,7 @@ import {
 } from "@shared/schema";
 import { ZodError, z } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { logger } from "./lib/logger";
 
 const updateMemberSchema = z.object({
   firstName: z.string().optional(),
@@ -97,9 +98,9 @@ async function trackMemberActivity(
       scoreImpact,
     });
 
-    console.log(`[Member Activity] Tracked ${activityType} for ${email}`);
+    logger.info('Member activity tracked', { email, activityType, entityType, entityId });
   } catch (error) {
-    console.error(`[Member Activity] Error tracking activity:`, error);
+    logger.error('Member activity tracking failed', { email, activityType, error });
     // Ne pas faire échouer la requête principale si le tracking échoue
   }
 }
@@ -215,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Notification email aux administrateurs
         await emailNotificationService.notifyNewIdea(result.data);
       } catch (notifError) {
-        console.error('[Notifications] Erreur envoi notifications nouvelle idée:', notifError);
+        logger.warn('Idea notification failed', { ideaId: result.data.id, error: notifError });
       }
       
       res.status(201).json(result.data);
@@ -246,7 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           proposedBy: 'Utilisateur'
         });
       } catch (notifError) {
-        console.error('[Notifications] Erreur envoi notification changement statut:', notifError);
+        logger.warn('Idea status change notification failed', { ideaId: req.params.id, error: notifError });
       }
       
       res.sendStatus(200);
@@ -346,7 +347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           : req.user?.email || 'Organisateur inconnu';
         await emailNotificationService.notifyNewEvent(result.data, organizerName);
       } catch (notifError) {
-        console.error('[Notifications] Erreur envoi notifications nouvel événement:', notifError);
+        logger.warn('Event notification failed', { eventId: result.data.id, error: notifError });
       }
       
       res.status(201).json(result.data);
@@ -750,7 +751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ success: true, data: stats.data });
     } catch (error) {
-      console.error("Error fetching admin stats:", error);
+      logger.error('Admin stats fetch failed', { error });
       res.status(500).json({ 
         success: false, 
         error: "Erreur lors de la récupération des statistiques" 
@@ -789,7 +790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(500).json({ message: "Erreur création abonnement" });
       }
     } catch (error) {
-      console.error('[Notifications] Erreur abonnement:', error);
+      logger.error('Notification subscription failed', { subscription: req.body, error });
       res.status(500).json({ message: "Erreur serveur" });
     }
   });
@@ -810,7 +811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(404).json({ message: "Abonnement non trouvé" });
       }
     } catch (error) {
-      console.error('[Notifications] Erreur désabonnement:', error);
+      logger.error('Notification unsubscribe failed', { endpoint: req.body.endpoint, error });
       res.status(500).json({ message: "Erreur serveur" });
     }
   });
@@ -832,7 +833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stats: result
       });
     } catch (error) {
-      console.error('[Notifications] Erreur test notification:', error);
+      logger.error('Test notification failed', { error });
       res.status(500).json({ message: "Erreur envoi notification" });
     }
   });
@@ -1151,10 +1152,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             githubIssueNumber: githubIssue.number,
             githubIssueUrl: githubIssue.html_url
           });
-          console.log(`[GitHub] Issue #${githubIssue.number} créée et liée à la demande ${result.data.id}`);
+          logger.info('GitHub issue created and linked', { requestId: result.data.id, issueNumber: githubIssue.number, issueUrl: githubIssue.html_url });
         }
       }).catch((error) => {
-        console.error("[GitHub] Erreur lors de la création de l'issue:", error);
+        logger.error('GitHub issue creation failed', { requestId: result.data.id, error });
       });
 
       res.json(result.data);
@@ -1221,14 +1222,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: updateResult.error.message });
       }
 
-      console.log(`[GitHub] Synchronisation réussie pour la demande ${req.params.id} avec l'issue #${request.githubIssueNumber}`);
+      logger.info('GitHub sync successful', { requestId: req.params.id, issueNumber: request.githubIssueNumber });
       res.json({ 
         success: true, 
         message: "Synchronisation avec GitHub réussie",
         data: updateResult.data
       });
     } catch (error) {
-      console.error("[GitHub] Erreur lors de la synchronisation:", error);
+      logger.error('GitHub sync failed', { requestId: req.params.id, error });
       next(error);
     }
   });
@@ -1257,7 +1258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: result.error.message });
       }
 
-      console.log(`[Admin] Statut de la demande de développement mis à jour: ${req.params.id} -> ${validatedData.status} par ${req.user!.email}`);
+      logger.info('Development request status updated by admin', { requestId: req.params.id, newStatus: validatedData.status, updatedBy: req.user!.email });
       res.json(result.data);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -1276,7 +1277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (request?.githubIssueNumber) {
           const { closeGitHubIssue } = await import("./utils/github-integration");
           closeGitHubIssue(request.githubIssueNumber, "not_planned").catch((error) => {
-            console.error(`[GitHub] Erreur fermeture issue #${request.githubIssueNumber}:`, error);
+            logger.error('GitHub issue close failed', { issueNumber: request.githubIssueNumber, error });
           });
         }
       }
@@ -1778,7 +1779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subscriptions = await storage.getSubscriptionsByMember(email);
       res.json({ success: true, data: subscriptions });
     } catch (error) {
-      console.error("Error fetching member subscriptions:", error);
+      logger.error('Member subscriptions fetch failed', { memberEmail: req.params.email, error });
       res.status(500).json({ 
         success: false, 
         error: "Erreur lors de la récupération des souscriptions" 
@@ -1808,7 +1809,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         return;
       }
-      console.error("Error creating subscription:", error);
+      logger.error('Subscription creation failed', { memberEmail: req.params.email, error });
       res.status(500).json({ 
         success: false, 
         error: "Erreur lors de la création de la souscription" 
