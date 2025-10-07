@@ -124,6 +124,17 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
   - `test/run-tests-and-report.sh` - Wrapper script
   - `playwright.config.ts` - Playwright configuration
 
+### 🏠 Homepage Sorting Fix (October 7, 2025)
+- **Issue**: Completed ideas were mixed with approved ideas instead of appearing at the end
+- **Root Cause**: Missing `asc()` wrapper on SQL CASE expression in ORDER BY clause
+- **Solution**: 
+  - Applied `asc()` to CASE WHEN expression: `asc(sql\`CASE WHEN status='approved' THEN 0 WHEN status='completed' THEN 1 ELSE 2 END\`)`
+  - Removed unused `statusOrder` column from SELECT to clean up query
+  - Optimized GROUP BY to only include `ideas.id` (sufficient due to unique constraint)
+- **Result**: Ideas now correctly sorted: Featured approved → Non-featured approved → Completed
+- **Verification**: Tested with 33 ideas (4 featured, 15 non-featured approved, 5 completed) - all display in correct order
+- **File Modified**: `server/storage.ts` - `getIdeas()` method
+
 ### 🎯 Future Enhancements (Deferred)
 - Standardize form management (consolidate useState → react-hook-form)
 - Implement rate limiting on sensitive endpoints

@@ -56,7 +56,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";
-import { eq, desc, and, count, sql, or } from "drizzle-orm";
+import { eq, desc, and, count, sql, or, asc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -463,7 +463,11 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(votes, eq(ideas.id, votes.ideaId))
         .where(or(eq(ideas.status, 'approved'), eq(ideas.status, 'completed')))
         .groupBy(ideas.id)
-        .orderBy(desc(ideas.featured), desc(ideas.createdAt))
+        .orderBy(
+          desc(ideas.featured),
+          asc(sql`CASE WHEN ${ideas.status} = 'approved' THEN 0 WHEN ${ideas.status} = 'completed' THEN 1 ELSE 2 END`),
+          desc(ideas.createdAt)
+        )
         .limit(limit)
         .offset(offset);
       
