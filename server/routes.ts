@@ -1903,6 +1903,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Supprimer un membre
+  app.delete("/api/admin/members/:email", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storage.deleteMember(req.params.email);
+      
+      if (!result.success) {
+        const statusCode = result.error.name === 'NotFoundError' ? 404 : 400;
+        return res.status(statusCode).json({ message: result.error.message });
+      }
+      
+      res.sendStatus(204);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Proposer un membre potentiel (accessible à tous)
   app.post("/api/members/propose", async (req, res, next) => {
     try {

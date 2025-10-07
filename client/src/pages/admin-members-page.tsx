@@ -49,7 +49,8 @@ import {
   Save,
   TrendingUp,
   Activity as ActivityIcon,
-  Euro
+  Euro,
+  Trash2
 } from "lucide-react";
 import {
   Dialog,
@@ -58,6 +59,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
@@ -100,6 +102,7 @@ export default function AdminMembersPage() {
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddSubscriptionDialog, setShowAddSubscriptionDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'proposed'>('all');
   const [scoreFilter, setScoreFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [activityFilter, setActivityFilter] = useState<'all' | 'recent' | 'inactive'>('all');
@@ -251,6 +254,39 @@ export default function AdminMembersPage() {
       toast({
         title: "❌ Erreur",
         description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMemberMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const res = await apiRequest("DELETE", `/api/admin/members/${email}`, undefined);
+      if (!res.ok && res.status !== 204) {
+        const data = await res.json();
+        throw new Error(data.message || "Erreur lors de la suppression");
+      }
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
+      setSelectedEmail(null);
+      setShowDeleteDialog(false);
+      toast({
+        title: "Membre supprimé",
+        description: "Le membre a été supprimé avec succès",
+      });
+    },
+    onError: (error: Error) => {
+      const errorMessages: Record<string, string> = {
+        "Member not found": "Membre introuvable",
+        "Membre introuvable": "Membre introuvable",
+      };
+      const errorMessage = errorMessages[error.message] || error.message || "Impossible de supprimer le membre";
+      
+      toast({
+        title: "Erreur",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -784,6 +820,57 @@ export default function AdminMembersPage() {
                             </Button>
                           </form>
                         </Form>
+
+                        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              className="w-full mt-4"
+                              data-testid="button-delete-member-trigger"
+                              disabled={deleteMemberMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Supprimer le membre
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Confirmer la suppression</DialogTitle>
+                              <DialogDescription>
+                                Êtes-vous sûr de vouloir supprimer ce membre ? Cette action est irréversible et supprimera toutes les données associées (activités, souscriptions, etc.).
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="flex gap-2 justify-end mt-4">
+                              <DialogClose asChild>
+                                <Button variant="outline" data-testid="button-cancel-delete">
+                                  Annuler
+                                </Button>
+                              </DialogClose>
+                              <Button
+                                variant="destructive"
+                                onClick={() => {
+                                  if (selectedEmail) {
+                                    deleteMemberMutation.mutate(selectedEmail);
+                                  }
+                                }}
+                                disabled={deleteMemberMutation.isPending}
+                                data-testid="button-confirm-delete-member"
+                              >
+                                {deleteMemberMutation.isPending ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Suppression...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Supprimer définitivement
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </TabsContent>
 
                       <TabsContent value="activity" className="space-y-4">
