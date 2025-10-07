@@ -1705,7 +1705,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPatrons(options?: { page?: number; limit?: number }): Promise<Result<{
-    data: Patron[];
+    data: (Patron & { referrer?: { id: string; firstName: string; lastName: string; email: string; company: string | null } | null })[];
     total: number;
     page: number;
     limit: number;
@@ -1722,10 +1722,32 @@ export class DatabaseStorage implements IStorage {
 
       logger.debug('Patrons retrieved', { limit, offset, page });
       
-      // Get paginated results
+      // Get paginated results with referrer info
       const patronsList = await db
-        .select()
+        .select({
+          id: patrons.id,
+          firstName: patrons.firstName,
+          lastName: patrons.lastName,
+          role: patrons.role,
+          company: patrons.company,
+          phone: patrons.phone,
+          email: patrons.email,
+          notes: patrons.notes,
+          status: patrons.status,
+          referrerId: patrons.referrerId,
+          createdAt: patrons.createdAt,
+          updatedAt: patrons.updatedAt,
+          createdBy: patrons.createdBy,
+          referrer: {
+            id: members.id,
+            firstName: members.firstName,
+            lastName: members.lastName,
+            email: members.email,
+            company: members.company,
+          }
+        })
         .from(patrons)
+        .leftJoin(members, eq(patrons.referrerId, members.id))
         .orderBy(desc(patrons.createdAt))
         .limit(limit)
         .offset(offset);
@@ -1744,12 +1766,34 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPatronById(id: string): Promise<Result<Patron | null>> {
+  async getPatronById(id: string): Promise<Result<(Patron & { referrer?: { id: string; firstName: string; lastName: string; email: string; company: string | null } | null }) | null>> {
     try {
       logger.debug('Patron retrieved by ID', { patronId: id });
       const [patron] = await db
-        .select()
+        .select({
+          id: patrons.id,
+          firstName: patrons.firstName,
+          lastName: patrons.lastName,
+          role: patrons.role,
+          company: patrons.company,
+          phone: patrons.phone,
+          email: patrons.email,
+          notes: patrons.notes,
+          status: patrons.status,
+          referrerId: patrons.referrerId,
+          createdAt: patrons.createdAt,
+          updatedAt: patrons.updatedAt,
+          createdBy: patrons.createdBy,
+          referrer: {
+            id: members.id,
+            firstName: members.firstName,
+            lastName: members.lastName,
+            email: members.email,
+            company: members.company,
+          }
+        })
         .from(patrons)
+        .leftJoin(members, eq(patrons.referrerId, members.id))
         .where(eq(patrons.id, id));
       
       return { success: true, data: patron || null };

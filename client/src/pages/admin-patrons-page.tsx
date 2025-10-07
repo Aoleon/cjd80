@@ -74,6 +74,14 @@ type Patron = {
   email: string;
   notes: string | null;
   status: string;
+  referrerId: string | null;
+  referrer?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    company: string | null;
+  } | null;
   createdAt: Date | string;
   updatedAt: Date | string;
   createdBy: string | null;
@@ -113,6 +121,7 @@ const patronFormSchema = z.object({
   phone: z.string().optional(),
   role: z.string().optional(),
   notes: z.string().optional(),
+  referrerId: z.string().optional(),
 });
 
 const donationFormSchema = z.object({
@@ -195,6 +204,19 @@ export default function AdminPatronsPage() {
     enabled: isSuperAdmin && !!selectedPatronId,
   });
 
+  // Récupérer la liste des membres pour le champ prescripteur
+  const { data: membersResponse } = useQuery<{ data: Array<{ id: string; firstName: string; lastName: string; email: string; company: string | null }> }>({
+    queryKey: ["/api/members", { limit: 1000 }],
+    queryFn: async () => {
+      const res = await fetch("/api/members?limit=1000");
+      if (!res.ok) throw new Error('Failed to fetch members');
+      return res.json();
+    },
+    enabled: isSuperAdmin,
+  });
+
+  const members = membersResponse?.data || [];
+
   // Filtrage local des mécènes
   const filteredPatrons = useMemo(() => {
     if (!searchQuery.trim()) return patrons;
@@ -219,6 +241,7 @@ export default function AdminPatronsPage() {
       phone: "",
       role: "",
       notes: "",
+      referrerId: "",
     },
   });
 
@@ -381,6 +404,7 @@ export default function AdminPatronsPage() {
       phone: selectedPatron.phone || "",
       role: selectedPatron.role || "",
       notes: selectedPatron.notes || "",
+      referrerId: selectedPatron.referrerId || "",
     });
     setIsEditDialogOpen(true);
   };
@@ -666,6 +690,21 @@ export default function AdminPatronsPage() {
                               </div>
                             </div>
                           )}
+                          {selectedPatron.referrer && (
+                            <div className="flex items-start gap-3">
+                              <User className="h-5 w-5 text-muted-foreground mt-0.5" />
+                              <div>
+                                <div className="font-medium text-sm">Prescripteur</div>
+                                <div data-testid="patron-referrer">
+                                  {selectedPatron.referrer.firstName} {selectedPatron.referrer.lastName}
+                                  {selectedPatron.referrer.company && ` (${selectedPatron.referrer.company})`}
+                                </div>
+                                <div className="text-sm text-muted-foreground" data-testid="patron-referrer-email">
+                                  {selectedPatron.referrer.email}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           <div className="pt-4 border-t">
                             <div className="text-xs text-muted-foreground">
                               Ajouté le {formatDate(selectedPatron.createdAt)}
@@ -924,6 +963,35 @@ export default function AdminPatronsPage() {
               />
               <FormField
                 control={patronForm.control}
+                name="referrerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Prescripteur (membre)</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
+                      value={field.value || "none"}
+                    >
+                      <FormControl>
+                        <SelectTrigger data-testid="select-referrer">
+                          <SelectValue placeholder="Sélectionner un membre..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">Aucun prescripteur</SelectItem>
+                        {members.map((member) => (
+                          <SelectItem key={member.id} value={member.id}>
+                            {member.firstName} {member.lastName}
+                            {member.company ? ` (${member.company})` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={patronForm.control}
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
@@ -1054,6 +1122,35 @@ export default function AdminPatronsPage() {
                     <FormControl>
                       <Input {...field} data-testid="input-edit-phone" />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={patronForm.control}
+                name="referrerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Prescripteur (membre)</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
+                      value={field.value || "none"}
+                    >
+                      <FormControl>
+                        <SelectTrigger data-testid="select-edit-referrer">
+                          <SelectValue placeholder="Sélectionner un membre..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">Aucun prescripteur</SelectItem>
+                        {members.map((member) => (
+                          <SelectItem key={member.id} value={member.id}>
+                            {member.firstName} {member.lastName}
+                            {member.company ? ` (${member.company})` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

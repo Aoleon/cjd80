@@ -197,6 +197,7 @@ export const patrons = pgTable("patrons", {
   email: text("email").notNull().unique(), // Email unique pour éviter les doublons
   notes: text("notes"), // Informations complémentaires
   status: text("status").notNull().default("active"), // 'active' | 'proposed'
+  referrerId: varchar("referrer_id").references(() => members.id, { onDelete: "set null" }), // Prescripteur (membre qui a apporté ce mécène)
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   createdBy: text("created_by"), // Email admin qui a ajouté le mécène
@@ -204,6 +205,7 @@ export const patrons = pgTable("patrons", {
   emailIdx: index("patrons_email_idx").on(table.email),
   createdByIdx: index("patrons_created_by_idx").on(table.createdBy),
   createdAtIdx: index("patrons_created_at_idx").on(table.createdAt),
+  referrerIdIdx: index("patrons_referrer_id_idx").on(table.referrerId),
 }));
 
 // Patron donations table - Historique des dons
@@ -706,6 +708,7 @@ export const insertPatronSchema = createInsertSchema(patrons).pick({
   phone: true,
   email: true,
   notes: true,
+  referrerId: true,
   createdBy: true,
 }).extend({
   firstName: z.string()
@@ -735,6 +738,15 @@ export const insertPatronSchema = createInsertSchema(patrons).pick({
     .max(2000, "Les notes ne peuvent pas dépasser 2000 caractères")
     .optional()
     .transform(val => val ? sanitizeText(val) : undefined),
+  referrerId: z.string()
+    .optional()
+    .transform(val => {
+      if (!val || val.trim() === "") return undefined;
+      return sanitizeText(val);
+    })
+    .refine(val => !val || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val), {
+      message: "L'identifiant du prescripteur n'est pas valide"
+    }),
   createdBy: z.string()
     .email("Email de l'administrateur invalide")
     .optional()
@@ -891,6 +903,16 @@ export const updatePatronSchema = z.object({
     .max(2000, "Les notes ne peuvent pas dépasser 2000 caractères")
     .transform(val => sanitizeText(val))
     .optional(),
+  referrerId: z.string()
+    .optional()
+    .nullable()
+    .transform(val => {
+      if (!val || val.trim() === "") return null;
+      return sanitizeText(val);
+    })
+    .refine(val => !val || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val), {
+      message: "L'identifiant du prescripteur n'est pas valide"
+    }),
 });
 
 export const updateIdeaPatronProposalSchema = z.object({
