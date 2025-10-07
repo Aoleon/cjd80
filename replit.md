@@ -90,6 +90,13 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
    - Sensitive field redaction
    - Console colorization for development
    - File transports for production
+6. **Transaction Safety** - Implemented atomic database operations with automatic rollback:
+   - Safe idea deletion with automatic vote cleanup via cascade
+   - Safe event deletion with automatic inscription/unsubscription cleanup via cascade
+   - Atomic event creation with initial inscriptions (all-or-nothing guarantee)
+   - Participant limit enforcement with validation before and during inscription
+   - Duplicate email detection in initial inscriptions
+   - All multi-table operations wrapped in transactions with automatic rollback on error
 
 ### 📊 Test Coverage
 - **Test Results**: 42 passing / 43 total (97.7% pass rate)
@@ -98,7 +105,6 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
 
 ### 🎯 Future Enhancements (Deferred)
 - Standardize form management (consolidate useState → react-hook-form)
-- Add database transactions for multi-table operations
 - Implement rate limiting on sensitive endpoints
 - Improve ZodError response structure for better frontend UX
 - Add caching layer for frequently accessed data
@@ -113,3 +119,7 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
 - ✅ Sensitive data sanitized in all logging
 - ✅ Consistent error handling across storage layer
 - ✅ Type-safe permission validation
+- ✅ Database transactions for all multi-table operations
+- ✅ Atomic operations with automatic rollback on failure
+- ✅ Participant limit enforcement with pre-validation
+- ✅ Cascade deletes configured for data integrity

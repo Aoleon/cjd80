@@ -12,6 +12,7 @@ import {
   insertIdeaSchema,
   insertVoteSchema,
   insertEventSchema,
+  createEventWithInscriptionsSchema,
   insertInscriptionSchema,
   insertUnsubscriptionSchema,
   insertDevelopmentRequestSchema,
@@ -357,6 +358,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(result.data);
     } catch (error) {
+      next(error);
+    }
+  });
+
+  // Create event with initial inscriptions (atomic transaction)
+  app.post("/api/events/with-inscriptions", requireAuth, async (req, res, next) => {
+    try {
+      const validatedData = createEventWithInscriptionsSchema.parse(req.body);
+      const result = await storage.createEventWithInscriptions(
+        validatedData.event, 
+        validatedData.initialInscriptions
+      );
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      // Envoyer notifications pour nouvel événement
+      try {
+        const dateString = typeof result.data.event.date === 'string' 
+          ? result.data.event.date 
+          : result.data.event.date.toISOString();
+        
+        // Notification push web
+        await notificationService.notifyNewEvent({
+          title: result.data.event.title,
+          date: dateString,
+          location: result.data.event.location || 'Lieu à définir'
+        });
+        
+        // Notification email aux administrateurs
+        const organizerName = req.user?.firstName && req.user?.lastName 
+          ? `${req.user.firstName} ${req.user.lastName}` 
+          : req.user?.email || 'Organisateur inconnu';
+        await emailNotificationService.notifyNewEvent(result.data.event, organizerName);
+      } catch (notifError) {
+        logger.warn('Event notification failed', { eventId: result.data.event.id, error: notifError });
+      }
+      
+      res.status(201).json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
       next(error);
     }
   });

@@ -118,6 +118,7 @@ export interface IStorage {
   }>>;
   getEvent(id: string): Promise<Result<Event | null>>;
   createEvent(event: InsertEvent): Promise<Result<Event>>;
+  createEventWithInscriptions(event: InsertEvent, initialInscriptions: Omit<InsertInscription, 'eventId'>[]): Promise<Result<{ event: Event; inscriptions: Inscription[] }>>;
   updateEvent(id: string, event: Partial<InsertEvent>): Promise<Result<Event>>;
   deleteEvent(id: string): Promise<Result<void>>;
   updateEventStatus(id: string, status: string): Promise<Result<void>>;
@@ -713,6 +714,96 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: result };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la création de l'événement: ${error}`) };
+    }
+  }
+
+  async createEventWithInscriptions(
+    event: InsertEvent, 
+    initialInscriptions: Omit<InsertInscription, 'eventId'>[]
+  ): Promise<Result<{ event: Event; inscriptions: Inscription[] }>> {
+    try {
+      // Convert date string to Date object
+      const eventDate = new Date(event.date);
+      
+      // Business validation: Check for duplicate event (same title and date)
+      if (await this.isDuplicateEvent(event.title, eventDate)) {
+        return { success: false, error: new DuplicateError("Un événement avec ce titre et cette date existe déjà") };
+      }
+
+      // Validate date is in the future
+      if (eventDate <= new Date()) {
+        return { success: false, error: new ValidationError("La date de l'événement doit être dans le futur") };
+      }
+
+      // Validate max participants limit if set
+      if (event.maxParticipants && initialInscriptions.length > event.maxParticipants) {
+        return { 
+          success: false, 
+          error: new ValidationError(`Le nombre d'inscriptions initiales (${initialInscriptions.length}) dépasse la limite de participants (${event.maxParticipants})`) 
+        };
+      }
+
+      // Check for duplicate emails in initial inscriptions
+      const emails = initialInscriptions.map(i => i.email.toLowerCase());
+      const uniqueEmails = new Set(emails);
+      if (emails.length !== uniqueEmails.size) {
+        return { 
+          success: false, 
+          error: new ValidationError("Les inscriptions initiales contiennent des emails en double") 
+        };
+      }
+
+      // Prepare data with proper date conversion
+      const eventData = {
+        ...event,
+        date: eventDate
+      };
+
+      // Transaction for atomic operation - either all succeeds or all fails
+      const result = await db.transaction(async (tx) => {
+        // 1. Create the event
+        const [newEvent] = await tx
+          .insert(events)
+          .values([eventData])
+          .returning();
+        
+        logger.info('Event created with transaction', { eventId: newEvent.id, title: newEvent.title });
+
+        // 2. Create all initial inscriptions
+        const createdInscriptions: Inscription[] = [];
+        
+        if (initialInscriptions.length > 0) {
+          // Add eventId to each inscription
+          const inscriptionsWithEventId = initialInscriptions.map(inscription => ({
+            ...inscription,
+            eventId: newEvent.id
+          }));
+
+          const newInscriptions = await tx
+            .insert(inscriptions)
+            .values(inscriptionsWithEventId)
+            .returning();
+          
+          createdInscriptions.push(...newInscriptions);
+          
+          logger.info('Initial inscriptions created', { 
+            eventId: newEvent.id, 
+            count: newInscriptions.length 
+          });
+        }
+
+        return { event: newEvent, inscriptions: createdInscriptions };
+      });
+
+      logger.info('Event with inscriptions created successfully', { 
+        eventId: result.event.id, 
+        inscriptionsCount: result.inscriptions.length 
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      logger.error('Event with inscriptions creation failed', { error });
+      return { success: false, error: new DatabaseError(`Erreur lors de la création de l'événement avec inscriptions: ${error}`) };
     }
   }
 

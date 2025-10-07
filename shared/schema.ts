@@ -645,6 +645,36 @@ export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({
     .transform(val => val ? sanitizeText(val) : undefined),
 });
 
+// Schema for initial inscription (without eventId since it will be auto-generated)
+export const initialInscriptionSchema = z.object({
+  name: z.string()
+    .min(2, "Votre nom doit contenir au moins 2 caractères")
+    .max(100, "Votre nom est trop long (maximum 100 caractères)")
+    .transform(sanitizeText),
+  email: z.string()
+    .email("Adresse email invalide. Veuillez saisir une adresse email valide (ex: nom@domaine.fr)")
+    .refine(isValidDomain, "Le domaine de votre adresse email n'est pas autorisé")
+    .transform(sanitizeText),
+  company: z.string()
+    .max(100, "Le nom de la société est trop long (maximum 100 caractères)")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  phone: z.string()
+    .max(20, "Le numéro de téléphone est trop long (maximum 20 caractères)")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  comments: z.string()
+    .max(500, "Vos commentaires sont trop longs (maximum 500 caractères). Raccourcissez votre message.")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+});
+
+// Schema for creating event with initial inscriptions
+export const createEventWithInscriptionsSchema = z.object({
+  event: insertEventSchema,
+  initialInscriptions: z.array(initialInscriptionSchema).default([])
+});
+
 export const insertUnsubscriptionSchema = createInsertSchema(unsubscriptions).pick({
   eventId: true,
   name: true,
