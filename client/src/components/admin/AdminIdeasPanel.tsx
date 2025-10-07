@@ -42,6 +42,10 @@ export default function AdminIdeasPanel({
     }
   };
 
+  const handleStatusChange = (id: string, status: string) => {
+    updateStatus({ id, status });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -54,11 +58,11 @@ export default function AdminIdeasPanel({
         </div>
       ) : ideas && ideas.length > 0 ? (
         <>
-          <div className="hidden lg:block">
+          <div className="hidden md:block">
             <IdeaTable
               ideas={ideas}
               onViewDetail={onViewDetail}
-              onStatusChange={updateStatus}
+              onStatusChange={handleStatusChange}
               onManageVotes={onManageVotes}
               onToggleFeatured={toggleFeatured}
               onEdit={onEdit}
@@ -71,11 +75,11 @@ export default function AdminIdeasPanel({
             />
           </div>
 
-          <div className="lg:hidden">
+          <div className="md:hidden">
             <IdeaMobileCard
               ideas={ideas}
               onViewDetail={onViewDetail}
-              onStatusChange={updateStatus}
+              onStatusChange={handleStatusChange}
               onManageVotes={onManageVotes}
               onToggleFeatured={toggleFeatured}
               onEdit={onEdit}

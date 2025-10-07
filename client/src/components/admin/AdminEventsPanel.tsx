@@ -55,7 +55,7 @@ export default function AdminEventsPanel({
         </div>
       ) : events && events.length > 0 ? (
         <>
-          <div className="hidden lg:block">
+          <div className="hidden md:block">
             <EventTable
               events={events}
               onViewDetail={onViewDetail}
@@ -67,7 +67,7 @@ export default function AdminEventsPanel({
             />
           </div>
 
-          <div className="lg:hidden">
+          <div className="md:hidden">
             <EventMobileCard
               events={events}
               onViewDetail={onViewDetail}
