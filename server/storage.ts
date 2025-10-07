@@ -845,7 +845,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(events.id, id))
           .returning();
         
-        logger.info('Event updated', { eventId: id, updates: Object.keys(event) });
+        logger.info('Event updated', { eventId: id, updates: Object.keys(eventData) });
         return updatedEvent;
       });
 
