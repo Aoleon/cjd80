@@ -228,7 +228,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/ideas/:id", requireAuth, async (req, res, next) => {
     try {
-      await storage.deleteIdea(req.params.id);
+      const result = await storage.deleteIdea(req.params.id);
+      if (!result.success) {
+        const statusCode = result.error.name === 'NotFoundError' ? 404 : 400;
+        return res.status(statusCode).json({ message: result.error.message });
+      }
       res.sendStatus(204);
     } catch (error) {
       next(error);
@@ -372,7 +376,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/events/:id", requireAuth, async (req, res, next) => {
     try {
-      await storage.deleteEvent(req.params.id);
+      const result = await storage.deleteEvent(req.params.id);
+      if (!result.success) {
+        const statusCode = result.error.name === 'NotFoundError' ? 404 : 400;
+        return res.status(statusCode).json({ message: result.error.message });
+      }
       res.sendStatus(204);
     } catch (error) {
       next(error);
