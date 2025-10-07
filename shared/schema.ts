@@ -12,6 +12,9 @@ export const ADMIN_ROLES = {
   EVENTS_MANAGER: "events_manager"
 } as const;
 
+// AdminRole type derived from ADMIN_ROLES
+export type AdminRole = typeof ADMIN_ROLES[keyof typeof ADMIN_ROLES];
+
 // Admin status definition
 export const ADMIN_STATUS = {
   PENDING: "pending",    // En attente de validation
@@ -1021,20 +1024,31 @@ export class NotFoundError extends Error {
   }
 }
 
+// Type guard for validating admin roles
+function isValidAdminRole(role: unknown): role is AdminRole {
+  return typeof role === 'string' && Object.values(ADMIN_ROLES).includes(role as AdminRole);
+}
+
 // Permission helper functions
 export const hasPermission = (userRole: string, permission: string): boolean => {
+  // Validate role is a valid AdminRole
+  if (!isValidAdminRole(userRole)) {
+    console.warn(`Invalid admin role: ${userRole}`);
+    return false;
+  }
+  
   // Super admin a tous les droits
   if (userRole === ADMIN_ROLES.SUPER_ADMIN) return true;
   
   switch (permission) {
     case 'ideas.read':
-      return [ADMIN_ROLES.IDEAS_READER, ADMIN_ROLES.IDEAS_MANAGER].includes(userRole as any);
+      return [ADMIN_ROLES.IDEAS_READER, ADMIN_ROLES.IDEAS_MANAGER].includes(userRole as typeof ADMIN_ROLES.IDEAS_READER | typeof ADMIN_ROLES.IDEAS_MANAGER);
     case 'ideas.write':
     case 'ideas.delete':
     case 'ideas.manage':
       return userRole === ADMIN_ROLES.IDEAS_MANAGER;
     case 'events.read':
-      return [ADMIN_ROLES.EVENTS_READER, ADMIN_ROLES.EVENTS_MANAGER].includes(userRole as any);
+      return [ADMIN_ROLES.EVENTS_READER, ADMIN_ROLES.EVENTS_MANAGER].includes(userRole as typeof ADMIN_ROLES.EVENTS_READER | typeof ADMIN_ROLES.EVENTS_MANAGER);
     case 'events.write':
     case 'events.delete':
     case 'events.manage':
@@ -1044,9 +1058,11 @@ export const hasPermission = (userRole: string, permission: string): boolean => 
       return true;
     case 'admin.edit':
       // Les gestionnaires et super admins peuvent éditer les données (inscriptions, votes, etc.)
-      return [ADMIN_ROLES.SUPER_ADMIN, ADMIN_ROLES.IDEAS_MANAGER, ADMIN_ROLES.EVENTS_MANAGER].includes(userRole as any);
+      // Note: SUPER_ADMIN already returns true above
+      return [ADMIN_ROLES.IDEAS_MANAGER, ADMIN_ROLES.EVENTS_MANAGER].includes(userRole as typeof ADMIN_ROLES.IDEAS_MANAGER | typeof ADMIN_ROLES.EVENTS_MANAGER);
     case 'admin.manage':
-      return userRole === ADMIN_ROLES.SUPER_ADMIN;
+      // Only SUPER_ADMIN can manage admins (already returns true above)
+      return false;
     default:
       return false;
   }
