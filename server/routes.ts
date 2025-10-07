@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage, type IStorage } from "./storage";
 import { setupAuth } from "./auth";
 import { dbMonitoringMiddleware, getPoolStatsEndpoint } from "./middleware/db-monitoring";
+import { strictCreateRateLimiter, voteRateLimiter } from "./middleware/rate-limit";
 import { checkDatabaseHealth } from "./utils/db-health";
 import { notificationService } from "./notification-service";
 import { emailNotificationService } from "./email-notification-service";
@@ -183,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/ideas", async (req, res, next) => {
+  app.post("/api/ideas", strictCreateRateLimiter, async (req, res, next) => {
     try {
       const validatedData = insertIdeaSchema.parse(req.body);
       const result = await storage.createIdea(validatedData);
@@ -266,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/votes", async (req, res, next) => {
+  app.post("/api/votes", voteRateLimiter, async (req, res, next) => {
     try {
       const validatedData = insertVoteSchema.parse(req.body);
       
@@ -429,7 +430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/inscriptions", async (req, res, next) => {
+  app.post("/api/inscriptions", strictCreateRateLimiter, async (req, res, next) => {
     try {
       const validatedData = insertInscriptionSchema.parse(req.body);
       
