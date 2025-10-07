@@ -413,7 +413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!result.success) {
         return res.status(404).json({ message: result.error.message });
       }
-      res.json({ success: true, data: result.data });
+      res.json(result.data);
     } catch (error) {
       next(error);
     }
