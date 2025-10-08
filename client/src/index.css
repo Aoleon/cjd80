@@ -78,6 +78,27 @@
   --cjd-green: hsl(140 69% 33%);
   --cjd-green-dark: hsl(140 69% 28%);
   --cjd-green-light: hsl(140 25% 95%);
+  
+  /* Couleurs de statut/feedback sémantiques */
+  --success: hsl(145 100% 39%);           /* #00c853 */
+  --success-foreground: hsl(0 0% 100%);
+  --success-dark: hsl(140 69% 33%);       /* #00a844 */
+  --success-light: hsl(120 51% 93%);      /* #e8f5e9 */
+  
+  --warning: hsl(32 99% 57%);             /* #ffa726 */
+  --warning-foreground: hsl(0 0% 0%);
+  --warning-dark: hsl(32 100% 48%);       /* #f57c00 */
+  --warning-light: hsl(36 100% 94%);      /* #fff3e0 */
+  
+  --error: hsl(4 90% 58%);                /* #f44336 */
+  --error-foreground: hsl(0 0% 100%);
+  --error-dark: hsl(0 69% 51%);           /* #d32f2f */
+  --error-light: hsl(0 100% 97%);         /* #ffebee */
+  
+  --info: hsl(207 90% 54%);               /* #2196f3 */
+  --info-foreground: hsl(0 0% 100%);
+  --info-dark: hsl(207 77% 47%);          /* #1976d2 */
+  --info-light: hsl(207 89% 94%);         /* #e3f2fd */
 }
 
 .dark {
@@ -131,6 +152,27 @@
   --cjd-green: hsl(140 69% 33%);
   --cjd-green-dark: hsl(140 69% 28%);
   --cjd-green-light: hsl(140 25% 95%);
+  
+  /* Couleurs de statut/feedback sémantiques */
+  --success: hsl(145 100% 39%);
+  --success-foreground: hsl(0 0% 100%);
+  --success-dark: hsl(140 69% 28%);
+  --success-light: hsl(120 30% 20%);
+  
+  --warning: hsl(32 99% 57%);
+  --warning-foreground: hsl(0 0% 0%);
+  --warning-dark: hsl(32 100% 48%);
+  --warning-light: hsl(36 50% 25%);
+  
+  --error: hsl(4 90% 58%);
+  --error-foreground: hsl(0 0% 100%);
+  --error-dark: hsl(0 69% 51%);
+  --error-light: hsl(0 50% 20%);
+  
+  --info: hsl(207 90% 54%);
+  --info-foreground: hsl(0 0% 100%);
+  --info-dark: hsl(207 77% 47%);
+  --info-light: hsl(207 50% 25%);
 }
 
 @layer base {
@@ -175,5 +217,88 @@
   
   .hover\:bg-cjd-green-dark:hover {
     background-color: var(--cjd-green-dark);
+  }
+  
+  /* Classes de statut - Success */
+  .bg-success {
+    background-color: var(--success);
+  }
+  .bg-success-dark {
+    background-color: var(--success-dark);
+  }
+  .bg-success-light {
+    background-color: var(--success-light);
+  }
+  .text-success {
+    color: var(--success);
+  }
+  .text-success-dark {
+    color: var(--success-dark);
+  }
+  .border-success {
+    border-color: var(--success);
+  }
+  .hover\:bg-success-dark:hover {
+    background-color: var(--success-dark);
+  }
+  
+  /* Classes de statut - Warning */
+  .bg-warning {
+    background-color: var(--warning);
+  }
+  .bg-warning-dark {
+    background-color: var(--warning-dark);
+  }
+  .bg-warning-light {
+    background-color: var(--warning-light);
+  }
+  .text-warning {
+    color: var(--warning);
+  }
+  .text-warning-dark {
+    color: var(--warning-dark);
+  }
+  .border-warning {
+    border-color: var(--warning);
+  }
+  
+  /* Classes de statut - Error */
+  .bg-error {
+    background-color: var(--error);
+  }
+  .bg-error-dark {
+    background-color: var(--error-dark);
+  }
+  .bg-error-light {
+    background-color: var(--error-light);
+  }
+  .text-error {
+    color: var(--error);
+  }
+  .text-error-dark {
+    color: var(--error-dark);
+  }
+  .border-error {
+    border-color: var(--error);
+  }
+  
+  /* Classes de statut - Info */
+  .bg-info {
+    background-color: var(--info);
+  }
+  .bg-info-dark {
+    background-color: var(--info-dark);
+  }
+  .bg-info-light {
+    background-color: var(--info-light);
+  }
+  .text-info {
+    color: var(--info);
+  }
+  .text-info-dark {
+    color: var(--info-dark);
+  }
+  .border-info {
+    border-color: var(--info);
   }
 }
