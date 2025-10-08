@@ -361,6 +361,57 @@ export class OfflineQueue {
   }
 
   /**
+   * Update action status with optional retry count
+   * Public method for external use (e.g., sync service)
+   */
+  public async updateStatus(id: string, status: ActionStatus, retryCount?: number): Promise<void> {
+    await this.ensureInitialized();
+
+    return new Promise((resolve, reject) => {
+      if (!this.db) {
+        reject(new Error('Database not initialized'));
+        return;
+      }
+
+      const transaction = this.db.transaction([STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const getRequest = store.get(id);
+
+      getRequest.onsuccess = () => {
+        const action = getRequest.result as QueueAction;
+        if (!action) {
+          reject(new Error(`Action not found: ${id}`));
+          return;
+        }
+
+        action.status = status;
+        if (retryCount !== undefined) {
+          action.retryCount = retryCount;
+        }
+
+        const updateRequest = store.put(action);
+
+        updateRequest.onsuccess = () => {
+          console.log('[OfflineQueue] Action status updated:', id, status, retryCount !== undefined ? `(retry ${retryCount})` : '');
+          resolve();
+        };
+
+        updateRequest.onerror = () => {
+          const error = new Error(`Failed to update action: ${updateRequest.error?.message}`);
+          console.error('[OfflineQueue]', error);
+          reject(error);
+        };
+      };
+
+      getRequest.onerror = () => {
+        const error = new Error(`Failed to get action: ${getRequest.error?.message}`);
+        console.error('[OfflineQueue]', error);
+        reject(error);
+      };
+    });
+  }
+
+  /**
    * Update action status
    */
   private async updateActionStatus(id: string, status: ActionStatus): Promise<void> {

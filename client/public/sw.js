@@ -1,5 +1,5 @@
 // Service Worker optimisé CJD Amiens - Version Production 2025
-const CACHE_VERSION = '1.1.24';
+const CACHE_VERSION = '1.1.25';
 const CACHE_NAME = `cjd-amiens-v${CACHE_VERSION}`;
 const API_CACHE = `cjd-api-v${CACHE_VERSION}`;
 const STATIC_CACHE = `cjd-static-v${CACHE_VERSION}`;
@@ -213,6 +213,10 @@ self.addEventListener('sync', event => {
   if (event.tag === 'sync-data') {
     event.waitUntil(syncData());
   }
+  
+  if (event.tag === 'sync-queue') {
+    event.waitUntil(syncOfflineQueue());
+  }
 });
 
 async function syncData() {
@@ -235,6 +239,201 @@ async function syncData() {
     }
   } catch (error) {
     console.error('[SW] Erreur synchronisation:', error);
+  }
+}
+
+// IndexedDB configuration for offline queue
+const DB_NAME = 'cjd-offline-queue';
+const DB_VERSION = 1;
+const STORE_NAME = 'actions';
+const MAX_RETRY_COUNT = 3;
+
+// Open IndexedDB
+async function openOfflineQueueDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    
+    request.onerror = () => {
+      reject(new Error(`Failed to open IndexedDB: ${request.error?.message}`));
+    };
+    
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const objectStore = db.createObjectStore(STORE_NAME, {
+          keyPath: 'id',
+          autoIncrement: false
+        });
+        
+        objectStore.createIndex('timestamp', 'timestamp', { unique: false });
+        objectStore.createIndex('status', 'status', { unique: false });
+        objectStore.createIndex('type', 'type', { unique: false });
+      }
+    };
+  });
+}
+
+// Get actions by status from IndexedDB
+async function getActionsByStatus(db, status) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const index = store.index('status');
+    const request = index.getAll(status);
+    
+    request.onsuccess = () => {
+      resolve(request.result || []);
+    };
+    
+    request.onerror = () => {
+      reject(new Error(`Failed to get actions: ${request.error?.message}`));
+    };
+  });
+}
+
+// Update action status in IndexedDB
+async function updateActionStatus(db, id, status, retryCount) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const getRequest = store.get(id);
+    
+    getRequest.onsuccess = () => {
+      const action = getRequest.result;
+      if (action) {
+        action.status = status;
+        if (retryCount !== undefined) {
+          action.retryCount = retryCount;
+        }
+        
+        const updateRequest = store.put(action);
+        
+        updateRequest.onsuccess = () => resolve();
+        updateRequest.onerror = () => reject(new Error(`Failed to update action: ${updateRequest.error?.message}`));
+      } else {
+        resolve();
+      }
+    };
+    
+    getRequest.onerror = () => {
+      reject(new Error(`Failed to get action: ${getRequest.error?.message}`));
+    };
+  });
+}
+
+// Remove action from IndexedDB
+async function removeAction(db, id) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.delete(id);
+    
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(new Error(`Failed to remove action: ${request.error?.message}`));
+  });
+}
+
+// Notify all clients
+async function notifyClients(message) {
+  const clientsList = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
+  clientsList.forEach(client => {
+    client.postMessage(message);
+  });
+}
+
+// Synchronize offline queue
+async function syncOfflineQueue() {
+  console.log('[SW] Starting offline queue synchronization...');
+  
+  try {
+    const db = await openOfflineQueueDB();
+    const pendingActions = await getActionsByStatus(db, 'pending');
+    
+    if (pendingActions.length === 0) {
+      console.log('[SW] No pending actions to sync');
+      db.close();
+      return;
+    }
+    
+    console.log(`[SW] Found ${pendingActions.length} pending actions to sync`);
+    
+    let syncedCount = 0;
+    let failedCount = 0;
+    
+    for (const action of pendingActions) {
+      try {
+        // Mark as syncing
+        await updateActionStatus(db, action.id, 'syncing');
+        console.log(`[SW] Syncing action ${action.id}: ${action.type}`);
+        
+        // Make the actual API request
+        const response = await fetch(action.endpoint, {
+          method: action.method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: action.data ? JSON.stringify(action.data) : undefined,
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          // Success - remove from queue
+          await removeAction(db, action.id);
+          syncedCount++;
+          console.log(`[SW] ✓ Successfully synced action ${action.id}`);
+        } else {
+          // Failed - increment retry count
+          const newRetryCount = (action.retryCount || 0) + 1;
+          
+          if (newRetryCount >= MAX_RETRY_COUNT) {
+            // Max retries reached - mark as failed
+            await updateActionStatus(db, action.id, 'failed', newRetryCount);
+            failedCount++;
+            console.error(`[SW] ✗ Action ${action.id} failed after ${newRetryCount} attempts (HTTP ${response.status})`);
+          } else {
+            // Mark back as pending for next sync attempt
+            await updateActionStatus(db, action.id, 'pending', newRetryCount);
+            console.warn(`[SW] ⚠ Action ${action.id} failed (attempt ${newRetryCount}/${MAX_RETRY_COUNT}, HTTP ${response.status})`);
+          }
+        }
+      } catch (error) {
+        // Network or other error - increment retry count
+        const newRetryCount = (action.retryCount || 0) + 1;
+        
+        if (newRetryCount >= MAX_RETRY_COUNT) {
+          await updateActionStatus(db, action.id, 'failed', newRetryCount);
+          failedCount++;
+          console.error(`[SW] ✗ Action ${action.id} error after ${newRetryCount} attempts:`, error.message);
+        } else {
+          await updateActionStatus(db, action.id, 'pending', newRetryCount);
+          console.warn(`[SW] ⚠ Action ${action.id} error (attempt ${newRetryCount}/${MAX_RETRY_COUNT}):`, error.message);
+        }
+      }
+    }
+    
+    db.close();
+    
+    // Notify clients of sync results
+    await notifyClients({
+      type: 'SYNC_COMPLETE',
+      synced: syncedCount,
+      failed: failedCount
+    });
+    
+    console.log(`[SW] Sync complete: ${syncedCount} synced, ${failedCount} failed`);
+  } catch (error) {
+    console.error('[SW] Error during offline queue sync:', error);
+    
+    // Notify clients of error
+    await notifyClients({
+      type: 'SYNC_ERROR',
+      error: error.message
+    });
   }
 }
 
