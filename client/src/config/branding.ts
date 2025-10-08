@@ -1,82 +1,29 @@
 // Configuration centralisée du branding/thème de l'application
-// Personnalisez ces valeurs pour adapter l'application à votre organisation
+// Ce fichier étend la configuration de base avec les assets bundlés par Vite
+
+// Import de la configuration de base (compatible Node.js)
+import { brandingCore } from './branding-core';
 
 // Imports des assets pour que Vite les bundle correctement
 import logoUrl from "@assets/logo-cjd-social_1756108273665.jpg";
 import boiteKiffImageUrl from "@assets/boite-kiff_1756106212980.jpeg";
 
+// Configuration complète avec assets
 export const branding = {
-  // Informations de base
-  organization: {
-    name: "CJD Amiens",
-    fullName: "Centre des Jeunes Dirigeants d'Amiens",
-    tagline: "Application collaborative pour le partage d'idées et la gestion d'événements",
-    url: "https://votre-domaine.com",
-    email: "contact@cjd-amiens.fr",
-  },
-
-  // Application
-  app: {
-    name: "CJD Amiens - Boîte à Kiffs",
-    shortName: "CJD Amiens",
-    description: "Application interne du Centre des Jeunes Dirigeants d'Amiens pour la gestion collaborative d'idées et d'événements",
-    ideaBoxName: "Boîte à Kiffs", // Nom de la fonctionnalité de partage d'idées
-  },
-
-  // Couleurs du thème (format hexadécimal)
-  colors: {
-    primary: "#00a844",      // Couleur principale (vert CJD)
-    primaryDark: "#008835",  // Variante sombre
-    primaryLight: "#00c94f", // Variante claire
-    secondary: "#1a1a1a",    // Couleur secondaire
-    background: "#f9fafb",   // Fond de l'application
-  },
-
-  // Typographie
-  fonts: {
-    primary: "Lato",         // Police principale
-    googleFontsUrl: "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap",
-    weights: [300, 400, 700, 900],
-  },
-
-  // Assets (logos, icônes)
+  ...brandingCore,
+  
+  // Assets (logos, icônes) - ajoutés uniquement dans le contexte browser
   assets: {
     logo: logoUrl,  // URL bundlée par Vite
     icon192: "/icon-192.jpg",  // Fichiers dans public/, pas bundlés
     icon512: "/icon-512.jpg",  // Fichiers dans public/, pas bundlés
     boiteKiffImage: boiteKiffImageUrl,  // URL bundlée par Vite
   },
-
-  // Métadonnées PWA
-  pwa: {
-    themeColor: "#00a844",
-    backgroundColor: "#f9fafb",
-    display: "standalone",
-    orientation: "portrait-primary",
-    categories: ["business", "productivity", "social"],
-    lang: "fr-FR",
-  },
-
-  // Réseaux sociaux / Open Graph
-  social: {
-    ogType: "website",
-    twitterCard: "summary",
-  },
-
-  // Liens externes
-  links: {
-    website: "https://cjd-amiens.fr",
-    support: "mailto:support@cjd-amiens.fr",
-  },
 } as const;
 
-// Types dérivés pour TypeScript
-export type Branding = typeof branding;
-export type BrandingColors = typeof branding.colors;
-export type BrandingFonts = typeof branding.fonts;
+// Ré-export des types et helpers depuis branding-core
+export type { BrandingCore, BrandingColors, BrandingFonts } from './branding-core';
+export { getBrandColor, getAppName, getShortAppName, getOrgName } from './branding-core';
 
-// Helpers pour accéder à la configuration
-export const getBrandColor = (colorName: keyof BrandingColors) => branding.colors[colorName];
-export const getAppName = () => branding.app.name;
-export const getShortAppName = () => branding.app.shortName;
-export const getOrgName = () => branding.organization.name;
+// Type pour la configuration complète avec assets
+export type Branding = typeof branding;

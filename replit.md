@@ -135,6 +135,44 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
 - **Verification**: Tested with 33 ideas (4 featured, 15 non-featured approved, 5 completed) - all display in correct order
 - **File Modified**: `server/storage.ts` - `getIdeas()` method
 
+### 🎨 Branding Configuration Refactoring (October 8, 2025)
+**Goal**: Establish a single source of truth for branding configuration to prevent desynchronization between frontend and build scripts.
+
+#### ✅ Configuration Architecture
+- **Core Config** (`client/src/config/branding-core.ts`):
+  - Pure configuration data without asset imports (Node.js compatible)
+  - Exports: brandingCore, helpers (getAppName, getShortAppName, getOrgName)
+  - Used by both frontend and build scripts
+  
+- **Frontend Config** (`client/src/config/branding.ts`):
+  - Extends branding-core with bundled assets (logo, images)
+  - Vite-specific imports using @assets alias
+  - Re-exports core helpers for consistent API
+
+- **Build Script** (`scripts/generate-static-config.ts`):
+  - Migrated from .js to .ts for type safety
+  - Imports from branding-core.ts (no asset dependencies)
+  - Generates index.html and manifest.json from single source
+  - Executed with tsx: `tsx scripts/generate-static-config.ts`
+
+#### ⚠️ Required Manual Change
+**Package.json script update needed** (automated edits prevented by safety restrictions):
+```json
+"generate:config": "tsx scripts/generate-static-config.ts"
+```
+Currently: `"generate:config": "node scripts/generate-static-config.js"` (deprecated)
+
+#### ✅ Benefits
+- **Single Source of Truth**: All branding values in branding-core.ts
+- **Type Safety**: TypeScript across configuration and build scripts
+- **No Duplication**: Build script imports real config instead of hardcoded values
+- **Automatic Propagation**: Changes to branding-core.ts update all generated files
+
+#### 📝 Usage
+- Update branding: Edit `client/src/config/branding-core.ts`
+- Regenerate static files: `tsx scripts/generate-static-config.ts`
+- Add assets: Import in `client/src/config/branding.ts` (frontend only)
+
 ### 📱 PWA Enhancements (October 8, 2025)
 **Goal**: Transform the application into a fully-featured Progressive Web App with offline support, native mobile features, and rich notifications.
 
