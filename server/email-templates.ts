@@ -1,4 +1,5 @@
 import type { Idea, Event, User } from '@shared/schema';
+import { brandingCore, getShortAppName } from '../client/src/config/branding-core';
 
 export interface NotificationContext {
   baseUrl: string;
@@ -41,8 +42,8 @@ export function createNewIdeaEmailTemplate(
       <div style="${emailStyles.container}">
         <!-- Header -->
         <header style="${emailStyles.header}">
-          <h1 style="${emailStyles.title}">CJD Amiens</h1>
-          <p style="${emailStyles.subtitle}">Nouvelle idée proposée dans la Boîte à Kiffs</p>
+          <h1 style="${emailStyles.title}">${getShortAppName()}</h1>
+          <p style="${emailStyles.subtitle}">Nouvelle idée proposée dans la ${brandingCore.app.ideaBoxName}</p>
         </header>
 
         <!-- Content -->
@@ -95,7 +96,7 @@ export function createNewIdeaEmailTemplate(
         <!-- Footer -->
         <footer style="${emailStyles.footer}">
           <p style="margin: 0;">
-            Centre des Jeunes Dirigeants d'Amiens<br>
+            ${brandingCore.organization.fullName}<br>
             Système de gestion des idées et événements
           </p>
         </footer>
@@ -137,7 +138,7 @@ export function createNewEventEmailTemplate(
       <div style="${emailStyles.container}">
         <!-- Header -->
         <header style="${emailStyles.header}">
-          <h1 style="${emailStyles.title}">CJD Amiens</h1>
+          <h1 style="${emailStyles.title}">${getShortAppName()}</h1>
           <p style="${emailStyles.subtitle}">Nouvel événement proposé</p>
         </header>
 
@@ -192,7 +193,7 @@ export function createNewEventEmailTemplate(
         <!-- Footer -->
         <footer style="${emailStyles.footer}">
           <p style="margin: 0;">
-            Centre des Jeunes Dirigeants d'Amiens<br>
+            ${brandingCore.organization.fullName}<br>
             Système de gestion des idées et événements
           </p>
         </footer>
@@ -206,7 +207,7 @@ export function createNewEventEmailTemplate(
 
 // Template pour les emails de test
 export function createTestEmailTemplate(): { subject: string; html: string } {
-  const subject = '✅ Test de configuration email - CJD Amiens';
+  const subject = `✅ Test de configuration email - ${getShortAppName()}`;
   
   const html = `
     <!DOCTYPE html>
@@ -219,7 +220,7 @@ export function createTestEmailTemplate(): { subject: string; html: string } {
     <body style="margin: 0; padding: 20px; background-color: #f5f5f5;">
       <div style="${emailStyles.container}">
         <header style="${emailStyles.header}">
-          <h1 style="${emailStyles.title}">CJD Amiens</h1>
+          <h1 style="${emailStyles.title}">${getShortAppName()}</h1>
           <p style="${emailStyles.subtitle}">Test de configuration email</p>
         </header>
 

@@ -1,8 +1,8 @@
-// Service Worker optimisé CJD Amiens - Version Production 2025
-const CACHE_VERSION = '1.1.48';
-const CACHE_NAME = `cjd-amiens-v${CACHE_VERSION}`;
-const API_CACHE = `cjd-api-v${CACHE_VERSION}`;
-const STATIC_CACHE = `cjd-static-v${CACHE_VERSION}`;
+// Service Worker optimisé - Version Production 2025
+const CACHE_VERSION = '1.1.49';
+const CACHE_NAME = `app-cache-v${CACHE_VERSION}`;
+const API_CACHE = `app-api-v${CACHE_VERSION}`;
+const STATIC_CACHE = `app-static-v${CACHE_VERSION}`;
 
 // Configuration optimisée
 const API_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -305,7 +305,7 @@ async function syncData() {
 }
 
 // IndexedDB configuration for offline queue
-const DB_NAME = 'cjd-offline-queue';
+const DB_NAME = 'app-offline-queue';
 const DB_VERSION = 1;
 const STORE_NAME = 'actions';
 const MAX_RETRY_COUNT = 3;

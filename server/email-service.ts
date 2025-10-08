@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import type { Result } from '@shared/schema';
 import { DatabaseError } from '@shared/schema';
+import { getShortAppName } from '../client/src/config/branding-core';
 
 export interface EmailConfig {
   host: string;
@@ -77,7 +78,7 @@ class EmailService {
 
     try {
       const mailOptions = {
-        from: `"CJD Amiens" <${this.config.auth.user}>`,
+        from: `"${getShortAppName()}" <${this.config.auth.user}>`,
         to: emailData.to.join(', '),
         subject: emailData.subject,
         html: emailData.html,
