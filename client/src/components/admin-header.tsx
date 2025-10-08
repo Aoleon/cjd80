@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Shield, Home, Lightbulb, Plus, Calendar, UserCircle, Users, LogOut, Menu, X } from "lucide-react";
+import { Shield, Home, Lightbulb, Plus, Calendar, UserCircle, Users, LogOut, Menu, X, Palette } from "lucide-react";
 import { getShortAppName } from '@/config/branding';
 
 export default function AdminHeader() {
@@ -20,9 +20,14 @@ export default function AdminHeader() {
     { id: "members", label: "Membres", icon: UserCircle, path: "/admin/members" },
   ];
 
-  const menuItems = user?.role === "super_admin" 
-    ? [...baseMenuItems, { id: "patrons", label: "Mécènes", icon: Users, path: "/admin/patrons" }]
-    : baseMenuItems;
+  const superAdminItems = user?.role === "super_admin" 
+    ? [
+        { id: "patrons", label: "Mécènes", icon: Users, path: "/admin/patrons" },
+        { id: "branding", label: "Branding", icon: Palette, path: "/admin/branding" }
+      ]
+    : [];
+
+  const menuItems = [...baseMenuItems, ...superAdminItems];
 
   const handleNavigation = (path: string) => {
     setLocation(path);
