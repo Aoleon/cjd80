@@ -158,12 +158,11 @@ function requirePermission(permission: string) {
   };
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Middleware de monitoring de la base de données
-  app.use('/api', dbMonitoringMiddleware);
+export function createRouter(storageInstance: IStorage): any {
+  const router = require('express').Router();
   
   // Health check endpoint (AVANT l'authentification pour être toujours accessible)
-  app.get("/api/health", async (req, res) => {
+  router.get("/api/health", async (req, res) => {
     try {
       const health = await checkDatabaseHealth();
       const statusCode = health.status === 'healthy' ? 200 : 
@@ -179,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Log frontend errors
-  app.post("/api/logs/frontend-error", async (req, res) => {
+  router.post("/api/logs/frontend-error", async (req, res) => {
     try {
       const validatedData = frontendErrorSchema.parse(req.body);
       
@@ -207,26 +206,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Setup authentication
-  setupAuth(app);
-
   // Ideas routes
-  app.get("/api/ideas", async (req, res, next) => {
+  router.get("/api/ideas", async (req, res, next) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
       
-      const ideas = await storage.getIdeas({ page, limit });
+      const ideas = await storageInstance.getIdeas({ page, limit });
       res.json(ideas);
     } catch (error) {
       next(error);
     }
   });
 
-  app.post("/api/ideas", strictCreateRateLimiter, async (req, res, next) => {
+  router.post("/api/ideas", strictCreateRateLimiter, async (req, res, next) => {
     try {
       const validatedData = insertIdeaSchema.parse(req.body);
-      const result = await storage.createIdea(validatedData);
+      const result = await storageInstance.createIdea(validatedData);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -234,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Track member activity
       await trackMemberActivity(
-        storage,
+        storageInstance,
         result.data.proposedByEmail,
         result.data.proposedBy,
         'idea_proposed',
@@ -265,9 +261,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/ideas/:id", requireAuth, async (req, res, next) => {
+  router.delete("/api/ideas/:id", requireAuth, async (req, res, next) => {
     try {
-      const result = await storage.deleteIdea(req.params.id);
+      const result = await storageInstance.deleteIdea(req.params.id);
       if (!result.success) {
         const statusCode = result.error.name === 'NotFoundError' ? 404 : 400;
         return res.status(statusCode).json({ message: result.error.message });
@@ -278,10 +274,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/ideas/:id/status", requireAuth, async (req, res, next) => {
+  router.patch("/api/ideas/:id/status", requireAuth, async (req, res, next) => {
     try {
       const { status } = req.body;
-      const result = await storage.updateIdeaStatus(req.params.id, status);
+      const result = await storageInstance.updateIdeaStatus(req.params.id, status);
       
       // Envoyer notification pour changement de statut (simplifié pour l'instant)
       try {
@@ -301,38 +297,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Votes routes
-  app.get("/api/ideas/:id/votes", requireAuth, async (req, res, next) => {
+  router.get("/api/ideas/:id/votes", requireAuth, async (req, res, next) => {
     try {
-      const votes = await storage.getVotesByIdea(req.params.id);
+      const votes = await storageInstance.getVotesByIdea(req.params.id);
       res.json(votes);
     } catch (error) {
       next(error);
     }
   });
 
-  app.post("/api/votes", voteRateLimiter, async (req, res, next) => {
+  router.post("/api/votes", voteRateLimiter, async (req, res, next) => {
     try {
       const validatedData = insertVoteSchema.parse(req.body);
       
       // Check if user has already voted for this idea
-      const hasVoted = await storage.hasUserVoted(validatedData.ideaId, validatedData.voterEmail);
+      const hasVoted = await storageInstance.hasUserVoted(validatedData.ideaId, validatedData.voterEmail);
       if (hasVoted) {
         return res.status(400).json({ success: false, error: "Vous avez déjà voté pour cette idée" });
       }
 
-      const result = await storage.createVote(validatedData);
+      const result = await storageInstance.createVote(validatedData);
       
       if (!result.success) {
         return res.status(400).json({ success: false, error: result.error.message });
       }
       
       // Get idea title for activity
-      const ideaResult = await storage.getIdea(validatedData.ideaId);
+      const ideaResult = await storageInstance.getIdea(validatedData.ideaId);
       const ideaTitle = ideaResult.success ? ideaResult.data?.title || 'Idée' : 'Idée';
       
       // Track member activity
       await trackMemberActivity(
-        storage,
+        storageInstance,
         validatedData.voterEmail,
         validatedData.voterName,
         'vote_cast',
@@ -351,22 +347,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Events routes
-  app.get("/api/events", async (req, res, next) => {
+  router.get("/api/events", async (req, res, next) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
       
-      const events = await storage.getEvents({ page, limit });
+      const events = await storageInstance.getEvents({ page, limit });
       res.json(events);
     } catch (error) {
       next(error);
     }
   });
 
-  app.post("/api/events", requireAuth, async (req, res, next) => {
+  router.post("/api/events", requireAuth, async (req, res, next) => {
     try {
       const validatedData = insertEventSchema.parse(req.body);
-      const result = await storage.createEvent(validatedData);
+      const result = await storageInstance.createEvent(validatedData);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -401,10 +397,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create event with initial inscriptions (atomic transaction)
-  app.post("/api/events/with-inscriptions", requireAuth, async (req, res, next) => {
+  router.post("/api/events/with-inscriptions", requireAuth, async (req, res, next) => {
     try {
       const validatedData = createEventWithInscriptionsSchema.parse(req.body);
-      const result = await storage.createEventWithInscriptions(
+      const result = await storageInstance.createEventWithInscriptions(
         validatedData.event, 
         validatedData.initialInscriptions
       );
@@ -444,10 +440,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/events/:id", requireAuth, async (req, res, next) => {
+  router.put("/api/events/:id", requireAuth, async (req, res, next) => {
     try {
       const validatedData = insertEventSchema.parse(req.body);
-      const result = await storage.updateEvent(req.params.id, validatedData);
+      const result = await storageInstance.updateEvent(req.params.id, validatedData);
       if (!result.success) {
         return res.status(404).json({ message: result.error.message });
       }
@@ -457,9 +453,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/events/:id", requireAuth, async (req, res, next) => {
+  router.delete("/api/events/:id", requireAuth, async (req, res, next) => {
     try {
-      const result = await storage.deleteEvent(req.params.id);
+      const result = await storageInstance.deleteEvent(req.params.id);
       if (!result.success) {
         const statusCode = result.error.name === 'NotFoundError' ? 404 : 400;
         return res.status(statusCode).json({ message: result.error.message });
@@ -471,9 +467,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Inscriptions routes
-  app.get("/api/events/:id/inscriptions", requireAuth, async (req, res, next) => {
+  router.get("/api/events/:id/inscriptions", requireAuth, async (req, res, next) => {
     try {
-      const inscriptions = await storage.getEventInscriptions(req.params.id);
+      const inscriptions = await storageInstance.getEventInscriptions(req.params.id);
       res.json(inscriptions);
     } catch (error) {
       next(error);
@@ -481,9 +477,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin unsubscriptions routes
-  app.get("/api/admin/events/:id/unsubscriptions", requirePermission('admin.view'), async (req, res, next) => {
+  router.get("/api/admin/events/:id/unsubscriptions", requirePermission('admin.view'), async (req, res, next) => {
     try {
-      const unsubscriptions = await storage.getEventUnsubscriptions(req.params.id);
+      const unsubscriptions = await storageInstance.getEventUnsubscriptions(req.params.id);
       if (!unsubscriptions.success) {
         return res.status(400).json({ message: unsubscriptions.error.message });
       }
@@ -493,9 +489,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/unsubscriptions/:id", requirePermission('admin.edit'), async (req, res, next) => {
+  router.delete("/api/admin/unsubscriptions/:id", requirePermission('admin.edit'), async (req, res, next) => {
     try {
-      const result = await storage.deleteUnsubscription(req.params.id);
+      const result = await storageInstance.deleteUnsubscription(req.params.id);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -505,10 +501,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/admin/unsubscriptions/:id", requirePermission('admin.edit'), async (req, res, next) => {
+  router.put("/api/admin/unsubscriptions/:id", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const validatedData = insertUnsubscriptionSchema.omit({ eventId: true }).parse(req.body);
-      const result = await storage.updateUnsubscription(req.params.id, validatedData);
+      const result = await storageInstance.updateUnsubscription(req.params.id, validatedData);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -521,22 +517,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/inscriptions", strictCreateRateLimiter, async (req, res, next) => {
+  router.post("/api/inscriptions", strictCreateRateLimiter, async (req, res, next) => {
     try {
       const validatedData = insertInscriptionSchema.parse(req.body);
       
-      const result = await storage.createInscription(validatedData);
+      const result = await storageInstance.createInscription(validatedData);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
       
       // Get event title for activity
-      const eventResult = await storage.getEvent(validatedData.eventId);
+      const eventResult = await storageInstance.getEvent(validatedData.eventId);
       const eventTitle = eventResult.success ? eventResult.data?.title || 'Événement' : 'Événement';
       
       // Track member activity
       await trackMemberActivity(
-        storage,
+        storageInstance,
         validatedData.email,
         validatedData.name,
         'event_registered',
@@ -557,22 +553,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unsubscriptions routes
-  app.post("/api/unsubscriptions", async (req, res, next) => {
+  router.post("/api/unsubscriptions", async (req, res, next) => {
     try {
       const validatedData = insertUnsubscriptionSchema.parse(req.body);
       
-      const result = await storage.createUnsubscription(validatedData);
+      const result = await storageInstance.createUnsubscription(validatedData);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
       
       // Get event title for activity
-      const eventResult = await storage.getEvent(validatedData.eventId);
+      const eventResult = await storageInstance.getEvent(validatedData.eventId);
       const eventTitle = eventResult.success ? eventResult.data?.title || 'Événement' : 'Événement';
       
       // Track member activity
       await trackMemberActivity(
-        storage,
+        storageInstance,
         validatedData.email,
         validatedData.name,
         'event_unregistered',
@@ -591,11 +587,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
-  app.get("/api/admin/ideas", requirePermission('admin.view'), async (req, res, next) => {
+  router.get("/api/admin/ideas", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
-      const result = await storage.getAllIdeas({ page, limit });
+      const result = await storageInstance.getAllIdeas({ page, limit });
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -605,11 +601,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/events", requirePermission('admin.view'), async (req, res, next) => {
+  router.get("/api/admin/events", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
-      const result = await storage.getAllEvents({ page, limit });
+      const result = await storageInstance.getAllEvents({ page, limit });
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -620,10 +616,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get inscriptions for a specific event (admin only)
-  app.get("/api/admin/events/:eventId/inscriptions", requirePermission('admin.view'), async (req, res, next) => {
+  router.get("/api/admin/events/:eventId/inscriptions", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const { eventId } = req.params;
-      const inscriptionsResult = await storage.getEventInscriptions(eventId);
+      const inscriptionsResult = await storageInstance.getEventInscriptions(eventId);
       if (!inscriptionsResult.success) {
         return res.status(500).json({ message: inscriptionsResult.error.message });
       }
@@ -634,9 +630,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes for managing inscriptions
-  app.get("/api/admin/inscriptions/:eventId", requirePermission('admin.view'), async (req, res, next) => {
+  router.get("/api/admin/inscriptions/:eventId", requirePermission('admin.view'), async (req, res, next) => {
     try {
-      const inscriptionsResult = await storage.getEventInscriptions(req.params.eventId);
+      const inscriptionsResult = await storageInstance.getEventInscriptions(req.params.eventId);
       if (!inscriptionsResult.success) {
         return res.status(500).json({ message: inscriptionsResult.error.message });
       }
@@ -646,10 +642,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/inscriptions", requirePermission('admin.edit'), async (req, res, next) => {
+  router.post("/api/admin/inscriptions", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const inscriptionData = req.body;
-      const result = await storage.createInscription(inscriptionData);
+      const result = await storageInstance.createInscription(inscriptionData);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -659,9 +655,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/inscriptions/:inscriptionId", requirePermission('admin.edit'), async (req, res, next) => {
+  router.delete("/api/admin/inscriptions/:inscriptionId", requirePermission('admin.edit'), async (req, res, next) => {
     try {
-      const result = await storage.deleteInscription(req.params.inscriptionId);
+      const result = await storageInstance.deleteInscription(req.params.inscriptionId);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -672,7 +668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bulk import inscriptions
-  app.post("/api/admin/inscriptions/bulk", requirePermission('admin.edit'), async (req, res, next) => {
+  router.post("/api/admin/inscriptions/bulk", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const { eventId, inscriptions } = req.body;
       
@@ -689,7 +685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
 
-        const result = await storage.createInscription({
+        const result = await storageInstance.createInscription({
           eventId,
           name: inscription.name.trim(),
           email: inscription.email.trim(),
@@ -716,9 +712,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes for managing votes
-  app.get("/api/admin/votes/:ideaId", requirePermission('admin.view'), async (req, res, next) => {
+  router.get("/api/admin/votes/:ideaId", requirePermission('admin.view'), async (req, res, next) => {
     try {
-      const votesResult = await storage.getIdeaVotes(req.params.ideaId);
+      const votesResult = await storageInstance.getIdeaVotes(req.params.ideaId);
       if (!votesResult.success) {
         return res.status(500).json({ message: votesResult.error.message });
       }
@@ -728,10 +724,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/votes", requirePermission('admin.edit'), async (req, res, next) => {
+  router.post("/api/admin/votes", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const voteData = req.body;
-      const result = await storage.createVote(voteData);
+      const result = await storageInstance.createVote(voteData);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -741,9 +737,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/votes/:voteId", requirePermission('admin.edit'), async (req, res, next) => {
+  router.delete("/api/admin/votes/:voteId", requirePermission('admin.edit'), async (req, res, next) => {
     try {
-      const result = await storage.deleteVote(req.params.voteId);
+      const result = await storageInstance.deleteVote(req.params.voteId);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -754,10 +750,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get votes for a specific idea (admin only)
-  app.get("/api/admin/ideas/:ideaId/votes", requirePermission('admin.view'), async (req, res, next) => {
+  router.get("/api/admin/ideas/:ideaId/votes", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const { ideaId } = req.params;
-      const votesResult = await storage.getIdeaVotes(ideaId);
+      const votesResult = await storageInstance.getIdeaVotes(ideaId);
       if (!votesResult.success) {
         return res.status(500).json({ message: votesResult.error.message });
       }
@@ -767,10 +763,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/ideas/:id/status", requirePermission('admin.edit'), async (req, res, next) => {
+  router.patch("/api/admin/ideas/:id/status", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const validatedData = updateIdeaStatusSchema.parse(req.body);
-      const result = await storage.updateIdeaStatus(req.params.id, validatedData.status);
+      const result = await storageInstance.updateIdeaStatus(req.params.id, validatedData.status);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -780,9 +776,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/ideas/:id/featured", requirePermission('admin.edit'), async (req, res, next) => {
+  router.patch("/api/admin/ideas/:id/featured", requirePermission('admin.edit'), async (req, res, next) => {
     try {
-      const result = await storage.toggleIdeaFeatured(req.params.id);
+      const result = await storageInstance.toggleIdeaFeatured(req.params.id);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -793,9 +789,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Transform idea to event (admin only)
-  app.post("/api/admin/ideas/:id/transform-to-event", requirePermission('admin.edit'), async (req, res, next) => {
+  router.post("/api/admin/ideas/:id/transform-to-event", requirePermission('admin.edit'), async (req, res, next) => {
     try {
-      const result = await storage.transformIdeaToEvent(req.params.id);
+      const result = await storageInstance.transformIdeaToEvent(req.params.id);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -806,10 +802,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update idea content (admin only)
-  app.put("/api/admin/ideas/:id", requirePermission('admin.edit'), async (req, res, next) => {
+  router.put("/api/admin/ideas/:id", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const validatedData = updateIdeaSchema.parse(req.body);
-      const result = await storage.updateIdea(req.params.id, validatedData);
+      const result = await storageInstance.updateIdea(req.params.id, validatedData);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -822,10 +818,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/admin/events/:id", requirePermission('admin.edit'), async (req, res, next) => {
+  router.put("/api/admin/events/:id", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const validatedData = insertEventSchema.parse(req.body);
-      const result = await storage.updateEvent(req.params.id, validatedData);
+      const result = await storageInstance.updateEvent(req.params.id, validatedData);
       if (!result.success) {
         return res.status(404).json({ message: result.error.message });
       }
@@ -838,10 +834,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/events/:id/status", requirePermission('admin.edit'), async (req, res, next) => {
+  router.patch("/api/admin/events/:id/status", requirePermission('admin.edit'), async (req, res, next) => {
     try {
       const validatedData = updateEventStatusSchema.parse(req.body);
-      const result = await storage.updateEventStatus(req.params.id, validatedData.status);
+      const result = await storageInstance.updateEventStatus(req.params.id, validatedData.status);
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -852,10 +848,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Pool de connexions stats (admin seulement)
-  app.get("/api/admin/pool-stats", requirePermission('admin.view'), getPoolStatsEndpoint);
+  router.get("/api/admin/pool-stats", requirePermission('admin.view'), getPoolStatsEndpoint);
 
   // Health check de la base de données (admin seulement)
-  app.get("/api/admin/db-health", requirePermission('admin.view'), async (req, res, next) => {
+  router.get("/api/admin/db-health", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const health = await checkDatabaseHealth();
       res.json(health);
@@ -864,9 +860,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/stats", requirePermission('admin.view'), async (req, res, next) => {
+  router.get("/api/admin/stats", requirePermission('admin.view'), async (req, res, next) => {
     try {
-      const stats = await storage.getAdminStats();
+      const stats = await storageInstance.getAdminStats();
       if (!stats.success) {
         return res.status(500).json({ 
           success: false, 
@@ -884,7 +880,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Routes pour les notifications push
-  app.get("/api/notifications/vapid-key", (req, res) => {
+  router.get("/api/notifications/vapid-key", (req, res) => {
     try {
       const publicKey = notificationService.getVapidPublicKey();
       res.json({ publicKey });
@@ -893,7 +889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/notifications/subscribe", async (req, res) => {
+  router.post("/api/notifications/subscribe", async (req, res) => {
     try {
       const { endpoint, keys } = req.body;
       
@@ -919,7 +915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/notifications/unsubscribe", async (req, res) => {
+  router.post("/api/notifications/unsubscribe", async (req, res) => {
     try {
       const { endpoint } = req.body;
       
@@ -941,7 +937,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test de notification (admin seulement)
-  app.post("/api/notifications/test", requireAuth, async (req, res) => {
+  router.post("/api/notifications/test", requireAuth, async (req, res) => {
     try {
       const { title, message } = req.body;
       
@@ -963,7 +959,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Statistiques des notifications (admin seulement)
-  app.get("/api/notifications/stats", requireAuth, async (req, res) => {
+  router.get("/api/notifications/stats", requireAuth, async (req, res) => {
     try {
       const stats = notificationService.getStats();
       res.json(stats);
@@ -975,9 +971,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === ROUTES DE GESTION DES ADMINISTRATEURS ===
 
   // Récupérer tous les administrateurs (super admin seulement)
-  app.get("/api/admin/administrators", requirePermission('admin.manage'), async (req, res, next) => {
+  router.get("/api/admin/administrators", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.getAllAdmins();
+      const result = await storageInstance.getAllAdmins();
       
       if (!result.success) {
         return res.status(500).json({ message: result.error.message });
@@ -997,7 +993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Mettre à jour le rôle d'un administrateur (super admin seulement)
-  app.patch("/api/admin/administrators/:email/role", requirePermission('admin.manage'), async (req, res, next) => {
+  router.patch("/api/admin/administrators/:email/role", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const { role } = updateAdminSchema.parse(req.body);
       
@@ -1010,7 +1006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Vous ne pouvez pas modifier votre propre rôle" });
       }
 
-      const result = await storage.updateAdminRole(req.params.email, role);
+      const result = await storageInstance.updateAdminRole(req.params.email, role);
 
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1032,7 +1028,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Activer/désactiver un administrateur (super admin seulement)
-  app.patch("/api/admin/administrators/:email/status", requirePermission('admin.manage'), async (req, res, next) => {
+  router.patch("/api/admin/administrators/:email/status", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const { isActive } = updateAdminSchema.parse(req.body);
       
@@ -1045,7 +1041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Vous ne pouvez pas désactiver votre propre compte" });
       }
 
-      const result = await storage.updateAdminStatus(req.params.email, isActive);
+      const result = await storageInstance.updateAdminStatus(req.params.email, isActive);
 
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1067,7 +1063,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mettre à jour les informations d'un administrateur (super admin seulement)
-  app.patch("/api/admin/administrators/:email/info", requirePermission('admin.manage'), async (req, res, next) => {
+  router.patch("/api/admin/administrators/:email/info", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const { firstName, lastName } = updateAdminInfoSchema.parse(req.body);
       
@@ -1076,7 +1072,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Vous ne pouvez pas modifier vos propres informations" });
       }
       
-      const result = await storage.updateAdminInfo(req.params.email, { firstName, lastName });
+      const result = await storageInstance.updateAdminInfo(req.params.email, { firstName, lastName });
 
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1093,14 +1089,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Changer le mot de passe d'un administrateur (super admin seulement)
-  app.patch("/api/admin/administrators/:email/password", requirePermission('admin.manage'), async (req, res, next) => {
+  router.patch("/api/admin/administrators/:email/password", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const { password } = updateAdminPasswordSchema.parse(req.body);
       
       // Hacher le nouveau mot de passe
       const hashedPassword = await hashPassword(password);
       
-      const result = await storage.updateAdminPassword(req.params.email, hashedPassword);
+      const result = await storageInstance.updateAdminPassword(req.params.email, hashedPassword);
 
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1117,14 +1113,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Supprimer un administrateur (super admin seulement)
-  app.delete("/api/admin/administrators/:email", requirePermission('admin.manage'), async (req, res, next) => {
+  router.delete("/api/admin/administrators/:email", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       // Empêcher la suppression de son propre compte
       if (req.params.email === req.user!.email) {
         return res.status(400).json({ message: "Vous ne pouvez pas supprimer votre propre compte" });
       }
 
-      const result = await storage.deleteAdmin(req.params.email);
+      const result = await storageInstance.deleteAdmin(req.params.email);
 
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1137,9 +1133,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Récupérer les comptes en attente de validation
-  app.get("/api/admin/pending-admins", requirePermission('admin.manage'), async (req, res, next) => {
+  router.get("/api/admin/pending-admins", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.getPendingAdmins();
+      const result = await storageInstance.getPendingAdmins();
       
       if (!result.success) {
         return res.status(500).json({ message: result.error.message });
@@ -1158,7 +1154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Créer un nouvel administrateur avec statut actif (super admin seulement)
-  app.post("/api/admin/administrators", requirePermission('admin.manage'), async (req, res, next) => {
+  router.post("/api/admin/administrators", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const { email, password, firstName, lastName, role } = insertAdminSchema.parse(req.body);
       
@@ -1170,7 +1166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hashedPassword = await hashPassword(password);
       
       // Créer l'admin (créé par un admin)
-      const result = await storage.createUser({
+      const result = await storageInstance.createUser({
         email,
         password: hashedPassword,
         firstName,
@@ -1199,7 +1195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Approuver un compte en attente
-  app.patch("/api/admin/administrators/:email/approve", requirePermission('admin.manage'), async (req, res, next) => {
+  router.patch("/api/admin/administrators/:email/approve", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const { role } = req.body;
       
@@ -1207,7 +1203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Rôle valide requis" });
       }
 
-      const result = await storage.approveAdmin(req.params.email, role);
+      const result = await storageInstance.approveAdmin(req.params.email, role);
 
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1225,9 +1221,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rejeter un compte en attente
-  app.delete("/api/admin/administrators/:email/reject", requirePermission('admin.manage'), async (req, res, next) => {
+  router.delete("/api/admin/administrators/:email/reject", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.deleteAdmin(req.params.email);
+      const result = await storageInstance.deleteAdmin(req.params.email);
 
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1240,9 +1236,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Development requests routes - Super admin only
-  app.get("/api/admin/development-requests", requirePermission('admin.manage'), async (req, res, next) => {
+  router.get("/api/admin/development-requests", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.getDevelopmentRequests();
+      const result = await storageInstance.getDevelopmentRequests();
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
@@ -1252,7 +1248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/development-requests", requirePermission('admin.manage'), async (req, res, next) => {
+  router.post("/api/admin/development-requests", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const validatedData = insertDevelopmentRequestSchema.parse({
         ...req.body,
@@ -1261,7 +1257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Créer la demande dans la base de données
-      const result = await storage.createDevelopmentRequest(validatedData);
+      const result = await storageInstance.createDevelopmentRequest(validatedData);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1272,7 +1268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       createGitHubIssue(validatedData).then(async (githubIssue) => {
         if (githubIssue) {
           // Mettre à jour la demande avec les informations GitHub
-          await storage.updateDevelopmentRequest(result.data.id, {
+          await storageInstance.updateDevelopmentRequest(result.data.id, {
             githubIssueNumber: githubIssue.number,
             githubIssueUrl: githubIssue.html_url
           });
@@ -1291,10 +1287,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/admin/development-requests/:id", requirePermission('admin.manage'), async (req, res, next) => {
+  router.put("/api/admin/development-requests/:id", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const validatedData = updateDevelopmentRequestSchema.parse(req.body);
-      const result = await storage.updateDevelopmentRequest(req.params.id, validatedData);
+      const result = await storageInstance.updateDevelopmentRequest(req.params.id, validatedData);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1310,10 +1306,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Synchroniser une demande avec GitHub
-  app.post("/api/admin/development-requests/:id/sync", requirePermission('admin.manage'), async (req, res, next) => {
+  router.post("/api/admin/development-requests/:id/sync", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       // Récupérer la demande
-      const getResult = await storage.getDevelopmentRequests();
+      const getResult = await storageInstance.getDevelopmentRequests();
       if (!getResult.success) {
         return res.status(400).json({ message: getResult.error.message });
       }
@@ -1336,7 +1332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Mettre à jour le statut local
-      const updateResult = await storage.updateDevelopmentRequest(req.params.id, {
+      const updateResult = await storageInstance.updateDevelopmentRequest(req.params.id, {
         githubStatus: githubStatus.status,
         status: githubStatus.closed ? "closed" : request.status,
         lastSyncedAt: new Date()
@@ -1359,7 +1355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mettre à jour le statut d'une demande de développement - Réservé au super admin thibault@youcom.io
-  app.patch("/api/admin/development-requests/:id/status", requirePermission('admin.manage'), async (req, res, next) => {
+  router.patch("/api/admin/development-requests/:id/status", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       // Vérifier que l'utilisateur est le super administrateur autorisé
       if (req.user!.email !== "thibault@youcom.io") {
@@ -1371,7 +1367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastStatusChangeBy: req.user!.email
       });
       
-      const result = await storage.updateDevelopmentRequestStatus(
+      const result = await storageInstance.updateDevelopmentRequestStatus(
         req.params.id,
         validatedData.status,
         validatedData.adminComment,
@@ -1392,10 +1388,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/development-requests/:id", requirePermission('admin.manage'), async (req, res, next) => {
+  router.delete("/api/admin/development-requests/:id", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       // Récupérer la demande avant suppression pour fermer l'issue GitHub
-      const getResult = await storage.getDevelopmentRequests();
+      const getResult = await storageInstance.getDevelopmentRequests();
       if (getResult.success) {
         const request = getResult.data.find(r => r.id === req.params.id);
         if (request?.githubIssueNumber) {
@@ -1406,7 +1402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const result = await storage.deleteDevelopmentRequest(req.params.id);
+      const result = await storageInstance.deleteDevelopmentRequest(req.params.id);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1421,9 +1417,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== CONFIGURATION DE BRANDING ====================
   
   // Get branding configuration (public endpoint)
-  app.get("/api/admin/branding", async (req, res) => {
+  router.get("/api/admin/branding", async (req, res) => {
     try {
-      const result = await storage.getBrandingConfig();
+      const result = await storageInstance.getBrandingConfig();
       
       if (!result.success) {
         return res.status(500).json({ success: false, error: result.error.message });
@@ -1454,7 +1450,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update branding configuration (SUPER_ADMIN only)
-  app.put("/api/admin/branding", requirePermission('admin.manage'), async (req, res) => {
+  router.put("/api/admin/branding", requirePermission('admin.manage'), async (req, res) => {
     try {
       const { config } = req.body;
       
@@ -1463,7 +1459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const user = req.user as { email: string };
-      const result = await storage.updateBrandingConfig(config, user.email);
+      const result = await storageInstance.updateBrandingConfig(config, user.email);
       
       if (!result.success) {
         return res.status(400).json({ success: false, error: result.error.message });
@@ -1478,7 +1474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== GESTION DES MÉCÈNES ====================
   
   // Proposer un mécène potentiel (accessible à tous les utilisateurs connectés)
-  app.post("/api/patrons/propose", async (req, res, next) => {
+  router.post("/api/patrons/propose", async (req, res, next) => {
     if (!req.isAuthenticated || !req.isAuthenticated()) {
       return res.status(401).json({ message: "Authentification requise pour proposer un mécène" });
     }
@@ -1486,7 +1482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertPatronSchema.parse(req.body);
       
-      const result = await storage.proposePatron({
+      const result = await storageInstance.proposePatron({
         ...validatedData,
         createdBy: req.user?.email || validatedData.createdBy || "anonymous",
       });
@@ -1508,12 +1504,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Lister tous les mécènes
-  app.get("/api/patrons", requirePermission('admin.manage'), async (req, res, next) => {
+  router.get("/api/patrons", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
       
-      const result = await storage.getPatrons({ page, limit });
+      const result = await storageInstance.getPatrons({ page, limit });
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1526,7 +1522,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chercher un mécène par email (pour éviter doublons)
-  app.get("/api/patrons/search/email", requirePermission('admin.manage'), async (req, res, next) => {
+  router.get("/api/patrons/search/email", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const email = req.query.email as string;
       
@@ -1534,7 +1530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email requis" });
       }
       
-      const result = await storage.getPatronByEmail(email);
+      const result = await storageInstance.getPatronByEmail(email);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1547,9 +1543,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Récupérer un mécène par ID
-  app.get("/api/patrons/:id", requirePermission('admin.manage'), async (req, res, next) => {
+  router.get("/api/patrons/:id", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.getPatronById(req.params.id);
+      const result = await storageInstance.getPatronById(req.params.id);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1566,14 +1562,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Créer un nouveau mécène
-  app.post("/api/patrons", requirePermission('admin.manage'), async (req, res, next) => {
+  router.post("/api/patrons", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const validatedData = insertPatronSchema.parse({
         ...req.body,
         createdBy: req.user!.email
       });
       
-      const result = await storage.createPatron(validatedData);
+      const result = await storageInstance.createPatron(validatedData);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1589,11 +1585,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mettre à jour un mécène
-  app.patch("/api/patrons/:id", requirePermission('admin.manage'), async (req, res, next) => {
+  router.patch("/api/patrons/:id", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const validatedData = updatePatronSchema.parse(req.body);
       
-      const result = await storage.updatePatron(req.params.id, validatedData);
+      const result = await storageInstance.updatePatron(req.params.id, validatedData);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1609,9 +1605,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Supprimer un mécène
-  app.delete("/api/patrons/:id", requirePermission('admin.manage'), async (req, res, next) => {
+  router.delete("/api/patrons/:id", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.deletePatron(req.params.id);
+      const result = await storageInstance.deletePatron(req.params.id);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1626,7 +1622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== GESTION DES DONS ====================
 
   // Créer un nouveau don pour un mécène
-  app.post("/api/patrons/:id/donations", requirePermission('admin.manage'), async (req, res, next) => {
+  router.post("/api/patrons/:id/donations", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const validatedData = insertPatronDonationSchema.parse({
         ...req.body,
@@ -1634,7 +1630,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recordedBy: req.user!.email
       });
       
-      const result = await storage.createPatronDonation(validatedData);
+      const result = await storageInstance.createPatronDonation(validatedData);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1650,9 +1646,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Récupérer les dons d'un mécène
-  app.get("/api/patrons/:id/donations", requirePermission('admin.manage'), async (req, res, next) => {
+  router.get("/api/patrons/:id/donations", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.getPatronDonations(req.params.id);
+      const result = await storageInstance.getPatronDonations(req.params.id);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1665,9 +1661,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Récupérer tous les dons
-  app.get("/api/donations", requirePermission('admin.manage'), async (req, res, next) => {
+  router.get("/api/donations", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.getAllDonations();
+      const result = await storageInstance.getAllDonations();
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1680,9 +1676,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mettre à jour un don
-  app.patch("/api/donations/:id", requirePermission('admin.manage'), async (req, res, next) => {
+  router.patch("/api/donations/:id", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.updatePatronDonation(req.params.id, req.body);
+      const result = await storageInstance.updatePatronDonation(req.params.id, req.body);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1695,9 +1691,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Supprimer un don
-  app.delete("/api/donations/:id", requirePermission('admin.manage'), async (req, res, next) => {
+  router.delete("/api/donations/:id", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.deletePatronDonation(req.params.id);
+      const result = await storageInstance.deletePatronDonation(req.params.id);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1712,7 +1708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== GESTION DES PROPOSITIONS MÉCÈNE-IDÉE ====================
 
   // Proposer un mécène pour une idée
-  app.post("/api/ideas/:id/patrons", requirePermission('admin.manage'), async (req, res, next) => {
+  router.post("/api/ideas/:id/patrons", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const validatedData = insertIdeaPatronProposalSchema.parse({
         ...req.body,
@@ -1720,18 +1716,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         proposedByAdminEmail: req.user!.email
       });
       
-      const result = await storage.createIdeaPatronProposal(validatedData);
+      const result = await storageInstance.createIdeaPatronProposal(validatedData);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
       }
       
       // Track member activity for the admin who suggested the patron
-      const ideaResult = await storage.getIdea(validatedData.ideaId);
+      const ideaResult = await storageInstance.getIdea(validatedData.ideaId);
       const ideaTitle = ideaResult.success && ideaResult.data ? ideaResult.data.title : 'Idée';
       
       await trackMemberActivity(
-        storage,
+        storageInstance,
         req.user!.email,
         `${req.user!.firstName} ${req.user!.lastName}`,
         'patron_suggested',
@@ -1750,9 +1746,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Récupérer les mécènes proposés pour une idée
-  app.get("/api/ideas/:id/patrons", requirePermission('admin.manage'), async (req, res, next) => {
+  router.get("/api/ideas/:id/patrons", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.getIdeaPatronProposals(req.params.id);
+      const result = await storageInstance.getIdeaPatronProposals(req.params.id);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1765,9 +1761,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Récupérer les idées où un mécène a été proposé
-  app.get("/api/patrons/:id/proposals", requirePermission('admin.manage'), async (req, res, next) => {
+  router.get("/api/patrons/:id/proposals", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.getPatronProposals(req.params.id);
+      const result = await storageInstance.getPatronProposals(req.params.id);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1780,11 +1776,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mettre à jour une proposition (statut, commentaires)
-  app.patch("/api/proposals/:id", requirePermission('admin.manage'), async (req, res, next) => {
+  router.patch("/api/proposals/:id", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const validatedData = updateIdeaPatronProposalSchema.parse(req.body);
       
-      const result = await storage.updateIdeaPatronProposal(req.params.id, validatedData);
+      const result = await storageInstance.updateIdeaPatronProposal(req.params.id, validatedData);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1800,9 +1796,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Supprimer une proposition
-  app.delete("/api/proposals/:id", requirePermission('admin.manage'), async (req, res, next) => {
+  router.delete("/api/proposals/:id", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.deleteIdeaPatronProposal(req.params.id);
+      const result = await storageInstance.deleteIdeaPatronProposal(req.params.id);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1817,7 +1813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== GESTION DES ACTUALITÉS MÉCÈNES ====================
 
   // Créer une actualité pour un mécène
-  app.post("/api/patrons/:id/updates", requirePermission('admin.manage'), async (req, res, next) => {
+  router.post("/api/patrons/:id/updates", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const validatedData = insertPatronUpdateSchema.parse({
         ...req.body,
@@ -1825,7 +1821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: req.user!.email
       });
       
-      const result = await storage.createPatronUpdate(validatedData);
+      const result = await storageInstance.createPatronUpdate(validatedData);
       
       if (!result.success) {
         if (result.error instanceof DuplicateError) {
@@ -1844,9 +1840,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Récupérer les actualités d'un mécène
-  app.get("/api/patrons/:id/updates", requirePermission('admin.manage'), async (req, res, next) => {
+  router.get("/api/patrons/:id/updates", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.getPatronUpdates(req.params.id);
+      const result = await storageInstance.getPatronUpdates(req.params.id);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -1859,11 +1855,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mettre à jour une actualité
-  app.patch("/api/patron-updates/:id", requirePermission('admin.manage'), async (req, res, next) => {
+  router.patch("/api/patron-updates/:id", requirePermission('admin.manage'), async (req, res, next) => {
     try {
       const validatedData = updatePatronUpdateSchema.parse(req.body);
       
-      const result = await storage.updatePatronUpdate(req.params.id, validatedData);
+      const result = await storageInstance.updatePatronUpdate(req.params.id, validatedData);
       
       if (!result.success) {
         if (result.error.name === 'NotFoundError') {
@@ -1882,9 +1878,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Supprimer une actualité
-  app.delete("/api/patron-updates/:id", requirePermission('admin.manage'), async (req, res, next) => {
+  router.delete("/api/patron-updates/:id", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.deletePatronUpdate(req.params.id);
+      const result = await storageInstance.deletePatronUpdate(req.params.id);
       
       if (!result.success) {
         if (result.error.name === 'NotFoundError') {
@@ -1902,12 +1898,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== GESTION DES MEMBRES (CRM) ====================
 
   // Lister tous les membres avec leur score d'engagement et dernière activité
-  app.get("/api/admin/members", requirePermission('admin.view'), async (req, res, next) => {
+  router.get("/api/admin/members", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
       
-      const result = await storage.getMembers({ page, limit });
+      const result = await storageInstance.getMembers({ page, limit });
       
       if (!result.success) {
         return res.status(500).json({ message: result.error.message });
@@ -1920,9 +1916,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Récupérer les détails d'un membre spécifique
-  app.get("/api/admin/members/:email", requirePermission('admin.view'), async (req, res, next) => {
+  router.get("/api/admin/members/:email", requirePermission('admin.view'), async (req, res, next) => {
     try {
-      const result = await storage.getMemberByEmail(req.params.email);
+      const result = await storageInstance.getMemberByEmail(req.params.email);
       
       if (!result.success) {
         return res.status(404).json({ message: result.error.message });
@@ -1939,9 +1935,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Récupérer l'historique des activités d'un membre
-  app.get("/api/admin/members/:email/activities", requirePermission('admin.view'), async (req, res, next) => {
+  router.get("/api/admin/members/:email/activities", requirePermission('admin.view'), async (req, res, next) => {
     try {
-      const result = await storage.getMemberActivities(req.params.email);
+      const result = await storageInstance.getMemberActivities(req.params.email);
       
       if (!result.success) {
         return res.status(500).json({ message: result.error.message });
@@ -1954,10 +1950,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/members/:email/subscriptions - Récupérer les souscriptions d'un membre
-  app.get("/api/admin/members/:email/subscriptions", requirePermission('admin.view'), async (req, res) => {
+  router.get("/api/admin/members/:email/subscriptions", requirePermission('admin.view'), async (req, res) => {
     try {
       const { email } = req.params;
-      const subscriptions = await storage.getSubscriptionsByMember(email);
+      const subscriptions = await storageInstance.getSubscriptionsByMember(email);
       res.json({ success: true, data: subscriptions });
     } catch (error) {
       logger.error('Member subscriptions fetch failed', { memberEmail: req.params.email, error });
@@ -1969,7 +1965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/members/:email/subscriptions - Créer une souscription
-  app.post("/api/admin/members/:email/subscriptions", requirePermission('admin.view'), async (req, res) => {
+  router.post("/api/admin/members/:email/subscriptions", requirePermission('admin.view'), async (req, res) => {
     try {
       const { email } = req.params;
       
@@ -1979,7 +1975,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         memberEmail: email,
       });
       
-      const subscription = await storage.createSubscription(validatedData);
+      const subscription = await storageInstance.createSubscription(validatedData);
       res.status(201).json({ success: true, data: subscription });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1999,11 +1995,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mettre à jour les informations d'un membre
-  app.patch("/api/admin/members/:email", requirePermission('admin.view'), async (req, res, next) => {
+  router.patch("/api/admin/members/:email", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const validatedData = updateMemberSchema.parse(req.body);
       
-      const result = await storage.updateMember(req.params.email, validatedData);
+      const result = await storageInstance.updateMember(req.params.email, validatedData);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -2019,9 +2015,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Supprimer un membre
-  app.delete("/api/admin/members/:email", requirePermission('admin.manage'), async (req, res, next) => {
+  router.delete("/api/admin/members/:email", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const result = await storage.deleteMember(req.params.email);
+      const result = await storageInstance.deleteMember(req.params.email);
       
       if (!result.success) {
         const statusCode = result.error.name === 'NotFoundError' ? 404 : 400;
@@ -2035,11 +2031,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Proposer un membre potentiel (accessible à tous)
-  app.post("/api/members/propose", async (req, res, next) => {
+  router.post("/api/members/propose", async (req, res, next) => {
     try {
       const validatedData = proposeMemberSchema.parse(req.body);
       
-      const result = await storage.proposeMember({
+      const result = await storageInstance.proposeMember({
         email: validatedData.email,
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
@@ -2066,6 +2062,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  return router;
+}
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Middleware de monitoring de la base de données (app-level)
+  app.use('/api', dbMonitoringMiddleware);
+  
+  // Setup authentication (app-level, not router-level)
+  setupAuth(app);
+  
+  // Create and mount the router with routes
+  const router = createRouter(storage);
+  app.use(router);
+  
   const httpServer = createServer(app);
   return httpServer;
 }
+
+// Export helper functions and schemas for testing
+export { requireAuth, requirePermission, frontendErrorSchema, trackMemberActivity };
