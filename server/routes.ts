@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, type IStorage } from "./storage";
 import { setupAuth } from "./auth";
@@ -8,6 +8,8 @@ import { checkDatabaseHealth } from "./utils/db-health";
 import { notificationService } from "./notification-service";
 import { emailNotificationService } from "./email-notification-service";
 import { hashPassword } from "./auth";
+import { sql } from "drizzle-orm";
+import { pool, getPoolStats, db } from "./db";
 import { 
   insertIdeaSchema,
   insertVoteSchema,
@@ -159,22 +161,153 @@ function requirePermission(permission: string) {
 }
 
 export function createRouter(storageInstance: IStorage): any {
-  const router = require('express').Router();
+  const router = express.Router();
   
-  // Health check endpoint (AVANT l'authentification pour être toujours accessible)
+  // Health check endpoints (AVANT l'authentification pour être toujours accessible)
+  
+  // 1. GET /api/health - Health check global
   router.get("/api/health", async (req, res) => {
     try {
-      const health = await checkDatabaseHealth();
-      const statusCode = health.status === 'healthy' ? 200 : 
-                        health.status === 'degraded' ? 200 : 503;
-      res.status(statusCode).json(health);
+      // Test connexion DB
+      const dbStartTime = Date.now();
+      await db.execute(sql`SELECT 1 as test`);
+      const dbResponseTime = Date.now() - dbStartTime;
+      
+      const healthCheck = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        version: '1.0.0',
+        environment: process.env.NODE_ENV || 'development',
+        database: {
+          connected: true,
+          responseTime: `${dbResponseTime}ms`
+        }
+      };
+      
+      res.status(200).json(healthCheck);
     } catch (error) {
-      res.status(503).json({ 
-        status: 'unhealthy', 
-        error: 'Health check failed',
+      logger.error('Health check failed - database unavailable', { error });
+      
+      res.status(503).json({
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        database: {
+          connected: false,
+          error: 'Database connection failed'
+        }
+      });
+    }
+  });
+
+  // 2. GET /api/health/db - Database health check
+  router.get("/api/health/db", async (req, res) => {
+    try {
+      const startTime = Date.now();
+      
+      await db.execute(sql`SELECT 1 as test`);
+      
+      const responseTime = Date.now() - startTime;
+      
+      const poolStats = {
+        totalCount: pool.totalCount,
+        idleCount: pool.idleCount,
+        waitingCount: pool.waitingCount
+      };
+      
+      res.status(200).json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        database: {
+          connected: true,
+          responseTime: `${responseTime}ms`,
+          pool: poolStats
+        }
+      });
+    } catch (error) {
+      logger.error('Database health check failed', { error });
+      
+      res.status(503).json({
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        database: {
+          connected: false,
+          error: 'Database connection failed'
+        }
+      });
+    }
+  });
+
+  // 3. GET /api/health/detailed - Health check détaillé (ADMIN only)
+  router.get("/api/health/detailed", requireAuth, async (req, res) => {
+    try {
+      const memoryUsage = process.memoryUsage();
+      
+      const dbStartTime = Date.now();
+      await db.execute(sql`SELECT 1 as test`);
+      const dbResponseTime = Date.now() - dbStartTime;
+      
+      const poolStats = getPoolStats();
+      
+      const healthCheck = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        version: '1.0.0',
+        environment: process.env.NODE_ENV || 'development',
+        database: {
+          connected: true,
+          responseTime: `${dbResponseTime}ms`,
+          pool: {
+            totalCount: poolStats.totalCount,
+            idleCount: poolStats.idleCount,
+            waitingCount: poolStats.waitingCount,
+            maxConnections: poolStats.maxConnections
+          }
+        },
+        memory: {
+          heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
+          heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`,
+          external: `${Math.round(memoryUsage.external / 1024 / 1024)}MB`,
+          rss: `${Math.round(memoryUsage.rss / 1024 / 1024)}MB`
+        }
+      };
+      
+      res.status(200).json(healthCheck);
+    } catch (error) {
+      logger.error('Detailed health check failed', { error });
+      res.status(503).json({
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        error: 'Health check failed'
+      });
+    }
+  });
+
+  // 4. GET /api/health/ready - Readiness probe
+  router.get("/api/health/ready", async (req, res) => {
+    try {
+      await db.execute(sql`SELECT 1 as test`);
+      
+      res.status(200).json({
+        status: 'ready',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      logger.warn('Readiness check failed', { error });
+      res.status(503).json({
+        status: 'not ready',
         timestamp: new Date().toISOString()
       });
     }
+  });
+
+  // 5. GET /api/health/live - Liveness probe
+  router.get("/api/health/live", (req, res) => {
+    res.status(200).json({
+      status: 'alive',
+      timestamp: new Date().toISOString()
+    });
   });
 
   // Log frontend errors
