@@ -1,5 +1,5 @@
 // Service Worker optimisé CJD Amiens - Version Production 2025
-const CACHE_VERSION = '1.1.29';
+const CACHE_VERSION = '1.1.30';
 const CACHE_NAME = `cjd-amiens-v${CACHE_VERSION}`;
 const API_CACHE = `cjd-api-v${CACHE_VERSION}`;
 const STATIC_CACHE = `cjd-static-v${CACHE_VERSION}`;
@@ -156,6 +156,31 @@ function isStaticAsset(pathname) {
 self.addEventListener('push', event => {
   if (!event.data) return;
 
+  // Définir le pattern de vibration selon le type de notification
+  function getVibrationPattern(type) {
+    switch (type) {
+      case 'new_idea':
+        // Idée : Court et joyeux (deux pulsations rapides)
+        return [100, 50, 100];
+      
+      case 'new_event':
+        // Événement : Moyen et informatif (standard)
+        return [200, 100, 200];
+      
+      case 'idea_status_change':
+        // Changement de statut : Variable selon le statut
+        return [150, 75, 150];
+      
+      case 'urgent':
+        // Urgent : Long et insistant (triple pulsation)
+        return [300, 100, 300, 100, 300];
+      
+      default:
+        // Par défaut : Pattern standard
+        return [200, 100, 200];
+    }
+  }
+
   try {
     const data = event.data.json();
     
@@ -166,7 +191,7 @@ self.addEventListener('push', event => {
       tag: data.tag || 'default',
       data: data.data || {},
       requireInteraction: false,
-      vibrate: [200, 100, 200],
+      vibrate: getVibrationPattern(data.data?.type),
       timestamp: Date.now(),
       actions: data.actions || []
     };
