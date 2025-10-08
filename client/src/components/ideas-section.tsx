@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ThumbsUp, Lightbulb, Loader2, Vote, Plus, ChevronDown, ChevronUp, Star } from "lucide-react";
+import { ThumbsUp, Lightbulb, Loader2, Vote, Plus, ChevronDown, ChevronUp, Star, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SimplePagination } from "@/components/ui/pagination";
@@ -8,6 +8,8 @@ import VoteModal from "./vote-modal";
 import type { Idea } from "@shared/schema";
 import { IDEA_STATUS } from "@shared/schema";
 import boiteKiffImage from "@assets/boite-kiff_1756106212980.jpeg";
+import { shareContent, isShareSupported } from "@/lib/share-utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
   voteCount: number;
@@ -71,6 +73,7 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const limit = 20;
+  const { toast } = useToast();
 
   const { data: response, isLoading, error } = useQuery<PaginatedIdeasResponse>({
     queryKey: ["/api/ideas", page, limit],
@@ -96,6 +99,39 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
   const handleVoteClick = (idea: IdeaWithVotes) => {
     setSelectedIdea(idea);
     setVoteModalOpen(true);
+  };
+
+  const handleShare = async (idea: IdeaWithVotes) => {
+    const result = await shareContent({
+      title: idea.title,
+      text: idea.description || idea.title,
+      url: window.location.origin
+    });
+
+    if (result.success) {
+      if (isShareSupported()) {
+        toast({
+          title: "✅ Partagé avec succès !",
+          description: "L'idée a été partagée.",
+        });
+      } else {
+        toast({
+          title: "📋 Lien copié dans le presse-papiers",
+          description: "Vous pouvez maintenant partager ce lien.",
+        });
+      }
+    } else if (result.reason === 'cancelled') {
+      toast({
+        title: "ℹ️ Partage annulé",
+        variant: "default",
+      });
+    } else if (result.reason === 'error') {
+      toast({
+        title: "❌ Impossible de partager",
+        description: result.message || "Une erreur s'est produite",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -148,6 +184,16 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
                         Voter
                       </Button>
                     )}
+                    <Button
+                      onClick={() => handleShare(idea)}
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 text-xs font-semibold flex-shrink-0"
+                      data-testid={`button-share-idea-${idea.id}`}
+                    >
+                      <Share2 className="w-3 h-3 mr-1" />
+                      Partager
+                    </Button>
                   </div>
                 </div>
                 {idea.description && (

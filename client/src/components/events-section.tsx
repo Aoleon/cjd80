@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, MapPin, Users, CalendarPlus, UserMinus, Loader2, Clock, Star, MessageCircle } from "lucide-react";
+import { Calendar, MapPin, Users, CalendarPlus, UserMinus, Loader2, Clock, Star, MessageCircle, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SimplePagination } from "@/components/ui/pagination";
 import EventRegistrationModal from "./event-registration-modal";
 import type { Event } from "@shared/schema";
+import { shareContent, isShareSupported } from "@/lib/share-utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
   inscriptionCount: number;
@@ -27,6 +29,7 @@ export default function EventsSection() {
   const [modalMode, setModalMode] = useState<'register' | 'unsubscribe'>('register');
   const [page, setPage] = useState(1);
   const limit = 20;
+  const { toast } = useToast();
 
   const { data: response, isLoading, error } = useQuery<PaginatedEventsResponse>({
     queryKey: ["/api/events", page, limit],
@@ -83,6 +86,40 @@ export default function EventsSection() {
 
   const isUpcoming = (date: string) => {
     return new Date(date) > new Date();
+  };
+
+  const handleShare = async (event: EventWithInscriptions) => {
+    const formattedDate = formatDate(event.date.toString());
+    const result = await shareContent({
+      title: event.title,
+      text: `${event.title} - ${formattedDate}`,
+      url: window.location.origin
+    });
+
+    if (result.success) {
+      if (isShareSupported()) {
+        toast({
+          title: "✅ Partagé avec succès !",
+          description: "L'événement a été partagé.",
+        });
+      } else {
+        toast({
+          title: "📋 Lien copié dans le presse-papiers",
+          description: "Vous pouvez maintenant partager ce lien.",
+        });
+      }
+    } else if (result.reason === 'cancelled') {
+      toast({
+        title: "ℹ️ Partage annulé",
+        variant: "default",
+      });
+    } else if (result.reason === 'error') {
+      toast({
+        title: "❌ Impossible de partager",
+        description: result.message || "Une erreur s'est produite",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -287,6 +324,18 @@ export default function EventsSection() {
                                 {event.customButtonText?.trim() || "Contacter l'organisateur"}
                               </Button>
                             )}
+                            
+                            {/* Share Button */}
+                            <Button
+                              onClick={() => handleShare(event)}
+                              variant="outline"
+                              size="sm"
+                              className="text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400"
+                              data-testid={`button-share-event-${event.id}`}
+                            >
+                              <Share2 className="w-4 h-4 mr-2" />
+                              Partager
+                            </Button>
                           </div>
                         </div>
                       </div>
