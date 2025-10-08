@@ -19,6 +19,7 @@ import AdminMembersPage from "@/pages/admin-members-page";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 import { PWAUtils } from "@/lib/pwa-utils";
+import { useNotificationHandler } from "@/hooks/use-notification-handler";
 import "@/lib/cache-buster";
 
 function Router() {
@@ -38,6 +39,9 @@ function Router() {
 }
 
 function PWAWrapper({ children }: { children: React.ReactNode }) {
+  // Gérer les clics sur les notifications avec cleanup approprié
+  useNotificationHandler();
+
   useEffect(() => {
     // Enregistrer le Service Worker
     if ('serviceWorker' in navigator) {

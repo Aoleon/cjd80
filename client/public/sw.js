@@ -1,5 +1,5 @@
 // Service Worker optimisé CJD Amiens - Version Production 2025
-const CACHE_VERSION = '1.1.27';
+const CACHE_VERSION = '1.1.28';
 const CACHE_NAME = `cjd-amiens-v${CACHE_VERSION}`;
 const API_CACHE = `cjd-api-v${CACHE_VERSION}`;
 const STATIC_CACHE = `cjd-static-v${CACHE_VERSION}`;
@@ -164,7 +164,8 @@ self.addEventListener('push', event => {
       data: data.data || {},
       requireInteraction: false,
       vibrate: [200, 100, 200],
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      actions: data.actions || []
     };
 
     event.waitUntil(
@@ -185,23 +186,37 @@ self.addEventListener('notificationclick', event => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then(clientList => {
-        // Si l'app est déjà ouverte, la focuser
-        for (const client of clientList) {
-          if (client.url.includes(self.registration.scope) && 'focus' in client) {
-            return client.focus();
-          }
-        }
+        // Construire l'URL cible selon l'action
+        let targetUrl = '/';
         
-        // Sinon, ouvrir une nouvelle fenêtre
-        if (clients.openWindow) {
-          let targetUrl = '/';
-          
+        if (action === 'vote') {
+          targetUrl = '/?action=vote';
+        } else if (action === 'register') {
+          targetUrl = '/?action=register';
+        } else if (action === 'view' || !action) {
+          // Clic sur notification ou bouton "Voir"
           if (data.type === 'new_idea') {
             targetUrl = '/?tab=ideas';
           } else if (data.type === 'new_event') {
             targetUrl = '/?tab=events';
           }
-          
+        }
+        
+        // Si l'app est déjà ouverte, la focuser et naviguer vers l'URL
+        for (const client of clientList) {
+          if (client.url.includes(self.registration.scope) && 'focus' in client) {
+            client.postMessage({
+              type: 'NOTIFICATION_CLICK',
+              action: action,
+              targetUrl: targetUrl,
+              data: data
+            });
+            return client.focus();
+          }
+        }
+        
+        // Sinon, ouvrir une nouvelle fenêtre avec l'URL cible
+        if (clients.openWindow) {
           return clients.openWindow(targetUrl);
         }
       })
