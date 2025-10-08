@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Shield, Home, Lightbulb, Plus, Calendar, UserCircle, Users, LogOut, Menu, X } from "lucide-react";
+import { getShortAppName } from '@/config/branding';
 
 export default function AdminHeader() {
   const { user, logoutMutation } = useAuth();
@@ -35,7 +36,7 @@ export default function AdminHeader() {
           <div className="flex items-center space-x-4">
             <Shield className="w-8 h-8 text-cjd-green" data-testid="icon-admin-shield" />
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold" data-testid="text-admin-title">CJD Amiens - Administration</h1>
+              <h1 className="text-xl sm:text-2xl font-bold" data-testid="text-admin-title">{getShortAppName()} - Administration</h1>
               <p className="text-gray-300 text-sm" data-testid="text-admin-subtitle">Espace de gestion</p>
             </div>
           </div>

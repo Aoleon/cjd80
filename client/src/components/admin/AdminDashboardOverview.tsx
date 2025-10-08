@@ -2,6 +2,7 @@ import { Loader2, Calendar, Users, Lightbulb, UserCircle, AlertCircle, RefreshCw
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQueryClient } from "@tanstack/react-query";
+import { getShortAppName } from '@/config/branding';
 
 interface AdminStats {
   members: { total: number; active: number; proposed: number; recentActivity: number };
@@ -31,7 +32,7 @@ export default function AdminDashboardOverview({
     <div className="space-y-6">
       <div>
         <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Tableau de bord</h3>
-        <p className="text-gray-600 dark:text-gray-400">Vue d'ensemble de la plateforme CJD Amiens</p>
+        <p className="text-gray-600 dark:text-gray-400">Vue d'ensemble de la plateforme {getShortAppName()}</p>
       </div>
 
       {isLoading ? (

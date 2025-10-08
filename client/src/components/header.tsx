@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import cjdLogo from "@assets/logo-cjd-social_1756108273665.jpg";
+import { branding, getShortAppName, getOrgName } from '@/config/branding';
 import { useAuth } from "@/hooks/use-auth";
 import { hasPermission } from "@shared/schema";
 
@@ -45,11 +45,11 @@ export default function Header() {
               aria-label="Retour à la page d'accueil - Voter pour des idées"
             >
               <img 
-                src={cjdLogo} 
-                alt="CJD" 
+                src={branding.assets.logo} 
+                alt={`Logo ${getOrgName()}`} 
                 className="h-8 sm:h-10 lg:h-12 w-auto rounded-[60px]"
               />
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">Amiens</h1>
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">{getShortAppName()}</h1>
             </button>
           </div>
           

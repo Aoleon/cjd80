@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Download, X, Share } from 'lucide-react';
 import { usePWAInstall } from '@/hooks/use-pwa-install';
+import { getShortAppName } from '@/config/branding';
 
 export function PWAFloatingInstall() {
   const {
@@ -133,7 +134,7 @@ export function PWAFloatingInstall() {
           
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
-              Pour installer CJD Amiens sur votre iPhone/iPad :
+              Pour installer {getShortAppName()} sur votre iPhone/iPad :
             </p>
             
             <ol className="space-y-3">

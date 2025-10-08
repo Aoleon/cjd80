@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Users, Lightbulb, Calendar, Shield } from "lucide-react";
 import { hasPermission } from "@shared/schema";
+import { branding, getShortAppName } from '@/config/branding';
 
 export default function AuthPage() {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
@@ -64,7 +65,7 @@ export default function AuthPage() {
             <div className="w-16 h-16 bg-cjd-green rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-white font-bold text-xl">CJD</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Administration CJD Amiens</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Administration {getShortAppName()}</h1>
             <p className="text-gray-600">Connectez-vous pour accéder au back-office</p>
           </div>
 
@@ -214,7 +215,7 @@ export default function AuthPage() {
         <div className="relative z-10 flex flex-col justify-center items-center h-full text-white p-12">
           <h2 className="text-4xl font-bold mb-6">Boîte à Kiffs</h2>
           <p className="text-xl mb-8 text-center max-w-md">
-            La plateforme collaborative du Centre des Jeunes Dirigeants d'Amiens
+            La plateforme collaborative du {branding.organization.fullName}
           </p>
           
           <div className="space-y-6 max-w-sm">

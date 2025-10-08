@@ -4,6 +4,7 @@ import AdminLogin from "@/components/admin-login";
 import AdminHeader from "@/components/admin-header";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, Shield } from "lucide-react";
+import { getShortAppName } from '@/config/branding';
 
 export default function AdminPage() {
   const { user, isLoading } = useAuth();
@@ -23,7 +24,7 @@ export default function AdminPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
               <div>
-                <h1 className="text-3xl font-bold">CJD Amiens</h1>
+                <h1 className="text-3xl font-bold">{getShortAppName()}</h1>
                 <p className="text-green-100">Administration - Boîte à Kiffs</p>
               </div>
             </div>

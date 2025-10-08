@@ -2,6 +2,7 @@ import { useLocation } from "wouter";
 import Layout from "@/components/layout";
 import IdeasSection from "@/components/ideas-section";
 import EventsSection from "@/components/events-section";
+import { branding, getShortAppName } from '@/config/branding';
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
@@ -14,7 +15,7 @@ export default function HomePage() {
         <div className="mt-8 sm:mt-12 border-t-4 border-cjd-green pt-8">
           <div className="text-center mb-6">
             <h2 className="text-2xl sm:text-3xl font-bold text-cjd-green">📅 Événements à venir</h2>
-            <p className="text-gray-600 mt-2">Inscrivez-vous aux prochains événements CJD Amiens</p>
+            <p className="text-gray-600 mt-2">Inscrivez-vous aux prochains événements {getShortAppName()}</p>
           </div>
           <EventsSection />
         </div>
@@ -28,7 +29,7 @@ export default function HomePage() {
                 <span className="text-white font-bold text-sm sm:text-base">CJD</span>
               </div>
               <div>
-                <p className="font-medium text-sm sm:text-base">Centre des Jeunes Dirigeants d'Amiens</p>
+                <p className="font-medium text-sm sm:text-base">{branding.organization.fullName}</p>
                 <p className="text-xs sm:text-sm text-gray-400">© 2025 - Tous droits réservés</p>
               </div>
             </div>

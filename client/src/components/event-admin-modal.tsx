@@ -12,6 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Event, InsertEvent } from "@shared/schema";
+import { getShortAppName } from '@/config/branding';
 
 interface EventAdminModalProps {
   open: boolean;
@@ -230,7 +231,7 @@ export default function EventAdminModal({
           </DialogTitle>
           <DialogDescription className="text-sm">
             {mode === "create" 
-              ? "Ajoutez un nouvel événement pour la section CJD Amiens. Les membres pourront s'y inscrire." 
+              ? `Ajoutez un nouvel événement pour la section ${getShortAppName()}. Les membres pourront s'y inscrire.` 
               : "Modifiez les informations de cet événement. Les participants déjà inscrits seront préservés."
             }
           </DialogDescription>

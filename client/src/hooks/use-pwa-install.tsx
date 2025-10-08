@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { PWAUtils } from '@/lib/pwa-utils';
+import { getShortAppName } from '@/config/branding';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -47,7 +48,7 @@ export function usePWAInstall() {
       
       // Notification de succès
       PWAUtils.showNotification('Application installée !', {
-        body: 'CJD Amiens est maintenant disponible sur votre écran d\'accueil',
+        body: `${getShortAppName()} est maintenant disponible sur votre écran d'accueil`,
         icon: '/icon-192.svg'
       });
     };

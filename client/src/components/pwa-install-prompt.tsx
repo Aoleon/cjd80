@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { X, Download, Smartphone, Monitor, Share, Plus } from 'lucide-react';
 import { usePWAInstall } from '@/hooks/use-pwa-install';
+import { getShortAppName } from '@/config/branding';
 
 interface PWAInstallPromptProps {
   variant?: 'banner' | 'modal' | 'card';
@@ -73,7 +74,7 @@ export function PWAInstallPrompt({ variant = 'banner', className = '' }: PWAInst
           </div>
           <div>
             <h3 className="font-semibold text-lg" data-testid="text-install-title">
-              Installer CJD Amiens
+              Installer {getShortAppName()}
             </h3>
             <p className="text-sm text-gray-600" data-testid="text-os-info">
               {operatingSystem === 'ios' ? 'iPhone/iPad' : 
@@ -137,7 +138,7 @@ export function PWAInstallPrompt({ variant = 'banner', className = '' }: PWAInst
         
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            Suivez ces étapes pour installer CJD Amiens sur votre appareil :
+            Suivez ces étapes pour installer {getShortAppName()} sur votre appareil :
           </p>
           
           <ol className="space-y-3">

@@ -1,4 +1,5 @@
 // Utilitaires PWA pour améliorer l'expérience utilisateur
+import { getShortAppName } from '@/config/branding';
 
 export const PWAUtils = {
   // Vérifier si l'app est installée
@@ -208,7 +209,7 @@ export const PWAUtils = {
     
     if (os === 'ios') {
       return {
-        title: 'Installer CJD Amiens sur votre iPhone/iPad',
+        title: `Installer ${getShortAppName()} sur votre iPhone/iPad`,
         steps: [
           'Appuyez sur le bouton "Partager" en bas de Safari',
           'Sélectionnez "Sur l\'écran d\'accueil"',
@@ -220,7 +221,7 @@ export const PWAUtils = {
     
     if (os === 'android') {
       return {
-        title: 'Installer CJD Amiens sur votre appareil Android',
+        title: `Installer ${getShortAppName()} sur votre appareil Android`,
         steps: [
           'Appuyez sur "Installer l\'application" ci-dessous',
           'Confirmez l\'installation dans la pop-up',
@@ -231,7 +232,7 @@ export const PWAUtils = {
     }
     
     return {
-      title: 'Installer CJD Amiens sur votre ordinateur',
+      title: `Installer ${getShortAppName()} sur votre ordinateur`,
       steps: [
         'Cliquez sur "Installer l\'application" ci-dessous',
         'Confirmez l\'installation dans votre navigateur',

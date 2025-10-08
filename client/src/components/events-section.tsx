@@ -8,6 +8,7 @@ import EventRegistrationModal from "./event-registration-modal";
 import type { Event } from "@shared/schema";
 import { shareContent, isShareSupported } from "@/lib/share-utils";
 import { useToast } from "@/hooks/use-toast";
+import { getShortAppName } from '@/config/branding';
 
 interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
   inscriptionCount: number;
@@ -133,7 +134,7 @@ export default function EventsSection() {
           <h2 className="text-2xl sm:text-3xl font-bold">Événements à venir</h2>
         </div>
         <p className="text-green-100 text-base sm:text-lg opacity-90">
-          Découvrez les prochains événements de la section CJD Amiens et inscrivez-vous facilement
+          Découvrez les prochains événements de la section {getShortAppName()} et inscrivez-vous facilement
         </p>
       </div>
 

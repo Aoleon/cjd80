@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { insertIdeaSchema, insertPatronSchema, proposeMemberSchema, type InsertIdea, type InsertPatron, type Patron } from "@shared/schema";
 import { z } from "zod";
+import { getShortAppName } from '@/config/branding';
 
 // Form schema with client-side validation matching server schema
 const proposeIdeaFormSchema = insertIdeaSchema.extend({
@@ -383,7 +384,7 @@ export default function ProposePage() {
             {proposalType === 'member' && 'Proposer un membre'}
           </h1>
           <p className="text-gray-600 max-w-lg mx-auto">
-            Partagez vos idées avec la section CJD Amiens. Votre proposition sera immédiatement visible 
+            Partagez vos idées avec la section {getShortAppName()}. Votre proposition sera immédiatement visible 
             et pourra recevoir les votes des autres membres.
           </p>
         </div>
@@ -436,7 +437,7 @@ export default function ProposePage() {
             {/* Conditional Messages */}
             {proposalType === 'idea' && (
               <p className="text-sm text-gray-600 p-3 bg-blue-50 rounded">
-                Vous allez proposer une nouvelle idée à la communauté CJD Amiens
+                Vous allez proposer une nouvelle idée à la communauté {getShortAppName()}
               </p>
             )}
             {proposalType === 'patron' && (
@@ -446,7 +447,7 @@ export default function ProposePage() {
             )}
             {proposalType === 'member' && (
               <p className="text-sm text-gray-600 p-3 bg-green-50 rounded">
-                Vous allez proposer un nouveau membre pour rejoindre le CJD Amiens
+                Vous allez proposer un nouveau membre pour rejoindre le {getShortAppName()}
               </p>
             )}
           </div>

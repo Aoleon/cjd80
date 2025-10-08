@@ -7,9 +7,9 @@ import { SimplePagination } from "@/components/ui/pagination";
 import VoteModal from "./vote-modal";
 import type { Idea } from "@shared/schema";
 import { IDEA_STATUS } from "@shared/schema";
-import boiteKiffImage from "@assets/boite-kiff_1756106212980.jpeg";
 import { shareContent, isShareSupported } from "@/lib/share-utils";
 import { useToast } from "@/hooks/use-toast";
+import { branding, getShortAppName } from '@/config/branding';
 
 interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
   voteCount: number;
@@ -139,7 +139,7 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
       {/* Welcome Message */}
       <div className="flex flex-col items-center text-center mb-6">
         <img 
-          src={boiteKiffImage} 
+          src={branding.assets.boiteKiffImage} 
           alt="La Boîte à Kiffs" 
           className="h-36 sm:h-48 w-auto object-contain rounded-[60px] mb-4"
           style={{ transform: 'scale(1)' }}
@@ -280,7 +280,7 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
               Vous avez une idée ?
             </h3>
             <p className="text-sm sm:text-base text-green-100 opacity-90">
-              Partagez votre idée avec la communauté CJD Amiens et permettez aux autres de voter pour la soutenir
+              Partagez votre idée avec la communauté {getShortAppName()} et permettez aux autres de voter pour la soutenir
             </p>
           </div>
           <div className="flex-shrink-0">

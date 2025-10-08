@@ -1,5 +1,10 @@
 import type { Config } from "tailwindcss";
 
+// Hardcoded values from branding config to avoid build-time import issues
+const CJD_GREEN = "#00a844";
+const CJD_GREEN_DARK = "#008835";
+const PRIMARY_FONT = "Lato";
+
 export default {
   darkMode: ["class"],
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
@@ -66,8 +71,8 @@ export default {
           ring: "var(--sidebar-ring)",
         },
         'cjd-green': {
-          DEFAULT: '#00a844',
-          dark: '#008a3a',
+          DEFAULT: CJD_GREEN,
+          dark: CJD_GREEN_DARK,
           light: '#e8f5e8',
         },
       },
@@ -75,7 +80,7 @@ export default {
         sans: ["var(--font-sans)"],
         serif: ["var(--font-serif)"],
         mono: ["var(--font-mono)"],
-        lato: ['Lato', 'sans-serif'],
+        lato: [PRIMARY_FONT, 'sans-serif'],
       },
       keyframes: {
         "accordion-down": {
