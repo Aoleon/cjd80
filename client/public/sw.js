@@ -1,5 +1,5 @@
 // Service Worker optimisé CJD Amiens - Version Production 2025
-const CACHE_VERSION = '1.1.32';
+const CACHE_VERSION = '1.1.33';
 const CACHE_NAME = `cjd-amiens-v${CACHE_VERSION}`;
 const API_CACHE = `cjd-api-v${CACHE_VERSION}`;
 const STATIC_CACHE = `cjd-static-v${CACHE_VERSION}`;
