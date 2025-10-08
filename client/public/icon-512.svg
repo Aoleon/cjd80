@@ -1,7 +1,0 @@
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" rx="64" fill="#00a844"/>
-  <text x="256" y="300" font-family="Lato, sans-serif" font-size="128" font-weight="700" text-anchor="middle" fill="white">CJD</text>
-  <text x="256" y="360" font-family="Lato, sans-serif" font-size="48" font-weight="400" text-anchor="middle" fill="#e0f2e8">Amiens</text>
-  <circle cx="256" cy="150" r="80" fill="none" stroke="white" stroke-width="8"/>
-  <path d="M200 150 L230 180 L310 120" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-</svg>

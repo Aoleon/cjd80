@@ -1,5 +1,5 @@
 // Service Worker optimisé CJD Amiens - Version Production 2025
-const CACHE_VERSION = '1.1.31';
+const CACHE_VERSION = '1.1.32';
 const CACHE_NAME = `cjd-amiens-v${CACHE_VERSION}`;
 const API_CACHE = `cjd-api-v${CACHE_VERSION}`;
 const STATIC_CACHE = `cjd-static-v${CACHE_VERSION}`;
@@ -15,8 +15,8 @@ let badgeCount = 0;
 const CRITICAL_ASSETS = [
   '/',
   '/manifest.json',
-  '/icon-192.svg',
-  '/icon-512.svg'
+  '/icon-192.jpg',
+  '/icon-512.jpg'
 ];
 
 // Installation
@@ -186,8 +186,8 @@ self.addEventListener('push', event => {
     
     const options = {
       body: data.body,
-      icon: data.icon || '/icon-192.svg',
-      badge: data.badge || '/icon-192.svg',
+      icon: data.icon || '/icon-192.jpg',
+      badge: data.badge || '/icon-192.jpg',
       tag: data.tag || 'default',
       data: data.data || {},
       requireInteraction: false,

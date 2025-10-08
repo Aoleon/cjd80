@@ -15,21 +15,21 @@
   "display_override": ["standalone", "minimal-ui", "browser"],
   "icons": [
     {
-      "src": "/icon-192.svg",
+      "src": "/icon-192.jpg",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "/icon-512.svg",
+      "src": "/icon-512.jpg",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "/icon-512.svg",
+      "src": "/icon-512.jpg",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "maskable"
     }
   ],
@@ -39,28 +39,28 @@
       "short_name": "Voter",
       "description": "Consulter et voter pour les idées proposées par la communauté",
       "url": "/?tab=ideas",
-      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.jpg", "sizes": "192x192" }]
     },
     {
       "name": "Proposer une idée",
       "short_name": "Proposer",
       "description": "Soumettre une nouvelle idée à la communauté",
       "url": "/?tab=propose",
-      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.jpg", "sizes": "192x192" }]
     },
     {
       "name": "Événements CJD",
       "short_name": "Événements",
       "description": "Découvrir et s'inscrire aux événements",
       "url": "/?tab=events",
-      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.jpg", "sizes": "192x192" }]
     },
     {
       "name": "Administration",
       "short_name": "Admin",
       "description": "Interface d'administration (réservée)",
       "url": "/?tab=admin",
-      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.jpg", "sizes": "192x192" }]
     }
   ],
   "prefer_related_applications": false,
