@@ -70,18 +70,18 @@ export default function AdminDbMonitor() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'healthy': return 'bg-green-500';
-      case 'degraded': return 'bg-yellow-500';
-      case 'unhealthy': return 'bg-red-500';
+      case 'healthy': return 'bg-success';
+      case 'degraded': return 'bg-warning';
+      case 'unhealthy': return 'bg-error';
       default: return 'bg-gray-500';
     }
   };
 
   const getPoolUsageColor = (used: number, max: number) => {
     const percentage = (used / max) * 100;
-    if (percentage < 50) return 'bg-green-500';
-    if (percentage < 80) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (percentage < 50) return 'bg-success';
+    if (percentage < 80) return 'bg-warning';
+    return 'bg-error';
   };
 
   return (
@@ -195,16 +195,16 @@ export default function AdminDbMonitor() {
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-xl font-bold text-blue-600">{poolStats.pool.totalCount}</div>
+                <div className="text-center p-3 bg-info-light rounded-lg">
+                  <div className="text-xl font-bold text-info">{poolStats.pool.totalCount}</div>
                   <div className="text-sm text-gray-600">Total</div>
                 </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-xl font-bold text-green-600">{poolStats.pool.idleCount}</div>
+                <div className="text-center p-3 bg-success-light rounded-lg">
+                  <div className="text-xl font-bold text-success">{poolStats.pool.idleCount}</div>
                   <div className="text-sm text-gray-600">Idle</div>
                 </div>
-                <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                  <div className="text-xl font-bold text-yellow-600">{poolStats.pool.waitingCount}</div>
+                <div className="text-center p-3 bg-warning-light rounded-lg">
+                  <div className="text-xl font-bold text-warning">{poolStats.pool.waitingCount}</div>
                   <div className="text-sm text-gray-600">En attente</div>
                 </div>
                 <div className="text-center p-3 bg-purple-50 rounded-lg">
