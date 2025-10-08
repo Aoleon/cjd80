@@ -48,7 +48,7 @@ export default function EventsSection() {
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-600">Erreur lors du chargement des événements</p>
+        <p className="text-error">Erreur lors du chargement des événements</p>
       </div>
     );
   }
@@ -126,14 +126,14 @@ export default function EventsSection() {
   return (
     <section className="space-y-6 sm:space-y-8">
       {/* Welcome Message */}
-      <div className="bg-gradient-to-r from-cjd-green to-green-600 rounded-xl shadow-lg p-6 sm:p-8 text-white">
+      <div className="bg-gradient-to-r from-cjd-green to-success-dark rounded-xl shadow-lg p-6 sm:p-8 text-white">
         <div className="flex items-center gap-3 mb-3">
           <div className="bg-white/20 rounded-full p-2">
             <Calendar className="w-6 h-6 text-white" />
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold">Événements à venir</h2>
         </div>
-        <p className="text-green-100 text-base sm:text-lg opacity-90">
+        <p className="text-white text-base sm:text-lg opacity-90">
           Découvrez les prochains événements de la section {getShortAppName()} et inscrivez-vous facilement
         </p>
       </div>
@@ -155,7 +155,7 @@ export default function EventsSection() {
                 <CardContent className="p-0">
                   <div className="flex flex-col lg:flex-row">
                     {/* Date Badge */}
-                    <div className="lg:w-32 flex lg:flex-col items-center justify-center bg-gradient-to-br from-cjd-green to-green-600 text-white p-4 lg:p-6">
+                    <div className="lg:w-32 flex lg:flex-col items-center justify-center bg-gradient-to-br from-cjd-green to-success-dark text-white p-4 lg:p-6">
                       <div className="text-center">
                         <div className="text-2xl lg:text-4xl font-bold leading-tight">{shortDate.day}</div>
                         <div className="text-sm lg:text-base font-medium uppercase tracking-wide opacity-90">{shortDate.month}</div>
@@ -183,13 +183,13 @@ export default function EventsSection() {
                               {event.title}
                             </h3>
                             {isEventFull && (
-                              <span className="bg-red-500 text-white text-xs font-medium px-2 py-1 rounded-full flex-shrink-0">
+                              <span className="bg-error text-white text-xs font-medium px-2 py-1 rounded-full flex-shrink-0">
                                 COMPLET
                               </span>
                             )}
                             {!isEventFull && isEventUpcoming && event.maxParticipants && (
                               event.inscriptionCount / event.maxParticipants > 0.8 && (
-                                <span className="bg-orange-500 text-white text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 animate-pulse">
+                                <span className="bg-warning text-white text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 animate-pulse">
                                   DERNIÈRES PLACES
                                 </span>
                               )
@@ -216,13 +216,13 @@ export default function EventsSection() {
                             )}
                             
                             {event.helloAssoLink && (
-                              <div className="flex items-center text-gray-600 bg-blue-50 rounded-lg p-3">
-                                <Star className="w-5 h-5 mr-3 text-blue-500 flex-shrink-0" />
+                              <div className="flex items-center text-gray-600 bg-info-light rounded-lg p-3">
+                                <Star className="w-5 h-5 mr-3 text-info flex-shrink-0" />
                                 <a 
                                   href={event.helloAssoLink} 
                                   target="_blank" 
                                   rel="noopener noreferrer" 
-                                  className="text-blue-600 hover:text-blue-800 font-medium hover:underline transition-colors"
+                                  className="text-info hover:text-info-dark font-medium hover:underline transition-colors"
                                 >
                                   💳 Inscription payante - HelloAsso
                                 </a>
@@ -239,12 +239,12 @@ export default function EventsSection() {
 
                           {/* Participants Info */}
                           {(event.maxParticipants || event.showInscriptionsCount) && (
-                            <div className="flex flex-wrap items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-100">
+                            <div className="flex flex-wrap items-center gap-3 p-4 bg-gradient-to-r from-info-light to-success-light rounded-lg border border-info">
                               {event.showInscriptionsCount && (
                                 <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
-                                  <Users className="w-4 h-4 mr-2 text-blue-600" />
+                                  <Users className="w-4 h-4 mr-2 text-info" />
                                   <span className="font-medium text-gray-800">
-                                    <span className="text-blue-600 font-bold">{event.inscriptionCount}</span> inscrit{event.inscriptionCount > 1 ? 's' : ''}
+                                    <span className="text-info font-bold">{event.inscriptionCount}</span> inscrit{event.inscriptionCount > 1 ? 's' : ''}
                                     {event.maxParticipants && (
                                       <>
                                         <span className="text-gray-500 mx-1">/</span>
@@ -258,10 +258,10 @@ export default function EventsSection() {
                               {event.maxParticipants && event.showAvailableSeats && (
                                 <div className={`inline-flex items-center px-4 py-2 text-sm font-bold rounded-full shadow-sm ${
                                   isEventFull
-                                    ? 'bg-red-500 text-white'
+                                    ? 'bg-error text-white'
                                     : event.inscriptionCount / event.maxParticipants > 0.8 
-                                      ? 'bg-orange-500 text-white'
-                                      : 'bg-green-500 text-white'
+                                      ? 'bg-warning text-white'
+                                      : 'bg-success text-white'
                                 }`}>
                                   {isEventFull
                                     ? '🚫 Événement complet' 
@@ -286,7 +286,7 @@ export default function EventsSection() {
                                 className={`text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl ${
                                   isEventFull
                                     ? 'bg-gray-400 cursor-not-allowed text-gray-200'
-                                    : 'bg-gradient-to-r from-cjd-green to-green-600 text-white hover:from-green-600 hover:to-green-700 transform hover:scale-105'
+                                    : 'bg-gradient-to-r from-cjd-green to-success-dark text-white hover:from-success-dark hover:to-success-dark transform hover:scale-105'
                                 }`}
                                 data-testid="button-register-event"
                               >
@@ -303,8 +303,8 @@ export default function EventsSection() {
                                 size="lg"
                                 className={`text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl ${
                                   event.redUnsubscribeButton 
-                                    ? 'bg-red-600 text-white hover:bg-red-700 border-red-600' 
-                                    : 'border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400'
+                                    ? 'bg-error text-white hover:bg-error-dark border-error' 
+                                    : 'border-error text-error hover:bg-error-light hover:border-error'
                                 }`}
                                 data-testid="button-unsubscribe-event"
                               >
@@ -318,7 +318,7 @@ export default function EventsSection() {
                               <Button
                                 variant="outline"
                                 size="lg"
-                                className="text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400"
+                                className="text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl border-info text-info hover:bg-info-light hover:border-info"
                                 data-testid="button-custom-event"
                               >
                                 <MessageCircle className="w-4 h-4 mr-2" />
@@ -356,8 +356,8 @@ export default function EventsSection() {
           <p className="text-gray-500 text-lg max-w-md mx-auto">
             Restez connecté ! De nouveaux événements seront bientôt disponibles pour enrichir vos échanges professionnels.
           </p>
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg inline-block">
-            <p className="text-blue-700 text-sm font-medium">💡 En attendant, n'hésitez pas à proposer vos propres idées d'événements !</p>
+          <div className="mt-6 p-4 bg-info-light rounded-lg inline-block">
+            <p className="text-info-dark text-sm font-medium">💡 En attendant, n'hésitez pas à proposer vos propres idées d'événements !</p>
           </div>
         </div>
       )}

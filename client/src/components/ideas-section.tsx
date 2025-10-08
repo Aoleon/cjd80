@@ -28,13 +28,13 @@ interface PaginatedIdeasResponse {
 const getStatusColor = (status: string) => {
   switch (status) {
     case IDEA_STATUS.APPROVED:
-      return 'bg-green-50 text-green-800 border-green-300 ring-1 ring-green-200';
+      return 'bg-success-light text-success-dark border-success ring-1 ring-success';
     case IDEA_STATUS.PENDING:
-      return 'bg-amber-50 text-amber-800 border-amber-300 ring-1 ring-amber-200';
+      return 'bg-warning-light text-warning-dark border-warning ring-1 ring-warning';
     case IDEA_STATUS.REJECTED:
-      return 'bg-red-50 text-red-800 border-red-300 ring-1 ring-red-200';
+      return 'bg-error-light text-error-dark border-error ring-1 ring-error';
     case IDEA_STATUS.UNDER_REVIEW:
-      return 'bg-blue-50 text-blue-800 border-blue-300 ring-1 ring-blue-200';
+      return 'bg-info-light text-info-dark border-info ring-1 ring-info';
     case IDEA_STATUS.POSTPONED:
       return 'bg-slate-50 text-slate-800 border-slate-300 ring-1 ring-slate-200';
     case IDEA_STATUS.COMPLETED:
@@ -91,7 +91,7 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-600">Erreur lors du chargement des idées</p>
+        <p className="text-error">Erreur lors du chargement des idées</p>
       </div>
     );
   }
@@ -164,7 +164,7 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
                     <div className="flex items-start gap-2">
                       {idea.featured && (
                         <div title="Idée mise en avant">
-                          <Star className="w-5 h-5 text-yellow-500 fill-current flex-shrink-0 mt-0.5" />
+                          <Star className="w-5 h-5 text-warning fill-current flex-shrink-0 mt-0.5" />
                         </div>
                       )}
                       <span className="break-words">{idea.title}</span>
@@ -177,7 +177,7 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
                     {idea.status !== IDEA_STATUS.COMPLETED && (
                       <Button
                         onClick={() => handleVoteClick(idea)}
-                        className="bg-gradient-to-r from-cjd-green to-green-600 text-white hover:from-green-600 hover:to-cjd-green shadow-md hover:shadow-lg transition-all duration-200 text-xs font-semibold transform hover:scale-105 flex-shrink-0"
+                        className="bg-gradient-to-r from-cjd-green to-success-dark text-white hover:from-success-dark hover:to-cjd-green shadow-md hover:shadow-lg transition-all duration-200 text-xs font-semibold transform hover:scale-105 flex-shrink-0"
                         size="sm"
                       >
                         <Vote className="w-3 h-3 mr-1" />
@@ -214,7 +214,7 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
                           }
                           setExpandedDescriptions(newSet);
                         }}
-                        className="text-cjd-green hover:text-green-700 text-sm font-medium mt-2 flex items-center"
+                        className="text-cjd-green hover:text-success-dark text-sm font-medium mt-2 flex items-center"
                       >
                         {expandedDescriptions.has(idea.id) ? (
                           <>
@@ -272,14 +272,14 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
       )}
 
       {/* Add Idea Section */}
-      <div className="bg-gradient-to-r from-cjd-green to-green-600 rounded-lg shadow-md p-4 sm:p-6 text-white">
+      <div className="bg-gradient-to-r from-cjd-green to-success-dark rounded-lg shadow-md p-4 sm:p-6 text-white">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex-1">
             <h3 className="text-lg sm:text-xl font-bold mb-2 flex items-center">
               <Lightbulb className="w-5 h-5 mr-2" />
               Vous avez une idée ?
             </h3>
-            <p className="text-sm sm:text-base text-green-100 opacity-90">
+            <p className="text-sm sm:text-base text-white opacity-90">
               Partagez votre idée avec la communauté {getShortAppName()} et permettez aux autres de voter pour la soutenir
             </p>
           </div>

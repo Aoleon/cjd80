@@ -50,7 +50,7 @@ export default function EventTable({
                 <div>
                   <button
                     onClick={() => onViewDetail(event)}
-                    className="font-semibold text-left hover:text-cjd-green transition-colors cursor-pointer text-blue-600 hover:underline"
+                    className="font-semibold text-left hover:text-cjd-green transition-colors cursor-pointer text-info hover:underline"
                     data-testid={`button-view-event-${event.id}`}
                   >
                     {event.title}
@@ -82,14 +82,14 @@ export default function EventTable({
                   size="sm"
                   variant="ghost"
                   onClick={() => onManageInscriptions(event)}
-                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                  className="text-info hover:text-info-dark hover:bg-info-light"
                   title="Gérer les inscriptions et absences"
                   data-testid={`button-manage-inscriptions-${event.id}`}
                 >
                   <Users className="w-4 h-4 mr-1" />
                   <div className="flex flex-col items-center text-xs">
-                    <span className="text-green-600 font-medium">{event.inscriptionCount} présents</span>
-                    <span className="text-orange-600">{event.unsubscriptionCount} absents</span>
+                    <span className="text-success font-medium">{event.inscriptionCount} présents</span>
+                    <span className="text-warning">{event.unsubscriptionCount} absents</span>
                   </div>
                 </Button>
               </TableCell>
@@ -99,7 +99,7 @@ export default function EventTable({
                     size="sm"
                     variant="outline"
                     onClick={() => onEdit(event)}
-                    className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                    className="text-info border-info hover:bg-info-light"
                     title="Modifier l'événement"
                     data-testid={`button-edit-event-${event.id}`}
                   >
@@ -110,7 +110,7 @@ export default function EventTable({
                       size="sm"
                       variant="outline"
                       onClick={() => onExportInscriptions(event)}
-                      className="text-green-600 border-green-300 hover:bg-green-50"
+                      className="text-success border-success hover:bg-success-light"
                       title="Exporter les inscriptions"
                       data-testid={`button-export-inscriptions-${event.id}`}
                     >
@@ -122,7 +122,7 @@ export default function EventTable({
                     variant="outline"
                     onClick={() => onDelete(event.id)}
                     disabled={isDeleting}
-                    className="text-red-600 border-red-300 hover:bg-red-50"
+                    className="text-error border-error hover:bg-error-light"
                     title="Supprimer l'événement"
                     data-testid={`button-delete-event-${event.id}`}
                   >

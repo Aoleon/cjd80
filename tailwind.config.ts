@@ -75,6 +75,30 @@ export default {
           dark: CJD_GREEN_DARK,
           light: '#e8f5e8',
         },
+        'success': {
+          DEFAULT: "var(--success)",
+          foreground: "var(--success-foreground)",
+          dark: "var(--success-dark)",
+          light: "var(--success-light)",
+        },
+        'warning': {
+          DEFAULT: "var(--warning)",
+          foreground: "var(--warning-foreground)",
+          dark: "var(--warning-dark)",
+          light: "var(--warning-light)",
+        },
+        'error': {
+          DEFAULT: "var(--error)",
+          foreground: "var(--error-foreground)",
+          dark: "var(--error-dark)",
+          light: "var(--error-light)",
+        },
+        'info': {
+          DEFAULT: "var(--info)",
+          foreground: "var(--info-foreground)",
+          dark: "var(--info-dark)",
+          light: "var(--info-light)",
+        },
       },
       fontFamily: {
         sans: ["var(--font-sans)"],

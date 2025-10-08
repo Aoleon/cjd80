@@ -33,7 +33,7 @@ export default function EventMobileCard({
               className="w-full text-left"
               data-testid={`button-view-event-mobile-${event.id}`}
             >
-              <h4 className="font-semibold text-blue-600 hover:text-cjd-green transition-colors hover:underline">
+              <h4 className="font-semibold text-info hover:text-cjd-green transition-colors hover:underline">
                 {event.title}
               </h4>
               {event.description && (
@@ -77,14 +77,14 @@ export default function EventMobileCard({
                   size="sm"
                   variant="ghost"
                   onClick={() => onManageInscriptions(event)}
-                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1"
+                  className="text-info hover:text-info-dark hover:bg-info-light p-1"
                   title="Gérer les inscriptions et absences"
                   data-testid={`button-manage-inscriptions-mobile-${event.id}`}
                 >
                   <Users className="w-3 h-3 mr-1" />
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-green-600 font-medium">{event.inscriptionCount} présents</span>
-                    <span className="text-orange-600">{event.unsubscriptionCount} absents</span>
+                    <span className="text-success font-medium">{event.inscriptionCount} présents</span>
+                    <span className="text-warning">{event.unsubscriptionCount} absents</span>
                   </div>
                 </Button>
               </div>
@@ -96,7 +96,7 @@ export default function EventMobileCard({
                   size="sm"
                   variant="outline"
                   onClick={() => onEdit(event)}
-                  className="w-full text-blue-600 border-blue-300 hover:bg-blue-50"
+                  className="w-full text-info border-info hover:bg-info-light"
                   data-testid={`button-edit-event-mobile-${event.id}`}
                 >
                   <Edit className="w-4 h-4 mr-2" />
@@ -108,7 +108,7 @@ export default function EventMobileCard({
                     size="sm"
                     variant="outline"
                     onClick={() => onExportInscriptions(event)}
-                    className="w-full text-green-600 border-green-300 hover:bg-green-50"
+                    className="w-full text-success border-success hover:bg-success-light"
                     data-testid={`button-export-inscriptions-mobile-${event.id}`}
                   >
                     <Download className="w-4 h-4 mr-2" />
@@ -121,7 +121,7 @@ export default function EventMobileCard({
                   variant="outline"
                   onClick={() => onDelete(event.id)}
                   disabled={isDeleting}
-                  className="w-full text-red-600 border-red-300 hover:bg-red-50"
+                  className="w-full text-error border-error hover:bg-error-light"
                   data-testid={`button-delete-event-mobile-${event.id}`}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />

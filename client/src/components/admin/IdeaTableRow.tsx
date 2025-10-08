@@ -47,12 +47,12 @@ export default function IdeaTableRow({
         <div>
           <button
             onClick={onViewDetail}
-            className="font-semibold text-left hover:text-cjd-green transition-colors cursor-pointer text-blue-600 hover:underline"
+            className="font-semibold text-left hover:text-cjd-green transition-colors cursor-pointer text-info hover:underline"
             data-testid={`button-view-idea-${idea.id}`}
           >
             <div className="flex items-center gap-1">
               {idea.featured && (
-                <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />
+                <Star className="w-4 h-4 text-warning fill-current flex-shrink-0" />
               )}
               {idea.title}
             </div>
@@ -93,7 +93,7 @@ export default function IdeaTableRow({
           size="sm"
           variant="ghost"
           onClick={onManageVotes}
-          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+          className="text-info hover:text-info-dark hover:bg-info-light"
           title="Gérer les votes"
           data-testid={`button-manage-votes-${idea.id}`}
         >
@@ -111,7 +111,7 @@ export default function IdeaTableRow({
             variant="ghost"
             onClick={onToggleFeatured}
             disabled={isTogglingFeatured}
-            className={idea.featured ? "text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50" : "text-gray-400 hover:text-yellow-500 hover:bg-yellow-50"}
+            className={idea.featured ? "text-warning hover:text-warning-dark hover:bg-warning-light" : "text-gray-400 hover:text-warning hover:bg-warning-light"}
             title={idea.featured ? "Retirer la mise en avant" : "Mettre en avant cette idée"}
             data-testid={`button-toggle-featured-${idea.id}`}
           >
@@ -121,7 +121,7 @@ export default function IdeaTableRow({
             size="sm"
             variant="ghost"
             onClick={onEdit}
-            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+            className="text-info hover:text-info-dark hover:bg-info-light"
             title="Modifier cette idée"
             data-testid={`button-edit-${idea.id}`}
           >
@@ -133,7 +133,7 @@ export default function IdeaTableRow({
               variant="ghost"
               onClick={onTransformToEvent}
               disabled={isTransforming}
-              className="text-cjd-green hover:text-green-700 hover:bg-green-50"
+              className="text-success hover:text-success-dark hover:bg-success-light"
               title="Transformer cette idée en événement"
               data-testid={`button-transform-${idea.id}`}
             >
@@ -145,7 +145,7 @@ export default function IdeaTableRow({
             variant="ghost"
             onClick={onDelete}
             disabled={isDeleting}
-            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+            className="text-error hover:text-error-dark hover:bg-error-light"
             title="Supprimer cette idée"
             data-testid={`button-delete-${idea.id}`}
           >

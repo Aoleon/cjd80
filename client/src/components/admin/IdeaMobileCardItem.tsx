@@ -46,9 +46,9 @@ export default function IdeaMobileCardItem({
             className="flex-1 text-left"
             data-testid={`button-view-idea-mobile-${idea.id}`}
           >
-            <h4 className="font-semibold text-blue-600 hover:text-cjd-green transition-colors hover:underline flex items-center gap-1">
+            <h4 className="font-semibold text-info hover:text-cjd-green transition-colors hover:underline flex items-center gap-1">
               {idea.featured && (
-                <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />
+                <Star className="w-4 h-4 text-warning fill-current flex-shrink-0" />
               )}
               {idea.title}
             </h4>
@@ -74,7 +74,7 @@ export default function IdeaMobileCardItem({
               size="sm"
               variant="ghost"
               onClick={onManageVotes}
-              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1"
+              className="text-info hover:text-info-dark hover:bg-info-light p-1"
               title="Gérer les votes"
               data-testid={`button-manage-votes-mobile-${idea.id}`}
             >
@@ -121,7 +121,7 @@ export default function IdeaMobileCardItem({
               variant="outline"
               onClick={onToggleFeatured}
               disabled={isTogglingFeatured}
-              className={`flex-1 ${idea.featured ? "text-yellow-500 border-yellow-300 hover:bg-yellow-50" : "text-gray-600 border-gray-300 hover:bg-gray-50"}`}
+              className={`flex-1 ${idea.featured ? "text-warning border-warning hover:bg-warning-light" : "text-gray-600 border-gray-300 hover:bg-gray-50"}`}
               data-testid={`button-toggle-featured-mobile-${idea.id}`}
             >
               <Star className={`w-4 h-4 mr-2 ${idea.featured ? "fill-current" : ""}`} />
@@ -131,7 +131,7 @@ export default function IdeaMobileCardItem({
               size="sm"
               variant="outline"
               onClick={onEdit}
-              className="flex-1 text-blue-600 border-blue-300 hover:bg-blue-50"
+              className="flex-1 text-info border-info hover:bg-info-light"
               data-testid={`button-edit-mobile-${idea.id}`}
             >
               <Edit className="w-4 h-4 mr-2" />
@@ -142,7 +142,7 @@ export default function IdeaMobileCardItem({
               variant="outline"
               onClick={onDelete}
               disabled={isDeleting}
-              className="flex-1 text-red-600 border-red-300 hover:bg-red-50"
+              className="flex-1 text-error border-error hover:bg-error-light"
               data-testid={`button-delete-mobile-${idea.id}`}
             >
               <Trash2 className="w-4 h-4 mr-2" />
