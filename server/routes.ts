@@ -1382,8 +1382,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== CONFIGURATION DE BRANDING ====================
   
-  // Get branding configuration (SUPER_ADMIN only)
-  app.get("/api/admin/branding", requirePermission('admin.manage'), async (req, res) => {
+  // Get branding configuration (public endpoint)
+  app.get("/api/admin/branding", async (req, res) => {
     try {
       const result = await storage.getBrandingConfig();
       
