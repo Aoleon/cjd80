@@ -75,6 +75,28 @@ const brandingFormSchema = z.object({
     primaryLight: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Couleur hexadécimale invalide"),
     secondary: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Couleur hexadécimale invalide"),
     background: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Couleur hexadécimale invalide"),
+    
+    success: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    successDark: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    successLight: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    
+    warning: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    warningDark: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    warningLight: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    
+    error: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    errorDark: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    errorLight: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    
+    info: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    infoDark: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    infoLight: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    
+    chart1: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    chart2: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    chart3: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    chart4: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
+    chart5: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Format hexadécimal invalide"),
   }),
 
   // Appearance - Fonts
@@ -157,6 +179,28 @@ export default function AdminBrandingPage() {
         primaryLight: "#00c94f",
         secondary: "#1a1a1a",
         background: "#f9fafb",
+        
+        success: "#00c853",
+        successDark: "#00a844",
+        successLight: "#e8f5e9",
+        
+        warning: "#ffa726",
+        warningDark: "#f57c00",
+        warningLight: "#fff3e0",
+        
+        error: "#f44336",
+        errorDark: "#d32f2f",
+        errorLight: "#ffebee",
+        
+        info: "#2196f3",
+        infoDark: "#1976d2",
+        infoLight: "#e3f2fd",
+        
+        chart1: "#00a844",
+        chart2: "#00bfa5",
+        chart3: "#ffa726",
+        chart4: "#26c6da",
+        chart5: "#ec407a",
       },
       fonts: {
         primary: "Lato",
@@ -582,6 +626,307 @@ export default function AdminBrandingPage() {
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-background" />
                                   </FormControl>
                                   <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#f9fafb" data-testid="input-color-background-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 pt-4 border-t">
+                        <h4 className="font-medium text-sm text-muted-foreground">Couleurs de statut</h4>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="colors.success"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Succès</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-success" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#00c853" data-testid="input-color-success-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.successDark"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Succès (sombre)</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-success-dark" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#00a844" data-testid="input-color-success-dark-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.successLight"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Succès (clair)</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-success-light" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#e8f5e9" data-testid="input-color-success-light-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.warning"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Avertissement</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-warning" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#ffa726" data-testid="input-color-warning-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.warningDark"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Avertissement (sombre)</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-warning-dark" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#f57c00" data-testid="input-color-warning-dark-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.warningLight"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Avertissement (clair)</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-warning-light" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#fff3e0" data-testid="input-color-warning-light-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.error"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Erreur</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-error" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#f44336" data-testid="input-color-error-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.errorDark"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Erreur (sombre)</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-error-dark" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#d32f2f" data-testid="input-color-error-dark-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.errorLight"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Erreur (clair)</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-error-light" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#ffebee" data-testid="input-color-error-light-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.info"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Information</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-info" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#2196f3" data-testid="input-color-info-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.infoDark"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Information (sombre)</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-info-dark" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#1976d2" data-testid="input-color-info-dark-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.infoLight"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Information (clair)</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-info-light" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#e3f2fd" data-testid="input-color-info-light-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 pt-4 border-t">
+                        <h4 className="font-medium text-sm text-muted-foreground">Couleurs des graphiques</h4>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="colors.chart1"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Graphique 1</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-chart1" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#00a844" data-testid="input-color-chart1-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.chart2"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Graphique 2</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-chart2" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#00bfa5" data-testid="input-color-chart2-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.chart3"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Graphique 3</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-chart3" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#ffa726" data-testid="input-color-chart3-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.chart4"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Graphique 4</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-chart4" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#26c6da" data-testid="input-color-chart4-text" />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="colors.chart5"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Graphique 5</FormLabel>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-chart5" />
+                                  </FormControl>
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#ec407a" data-testid="input-color-chart5-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
