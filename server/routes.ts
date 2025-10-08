@@ -60,6 +60,15 @@ const updatePatronUpdateSchema = z.object({
   notes: z.string().optional(),
 });
 
+const frontendErrorSchema = z.object({
+  message: z.string().min(1).max(1000),
+  stack: z.string().optional(),
+  componentStack: z.string().optional(),
+  url: z.string().url().max(500),
+  userAgent: z.string().max(500),
+  timestamp: z.string().datetime()
+});
+
 async function trackMemberActivity(
   storage: IStorage,
   email: string,
@@ -166,6 +175,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: 'Health check failed',
         timestamp: new Date().toISOString()
       });
+    }
+  });
+
+  // Log frontend errors
+  app.post("/api/logs/frontend-error", async (req, res) => {
+    try {
+      const validatedData = frontendErrorSchema.parse(req.body);
+      
+      const sanitizedStack = validatedData.stack?.substring(0, 5000) || 'N/A';
+      const sanitizedComponentStack = validatedData.componentStack?.substring(0, 3000) || 'N/A';
+      
+      logger.error('Frontend error', {
+        message: validatedData.message,
+        stack: sanitizedStack,
+        componentStack: sanitizedComponentStack,
+        url: validatedData.url,
+        userAgent: validatedData.userAgent,
+        timestamp: validatedData.timestamp,
+        userEmail: req.user?.email || 'anonymous'
+      });
+      
+      res.status(200).json({ success: true });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        logger.warn('Invalid frontend error log attempt', { error: fromZodError(error).toString() });
+        return res.status(400).json({ success: false, error: 'Invalid error format' });
+      }
+      logger.error('Failed to log frontend error', { error });
+      res.status(500).json({ success: false });
     }
   });
 

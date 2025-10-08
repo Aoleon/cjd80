@@ -9,6 +9,7 @@ import { PWAFloatingInstall } from "@/components/pwa-floating-install";
 import { PWAInstallBanner } from "@/components/pwa-install-banner";
 import { PWAInstallTooltip } from "@/components/pwa-install-tooltip";
 import OfflineStatusBanner from "@/components/offline-status-banner";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import ProposePage from "@/pages/propose-page";
@@ -89,16 +90,18 @@ function PWAWrapper({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrandingProvider>
-        <AuthProvider>
-          <PWAWrapper>
-            <Toaster />
-            <Router />
-          </PWAWrapper>
-        </AuthProvider>
-      </BrandingProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrandingProvider>
+          <AuthProvider>
+            <PWAWrapper>
+              <Toaster />
+              <Router />
+            </PWAWrapper>
+          </AuthProvider>
+        </BrandingProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

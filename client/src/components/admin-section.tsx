@@ -6,6 +6,7 @@ import { Calendar, Users, Lightbulb, LogOut, Database, TrendingUp } from "lucide
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import EventAdminModal from "./event-admin-modal";
 import EventDetailModal from "./event-detail-modal";
 import IdeaDetailModal from "./idea-detail-modal";
@@ -51,16 +52,20 @@ export default function AdminSection() {
   if (!user) return <AdminLogin />;
 
   return (
-    <section className="space-y-6 sm:space-y-8">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Administration</h2>
-          <p className="text-sm sm:text-base text-gray-600">Bienvenue, {user.email}</p>
+    <ErrorBoundary
+      fallbackTitle="Erreur dans le panneau d'administration"
+      fallbackMessage="Une erreur s'est produite dans le panneau d'administration. Veuillez réessayer ou retourner à l'accueil."
+    >
+      <section className="space-y-6 sm:space-y-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Administration</h2>
+            <p className="text-sm sm:text-base text-gray-600">Bienvenue, {user.email}</p>
+          </div>
+          <Button onClick={() => logoutMutation.mutate()} variant="outline" className="text-gray-600 hover:text-gray-800 w-full sm:w-auto">
+            <LogOut className="w-4 h-4 mr-2" />Se déconnecter
+          </Button>
         </div>
-        <Button onClick={() => logoutMutation.mutate()} variant="outline" className="text-gray-600 hover:text-gray-800 w-full sm:w-auto">
-          <LogOut className="w-4 h-4 mr-2" />Se déconnecter
-        </Button>
-      </div>
 
       <Card>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -151,6 +156,7 @@ export default function AdminSection() {
       <InscriptionExportModal open={exportModalOpen} onOpenChange={setExportModalOpen} event={eventToExport} />
       <ManageInscriptionsModal open={manageInscriptionsModalOpen} onOpenChange={setManageInscriptionsModalOpen} event={eventToManageInscriptions} />
       <ManageVotesModal open={manageVotesModalOpen} onOpenChange={setManageVotesModalOpen} idea={ideaToManageVotes} />
-    </section>
+      </section>
+    </ErrorBoundary>
   );
 }

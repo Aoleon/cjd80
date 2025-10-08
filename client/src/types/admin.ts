@@ -3,13 +3,13 @@ export interface IdeaWithVotes {
   title: string;
   description: string | null;
   proposedBy: string;
-  proposedByEmail: string | null;
+  proposedByEmail: string;
   status: string;
   featured: boolean;
   voteCount: number;
-  createdAt: Date | string;
-  deadline: Date | string | null;
-  updatedAt: Date | string | null;
+  createdAt: Date;
+  deadline: Date | null;
+  updatedAt: Date;
   updatedBy: string | null;
 }
 
@@ -17,21 +17,24 @@ export interface EventWithInscriptions {
   id: string;
   title: string;
   description: string | null;
-  date: Date | string;
+  date: Date;
   location: string | null;
+  maxParticipants: number | null;
   helloAssoLink: string | null;
+  enableExternalRedirect: boolean;
+  externalRedirectUrl: string | null;
+  showInscriptionsCount: boolean;
+  showAvailableSeats: boolean;
+  allowUnsubscribe: boolean;
+  redUnsubscribeButton: boolean;
+  buttonMode: string;
+  customButtonText: string | null;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  updatedBy: string | null;
   inscriptionCount: number;
   unsubscriptionCount: number;
-  status: string | null;
-  createdAt: Date | string | null;
-  updatedAt: Date | string | null;
-  updatedBy: string | null;
-  maxParticipants: number | null;
-  registrationDeadline: Date | string | null;
-  price: number | null;
-  imageUrl: string | null;
-  tags: string[] | null;
-  organizerId: string | null;
 }
 
 export interface AdminStats {
