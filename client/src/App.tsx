@@ -20,6 +20,7 @@ import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 import { PWAUtils } from "@/lib/pwa-utils";
 import { useNotificationHandler } from "@/hooks/use-notification-handler";
+import { useBadge } from "@/hooks/use-badge";
 import "@/lib/cache-buster";
 
 function Router() {
@@ -41,6 +42,9 @@ function Router() {
 function PWAWrapper({ children }: { children: React.ReactNode }) {
   // Gérer les clics sur les notifications avec cleanup approprié
   useNotificationHandler();
+  
+  // Gérer le badge de l'application
+  useBadge();
 
   useEffect(() => {
     // Enregistrer le Service Worker

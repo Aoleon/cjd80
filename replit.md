@@ -135,6 +135,95 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
 - **Verification**: Tested with 33 ideas (4 featured, 15 non-featured approved, 5 completed) - all display in correct order
 - **File Modified**: `server/storage.ts` - `getIdeas()` method
 
+### 📱 PWA Enhancements (October 8, 2025)
+**Goal**: Transform the application into a fully-featured Progressive Web App with offline support, native mobile features, and rich notifications.
+
+#### ✅ Offline Queue & Synchronization
+- **Offline Queue System** (`client/src/lib/offline-queue.ts`):
+  - IndexedDB-based storage for offline actions (votes, inscriptions, unsubscriptions)
+  - Singleton pattern with TypeScript strict typing
+  - Robust error handling and queue management (add, remove, getAll, clear)
+  - Actions stored with type, timestamp, and data payload
+  
+- **Automatic Sync Service** (`client/src/lib/sync-service.ts`):
+  - Background Sync API integration with fallback to periodic sync
+  - Automatic synchronization when connection returns
+  - Manual sync trigger with conflict resolution
+  - Circular dependency eliminated with duplicated fetch logic
+  - Event-based notifications (sync-start, sync-success, sync-error)
+
+- **Offline Status Banner** (`client/src/components/offline-status-banner.tsx`):
+  - Real-time connection status indicator
+  - Pending actions counter with visual badge
+  - Manual sync button with loading state
+  - Event listeners with proper cleanup
+  - Responsive design with mobile-first approach
+
+#### ✅ Native Sharing (Web Share API)
+- **Share Utilities** (`client/src/lib/share-utils.ts`):
+  - Web Share API with clipboard fallback for desktop browsers
+  - ShareResult interface distinguishing user cancellations from technical errors
+  - AbortError detection for proper cancellation handling
+  - Browser compatibility detection (isShareSupported, canShareContent)
+  
+- **Share Integration**:
+  - Share buttons on all idea cards (`client/src/components/ideas-section.tsx`)
+  - Share buttons on all event cards (`client/src/components/events-section.tsx`)
+  - Toast notifications for success/fallback/cancellation/error scenarios
+  - data-testid attributes for E2E testing
+
+#### ✅ Rich Push Notifications with Inline Actions
+- **Backend Configuration** (`server/notification-service.ts`):
+  - VAPID keys for push notifications
+  - NotificationPayload with actions support (view, vote, register)
+  - Specialized notification methods (notifyNewIdea, notifyNewEvent, notifyIdeaStatusChange)
+  - Automatic cleanup of invalid subscriptions (410 Gone, 400 Bad Request)
+
+- **Service Worker** (`client/public/sw.js`):
+  - Push notifications with inline action buttons
+  - Custom vibration patterns for all notifications
+  - Badge API integration for notification counter
+  - Message handling for NOTIFICATION_CLICK and CLEAR_BADGE
+  - Background sync for offline queue
+
+- **Client Integration**:
+  - Notification handler hook (`client/src/hooks/use-notification-handler.ts`) with proper cleanup
+  - Badge management hook (`client/src/hooks/use-badge.ts`) with visibility detection
+  - Message passing between Service Worker and client for badge synchronization
+  - React Strict Mode compatible (no memory leaks)
+
+#### ✅ Badge API for Notification Counter
+- **Badge Service** (`client/src/lib/badge-service.ts`):
+  - Singleton service with browser compatibility detection
+  - Methods: setBadge, clearBadge, incrementBadge, decrementBadge, getCurrentCount
+  - Robust error handling with silent fallback for unsupported browsers
+  
+- **Service Worker Badge Management**:
+  - Global counter variable (badgeCount) persisted across SW lifecycle
+  - Increments on push notification received
+  - Decrements on notification click
+  - Clears when counter reaches zero
+  - Uses correct Service Worker API: `self.registration.setAppBadge(count)`
+  - Message-based synchronization with client app
+
+- **Client Badge Management**:
+  - Automatic badge clearing when app becomes visible
+  - Visibility change detection with proper event cleanup
+  - postMessage synchronization with Service Worker
+
+#### 🔄 In Progress
+- Vibrations personnalisées par type de notification (patterns différents pour événements, idées, urgent)
+- Custom installation prompt avec tracking intelligent (visites, actions importantes)
+- Mode kiosque/plein écran avec gestures de navigation
+- Tests E2E Playwright pour toutes les fonctionnalités PWA
+
+#### 📝 Technical Notes
+- All PWA features use progressive enhancement (graceful degradation on unsupported browsers)
+- Service Worker uses self.registration API for badge/notification management
+- Memory leak prevention with proper event listener cleanup in all hooks
+- TypeScript strict mode enforced throughout all PWA modules
+- Circular dependencies eliminated with strategic code duplication where necessary
+
 ### 🎯 Future Enhancements (Deferred)
 - Standardize form management (consolidate useState → react-hook-form)
 - Implement rate limiting on sensitive endpoints

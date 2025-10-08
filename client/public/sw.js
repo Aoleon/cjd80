@@ -1,5 +1,5 @@
 // Service Worker optimisé CJD Amiens - Version Production 2025
-const CACHE_VERSION = '1.1.28';
+const CACHE_VERSION = '1.1.29';
 const CACHE_NAME = `cjd-amiens-v${CACHE_VERSION}`;
 const API_CACHE = `cjd-api-v${CACHE_VERSION}`;
 const STATIC_CACHE = `cjd-static-v${CACHE_VERSION}`;
@@ -7,6 +7,9 @@ const STATIC_CACHE = `cjd-static-v${CACHE_VERSION}`;
 // Configuration optimisée
 const API_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const STATIC_CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 jours
+
+// Compteur de badge pour les notifications
+let badgeCount = 0;
 
 // Assets critiques à précharger
 const CRITICAL_ASSETS = [
@@ -169,7 +172,16 @@ self.addEventListener('push', event => {
     };
 
     event.waitUntil(
-      self.registration.showNotification(data.title, options)
+      Promise.all([
+        self.registration.showNotification(data.title, options),
+        // Incrémenter le badge avec l'API correcte du Service Worker
+        (async () => {
+          if ('setAppBadge' in self.registration) {
+            badgeCount++;
+            await self.registration.setAppBadge(badgeCount);
+          }
+        })()
+      ])
     );
   } catch (error) {
     console.error('[SW] Erreur notification:', error);
@@ -179,6 +191,16 @@ self.addEventListener('push', event => {
 // Gestion des clics sur les notifications
 self.addEventListener('notificationclick', event => {
   event.notification.close();
+
+  // Décrémenter et mettre à jour le badge avec l'API correcte du Service Worker
+  if ('setAppBadge' in self.registration) {
+    badgeCount = Math.max(0, badgeCount - 1);
+    if (badgeCount === 0) {
+      self.registration.clearAppBadge();
+    } else {
+      self.registration.setAppBadge(badgeCount);
+    }
+  }
 
   const action = event.action;
   const data = event.notification.data;
@@ -466,6 +488,14 @@ self.addEventListener('message', event => {
         );
       })
     );
+  }
+  
+  // Gestion des messages du client pour synchroniser le badge
+  if (event.data && event.data.type === 'CLEAR_BADGE') {
+    badgeCount = 0;
+    if ('clearAppBadge' in self.registration) {
+      self.registration.clearAppBadge();
+    }
   }
 });
 
