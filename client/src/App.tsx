@@ -19,6 +19,7 @@ import AdminPage from "@/pages/admin-page";
 import AdminPatronsPage from "@/pages/admin-patrons-page";
 import AdminMembersPage from "@/pages/admin-members-page";
 import AdminBrandingPage from "@/pages/admin-branding-page";
+import TestErrorPage from "@/pages/test-error-page";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 import { PWAUtils } from "@/lib/pwa-utils";
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/events" component={EventsPage} />
       <Route path="/tools" component={ToolsPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/test-error" component={TestErrorPage} />
       <ProtectedRoute path="/admin" component={AdminPage} />
       <ProtectedRoute path="/admin/patrons" component={AdminPatronsPage} />
       <ProtectedRoute path="/admin/members" component={AdminMembersPage} />
