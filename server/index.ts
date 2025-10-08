@@ -5,6 +5,9 @@ import { registerRoutes } from "./routes";
 import { setupVite, log } from "./vite";
 import { startPoolMonitoring } from "./utils/db-health";
 import { startAutoSync } from "./utils/auto-sync";
+import { nanoid } from "nanoid";
+import { logger } from "./lib/logger";
+import { ApiError } from "@shared/errors";
 
 // Support pour ESM (recréer __dirname et __filename)
 const __filename = fileURLToPath(import.meta.url);
@@ -13,6 +16,24 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+process.on('uncaughtException', (error: Error) => {
+  logger.error('CRITICAL: Uncaught Exception', {
+    type: 'uncaughtException',
+    message: error.message,
+    stack: error.stack,
+    timestamp: new Date().toISOString()
+  });
+});
+
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  logger.error('CRITICAL: Unhandled Promise Rejection', {
+    type: 'unhandledRejection',
+    reason: reason?.message || reason,
+    stack: reason?.stack,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Security measure: Sanitize sensitive data from logs to prevent exposure of passwords, tokens, and secrets
 function sanitizeLogData(data: any): any {
@@ -74,12 +95,35 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    const errorId = nanoid();
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
+    
+    const sanitizedBody = sanitizeLogData(req.body);
+    const sanitizedQuery = sanitizeLogData(req.query);
+    
+    logger.error('Uncaught error in request handler', {
+      errorId,
+      message: err.message,
+      stack: err.stack,
+      method: req.method,
+      path: req.path,
+      query: sanitizedQuery,
+      body: sanitizedBody,
+      user: (req as any).user?.email || 'anonymous',
+      timestamp: new Date().toISOString(),
+      statusCode: status,
+      errorName: err.name
+    });
+    
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    res.status(status).json({
+      success: false,
+      message: status === 500 && isProduction ? 'Internal server error' : err.message,
+      errorId,
+      ...(err instanceof ApiError && { code: err.code })
+    });
   });
 
   // importantly only setup vite in development and after

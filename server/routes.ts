@@ -42,6 +42,12 @@ import {
 import { ZodError, z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { logger } from "./lib/logger";
+import { promises as fs } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const updateMemberSchema = z.object({
   firstName: z.string().optional(),
@@ -2192,6 +2198,53 @@ export function createRouter(storageInstance: IStorage): any {
         return res.status(400).json({ message: fromZodError(error).toString() });
       }
       next(error);
+    }
+  });
+
+  router.get("/api/admin/errors", requireAuth, requirePermission('admin.view'), async (req, res) => {
+    try {
+      const errorLogPath = join(__dirname, '../../logs/error.log');
+      const limit = parseInt(req.query.limit as string) || 100;
+      
+      try {
+        const errorLog = await fs.readFile(errorLogPath, 'utf-8');
+        const lines = errorLog.split('\n').filter(l => l.trim());
+        const recentLines = lines.slice(-limit);
+        
+        const errors = recentLines.map(line => {
+          try {
+            return JSON.parse(line);
+          } catch {
+            return { raw: line };
+          }
+        });
+        
+        res.json({
+          success: true,
+          data: {
+            count: errors.length,
+            errors: errors.reverse()
+          }
+        });
+      } catch (fileError: any) {
+        if (fileError.code === 'ENOENT') {
+          return res.json({
+            success: true,
+            data: {
+              count: 0,
+              errors: [],
+              message: 'No error log file found yet'
+            }
+          });
+        }
+        throw fileError;
+      }
+    } catch (error) {
+      logger.error('Failed to read error logs', { error });
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve error logs'
+      });
     }
   });
 

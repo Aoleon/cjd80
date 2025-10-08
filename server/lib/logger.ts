@@ -1,6 +1,17 @@
 import winston from 'winston';
+import { existsSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-const { combine, timestamp, printf, colorize, errors } = winston.format;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const { combine, timestamp, printf, colorize, errors, json } = winston.format;
+
+const logsDir = join(__dirname, '../../logs');
+if (!existsSync(logsDir)) {
+  mkdirSync(logsDir, { recursive: true });
+}
 
 // List of sensitive fields to redact from logs
 const sensitiveFields = ['password', 'token', 'auth', 'p256dh', 'secret', 'apiKey', 'sessionId'];
@@ -60,7 +71,7 @@ export const logger = winston.createLogger({
     errorFormat(),
     errors({ stack: true }),
     timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    logFormat
+    json()
   ),
   transports: [
     new winston.transports.Console({
@@ -68,11 +79,21 @@ export const logger = winston.createLogger({
         colorize({ all: true }),
         logFormat
       )
+    }),
+    new winston.transports.File({ 
+      filename: join(logsDir, 'combined.log'),
+      format: combine(
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        json()
+      )
+    }),
+    new winston.transports.File({ 
+      filename: join(logsDir, 'error.log'), 
+      level: 'error',
+      format: combine(
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        json()
+      )
     })
   ]
 });
-
-if (process.env.NODE_ENV === 'production') {
-  logger.add(new winston.transports.File({ filename: 'error.log', level: 'error' }));
-  logger.add(new winston.transports.File({ filename: 'combined.log' }));
-}

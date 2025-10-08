@@ -2,6 +2,7 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
+import { logger } from "./lib/logger";
 
 // Configuration optimisée pour Neon PostgreSQL
 neonConfig.webSocketConstructor = ws;
@@ -47,8 +48,18 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-pool.on('error', (err, client) => {
-  console.error('[DB] Erreur de connexion pool:', err.message);
+pool.on('error', (err: Error, client: any) => {
+  logger.error('CRITICAL: Database pool error', {
+    type: 'dbPoolError',
+    message: err.message,
+    stack: err.stack,
+    timestamp: new Date().toISOString(),
+    poolStats: {
+      totalCount: pool.totalCount,
+      idleCount: pool.idleCount,
+      waitingCount: pool.waitingCount
+    }
+  });
 });
 
 // Configuration Drizzle avec optimisations
