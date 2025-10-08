@@ -22,11 +22,36 @@ export const brandingCore = {
 
   // Couleurs du thème (format hexadécimal)
   colors: {
+    // Couleurs de marque
     primary: "#00a844",      // Couleur principale (vert CJD)
     primaryDark: "#008835",  // Variante sombre
     primaryLight: "#00c94f", // Variante claire
     secondary: "#1a1a1a",    // Couleur secondaire
     background: "#f9fafb",   // Fond de l'application
+    
+    // États et feedback
+    success: "#00c853",      // Vert pour succès
+    successDark: "#00a844",  // Variante sombre
+    successLight: "#e8f5e9", // Variante claire
+    
+    warning: "#ffa726",      // Orange pour avertissements
+    warningDark: "#f57c00",  // Variante sombre
+    warningLight: "#fff3e0", // Variante claire
+    
+    error: "#f44336",        // Rouge pour erreurs
+    errorDark: "#d32f2f",    // Variante sombre
+    errorLight: "#ffebee",   // Variante claire
+    
+    info: "#2196f3",         // Bleu pour informations
+    infoDark: "#1976d2",     // Variante sombre
+    infoLight: "#e3f2fd",    // Variante claire
+    
+    // Charts et visualisations
+    chart1: "#00a844",       // Couleur chart principale
+    chart2: "#00bfa5",       // Couleur chart secondaire
+    chart3: "#ffa726",       // Couleur chart tertiaire
+    chart4: "#26c6da",       // Couleur chart quaternaire
+    chart5: "#ec407a",       // Couleur chart quinaire
   },
 
   // Typographie
@@ -69,3 +94,9 @@ export const getBrandColor = (colorName: keyof BrandingColors) => brandingCore.c
 export const getAppName = () => brandingCore.app.name;
 export const getShortAppName = () => brandingCore.app.shortName;
 export const getOrgName = () => brandingCore.organization.name;
+
+// Helpers pour les couleurs sémantiques
+export const getSuccessColor = () => brandingCore.colors.success;
+export const getWarningColor = () => brandingCore.colors.warning;
+export const getErrorColor = () => brandingCore.colors.error;
+export const getInfoColor = () => brandingCore.colors.info;
