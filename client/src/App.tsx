@@ -7,6 +7,7 @@ import { ProtectedRoute } from "./lib/protected-route";
 import { PWAFloatingInstall } from "@/components/pwa-floating-install";
 import { PWAInstallBanner } from "@/components/pwa-install-banner";
 import { PWAInstallTooltip } from "@/components/pwa-install-tooltip";
+import OfflineStatusBanner from "@/components/offline-status-banner";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import ProposePage from "@/pages/propose-page";
@@ -63,6 +64,7 @@ function PWAWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <OfflineStatusBanner />
       {children}
       {/* Bannière d'invitation intelligente */}
       <PWAInstallBanner />
