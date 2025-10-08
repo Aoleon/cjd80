@@ -130,8 +130,8 @@ export function NotificationSettings({ className = '' }: NotificationSettingsPro
       
       <CardContent className="space-y-4">
         {permission === 'denied' && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-700" data-testid="text-permission-denied">
+          <div className="p-3 bg-error-light border border-error rounded-md">
+            <p className="text-sm text-error" data-testid="text-permission-denied">
               Les notifications ont été refusées. Vous pouvez les réactiver dans les paramètres de votre navigateur.
             </p>
           </div>
@@ -175,17 +175,17 @@ export function NotificationSettings({ className = '' }: NotificationSettingsPro
             </div>
             
             {isSubscribed && (
-              <div className="space-y-3 p-3 bg-green-50 border border-green-200 rounded-md">
+              <div className="space-y-3 p-3 bg-success-light border border-success rounded-md">
                 <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-600" />
-                  <span className="text-sm text-green-700 font-medium">
+                  <Check className="w-4 h-4 text-success" />
+                  <span className="text-sm text-success font-medium">
                     Notifications actives
                   </span>
                 </div>
-                <p className="text-xs text-green-600">
+                <p className="text-xs text-success">
                   Vous recevrez des notifications pour :
                 </p>
-                <ul className="text-xs text-green-600 space-y-1">
+                <ul className="text-xs text-success space-y-1">
                   <li>• Nouvelles idées proposées</li>
                   <li>• Nouveaux événements ajoutés</li>
                   <li>• Mises à jour importantes</li>
@@ -194,7 +194,7 @@ export function NotificationSettings({ className = '' }: NotificationSettingsPro
                   variant="outline"
                   size="sm"
                   onClick={handleTestNotification}
-                  className="w-full border-green-300 text-green-700 hover:bg-green-100"
+                  className="w-full border-success text-success hover:bg-success-light"
                   data-testid="button-test-notification"
                 >
                   <TestTube className="w-4 h-4 mr-2" />

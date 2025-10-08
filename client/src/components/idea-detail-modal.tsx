@@ -122,11 +122,11 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
       case IDEA_STATUS.PENDING:
         return { label: "En attente", class: "bg-orange-100 text-orange-800" };
       case IDEA_STATUS.APPROVED:
-        return { label: "Idée soumise au vote", class: "bg-green-100 text-green-800" };
+        return { label: "Idée soumise au vote", class: "bg-success-light text-success-dark" };
       case IDEA_STATUS.REJECTED:
-        return { label: "Rejetée", class: "bg-red-100 text-red-800" };
+        return { label: "Rejetée", class: "bg-error-light text-error-dark" };
       case IDEA_STATUS.UNDER_REVIEW:
-        return { label: "En cours d'étude", class: "bg-blue-100 text-blue-800" };
+        return { label: "En cours d'étude", class: "bg-info-light text-info-dark" };
       case IDEA_STATUS.POSTPONED:
         return { label: "Reportée", class: "bg-gray-100 text-gray-800" };
       case IDEA_STATUS.COMPLETED:
@@ -291,7 +291,7 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
                 <Button
                   onClick={handleTransformToEvent}
                   disabled={transformToEventMutation.isPending}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  className="w-full bg-info hover:bg-info-dark text-white"
                   data-testid="button-transform-to-event"
                 >
                   <CalendarPlus className="w-4 h-4 mr-2" />

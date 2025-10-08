@@ -177,7 +177,7 @@ export default function ManageVotesModal({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
+              <div className="text-center p-3 bg-info-light rounded-lg">
                 <div className="text-2xl font-bold text-blue-600">{votes?.length || 0}</div>
                 <div className="text-gray-600">Votes</div>
               </div>

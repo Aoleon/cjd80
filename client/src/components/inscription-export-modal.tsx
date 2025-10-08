@@ -188,7 +188,7 @@ export default function InscriptionExportModal({
           {/* Error State */}
           {error && (
             <div className="text-center py-8">
-              <p className="text-red-600">Erreur lors du chargement des inscriptions</p>
+              <p className="text-error">Erreur lors du chargement des inscriptions</p>
             </div>
           )}
 
@@ -233,7 +233,7 @@ export default function InscriptionExportModal({
                       <Button
                         onClick={exportToCSV}
                         disabled={isExporting}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        className="w-full bg-success hover:bg-success-dark text-white"
                         size="lg"
                       >
                         {isExporting ? (
@@ -299,9 +299,9 @@ export default function InscriptionExportModal({
         </div>
 
         {/* Info Footer */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-          <h4 className="font-medium text-blue-800 mb-2">ℹ️ À propos de l'export</h4>
-          <ul className="text-sm text-blue-700 space-y-1">
+        <div className="mt-6 p-4 bg-info-light rounded-lg border-l-4 border-info">
+          <h4 className="font-medium text-info-dark mb-2">ℹ️ À propos de l'export</h4>
+          <ul className="text-sm text-info space-y-1">
             <li>• Les fichiers sont générés localement (aucun envoi serveur)</li>
             <li>• Le format CSV est compatible Excel/Google Sheets</li>
             <li>• Le format TXT est optimisé pour l'impression</li>
