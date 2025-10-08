@@ -12,8 +12,12 @@ Application web interne moderne pour le **Centre des Jeunes Dirigeants (CJD) d'A
 
 - **💡 Gestion d'idées collaborative** : Proposition, vote et suivi d'idées avec workflow flexible
 - **📅 Événements avec HelloAsso** : Création, gestion et inscriptions automatisées
-- **🔐 Interface d'administration** : Gestion complète des idées, événements et statistiques
-- **📱 Progressive Web App (PWA)** : Installation native et utilisation hors ligne
+- **👥 CRM intégré** : Gestion des mécènes et membres avec scoring d'engagement
+- **🔐 Interface d'administration** : Dashboard avec statistiques, gestion complète des données
+- **📱 Progressive Web App (PWA)** : Installation native, utilisation hors ligne, notifications push
+- **🔔 Notifications Push** : Notifications riches avec actions inline (voter, s'inscrire)
+- **🎨 Branding personnalisable** : Configuration centralisée pour adaptation facile à d'autres organisations
+- **📱 Fonctionnalités natives** : Partage natif, badge de notifications, vibrations personnalisées
 - **🎨 Design responsive** : Interface optimisée mobile-first avec Tailwind CSS
 
 ## 🏗️ Architecture technique
@@ -43,6 +47,17 @@ Application web interne moderne pour le **Centre des Jeunes Dirigeants (CJD) d'A
 - Validation Zod côté client/serveur
 - Hachage Scrypt pour mots de passe
 - Protection CSRF intégrée
+
+### Configuration du branding
+
+L'application utilise un **système de configuration centralisé** qui permet une personnalisation complète sans modifier le code :
+
+- **Configuration centralisée** : Tous les textes, couleurs, logos dans `client/src/config/branding-core.ts`
+- **Génération automatique** : Script `npm run generate:config` pour mettre à jour les fichiers statiques
+- **15+ composants** : Utilisation automatique des valeurs de branding via helpers
+- **Multi-tenant ready** : Adaptation facile pour d'autres organisations
+
+📖 **Guide complet** : Voir [CUSTOMIZATION.md](./CUSTOMIZATION.md) pour personnaliser l'application
 
 ### Structure du projet
 
@@ -130,6 +145,9 @@ npm run dev:server       # Backend seul
 npm run db:push          # Pousse le schéma vers la DB
 npm run db:studio        # Interface graphique Drizzle Studio
 
+# Configuration
+npm run generate:config  # Génère index.html et manifest.json depuis branding
+
 # Production
 npm run build           # Build pour production
 npm start              # Démarre en production
@@ -211,9 +229,19 @@ Password: Admin123!
 
 ### Couleurs et branding
 
-- **Couleur principale** : `#00a844` (vert CJD)
-- **Police** : Lato (300, 400, 700, 900)
+L'application utilise un **système de branding centralisé** :
+
+- **Configuration** : `client/src/config/branding-core.ts`
+- **Couleur principale par défaut** : `#00a844` (vert CJD)
+- **Police par défaut** : Lato (300, 400, 700, 900)
 - **Design system** : shadcn/ui + Tailwind CSS
+
+Pour personnaliser les couleurs, logos et textes :
+1. Modifier `client/src/config/branding-core.ts`
+2. Exécuter `npm run generate:config`
+3. Redémarrer l'application
+
+📖 **Guide détaillé** : [CUSTOMIZATION.md](./CUSTOMIZATION.md)
 
 ### Patterns responsifs
 
@@ -243,11 +271,22 @@ xl: 1280px  /* Large desktop */
 
 - **Installation native** sur mobile/desktop
 - **Cache intelligent** avec service workers
+- **Queue hors ligne** avec synchronisation automatique (IndexedDB)
+- **Notifications push riches** avec actions inline (voter, s'inscrire)
+- **Badge API** : Compteur de notifications non lues
+- **Partage natif** : Web Share API avec fallback clipboard
+- **Vibrations personnalisées** : Feedback haptique pour les interactions
 - **Utilisation hors ligne** pour consultation
 - **Stratégies de cache** :
   - NetworkFirst : API et données dynamiques
   - CacheFirst : Assets statiques
   - StaleWhileRevalidate : Images et fonts
+
+### Synchronisation automatique
+
+- **Queue locale** : Actions enregistrées hors ligne (votes, inscriptions)
+- **Sync automatique** : Toutes les heures ou au retour de connexion
+- **Bannière de statut** : Indicateur visuel du mode hors ligne
 
 ### Configuration PWA
 
@@ -313,6 +352,28 @@ GET    /api/user               # Utilisateur connecté
   "error": "Message d'erreur"
 }
 ```
+
+## 👥 CRM et gestion des membres
+
+### Fonctionnalités CRM
+
+**Gestion des mécènes**
+- Création et modification de fiches mécènes
+- Suivi des contributions
+- Recherche et filtres avancés
+- Onglets organisés (Tous, Actifs, Inactifs)
+
+**Gestion des membres**
+- Profils complets avec photo
+- Scoring d'engagement automatique basé sur l'activité
+- Timeline d'activité par membre
+- Suivi des abonnements avec alertes d'expiration
+- Recherche multi-critères
+
+**Dashboard administrateur**
+- Statistiques agrégées en temps réel
+- Actions rapides
+- Vue d'ensemble de la plateforme
 
 ## 🧪 Tests et qualité
 
