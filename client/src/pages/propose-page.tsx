@@ -436,7 +436,7 @@ export default function ProposePage() {
 
             {/* Conditional Messages */}
             {proposalType === 'idea' && (
-              <p className="text-sm text-gray-600 p-3 bg-blue-50 rounded">
+              <p className="text-sm text-gray-600 p-3 bg-info-light rounded">
                 Vous allez proposer une nouvelle idée à la communauté {getShortAppName()}
               </p>
             )}
@@ -446,7 +446,7 @@ export default function ProposePage() {
               </p>
             )}
             {proposalType === 'member' && (
-              <p className="text-sm text-gray-600 p-3 bg-green-50 rounded">
+              <p className="text-sm text-gray-600 p-3 bg-success-light rounded">
                 Vous allez proposer un nouveau membre pour rejoindre le {getShortAppName()}
               </p>
             )}
@@ -644,7 +644,7 @@ export default function ProposePage() {
                 <Button
                   type="submit"
                   disabled={proposeIdeaMutation.isPending}
-                  className="bg-cjd-green hover:bg-green-700 text-white flex-1"
+                  className="bg-cjd-green hover:bg-success-dark text-white flex-1"
                   size="lg"
                   data-testid="button-submit-idea"
                 >
@@ -836,7 +836,7 @@ export default function ProposePage() {
                   <Button
                     type="submit"
                     disabled={proposePatronMutation.isPending}
-                    className="bg-cjd-green hover:bg-green-700 text-white flex-1"
+                    className="bg-cjd-green hover:bg-success-dark text-white flex-1"
                     size="lg"
                     data-testid="button-submit-patron"
                   >
@@ -1049,7 +1049,7 @@ export default function ProposePage() {
                   <Button
                     type="submit"
                     disabled={proposeMemberMutation.isPending}
-                    className="bg-cjd-green hover:bg-green-700 text-white flex-1"
+                    className="bg-cjd-green hover:bg-success-dark text-white flex-1"
                     size="lg"
                     data-testid="button-submit-member"
                   >
@@ -1231,9 +1231,9 @@ export default function ProposePage() {
       </Dialog>
 
       {/* Help Text */}
-      <div className="mt-8 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-        <h3 className="font-medium text-blue-800 mb-2">💡 Conseils pour une bonne idée</h3>
-        <ul className="text-sm text-blue-700 space-y-1">
+      <div className="mt-8 p-4 bg-info-light rounded-lg border-l-4 border-info">
+        <h3 className="font-medium text-info-dark mb-2">💡 Conseils pour une bonne idée</h3>
+        <ul className="text-sm text-info space-y-1">
           <li>• Soyez clair et concis dans le titre</li>
           <li>• Expliquez les bénéfices pour la section</li>
           <li>• Mentionnez la faisabilité si c'est pertinent</li>

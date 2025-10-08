@@ -397,14 +397,14 @@ export default function ManageInscriptionsModal({
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{inscriptions?.length || 0}</div>
+                <div className="text-center p-3 bg-info-light rounded-lg">
+                  <div className="text-2xl font-bold text-info">{inscriptions?.length || 0}</div>
                   <div className="text-gray-600">Inscrits</div>
                 </div>
                 {event.maxParticipants && (
                   <>
-                    <div className="text-center p-3 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">
+                    <div className="text-center p-3 bg-success-light rounded-lg">
+                      <div className="text-2xl font-bold text-success">
                         {event.maxParticipants - (inscriptions?.length || 0)}
                       </div>
                       <div className="text-gray-600">Places restantes</div>
@@ -541,16 +541,16 @@ Claire Dubois,claire@example.com,Commentaire optionnel`}
                   </div>
                   
                   {parsedInscriptions.length > 0 && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="bg-success-light border border-success rounded-lg p-3">
                       <div className="flex items-center mb-2">
-                        <FileText className="w-4 h-4 mr-2 text-green-600" />
-                        <span className="text-sm font-medium text-green-800">
+                        <FileText className="w-4 h-4 mr-2 text-success" />
+                        <span className="text-sm font-medium text-success-dark">
                           {parsedInscriptions.length} inscription(s) détectée(s)
                         </span>
                       </div>
                       <div className="max-h-32 overflow-y-auto space-y-1">
                         {parsedInscriptions.map((inscription, index) => (
-                          <div key={index} className="text-xs text-green-700">
+                          <div key={index} className="text-xs text-success">
                             {inscription.name} - {inscription.email}
                             {inscription.comments && ` (${inscription.comments})`}
                           </div>
@@ -633,7 +633,7 @@ Claire Dubois,claire@example.com,Commentaire optionnel`}
                               <Mail className="w-4 h-4 mr-2 text-gray-400" />
                               <a 
                                 href={`mailto:${inscription.email}`} 
-                                className="text-blue-600 hover:underline"
+                                className="text-info hover:underline"
                               >
                                 {inscription.email}
                               </a>
@@ -656,7 +656,7 @@ Claire Dubois,claire@example.com,Commentaire optionnel`}
                               variant="ghost"
                               onClick={() => handleDeleteInscription(inscription.id, inscription.name)}
                               disabled={deleteInscriptionMutation.isPending}
-                              className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                              className="text-error hover:text-error-dark hover:bg-error-light"
                               data-testid={`button-delete-${inscription.id}`}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -803,7 +803,7 @@ Claire Dubois,claire@example.com,Commentaire optionnel`}
                               <Mail className="w-4 h-4 mr-2 text-gray-400" />
                               <a 
                                 href={`mailto:${unsubscription.email}`} 
-                                className="text-blue-600 hover:underline"
+                                className="text-info hover:underline"
                               >
                                 {unsubscription.email}
                               </a>
@@ -832,7 +832,7 @@ Claire Dubois,claire@example.com,Commentaire optionnel`}
                               variant="ghost"
                               onClick={() => handleDeleteUnsubscription(unsubscription.id, unsubscription.name)}
                               disabled={deleteUnsubscriptionMutation.isPending}
-                              className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                              className="text-error hover:text-error-dark hover:bg-error-light"
                               data-testid={`button-delete-absence-${unsubscription.id}`}
                             >
                               <Trash2 className="w-4 h-4" />

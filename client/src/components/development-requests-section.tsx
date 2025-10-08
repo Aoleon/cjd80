@@ -17,17 +17,17 @@ import type { DevelopmentRequest, InsertDevelopmentRequest } from "@shared/schem
 
 // Constantes mémorisées pour éviter les re-créations
 const PRIORITY_COLORS = {
-  low: "bg-blue-100 text-blue-800",
-  medium: "bg-yellow-100 text-yellow-800", 
+  low: "bg-info-light text-info-dark",
+  medium: "bg-warning-light text-warning-dark", 
   high: "bg-orange-100 text-orange-800",
-  critical: "bg-red-100 text-red-800"
+  critical: "bg-error-light text-error-dark"
 } as const;
 
 const STATUS_COLORS = {
-  open: "bg-green-100 text-green-800",
-  in_progress: "bg-blue-100 text-blue-800",
+  open: "bg-success-light text-success-dark",
+  in_progress: "bg-info-light text-info-dark",
   closed: "bg-gray-100 text-gray-800",
-  cancelled: "bg-red-100 text-red-800"
+  cancelled: "bg-error-light text-error-dark"
 } as const;
 
 const INITIAL_FORM_DATA = {
@@ -300,13 +300,13 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
                     <SelectContent>
                       <SelectItem value="bug">
                         <div className="flex items-center gap-2">
-                          <Bug className="w-4 h-4 text-red-500" />
+                          <Bug className="w-4 h-4 text-error" />
                           Bug - Correction d'un problème
                         </div>
                       </SelectItem>
                       <SelectItem value="feature">
                         <div className="flex items-center gap-2">
-                          <Lightbulb className="w-4 h-4 text-blue-500" />
+                          <Lightbulb className="w-4 h-4 text-info" />
                           Fonctionnalité - Nouvelle feature
                         </div>
                       </SelectItem>
@@ -417,9 +417,9 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {request.type === "bug" ? (
-                            <Bug className="w-4 h-4 text-red-500" />
+                            <Bug className="w-4 h-4 text-error" />
                           ) : (
-                            <Lightbulb className="w-4 h-4 text-blue-500" />
+                            <Lightbulb className="w-4 h-4 text-info" />
                           )}
                           <span className="capitalize">{request.type}</span>
                         </div>

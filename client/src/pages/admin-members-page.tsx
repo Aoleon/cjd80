@@ -320,9 +320,9 @@ export default function AdminMembersPage() {
   });
 
   const getScoreBadgeColor = (score: number) => {
-    if (score >= 50) return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-    if (score >= 20) return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-    if (score >= 10) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+    if (score >= 50) return "bg-success-light text-success-dark dark:bg-success-dark dark:text-success-light";
+    if (score >= 20) return "bg-info-light text-info-dark dark:bg-info-dark dark:text-info-light";
+    if (score >= 10) return "bg-warning-light text-warning-dark dark:bg-warning-dark dark:text-warning-light";
     return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
   };
 
@@ -357,9 +357,9 @@ export default function AdminMembersPage() {
   const getActivityBadgeColor = (type: string) => {
     const colors: Record<string, string> = {
       idea_proposed: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-      vote_cast: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      event_registered: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      event_unregistered: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      vote_cast: "bg-info-light text-info-dark dark:bg-info-dark dark:text-info-light",
+      event_registered: "bg-success-light text-success-dark dark:bg-success-dark dark:text-success-light",
+      event_unregistered: "bg-error-light text-error-dark dark:bg-error-dark dark:text-error-light",
       patron_suggested: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
     };
     return colors[type] || "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
@@ -606,7 +606,7 @@ export default function AdminMembersPage() {
                             <div className="flex flex-col items-end gap-1">
                               <Badge 
                                 variant={member.status === 'active' ? 'default' : 'secondary'}
-                                className={member.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'}
+                                className={member.status === 'active' ? 'bg-success-light text-success-dark dark:bg-success-dark dark:text-success-light' : 'bg-warning-light text-warning-dark dark:bg-warning-dark dark:text-warning-light'}
                                 data-testid={`badge-status-${member.email}`}
                               >
                                 {member.status === 'active' ? 'Actif' : 'Proposition'}
@@ -1035,10 +1035,10 @@ export default function AdminMembersPage() {
                                   <CardContent className="pt-6">
                                     <div className="space-y-3">
                                       <div className="flex items-center gap-2">
-                                        <Euro className="h-5 w-5 text-green-600" />
+                                        <Euro className="h-5 w-5 text-success" />
                                         <div>
                                           <p className="text-sm text-muted-foreground">Montant</p>
-                                          <p className="text-lg font-semibold text-green-600">
+                                          <p className="text-lg font-semibold text-success">
                                             {formatEuros(subscription.amountInCents)}
                                           </p>
                                         </div>
@@ -1046,7 +1046,7 @@ export default function AdminMembersPage() {
                                       <Separator />
                                       <div className="grid grid-cols-2 gap-4">
                                         <div className="flex items-center gap-2">
-                                          <Calendar className="h-4 w-4 text-blue-600" />
+                                          <Calendar className="h-4 w-4 text-info" />
                                           <div>
                                             <p className="text-xs text-muted-foreground">Début</p>
                                             <p className="text-sm font-medium">
@@ -1118,7 +1118,7 @@ export default function AdminMembersPage() {
                             <Separator />
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <ThumbsUp className="h-4 w-4 text-blue-600" />
+                                <ThumbsUp className="h-4 w-4 text-info" />
                                 <span className="text-sm">Votes effectués</span>
                               </div>
                               <Badge variant="secondary" data-testid="stat-votes-cast">
@@ -1128,7 +1128,7 @@ export default function AdminMembersPage() {
                             <Separator />
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-green-600" />
+                                <Calendar className="h-4 w-4 text-success" />
                                 <span className="text-sm">Événements inscrits</span>
                               </div>
                               <Badge variant="secondary" data-testid="stat-events-registered">

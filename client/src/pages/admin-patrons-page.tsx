@@ -555,7 +555,7 @@ export default function AdminPatronsPage() {
                           </div>
                           <Badge 
                             variant={patron.status === 'active' ? 'default' : 'secondary'}
-                            className={patron.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}
+                            className={patron.status === 'active' ? 'bg-success-light text-success-dark' : 'bg-warning-light text-warning-dark'}
                             data-testid={`badge-patron-status-${patron.id}`}
                           >
                             {patron.status === 'active' ? 'Actif' : 'Proposition'}
