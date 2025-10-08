@@ -13,6 +13,7 @@ import {
   members,
   memberActivities,
   memberSubscriptions,
+  brandingConfig,
   type Admin, 
   type InsertAdmin,
   type User,
@@ -43,6 +44,7 @@ import {
   type InsertMemberActivity,
   type MemberSubscription,
   type InsertMemberSubscription,
+  type BrandingConfig,
   type Result,
   ValidationError,
   DuplicateError,
@@ -220,6 +222,10 @@ export interface IStorage {
   // Member Subscriptions
   getSubscriptionsByMember(memberEmail: string): Promise<MemberSubscription[]>;
   createSubscription(subscription: InsertMemberSubscription): Promise<MemberSubscription>;
+  
+  // Branding configuration
+  getBrandingConfig(): Promise<Result<BrandingConfig | null>>;
+  updateBrandingConfig(config: string, updatedBy: string): Promise<Result<BrandingConfig>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1711,7 +1717,7 @@ export class DatabaseStorage implements IStorage {
         })
         .returning();
 
-      logger.info('Patron proposed', { patronId: newPatron.id, email: data.email, proposedBy: data.proposedBy });
+      logger.info('Patron proposed', { patronId: newPatron.id, email: data.email });
       return { success: true, data: newPatron };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la proposition du mécène: ${error}`) };
@@ -2426,6 +2432,60 @@ export class DatabaseStorage implements IStorage {
       .values(subscription)
       .returning();
     return created;
+  }
+
+  // Branding configuration methods
+  async getBrandingConfig(): Promise<Result<BrandingConfig | null>> {
+    try {
+      const [config] = await db.select().from(brandingConfig).limit(1);
+      return { success: true, data: config || null };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération de la configuration: ${error}`) };
+    }
+  }
+
+  async updateBrandingConfig(configStr: string, updatedBy: string): Promise<Result<BrandingConfig>> {
+    try {
+      // Validate JSON format
+      try {
+        JSON.parse(configStr);
+      } catch {
+        return { success: false, error: new ValidationError("La configuration doit être un JSON valide") };
+      }
+
+      const result = await db.transaction(async (tx) => {
+        // Check if config exists
+        const [existing] = await tx.select().from(brandingConfig).limit(1);
+        
+        if (existing) {
+          // Update existing config
+          const [updated] = await tx
+            .update(brandingConfig)
+            .set({
+              config: configStr,
+              updatedBy,
+              updatedAt: sql`NOW()`
+            })
+            .where(eq(brandingConfig.id, existing.id))
+            .returning();
+          return updated;
+        } else {
+          // Insert new config
+          const [inserted] = await tx
+            .insert(brandingConfig)
+            .values({
+              config: configStr,
+              updatedBy
+            })
+            .returning();
+          return inserted;
+        }
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la configuration: ${error}`) };
+    }
   }
 
   // Ultra-robust Stats method with Result pattern

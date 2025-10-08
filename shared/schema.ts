@@ -315,6 +315,14 @@ export const memberSubscriptions = pgTable("member_subscriptions", {
   startDateIdx: index("member_subscriptions_start_date_idx").on(table.startDate.desc()),
 }));
 
+// Branding configuration table - For customizable branding settings
+export const brandingConfig = pgTable("branding_config", {
+  id: serial("id").primaryKey(),
+  config: text("config").notNull(),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const ideasRelations = relations(ideas, ({ many }) => ({
   votes: many(votes),
@@ -1212,6 +1220,21 @@ export const insertMemberSubscriptionSchema = createInsertSchema(memberSubscript
 
 export type InsertMemberSubscription = z.infer<typeof insertMemberSubscriptionSchema>;
 export type MemberSubscription = typeof memberSubscriptions.$inferSelect;
+
+// Branding configuration schemas
+export const insertBrandingConfigSchema = createInsertSchema(brandingConfig, {
+  config: z.string().refine((val) => {
+    try {
+      JSON.parse(val);
+      return true;
+    } catch {
+      return false;
+    }
+  }, { message: "Config must be valid JSON" })
+}).omit({ id: true, updatedAt: true });
+
+export type InsertBrandingConfig = z.infer<typeof insertBrandingConfigSchema>;
+export type BrandingConfig = typeof brandingConfig.$inferSelect;
 
 // Legacy compatibility
 export type AdminUser = Admin;

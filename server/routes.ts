@@ -1380,6 +1380,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== CONFIGURATION DE BRANDING ====================
+  
+  // Get branding configuration (SUPER_ADMIN only)
+  app.get("/api/admin/branding", requirePermission('admin.manage'), async (req, res) => {
+    try {
+      const result = await storage.getBrandingConfig();
+      
+      if (!result.success) {
+        return res.status(500).json({ success: false, error: result.error.message });
+      }
+      
+      // If no config exists, return default values from branding-core.ts
+      if (!result.data) {
+        const { brandingCore } = await import("../client/src/config/branding-core");
+        return res.json({ 
+          success: true, 
+          data: { 
+            config: JSON.stringify(brandingCore),
+            isDefault: true 
+          } 
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        data: { 
+          ...result.data,
+          isDefault: false 
+        } 
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Update branding configuration (SUPER_ADMIN only)
+  app.put("/api/admin/branding", requirePermission('admin.manage'), async (req, res) => {
+    try {
+      const { config } = req.body;
+      
+      if (!config) {
+        return res.status(400).json({ success: false, error: "Configuration manquante" });
+      }
+      
+      const user = req.user as { email: string };
+      const result = await storage.updateBrandingConfig(config, user.email);
+      
+      if (!result.success) {
+        return res.status(400).json({ success: false, error: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // ==================== GESTION DES MÉCÈNES ====================
   
   // Proposer un mécène potentiel (accessible à tous les utilisateurs connectés)
