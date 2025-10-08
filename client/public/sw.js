@@ -1,5 +1,5 @@
 // Service Worker optimisé - Version Production 2025
-const CACHE_VERSION = '1.1.64';
+const CACHE_VERSION = '1.1.65';
 const CACHE_NAME = `app-cache-v${CACHE_VERSION}`;
 const API_CACHE = `app-api-v${CACHE_VERSION}`;
 const STATIC_CACHE = `app-static-v${CACHE_VERSION}`;
