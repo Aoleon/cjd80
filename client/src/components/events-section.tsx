@@ -331,11 +331,11 @@ export default function EventsSection() {
                               onClick={() => handleShare(event)}
                               variant="outline"
                               size="sm"
-                              className="text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400"
+                              className="h-10 w-10 p-0 transition-all duration-200 shadow-lg hover:shadow-xl border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400"
                               data-testid={`button-share-event-${event.id}`}
+                              title="Partager cet événement"
                             >
-                              <Share2 className="w-4 h-4 mr-2" />
-                              Partager
+                              <Share2 className="w-5 h-5" />
                             </Button>
                           </div>
                         </div>

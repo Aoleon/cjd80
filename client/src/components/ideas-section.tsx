@@ -188,11 +188,11 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
                       onClick={() => handleShare(idea)}
                       variant="outline"
                       size="sm"
-                      className="border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 text-xs font-semibold flex-shrink-0"
+                      className="border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 flex-shrink-0 h-8 w-8 p-0"
                       data-testid={`button-share-idea-${idea.id}`}
+                      title="Partager cette idée"
                     >
-                      <Share2 className="w-3 h-3 mr-1" />
-                      Partager
+                      <Share2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
