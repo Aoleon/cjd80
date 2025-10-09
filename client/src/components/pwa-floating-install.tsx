@@ -99,7 +99,7 @@ export function PWAFloatingInstall() {
           <Button
             onClick={handleInstall}
             disabled={installResult === 'pending'}
-            className="bg-cjd-green hover:bg-green-600 text-white shadow-lg rounded-full px-6 py-6 flex items-center gap-3"
+            className="bg-cjd-green hover:bg-cjd-green-dark text-white shadow-lg rounded-full px-6 py-6 flex items-center gap-3"
             data-testid="button-install-floating"
           >
             {operatingSystem === 'ios' ? (

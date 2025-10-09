@@ -43,7 +43,7 @@ export function PWAInstallPrompt({ variant = 'banner', className = '' }: PWAInst
         <Button
           onClick={() => setShowInstructions(true)}
           disabled={isLoading}
-          className="bg-cjd-green hover:bg-green-600 text-white"
+          className="bg-cjd-green hover:bg-cjd-green-dark text-white"
           data-testid="button-install-ios"
         >
           <Share className="w-4 h-4 mr-2" />
@@ -56,7 +56,7 @@ export function PWAInstallPrompt({ variant = 'banner', className = '' }: PWAInst
       <Button
         onClick={installApp}
         disabled={isLoading || !hasPromptEvent}
-        className="bg-cjd-green hover:bg-green-600 text-white"
+        className="bg-cjd-green hover:bg-cjd-green-dark text-white"
         data-testid="button-install-android"
       >
         <Download className="w-4 h-4 mr-2" />
@@ -116,8 +116,8 @@ export function PWAInstallPrompt({ variant = 'banner', className = '' }: PWAInst
       </div>
 
       {installResult === 'error' && (
-        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-sm text-red-700" data-testid="text-install-error">
+        <div className="mt-3 p-3 bg-error-light border border-error rounded-md">
+          <p className="text-sm text-error-dark" data-testid="text-install-error">
             Erreur lors de l'installation. Veuillez réessayer.
           </p>
         </div>

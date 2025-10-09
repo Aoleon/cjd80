@@ -42,7 +42,7 @@ export default function HomePage() {
                 Administration
               </button>
               <div className="text-xs sm:text-sm text-gray-400">
-                <span>Créé avec ❤️ par <a href="https://robinswood.io" target="_blank" rel="noopener noreferrer" className="text-cjd-green hover:text-green-400 transition-colors duration-200">Thibault</a></span>
+                <span>Créé avec ❤️ par <a href="https://robinswood.io" target="_blank" rel="noopener noreferrer" className="text-cjd-green hover:text-success-light transition-colors duration-200">Thibault</a></span>
               </div>
             </div>
           </div>

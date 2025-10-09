@@ -25,7 +25,7 @@ export default function AdminPage() {
             <div className="flex justify-between items-center py-6">
               <div>
                 <h1 className="text-3xl font-bold">{getShortAppName()}</h1>
-                <p className="text-green-100">Administration - Boîte à Kiffs</p>
+                <p className="text-white/90">Administration - Boîte à Kiffs</p>
               </div>
             </div>
           </div>

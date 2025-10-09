@@ -6,9 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePWAInstall } from '@/hooks/use-pwa-install';
 
 const BENEFITS = [
-  { icon: Bell, text: 'Notifications instantanées', color: 'text-blue-500' },
-  { icon: Zap, text: 'Accès rapide', color: 'text-yellow-500' },
-  { icon: Shield, text: 'Fonctionne hors-ligne', color: 'text-green-500' },
+  { icon: Bell, text: 'Notifications instantanées', color: 'text-info' },
+  { icon: Zap, text: 'Accès rapide', color: 'text-warning' },
+  { icon: Shield, text: 'Fonctionne hors-ligne', color: 'text-success' },
 ];
 
 export function PWAInstallBanner() {

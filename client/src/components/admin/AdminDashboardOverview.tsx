@@ -58,15 +58,15 @@ export default function AdminDashboardOverview({
                 <div className="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-400">
                   <div className="flex justify-between">
                     <span>Actifs:</span>
-                    <span className="font-semibold text-green-600 dark:text-green-400">{stats.data.members.active}</span>
+                    <span className="font-semibold text-success">{stats.data.members.active}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Propositions:</span>
-                    <span className="font-semibold text-orange-600 dark:text-orange-400">{stats.data.members.proposed}</span>
+                    <span className="font-semibold text-warning">{stats.data.members.proposed}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Actifs (30j):</span>
-                    <span className="font-semibold text-blue-600 dark:text-blue-400">{stats.data.members.recentActivity}</span>
+                    <span className="font-semibold text-info">{stats.data.members.recentActivity}</span>
                   </div>
                 </div>
               </CardContent>
@@ -89,11 +89,11 @@ export default function AdminDashboardOverview({
                   <div className="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-400">
                     <div className="flex justify-between">
                       <span>Actifs:</span>
-                      <span className="font-semibold text-green-600 dark:text-green-400">{stats.data.patrons.active}</span>
+                      <span className="font-semibold text-success">{stats.data.patrons.active}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Propositions:</span>
-                      <span className="font-semibold text-orange-600 dark:text-orange-400">{stats.data.patrons.proposed}</span>
+                      <span className="font-semibold text-warning">{stats.data.patrons.proposed}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -112,11 +112,11 @@ export default function AdminDashboardOverview({
                 <div className="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-400">
                   <div className="flex justify-between">
                     <span>En attente:</span>
-                    <span className="font-semibold text-orange-600 dark:text-orange-400">{stats.data.ideas.pending}</span>
+                    <span className="font-semibold text-warning">{stats.data.ideas.pending}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Approuvées:</span>
-                    <span className="font-semibold text-green-600 dark:text-green-400">{stats.data.ideas.approved}</span>
+                    <span className="font-semibold text-success">{stats.data.ideas.approved}</span>
                   </div>
                 </div>
               </CardContent>
@@ -134,7 +134,7 @@ export default function AdminDashboardOverview({
                 <div className="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-400">
                   <div className="flex justify-between">
                     <span>À venir:</span>
-                    <span className="font-semibold text-blue-600 dark:text-blue-400">{stats.data.events.upcoming}</span>
+                    <span className="font-semibold text-info">{stats.data.events.upcoming}</span>
                   </div>
                 </div>
               </CardContent>
@@ -153,7 +153,7 @@ export default function AdminDashboardOverview({
                 <UserCircle className="h-6 w-6 text-cjd-green" />
                 <span className="font-medium">Gérer les membres</span>
                 {stats.data.members.proposed > 0 && (
-                  <span className="text-xs text-orange-600 dark:text-orange-400">
+                  <span className="text-xs text-warning">
                     {stats.data.members.proposed} proposition{stats.data.members.proposed > 1 ? 's' : ''} en attente
                   </span>
                 )}
@@ -169,7 +169,7 @@ export default function AdminDashboardOverview({
                   <Users className="h-6 w-6 text-cjd-green" />
                   <span className="font-medium">Gérer les mécènes</span>
                   {stats.data.patrons.proposed > 0 && (
-                    <span className="text-xs text-orange-600 dark:text-orange-400">
+                    <span className="text-xs text-warning">
                       {stats.data.patrons.proposed} proposition{stats.data.patrons.proposed > 1 ? 's' : ''} en attente
                     </span>
                   )}
@@ -185,7 +185,7 @@ export default function AdminDashboardOverview({
                 <Lightbulb className="h-6 w-6 text-cjd-green" />
                 <span className="font-medium">Gérer les idées</span>
                 {stats.data.ideas.pending > 0 && (
-                  <span className="text-xs text-orange-600 dark:text-orange-400">
+                  <span className="text-xs text-warning">
                     {stats.data.ideas.pending} en attente de validation
                   </span>
                 )}
@@ -196,7 +196,7 @@ export default function AdminDashboardOverview({
       ) : (
         <Card className="p-8">
           <div className="text-center space-y-4">
-            <div className="text-red-600">
+            <div className="text-error">
               <AlertCircle className="h-12 w-12 mx-auto" />
             </div>
             <div>

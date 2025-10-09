@@ -28,7 +28,14 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
   // États pour les formulaires d'édition
   const [editInfoForm, setEditInfoForm] = useState({ firstName: "", lastName: "" });
   const [newPasswordForm, setNewPasswordForm] = useState({ password: "", confirmPassword: "" });
-  const [createAdminForm, setCreateAdminForm] = useState({
+  const [createAdminForm, setCreateAdminForm] = useState<{
+    email: string;
+    password: string;
+    confirmPassword: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+  }>({
     email: "",
     password: "",
     confirmPassword: "",
@@ -280,7 +287,7 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
             </div>
             <Button
               onClick={() => setCreateAdminModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-info hover:bg-info-dark"
               data-testid="button-create-admin"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -450,7 +457,7 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
               />
             </div>
             {newPasswordForm.password !== newPasswordForm.confirmPassword && newPasswordForm.confirmPassword && (
-              <p className="text-red-500 text-sm">Les mots de passe ne correspondent pas</p>
+              <p className="text-error text-sm">Les mots de passe ne correspondent pas</p>
             )}
             <div className="flex justify-end gap-2">
               <Button 
@@ -558,7 +565,7 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
             </div>
             
             {createAdminForm.password !== createAdminForm.confirmPassword && createAdminForm.confirmPassword && (
-              <p className="text-red-500 text-sm">Les mots de passe ne correspondent pas</p>
+              <p className="text-error text-sm">Les mots de passe ne correspondent pas</p>
             )}
 
             <div className="flex justify-end gap-2">
@@ -568,7 +575,7 @@ export default function AdminManagement({ currentUser }: AdminManagementProps) {
               <Button 
                 type="submit" 
                 disabled={createAdminMutation.isPending || createAdminForm.password !== createAdminForm.confirmPassword}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-info hover:bg-info-dark"
                 data-testid="button-submit-create-admin"
               >
                 {createAdminMutation.isPending ? "Création..." : "Créer"}

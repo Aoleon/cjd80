@@ -8,7 +8,7 @@ export default function ToolsPage() {
       {/* En-tête de la page */}
       <div className="text-center mb-8 sm:mb-12">
         <div className="flex justify-center mb-4">
-          <div className="bg-gradient-to-r from-cjd-green to-green-600 rounded-full p-4">
+          <div className="bg-gradient-to-r from-cjd-green to-success-dark rounded-full p-4">
             <Wrench className="w-8 h-8 text-white" />
           </div>
         </div>
@@ -21,9 +21,9 @@ export default function ToolsPage() {
       </div>
 
       {/* Section "Coming Soon" */}
-      <div className="bg-gradient-to-r from-cjd-green to-green-600 rounded-xl shadow-lg p-8 sm:p-12 text-white text-center mb-8">
+      <div className="bg-gradient-to-r from-cjd-green to-success-dark rounded-xl shadow-lg p-8 sm:p-12 text-white text-center mb-8">
         <h2 className="text-2xl sm:text-3xl font-bold mb-4">🚀 Bientôt disponible</h2>
-        <p className="text-green-100 text-lg mb-6">
+        <p className="text-success-light text-lg mb-6">
           Nous préparons une suite d'outils innovants pour vous accompagner dans votre développement professionnel et celui de votre entreprise.
         </p>
         <div className="inline-flex items-center bg-white/20 rounded-full px-6 py-3">
@@ -35,8 +35,8 @@ export default function ToolsPage() {
       {/* Aperçu des outils à venir */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
-          <div className="bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-            <Calendar className="w-6 h-6 text-blue-600" />
+          <div className="bg-info-light rounded-full w-12 h-12 flex items-center justify-center mb-4">
+            <Calendar className="w-6 h-6 text-info-dark" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Planificateur stratégique</h3>
           <p className="text-gray-600">
@@ -45,8 +45,8 @@ export default function ToolsPage() {
         </div>
 
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
-          <div className="bg-purple-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-            <Users className="w-6 h-6 text-purple-600" />
+          <div className="bg-info-light rounded-full w-12 h-12 flex items-center justify-center mb-4">
+            <Users className="w-6 h-6 text-info-dark" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Réseau & Mentoring</h3>
           <p className="text-gray-600">
@@ -55,8 +55,8 @@ export default function ToolsPage() {
         </div>
 
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
-          <div className="bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-            <ChartBar className="w-6 h-6 text-green-600" />
+          <div className="bg-success-light rounded-full w-12 h-12 flex items-center justify-center mb-4">
+            <ChartBar className="w-6 h-6 text-success-dark" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Tableaux de bord</h3>
           <p className="text-gray-600">
@@ -65,8 +65,8 @@ export default function ToolsPage() {
         </div>
 
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
-          <div className="bg-orange-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-            <Lightbulb className="w-6 h-6 text-orange-600" />
+          <div className="bg-warning-light rounded-full w-12 h-12 flex items-center justify-center mb-4">
+            <Lightbulb className="w-6 h-6 text-warning-dark" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Innovation Hub</h3>
           <p className="text-gray-600">
@@ -75,8 +75,8 @@ export default function ToolsPage() {
         </div>
 
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-300 md:col-span-2 lg:col-span-2">
-          <div className="bg-indigo-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-            <Wrench className="w-6 h-6 text-indigo-600" />
+          <div className="bg-info-light rounded-full w-12 h-12 flex items-center justify-center mb-4">
+            <Wrench className="w-6 h-6 text-info-dark" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Boîte à outils complète</h3>
           <p className="text-gray-600">
@@ -96,7 +96,7 @@ export default function ToolsPage() {
           </p>
           <button
             onClick={() => window.location.href = 'mailto:contact@cjd-amiens.fr?subject=Suggestions pour les outils du dirigeant'}
-            className="bg-cjd-green hover:bg-green-700 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200"
+            className="bg-cjd-green hover:bg-cjd-green-dark text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200"
             data-testid="button-contact-suggestions"
           >
             Nous faire part de vos idées

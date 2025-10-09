@@ -58,7 +58,7 @@ export default function Header() {
               <button
                 key={item.id}
                 onClick={() => setLocation(item.route)}
-                className={`hover:text-green-200 transition-colors duration-200 font-medium text-sm xl:text-base whitespace-nowrap ${
+                className={`hover:text-white/90 transition-colors duration-200 font-medium text-sm xl:text-base whitespace-nowrap ${
                   activeSection === item.id ? "border-b-2 border-white pb-1" : ""
                 }`}
               >
@@ -71,7 +71,7 @@ export default function Header() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-white hover:text-green-200 hover:bg-cjd-green-dark flex-shrink-0"
+              className="text-white hover:text-white/90 hover:bg-cjd-green-dark flex-shrink-0"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
@@ -82,7 +82,7 @@ export default function Header() {
       
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-cjd-green-dark border-t border-green-600">
+        <div className="lg:hidden bg-cjd-green-dark border-t border-success-dark">
           <div className="container mx-auto px-3 sm:px-4 py-3 space-y-1">
             {menuItems.map((item) => (
               <button
@@ -91,8 +91,8 @@ export default function Header() {
                   setLocation(item.route);
                   setMobileMenuOpen(false);
                 }}
-                className={`block w-full text-left py-3 px-2 rounded hover:bg-green-600 transition-colors duration-200 ${
-                  activeSection === item.id ? "bg-green-600 font-medium" : ""
+                className={`block w-full text-left py-3 px-2 rounded hover:bg-success-dark transition-colors duration-200 ${
+                  activeSection === item.id ? "bg-success-dark font-medium" : ""
                 }`}
               >
                 {item.label}

@@ -41,7 +41,7 @@ export default function AdminEventsPanel({
         <h3 className="text-base sm:text-lg font-semibold">Tous les événements</h3>
         <Button
           onClick={onCreateEvent}
-          className="bg-cjd-green hover:bg-green-700 text-white w-full sm:w-auto"
+          className="bg-cjd-green hover:bg-cjd-green-dark text-white w-full sm:w-auto"
           data-testid="button-create-event"
         >
           <CalendarPlus className="w-4 h-4 mr-2" />

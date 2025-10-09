@@ -107,7 +107,7 @@ export default function PendingAdminApproval({ currentUser }: PendingAdminApprov
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <UserCheck className="w-5 h-5 text-orange-600" />
+          <UserCheck className="w-5 h-5 text-warning-dark" />
           Comptes en Attente de Validation
         </CardTitle>
         <CardDescription>
@@ -149,7 +149,7 @@ export default function PendingAdminApproval({ currentUser }: PendingAdminApprov
                       })}
                     </TableCell>
                     <TableCell>
-                      <Badge className="bg-orange-100 text-orange-800">
+                      <Badge className="bg-warning-light text-warning-dark">
                         <Clock className="w-3 h-3 mr-1" />
                         En attente
                       </Badge>
@@ -163,7 +163,7 @@ export default function PendingAdminApproval({ currentUser }: PendingAdminApprov
                           <DialogTrigger asChild>
                             <Button
                               size="sm"
-                              className="bg-green-600 hover:bg-green-700 text-white"
+                              className="bg-success hover:bg-success-dark text-white"
                               onClick={() => setApprovalDialog({ admin, role: ADMIN_ROLES.IDEAS_READER })}
                               disabled={approveMutation.isPending}
                               data-testid={`button-approve-${admin.email}`}
@@ -218,7 +218,7 @@ export default function PendingAdminApproval({ currentUser }: PendingAdminApprov
                                 <Button
                                   onClick={handleApprove}
                                   disabled={approveMutation.isPending}
-                                  className="bg-green-600 hover:bg-green-700"
+                                  className="bg-success hover:bg-success-dark"
                                 >
                                   {approveMutation.isPending ? "Approbation..." : "Confirmer"}
                                 </Button>
@@ -246,7 +246,7 @@ export default function PendingAdminApproval({ currentUser }: PendingAdminApprov
           </div>
         ) : (
           <div className="text-center py-8">
-            <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+            <CheckCircle className="w-12 h-12 text-success mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-600 mb-2">Aucun compte en attente</h3>
             <p className="text-gray-500">Tous les comptes d'administrateur ont été traités</p>
           </div>

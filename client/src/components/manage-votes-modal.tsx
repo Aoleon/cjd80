@@ -178,7 +178,7 @@ export default function ManageVotesModal({
             </CardHeader>
             <CardContent>
               <div className="text-center p-3 bg-info-light rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{votes?.length || 0}</div>
+                <div className="text-2xl font-bold text-info-dark">{votes?.length || 0}</div>
                 <div className="text-gray-600">Votes</div>
               </div>
             </CardContent>
@@ -287,7 +287,7 @@ export default function ManageVotesModal({
                               <Mail className="w-4 h-4 mr-2 text-gray-400" />
                               <a 
                                 href={`mailto:${vote.voterEmail}`} 
-                                className="text-blue-600 hover:underline"
+                                className="text-info hover:underline"
                               >
                                 {vote.voterEmail}
                               </a>
@@ -302,7 +302,7 @@ export default function ManageVotesModal({
                               variant="ghost"
                               onClick={() => handleDeleteVote(vote.id, vote.voterName)}
                               disabled={deleteVoteMutation.isPending}
-                              className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                              className="text-error hover:text-error-dark hover:bg-error-light"
                               data-testid={`button-delete-vote-${vote.id}`}
                             >
                               <Trash2 className="w-4 h-4" />

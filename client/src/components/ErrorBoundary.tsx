@@ -72,7 +72,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
           <Card className="max-w-lg w-full">
             <CardHeader>
-              <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <div className="flex items-center gap-2 text-error">
                 <AlertCircle className="w-6 h-6" />
                 <CardTitle>
                   {this.props.fallbackTitle || "Une erreur s'est produite"}
@@ -84,8 +84,8 @@ export class ErrorBoundary extends Component<Props, State> {
             </CardHeader>
             <CardContent className="space-y-4">
               {import.meta.env.DEV && this.state.error && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
-                  <p className="text-sm font-mono text-red-800 dark:text-red-300">
+                <div className="bg-error-light border border-error rounded-md p-3">
+                  <p className="text-sm font-mono text-error-dark">
                     {this.state.error.message}
                   </p>
                 </div>

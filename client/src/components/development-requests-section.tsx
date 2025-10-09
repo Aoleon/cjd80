@@ -496,7 +496,7 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
                             href={request.githubIssueUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-blue-600 hover:underline"
+                            className="flex items-center gap-1 text-info hover:underline"
                           >
                             #{request.githubIssueNumber}
                             <ExternalLink className="w-3 h-3" />
@@ -521,7 +521,7 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
                                 size="sm"
                                 onClick={() => handleUpdateStatus(request.id)}
                                 disabled={updateStatusMutation.isPending}
-                                className="bg-green-600 hover:bg-green-700 text-white"
+                                className="bg-success hover:bg-success-dark text-white"
                                 data-testid={`button-save-status-${request.id}`}
                               >
                                 {updateStatusMutation.isPending ? (
@@ -548,7 +548,7 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleEditStatus(request)}
-                                  className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                                  className="text-success hover:text-success-dark hover:bg-success-light"
                                   data-testid={`button-edit-status-${request.id}`}
                                   title="Modifier le statut (réservé au super admin)"
                                 >
@@ -561,7 +561,7 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
                                   variant="ghost"
                                   onClick={() => handleSync(request.id, request.title)}
                                   disabled={syncRequestMutation.isPending}
-                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                  className="text-info hover:text-info-dark hover:bg-info-light"
                                   data-testid={`button-sync-request-${request.id}`}
                                   title="Synchroniser avec GitHub"
                                 >
@@ -573,7 +573,7 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
                                 variant="ghost"
                                 onClick={() => handleDelete(request.id, request.title)}
                                 disabled={deleteRequestMutation.isPending}
-                                className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                className="text-error hover:text-error-dark hover:bg-error-light"
                                 data-testid={`button-delete-request-${request.id}`}
                               >
                                 <Trash2 className="w-4 h-4" />

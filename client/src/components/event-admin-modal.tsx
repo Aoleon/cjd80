@@ -445,18 +445,18 @@ export default function EventAdminModal({
 
           {/* === OPTIONS D'AFFICHAGE (COLLAPSIBLE) === */}
           <Collapsible open={showDisplayOptions} onOpenChange={setShowDisplayOptions}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors" data-testid="toggle-display-options">
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-info-light hover:bg-info-light rounded-lg border border-info transition-colors" data-testid="toggle-display-options">
               <div className="flex items-center gap-2">
-                <Eye className="h-4 w-4 text-blue-600" />
+                <Eye className="h-4 w-4 text-info" />
                 <span className="text-sm font-medium text-gray-700">Options d'affichage des inscriptions</span>
               </div>
               {showDisplayOptions ? 
-                <ChevronDown className="h-4 w-4 text-blue-600" /> : 
-                <ChevronRight className="h-4 w-4 text-blue-600" />
+                <ChevronDown className="h-4 w-4 text-info" /> : 
+                <ChevronRight className="h-4 w-4 text-info" />
               }
             </CollapsibleTrigger>
             
-            <CollapsibleContent className="p-3 mt-2 bg-white rounded border border-blue-200">
+            <CollapsibleContent className="p-3 mt-2 bg-white rounded border border-info">
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -494,7 +494,7 @@ export default function EventAdminModal({
             <Button
               type="submit"
               disabled={isPending}
-              className="bg-cjd-green hover:bg-green-700 text-white flex-1"
+              className="bg-cjd-green hover:bg-cjd-green-dark text-white flex-1"
               data-testid="button-submit-event"
             >
               {isPending ? (

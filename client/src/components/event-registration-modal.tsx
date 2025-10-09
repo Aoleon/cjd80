@@ -271,9 +271,9 @@ export default function EventRegistrationModal({
           {isUnsubscribeMode ? (
             /* Formulaire de désinscription */
             <>
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <h3 className="text-orange-800 font-medium mb-2">📝 Déclaration d'absence</h3>
-                <p className="text-orange-700 text-sm">
+              <div className="bg-warning-light border border-warning rounded-lg p-4">
+                <h3 className="text-warning-dark font-medium mb-2">📝 Déclaration d'absence</h3>
+                <p className="text-warning-dark text-sm">
                   Informez-nous que vous ne pourrez pas participer à cet événement. Cette information aide à mieux organiser nos événements.
                 </p>
               </div>
@@ -500,8 +500,8 @@ export default function EventRegistrationModal({
               disabled={isUnsubscribeMode ? unsubscribeMutation.isPending : registerMutation.isPending}
               className={`flex-1 h-11 sm:h-12 text-sm sm:text-base ${
                 isUnsubscribeMode 
-                  ? 'bg-red-600 hover:bg-red-700 text-white'
-                  : 'bg-cjd-green hover:bg-green-700 text-white'
+                  ? 'bg-error hover:bg-error-dark text-white'
+                  : 'bg-cjd-green hover:bg-cjd-green-dark text-white'
               }`}
             >
               {isUnsubscribeMode ? (
@@ -548,9 +548,9 @@ export default function EventRegistrationModal({
         </form>
 
         {/* Additional Info */}
-        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-          <h4 className="font-medium text-blue-800 mb-2 text-sm sm:text-base">ℹ️ À propos de votre inscription</h4>
-          <ul className="text-xs sm:text-sm text-blue-700 space-y-1">
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-info-light rounded-lg border-l-4 border-info">
+          <h4 className="font-medium text-info-dark mb-2 text-sm sm:text-base">ℹ️ À propos de votre inscription</h4>
+          <ul className="text-xs sm:text-sm text-info-dark space-y-1">
             <li>• Vous recevrez un email de confirmation</li>
             <li>• Votre email ne sera utilisé que pour cet événement</li>
             <li>• En cas d'empêchement, contactez l'organisation</li>
