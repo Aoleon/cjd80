@@ -356,7 +356,7 @@ export default function AdminMembersPage() {
 
   const getActivityBadgeColor = (type: string) => {
     const colors: Record<string, string> = {
-      idea_proposed: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+      idea_proposed: "bg-info-light text-info-dark dark:bg-info-dark dark:text-info-light",
       vote_cast: "bg-info-light text-info-dark dark:bg-info-dark dark:text-info-light",
       event_registered: "bg-success-light text-success-dark dark:bg-success-dark dark:text-success-light",
       event_unregistered: "bg-error-light text-error-dark dark:bg-error-dark dark:text-error-light",
@@ -688,8 +688,8 @@ export default function AdminMembersPage() {
 
                       <TabsContent value="info" className="space-y-4">
                         {selectedMember.status === 'proposed' && selectedMember.proposedBy && (
-                          <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-950 rounded-lg border-l-4 border-orange-400">
-                            <p className="text-sm text-orange-800 dark:text-orange-200">
+                          <div className="mb-4 p-3 bg-warning-light dark:bg-warning-dark rounded-lg border-l-4 border-warning">
+                            <p className="text-sm text-warning-dark dark:text-warning-light">
                               <strong>Membre proposé par:</strong> {selectedMember.proposedBy}
                             </p>
                           </div>
@@ -1055,7 +1055,7 @@ export default function AdminMembersPage() {
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                          <Calendar className="h-4 w-4 text-orange-600" />
+                                          <Calendar className="h-4 w-4 text-warning" />
                                           <div>
                                             <p className="text-xs text-muted-foreground">Fin</p>
                                             <p className="text-sm font-medium">
@@ -1108,7 +1108,7 @@ export default function AdminMembersPage() {
                           <CardContent className="space-y-3">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <Lightbulb className="h-4 w-4 text-purple-600" />
+                                <Lightbulb className="h-4 w-4 text-info" />
                                 <span className="text-sm">Idées proposées</span>
                               </div>
                               <Badge variant="secondary" data-testid="stat-ideas-proposed">

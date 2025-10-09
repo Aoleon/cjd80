@@ -143,7 +143,7 @@ export default function OfflineStatusBanner() {
   }
 
   const bgColor = !isOnline 
-    ? "bg-amber-500 dark:bg-amber-600" 
+    ? "bg-warning dark:bg-warning-dark" 
     : "bg-info dark:bg-info-dark";
   
   const Icon = isOnline ? Wifi : WifiOff;

@@ -207,8 +207,8 @@ export default function AdminDbMonitor() {
                   <div className="text-xl font-bold text-warning">{poolStats.pool.waitingCount}</div>
                   <div className="text-sm text-gray-600">En attente</div>
                 </div>
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <div className="text-xl font-bold text-purple-600">{poolStats.pool.max}</div>
+                <div className="text-center p-3 bg-info-light rounded-lg">
+                  <div className="text-xl font-bold text-info">{poolStats.pool.max}</div>
                   <div className="text-sm text-gray-600">Maximum</div>
                 </div>
               </div>

@@ -682,7 +682,7 @@ Claire Dubois,claire@example.com,Commentaire optionnel`}
             <CardHeader className="pb-3">
               <div className="flex justify-between items-center">
                 <CardTitle className="text-base flex items-center">
-                  <MessageSquare className="w-4 h-4 mr-2 text-orange-500" />
+                  <MessageSquare className="w-4 h-4 mr-2 text-warning" />
                   Absences déclarées ({unsubscriptions?.length || 0})
                 </CardTitle>
                 <Button
@@ -700,7 +700,7 @@ Claire Dubois,claire@example.com,Commentaire optionnel`}
             <CardContent>
               {/* Add absence form */}
               {showAddAbsenceForm && (
-                <form onSubmit={handleAddAbsence} className="space-y-4 p-4 bg-orange-50 border border-orange-200 rounded-lg mb-6">
+                <form onSubmit={handleAddAbsence} className="space-y-4 p-4 bg-warning-light border border-warning rounded-lg mb-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="add-absence-name" className="text-sm font-medium">
@@ -747,7 +747,7 @@ Claire Dubois,claire@example.com,Commentaire optionnel`}
                     <Button
                       type="submit"
                       disabled={addAbsenceMutation.isPending}
-                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                      className="bg-warning hover:bg-warning-dark text-white"
                       data-testid="button-submit-absence"
                     >
                       {addAbsenceMutation.isPending ? (

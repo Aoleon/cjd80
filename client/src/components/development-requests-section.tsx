@@ -19,7 +19,7 @@ import type { DevelopmentRequest, InsertDevelopmentRequest } from "@shared/schem
 const PRIORITY_COLORS = {
   low: "bg-info-light text-info-dark",
   medium: "bg-warning-light text-warning-dark", 
-  high: "bg-orange-100 text-orange-800",
+  high: "bg-warning-light text-warning-dark",
   critical: "bg-error-light text-error-dark"
 } as const;
 

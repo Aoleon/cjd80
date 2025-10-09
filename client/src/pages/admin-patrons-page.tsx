@@ -638,8 +638,8 @@ export default function AdminPatronsPage() {
 
                       <TabsContent value="info" className="space-y-4">
                         {selectedPatron.status === 'proposed' && selectedPatron.createdBy && (
-                          <div className="mb-4 p-3 bg-orange-50 rounded-lg border-l-4 border-orange-400">
-                            <p className="text-sm text-orange-800">
+                          <div className="mb-4 p-3 bg-warning-light rounded-lg border-l-4 border-warning">
+                            <p className="text-sm text-warning-dark">
                               <strong>Mécène proposé par:</strong> {selectedPatron.createdBy}
                             </p>
                           </div>

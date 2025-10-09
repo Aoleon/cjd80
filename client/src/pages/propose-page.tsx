@@ -441,7 +441,7 @@ export default function ProposePage() {
               </p>
             )}
             {proposalType === 'patron' && (
-              <p className="text-sm text-gray-600 p-3 bg-purple-50 rounded">
+              <p className="text-sm text-gray-600 p-3 bg-info-light rounded">
                 Vous allez suggérer un mécène potentiel pour soutenir les projets
               </p>
             )}

@@ -120,7 +120,7 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
   const getIdeaStatusInfo = (status: string) => {
     switch (status) {
       case IDEA_STATUS.PENDING:
-        return { label: "En attente", class: "bg-orange-100 text-orange-800" };
+        return { label: "En attente", class: "bg-warning-light text-warning-dark" };
       case IDEA_STATUS.APPROVED:
         return { label: "Idée soumise au vote", class: "bg-success-light text-success-dark" };
       case IDEA_STATUS.REJECTED:
@@ -130,7 +130,7 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
       case IDEA_STATUS.POSTPONED:
         return { label: "Reportée", class: "bg-gray-100 text-gray-800" };
       case IDEA_STATUS.COMPLETED:
-        return { label: "Réalisée", class: "bg-purple-100 text-purple-800" };
+        return { label: "Réalisée", class: "bg-success-light text-success-dark" };
       default:
         return { label: "Inconnu", class: "bg-gray-100 text-gray-800" };
     }
