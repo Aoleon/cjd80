@@ -17,6 +17,7 @@ Application web interne moderne pour le **Centre des Jeunes Dirigeants (CJD) d'A
 - **📱 Progressive Web App (PWA)** : Installation native, utilisation hors ligne, notifications push
 - **🔔 Notifications Push** : Notifications riches avec actions inline (voter, s'inscrire)
 - **🎨 Branding personnalisable** : Configuration centralisée pour adaptation facile à d'autres organisations
+- **🎨 Système de couleurs sémantiques** : Thème unifié avec 4 familles de couleurs (success, warning, error, info) personnalisables via l'interface admin
 - **📱 Fonctionnalités natives** : Partage natif, badge de notifications, vibrations personnalisées
 - **🎨 Design responsive** : Interface optimisée mobile-first avec Tailwind CSS
 
@@ -58,6 +59,28 @@ L'application utilise un **système de configuration centralisé** qui permet un
 - **Multi-tenant ready** : Adaptation facile pour d'autres organisations
 
 📖 **Guide complet** : Voir [CUSTOMIZATION.md](./CUSTOMIZATION.md) pour personnaliser l'application
+
+### Système de couleurs sémantiques
+
+L'application utilise un **système de couleurs sémantiques unifié** pour garantir une cohérence visuelle et faciliter la personnalisation :
+
+**Caractéristiques :**
+- ✅ **0 couleur Tailwind hardcodée** dans toute l'application (168+ instances éliminées)
+- 🎨 **4 familles de couleurs** : success (vert), warning (orange), error (rouge), info (bleu)
+- 🌓 **Variantes light/dark** pour chaque couleur avec support mode sombre complet
+- ⚙️ **Personnalisation totale** via l'interface admin `/admin/branding`
+- 🔧 **17 couleurs configurables** : 12 sémantiques + 5 graphiques
+
+**Avantages :**
+- Modification globale des couleurs en un clic
+- Cohérence visuelle garantie sur toute l'application
+- Adaptation facile aux chartes graphiques d'autres organisations
+- Accessibilité améliorée avec des contrastes testés
+
+**Configuration :**
+- Fichier source : `client/src/config/branding-core.ts`
+- Variables CSS : `client/src/index.css`
+- Interface admin : `/admin/branding` (SUPER_ADMIN uniquement)
 
 ### Structure du projet
 
@@ -229,16 +252,26 @@ Password: Admin123!
 
 ### Couleurs et branding
 
-L'application utilise un **système de branding centralisé** :
+L'application utilise un **système de branding et de couleurs centralisé** :
 
+**Branding personnalisable :**
 - **Configuration** : `client/src/config/branding-core.ts`
+- **Interface admin** : `/admin/branding` pour personnalisation en direct (SUPER_ADMIN)
 - **Couleur principale par défaut** : `#00a844` (vert CJD)
 - **Police par défaut** : Lato (300, 400, 700, 900)
-- **Design system** : shadcn/ui + Tailwind CSS
+
+**Système de couleurs sémantiques :**
+- **Success (vert)** : États positifs, validation, succès
+- **Warning (orange)** : Avertissements, états d'attente
+- **Error (rouge)** : Erreurs, rejets, suppression
+- **Info (bleu)** : Information, en cours, neutre
+- **Personnalisation** : 17 couleurs modifiables via `/admin/branding`
+
+**Design system** : shadcn/ui + Tailwind CSS avec classes sémantiques
 
 Pour personnaliser les couleurs, logos et textes :
-1. Modifier `client/src/config/branding-core.ts`
-2. Exécuter `npm run generate:config`
+1. **Via l'interface** : Se connecter en SUPER_ADMIN → `/admin/branding`
+2. **Via le code** : Modifier `client/src/config/branding-core.ts` → Exécuter `npm run generate:config`
 3. Redémarrer l'application
 
 📖 **Guide détaillé** : [CUSTOMIZATION.md](./CUSTOMIZATION.md)
@@ -264,6 +297,7 @@ xl: 1280px  /* Large desktop */
 - **EventCard** : Événements avec inscription HelloAsso
 - **AdminSection** : Interface d'administration responsive
 - **StatusBadge** : Badges de statut avec couleurs cohérentes
+- **ShareButton** : Boutons de partage optimisés (icône seule, compact)
 
 ## 📱 Progressive Web App (PWA)
 
@@ -335,6 +369,12 @@ POST   /api/register           # Créer un admin
 POST   /api/login              # Connexion
 POST   /api/logout             # Déconnexion
 GET    /api/user               # Utilisateur connecté
+```
+
+**Branding (Admin)**
+```http
+GET    /api/admin/branding     # Configuration branding actuelle
+PUT    /api/admin/branding     # Mettre à jour le branding (SUPER_ADMIN)
 ```
 
 ### Format des réponses
