@@ -160,7 +160,7 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
             <Card key={idea.id} className="bg-white border-2 border-gray-100 hover:border-cjd-green/30 hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] overflow-hidden">
               <CardContent className="p-5 sm:p-6">
                 <div className="flex flex-col gap-3 mb-4">
-                  <h3 className="font-bold text-lg sm:text-xl text-gray-900 leading-tight">
+                  <h3 className="font-bold text-lg sm:text-xl text-gray-900 line-clamp-3 leading-tight">
                     <div className="flex items-start gap-2">
                       {idea.featured && (
                         <div title="Idée mise en avant">
