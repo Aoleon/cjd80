@@ -65,8 +65,8 @@ L'application utilise un **système de configuration centralisé** qui permet un
 L'application utilise un **système de couleurs sémantiques unifié** pour garantir une cohérence visuelle et faciliter la personnalisation :
 
 **Caractéristiques :**
-- ✅ **0 couleur Tailwind hardcodée** dans toute l'application (168+ instances éliminées)
-- 🎨 **4 familles de couleurs** : success (vert), warning (orange), error (rouge), info (bleu)
+- ✅ **Système unifié** : Toutes les couleurs Tailwind hardcodées (`bg-green-500`, `text-blue-600`, etc.) ont été remplacées par des classes sémantiques (`bg-success`, `text-error`, etc.) - 168+ instances migrées
+- 🎨 **4 familles de couleurs sémantiques** : success (vert), warning (orange), error (rouge), info (bleu)
 - 🌓 **Variantes light/dark** pour chaque couleur avec support mode sombre complet
 - ⚙️ **Personnalisation totale** via l'interface admin `/admin/branding`
 - 🔧 **17 couleurs configurables** : 12 sémantiques + 5 graphiques
@@ -371,10 +371,10 @@ POST   /api/logout             # Déconnexion
 GET    /api/user               # Utilisateur connecté
 ```
 
-**Branding (Admin)**
+**Branding**
 ```http
-GET    /api/admin/branding     # Configuration branding actuelle
-PUT    /api/admin/branding     # Mettre à jour le branding (SUPER_ADMIN)
+GET    /api/admin/branding     # Configuration branding actuelle (public)
+PUT    /api/admin/branding     # Mettre à jour le branding (SUPER_ADMIN uniquement)
 ```
 
 ### Format des réponses
