@@ -38,7 +38,7 @@ const getStatusColor = (status: string) => {
     case IDEA_STATUS.POSTPONED:
       return 'bg-slate-50 text-slate-800 border-slate-300 ring-1 ring-slate-200';
     case IDEA_STATUS.COMPLETED:
-      return 'bg-violet-50 text-violet-800 border-violet-300 ring-1 ring-violet-200';
+      return 'bg-success-light text-success-dark border-success ring-1 ring-success';
     default:
       return 'bg-gray-50 text-gray-800 border-gray-300 ring-1 ring-gray-200';
   }

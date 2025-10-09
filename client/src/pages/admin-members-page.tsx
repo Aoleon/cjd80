@@ -360,7 +360,7 @@ export default function AdminMembersPage() {
       vote_cast: "bg-info-light text-info-dark dark:bg-info-dark dark:text-info-light",
       event_registered: "bg-success-light text-success-dark dark:bg-success-dark dark:text-success-light",
       event_unregistered: "bg-error-light text-error-dark dark:bg-error-dark dark:text-error-light",
-      patron_suggested: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
+      patron_suggested: "bg-info-light text-info-dark dark:bg-info-dark dark:text-info-light",
     };
     return colors[type] || "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
   };
@@ -1138,7 +1138,7 @@ export default function AdminMembersPage() {
                             <Separator />
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <Heart className="h-4 w-4 text-pink-600" />
+                                <Heart className="h-4 w-4 text-info" />
                                 <span className="text-sm">Mécènes suggérés</span>
                               </div>
                               <Badge variant="secondary" data-testid="stat-patrons-suggested">
