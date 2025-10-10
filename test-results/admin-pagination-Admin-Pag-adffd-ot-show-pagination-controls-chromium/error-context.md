@@ -1,0 +1,493 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - button "Retour à la page d'accueil - Voter pour des idées" [ref=e8] [cursor=pointer]:
+          - img "Logo CJD Amiens" [ref=e9]
+          - heading "CJD Amiens" [level=1] [ref=e10]
+        - navigation [ref=e11]:
+          - button "Voter pour des idées" [ref=e12] [cursor=pointer]
+          - button "Proposer une idée" [ref=e13] [cursor=pointer]
+          - button "Événements" [ref=e14] [cursor=pointer]
+          - button "Les outils du dirigeants" [ref=e15] [cursor=pointer]
+    - main [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]:
+            - img "La Boîte à Kiffs" [ref=e20]
+            - paragraph [ref=e21]: Découvrez les idées proposées par la section et votez pour celles que vous souhaitez voir réalisées
+          - generic [ref=e22]:
+            - generic [ref=e24]:
+              - generic [ref=e25]:
+                - heading "Une formation « aux outils tout cons »" [level=3] [ref=e26]:
+                  - generic [ref=e27]:
+                    - generic "Idée mise en avant" [ref=e28]:
+                      - img [ref=e29]
+                    - generic [ref=e31]: Une formation « aux outils tout cons »
+                - generic [ref=e32]:
+                  - generic [ref=e33]: Idée soumise au vote
+                  - button "Voter" [ref=e34] [cursor=pointer]:
+                    - img
+                    - text: Voter
+                  - button "Partager cette idée" [ref=e35] [cursor=pointer]:
+                    - img
+              - generic [ref=e36]:
+                - paragraph [ref=e37]: "La formation qu’on assume pas du tout parceque tout le monde est sensé savoir les utiliser , mais finalement qu’on exploite pas du tout assez ou assez bien , parce qu’on prend jamais le temps d’explorer toutes les fonctionnalités qui pourraient nous aider et encore moins de passer sa journée sur des tutos : Outlook, teams, Google, listes todo, docs partagés, sharepoints… (pour les pré requis avant de passer à l’IA 🫣🤪) sans avoir honte de passer pour un looser de gen X ou Y"
+                - button "Voir plus" [ref=e38] [cursor=pointer]:
+                  - img [ref=e39]
+                  - text: Voir plus
+              - generic [ref=e41]:
+                - generic [ref=e43]:
+                  - img [ref=e45]
+                  - generic [ref=e47]: 13 votes
+                - generic [ref=e48]: Proposée par Celine
+            - generic [ref=e50]:
+              - generic [ref=e51]:
+                - heading "EVA Camon réalité virtuelle" [level=3] [ref=e52]:
+                  - generic [ref=e53]:
+                    - generic "Idée mise en avant" [ref=e54]:
+                      - img [ref=e55]
+                    - generic [ref=e57]: EVA Camon réalité virtuelle
+                - generic [ref=e58]:
+                  - generic [ref=e59]: Idée soumise au vote
+                  - button "Voter" [ref=e60] [cursor=pointer]:
+                    - img
+                    - text: Voter
+                  - button "Partager cette idée" [ref=e61] [cursor=pointer]:
+                    - img
+              - paragraph [ref=e63]: Envie de se défouler dans un lieu virtuel à tuer des zombies ? VOTE
+              - generic [ref=e64]:
+                - generic [ref=e66]:
+                  - img [ref=e68]
+                  - generic [ref=e70]: 14 votes
+                - generic [ref=e71]: Proposée par Antoine
+            - generic [ref=e73]:
+              - generic [ref=e74]:
+                - heading "Lâcher prise & résolution de problèmes via du théâtre d’improvisation en groupe!" [level=3] [ref=e75]:
+                  - generic [ref=e76]:
+                    - generic "Idée mise en avant" [ref=e77]:
+                      - img [ref=e78]
+                    - generic [ref=e80]: Lâcher prise & résolution de problèmes via du théâtre d’improvisation en groupe!
+                - generic [ref=e81]:
+                  - generic [ref=e82]: Idée soumise au vote
+                  - button "Voter" [ref=e83] [cursor=pointer]:
+                    - img
+                    - text: Voter
+                  - button "Partager cette idée" [ref=e84] [cursor=pointer]:
+                    - img
+              - generic [ref=e85]:
+                - generic [ref=e87]:
+                  - img [ref=e89]
+                  - generic [ref=e91]: 14 votes
+                - generic [ref=e92]: Proposée par Celine D
+            - generic [ref=e94]:
+              - generic [ref=e95]:
+                - heading "Avoir accès à un bureau à la journée" [level=3] [ref=e96]:
+                  - generic [ref=e98]: Avoir accès à un bureau à la journée
+                - generic [ref=e99]:
+                  - generic [ref=e100]: Idée soumise au vote
+                  - button "Voter" [ref=e101] [cursor=pointer]:
+                    - img
+                    - text: Voter
+                  - button "Partager cette idée" [ref=e102] [cursor=pointer]:
+                    - img
+              - paragraph [ref=e104]: Tu n'as pas de bureau sur Amiens ou pas envie d'y travailler ? tu aimerais profiter d'un bureau CJD accéssible à la journée / demi- journée sur réservation ? VOTE !
+              - generic [ref=e105]:
+                - generic [ref=e107]:
+                  - img [ref=e109]
+                  - generic [ref=e111]: 9 votes
+                - generic [ref=e112]: Proposée par Maxence
+            - generic [ref=e114]:
+              - generic [ref=e115]:
+                - heading "Créer un onglet sur ce site \"Plateforme de prêt de matériel\"" [level=3] [ref=e116]:
+                  - generic [ref=e118]: Créer un onglet sur ce site "Plateforme de prêt de matériel"
+                - generic [ref=e119]:
+                  - generic [ref=e120]: Idée soumise au vote
+                  - button "Voter" [ref=e121] [cursor=pointer]:
+                    - img
+                    - text: Voter
+                  - button "Partager cette idée" [ref=e122] [cursor=pointer]:
+                    - img
+              - paragraph [ref=e124]: Besoin d'une remorque, d'un debroussailleur, d'une enceinte pour une soirée ? Je laisse ici soit mon besoin, soit ce que je suis prêt à prêter à un autre JD
+              - generic [ref=e125]:
+                - generic [ref=e127]:
+                  - img [ref=e129]
+                  - generic [ref=e131]: 16 votes
+                - generic [ref=e132]: Proposée par Max
+            - generic [ref=e134]:
+              - generic [ref=e135]:
+                - heading "Découverte de l'equicoaching" [level=3] [ref=e136]:
+                  - generic [ref=e138]: Découverte de l'equicoaching
+                - generic [ref=e139]:
+                  - generic [ref=e140]: Idée soumise au vote
+                  - button "Voter" [ref=e141] [cursor=pointer]:
+                    - img
+                    - text: Voter
+                  - button "Partager cette idée" [ref=e142] [cursor=pointer]:
+                    - img
+              - generic [ref=e143]:
+                - generic [ref=e145]:
+                  - img [ref=e147]
+                  - generic [ref=e149]: 7 votes
+                - generic [ref=e150]: Proposée par Charlotte
+            - generic [ref=e152]:
+              - generic [ref=e153]:
+                - heading "Initiation à l’aviron à St Leu" [level=3] [ref=e154]:
+                  - generic [ref=e156]: Initiation à l’aviron à St Leu
+                - generic [ref=e157]:
+                  - generic [ref=e158]: Idée soumise au vote
+                  - button "Voter" [ref=e159] [cursor=pointer]:
+                    - img
+                    - text: Voter
+                  - button "Partager cette idée" [ref=e160] [cursor=pointer]:
+                    - img
+              - paragraph [ref=e162]: Tout est dans le titre !
+              - generic [ref=e163]:
+                - generic [ref=e165]:
+                  - img [ref=e167]
+                  - generic [ref=e169]: 3 votes
+                - generic [ref=e170]: Proposée par Maxime Bourgois
+            - generic [ref=e172]:
+              - generic [ref=e173]:
+                - heading "Aller voir ensemble un match de hockey" [level=3] [ref=e174]:
+                  - generic [ref=e176]: Aller voir ensemble un match de hockey
+                - generic [ref=e177]:
+                  - generic [ref=e178]: Idée soumise au vote
+                  - button "Voter" [ref=e179] [cursor=pointer]:
+                    - img
+                    - text: Voter
+                  - button "Partager cette idée" [ref=e180] [cursor=pointer]:
+                    - img
+              - generic [ref=e181]:
+                - generic [ref=e183]:
+                  - img [ref=e185]
+                  - generic [ref=e187]: 21 votes
+                - generic [ref=e188]: Proposée par Thomas
+            - generic [ref=e190]:
+              - generic [ref=e191]:
+                - heading "atelier sur la mise en place de l'intéressement" [level=3] [ref=e192]:
+                  - generic [ref=e194]: atelier sur la mise en place de l'intéressement
+                - generic [ref=e195]:
+                  - generic [ref=e196]: Idée soumise au vote
+                  - button "Voter" [ref=e197] [cursor=pointer]:
+                    - img
+                    - text: Voter
+                  - button "Partager cette idée" [ref=e198] [cursor=pointer]:
+                    - img
+              - paragraph [ref=e200]: Partager des retours d'expériences sur la mise en place de l'intéressement dans vos entreprises. Échanger et bâtir une méthode a partir de cela.
+              - generic [ref=e201]:
+                - generic [ref=e203]:
+                  - img [ref=e205]
+                  - generic [ref=e207]: 3 votes
+                - generic [ref=e208]: Proposée par aurelien vermote
+            - generic [ref=e210]:
+              - generic [ref=e211]:
+                - heading "Faire une action charitative à fort impact" [level=3] [ref=e212]:
+                  - generic [ref=e214]: Faire une action charitative à fort impact
+                - generic [ref=e215]:
+                  - generic [ref=e216]: Idée soumise au vote
+                  - button "Voter" [ref=e217] [cursor=pointer]:
+                    - img
+                    - text: Voter
+                  - button "Partager cette idée" [ref=e218] [cursor=pointer]:
+                    - img
+              - generic [ref=e219]:
+                - generic [ref=e221]:
+                  - img [ref=e223]
+                  - generic [ref=e225]: 19 votes
+                - generic [ref=e226]: Proposée par Fred
+            - generic [ref=e228]:
+              - generic [ref=e229]:
+                - heading "MARCHE GOURMANDE DANS LE BEAUJOLAIS" [level=3] [ref=e230]:
+                  - generic [ref=e232]: MARCHE GOURMANDE DANS LE BEAUJOLAIS
+                - generic [ref=e233]:
+                  - generic [ref=e234]: Idée soumise au vote
+                  - button "Voter" [ref=e235] [cursor=pointer]:
+                    - img
+                    - text: Voter
+                  - button "Partager cette idée" [ref=e236] [cursor=pointer]:
+                    - img
+              - generic [ref=e237]:
+                - paragraph [ref=e238]: Visite guidée à travers les vignobles de la famille de Seb. Échange avec une famille d’entrepreneurs engagés à échelle humaine et familiale dans ce monde passionnant de l’œnologie. Un ballade à pieds sur une journée avec étapes dégustatives au milieu des vignes et belle ambiance pour le plaisir des familles et des copains. Chaque année le dimanche de la Pentecôte.
+                - button "Voir plus" [ref=e239] [cursor=pointer]:
+                  - img [ref=e240]
+                  - text: Voir plus
+              - generic [ref=e242]:
+                - generic [ref=e244]:
+                  - img [ref=e246]
+                  - generic [ref=e248]: 3 votes
+                - generic [ref=e249]: Proposée par Celine G
+            - generic [ref=e251]:
+              - generic [ref=e252]:
+                - heading "J’aimerais apprendre la plongée (baptême ou passer la licence)" [level=3] [ref=e253]:
+                  - generic [ref=e255]: J’aimerais apprendre la plongée (baptême ou passer la licence)
+                - generic [ref=e256]:
+                  - generic [ref=e257]: Idée soumise au vote
+                  - button "Voter" [ref=e258] [cursor=pointer]:
+                    - img
+                    - text: Voter
+                  - button "Partager cette idée" [ref=e259] [cursor=pointer]:
+                    - img
+              - generic [ref=e260]:
+                - generic [ref=e262]:
+                  - img [ref=e264]
+                  - generic [ref=e266]: 2 votes
+                - generic [ref=e267]: Proposée par Thibault
+            - generic [ref=e269]:
+              - generic [ref=e270]:
+                - heading "Formation constellation" [level=3] [ref=e271]:
+                  - generic [ref=e273]: Formation constellation
+                - generic [ref=e274]:
+                  - generic [ref=e275]: Idée soumise au vote
+                  - button "Voter" [ref=e276] [cursor=pointer]:
+                    - img
+                    - text: Voter
+                  - button "Partager cette idée" [ref=e277] [cursor=pointer]:
+                    - img
+              - generic [ref=e278]:
+                - generic [ref=e280]:
+                  - img [ref=e282]
+                  - generic [ref=e284]: 11 votes
+                - generic [ref=e285]: Proposée par Christine
+            - generic [ref=e287]:
+              - generic [ref=e288]:
+                - heading "Course 5km contre le Cancer, en hommage à Christophe" [level=3] [ref=e289]:
+                  - generic [ref=e291]: Course 5km contre le Cancer, en hommage à Christophe
+                - generic [ref=e292]:
+                  - generic [ref=e293]: Réalisée
+                  - button "Partager cette idée" [ref=e294] [cursor=pointer]:
+                    - img
+              - generic [ref=e296]: Proposée par Christine
+            - generic [ref=e298]:
+              - generic [ref=e299]:
+                - heading "Visite de Rungis" [level=3] [ref=e300]:
+                  - generic [ref=e302]: Visite de Rungis
+                - generic [ref=e303]:
+                  - generic [ref=e304]: Réalisée
+                  - button "Partager cette idée" [ref=e305] [cursor=pointer]:
+                    - img
+              - paragraph [ref=e307]: Tu veux palper des poissons à 3h du mat ? Votes !
+              - generic [ref=e309]: Proposée par Charlotte et Benoit
+            - generic [ref=e311]:
+              - generic [ref=e312]:
+                - heading "Avoir l’agenda du CJD en numérique" [level=3] [ref=e313]:
+                  - generic [ref=e315]: Avoir l’agenda du CJD en numérique
+                - generic [ref=e316]:
+                  - generic [ref=e317]: Réalisée
+                  - button "Partager cette idée" [ref=e318] [cursor=pointer]:
+                    - img
+              - generic [ref=e320]: Proposée par Un JD
+            - generic [ref=e322]:
+              - generic [ref=e323]:
+                - heading "Faire la traversée du Mont St Michel" [level=3] [ref=e324]:
+                  - generic [ref=e326]: Faire la traversée du Mont St Michel
+                - generic [ref=e327]:
+                  - generic [ref=e328]: Réalisée
+                  - button "Partager cette idée" [ref=e329] [cursor=pointer]:
+                    - img
+              - generic [ref=e331]: Proposée par Anonymous
+            - generic [ref=e333]:
+              - generic [ref=e334]:
+                - heading "Annuaire jd" [level=3] [ref=e335]:
+                  - generic [ref=e337]: Annuaire jd
+                - generic [ref=e338]:
+                  - generic [ref=e339]: Réalisée
+                  - button "Partager cette idée" [ref=e340] [cursor=pointer]:
+                    - img
+              - paragraph [ref=e342]: Pouvoir avoir tous les numéros des JDs en un clic
+              - generic [ref=e344]: Proposée par Olivier
+            - generic [ref=e346]:
+              - generic [ref=e347]:
+                - heading "Cours de Rock !" [level=3] [ref=e348]:
+                  - generic [ref=e350]: Cours de Rock !
+                - generic [ref=e351]:
+                  - generic [ref=e352]: Réalisée
+                  - button "Partager cette idée" [ref=e353] [cursor=pointer]:
+                    - img
+              - generic [ref=e355]: Proposée par Christine
+          - generic [ref=e357]:
+            - generic [ref=e358]:
+              - heading "Vous avez une idée ?" [level=3] [ref=e359]:
+                - img [ref=e360]
+                - text: Vous avez une idée ?
+              - paragraph [ref=e362]: Partagez votre idée avec la communauté CJD Amiens et permettez aux autres de voter pour la soutenir
+            - button "Ajouter une idée" [ref=e364] [cursor=pointer]:
+              - img
+              - text: Ajouter une idée
+        - generic [ref=e365]:
+          - generic [ref=e366]:
+            - heading "📅 Événements à venir" [level=2] [ref=e367]
+            - paragraph [ref=e368]: Inscrivez-vous aux prochains événements CJD Amiens
+          - generic [ref=e369]:
+            - generic [ref=e370]:
+              - generic [ref=e371]:
+                - img [ref=e373]
+                - heading "Événements à venir" [level=2] [ref=e375]
+              - paragraph [ref=e376]: Découvrez les prochains événements de la section CJD Amiens et inscrivez-vous facilement
+            - generic [ref=e377]:
+              - generic [ref=e380]:
+                - generic [ref=e381]:
+                  - generic [ref=e382]:
+                    - generic [ref=e383]: "11"
+                    - generic [ref=e384]: nov.
+                    - generic [ref=e385]:
+                      - img [ref=e386]
+                      - text: 12:00
+                  - generic [ref=e390]: À venir
+                - generic [ref=e392]:
+                  - generic [ref=e393]:
+                    - 'heading "Événement: Course 5km contre le Cancer, en hommage à Christophe" [level=3] [ref=e395]'
+                    - generic [ref=e396]:
+                      - generic [ref=e397]:
+                        - img [ref=e398]
+                        - generic [ref=e400]:
+                          - text: mardi 11 novembre 2025 à 12:00
+                          - generic [ref=e401]: Événement à venir
+                      - generic [ref=e402]:
+                        - img [ref=e403]
+                        - generic [ref=e406]: Amiens
+                      - generic [ref=e407]:
+                        - img [ref=e408]
+                        - link "💳 Inscription payante - HelloAsso" [ref=e410] [cursor=pointer]:
+                          - /url: https://www.helloasso.com/associations/amiens-uc-athletisme/evenements/movember-kiprun-d-amiens
+                    - paragraph [ref=e412]: "Événement créé à partir de l'idée proposée par Christine: \"Course 5km contre le Cancer, en hommage à Christophe\""
+                  - generic [ref=e414]:
+                    - button "S'inscrire" [ref=e415] [cursor=pointer]:
+                      - img
+                      - text: S'inscrire
+                    - button "Partager cet événement" [ref=e416] [cursor=pointer]:
+                      - img
+              - generic [ref=e419]:
+                - generic [ref=e420]:
+                  - generic [ref=e421]:
+                    - generic [ref=e422]: "13"
+                    - generic [ref=e423]: nov.
+                    - generic [ref=e424]:
+                      - img [ref=e425]
+                      - text: 17:30
+                  - generic [ref=e429]: À venir
+                - generic [ref=e431]:
+                  - generic [ref=e432]:
+                    - heading "Plénière de novembre - tu vas bientôt te faire hacker, et voici comment !" [level=3] [ref=e434]
+                    - generic [ref=e436]:
+                      - img [ref=e437]
+                      - generic [ref=e439]:
+                        - text: jeudi 13 novembre 2025 à 17:30
+                        - generic [ref=e440]: Événement à venir
+                  - generic [ref=e442]:
+                    - button "Se désinscrire" [ref=e443] [cursor=pointer]:
+                      - img
+                      - text: Se désinscrire
+                    - button "Partager cet événement" [ref=e444] [cursor=pointer]:
+                      - img
+              - generic [ref=e447]:
+                - generic [ref=e448]:
+                  - generic [ref=e449]:
+                    - generic [ref=e450]: "18"
+                    - generic [ref=e451]: nov.
+                    - generic [ref=e452]:
+                      - img [ref=e453]
+                      - text: 03:00
+                  - generic [ref=e457]: À venir
+                - generic [ref=e459]:
+                  - generic [ref=e460]:
+                    - heading "Visite de Rungis groupe 1" [level=3] [ref=e462]
+                    - generic [ref=e464]:
+                      - img [ref=e465]
+                      - generic [ref=e467]:
+                        - text: mardi 18 novembre 2025 à 03:00
+                        - generic [ref=e468]: Événement à venir
+                  - generic [ref=e470]:
+                    - button "S'inscrire" [ref=e471] [cursor=pointer]:
+                      - img
+                      - text: S'inscrire
+                    - button "Partager cet événement" [ref=e472] [cursor=pointer]:
+                      - img
+              - generic [ref=e475]:
+                - generic [ref=e476]:
+                  - generic [ref=e477]:
+                    - generic [ref=e478]: "9"
+                    - generic [ref=e479]: déc.
+                    - generic [ref=e480]:
+                      - img [ref=e481]
+                      - text: 03:00
+                  - generic [ref=e485]: À venir
+                - generic [ref=e487]:
+                  - generic [ref=e488]:
+                    - heading "Visite de Rungis groupe 2" [level=3] [ref=e490]
+                    - generic [ref=e492]:
+                      - img [ref=e493]
+                      - generic [ref=e495]:
+                        - text: mardi 9 décembre 2025 à 03:00
+                        - generic [ref=e496]: Événement à venir
+                  - generic [ref=e498]:
+                    - button "S'inscrire" [ref=e499] [cursor=pointer]:
+                      - img
+                      - text: S'inscrire
+                    - button "Partager cet événement" [ref=e500] [cursor=pointer]:
+                      - img
+              - generic [ref=e503]:
+                - generic [ref=e504]:
+                  - generic [ref=e505]:
+                    - generic [ref=e506]: "12"
+                    - generic [ref=e507]: déc.
+                    - generic [ref=e508]:
+                      - img [ref=e509]
+                      - text: 17:00
+                  - generic [ref=e513]: À venir
+                - generic [ref=e515]:
+                  - generic [ref=e516]:
+                    - heading "Plénière de décembre - patinoire du coliseum" [level=3] [ref=e518]
+                    - generic [ref=e520]:
+                      - img [ref=e521]
+                      - generic [ref=e523]:
+                        - text: vendredi 12 décembre 2025 à 17:00
+                        - generic [ref=e524]: Événement à venir
+                  - generic [ref=e526]:
+                    - button "Se désinscrire" [ref=e527] [cursor=pointer]:
+                      - img
+                      - text: Se désinscrire
+                    - button "Partager cet événement" [ref=e528] [cursor=pointer]:
+                      - img
+              - generic [ref=e531]:
+                - generic [ref=e532]:
+                  - generic [ref=e533]:
+                    - generic [ref=e534]: "21"
+                    - generic [ref=e535]: févr.
+                    - generic [ref=e536]:
+                      - img [ref=e537]
+                      - text: 17:00
+                  - generic [ref=e541]: À venir
+                - generic [ref=e543]:
+                  - generic [ref=e544]:
+                    - heading "Carnaval de Dunkerque" [level=3] [ref=e546]
+                    - generic [ref=e548]:
+                      - img [ref=e549]
+                      - generic [ref=e551]:
+                        - text: samedi 21 février 2026 à 17:00
+                        - generic [ref=e552]: Événement à venir
+                    - paragraph [ref=e554]: "Samedi 21/2/25 20h au Bistrot Pulpo 23h au bal des corsaires Nuit à l'hotel Transat Bleu Dimanche : les bandes de Malo Hotel + Transport + Entrée Bal des Corsaires = env 200€ /personne via HelloAsso"
+                  - generic [ref=e557]:
+                    - button "S'inscrire" [ref=e558] [cursor=pointer]:
+                      - img
+                      - text: S'inscrire
+                    - button "Partager cet événement" [ref=e559] [cursor=pointer]:
+                      - img
+      - generic [ref=e562]:
+        - generic [ref=e563]:
+          - generic [ref=e565]: CJD
+          - generic [ref=e566]:
+            - paragraph [ref=e567]: Centre des Jeunes Dirigeants d'Amiens
+            - paragraph [ref=e568]: © 2025 - Tous droits réservés
+        - generic [ref=e569]:
+          - button "Administration" [ref=e570] [cursor=pointer]
+          - generic [ref=e572]:
+            - text: Créé avec ❤️ par
+            - link "Thibault" [ref=e573] [cursor=pointer]:
+              - /url: https://robinswood.io
+```
