@@ -3,6 +3,14 @@
 ## Overview
 This project is an internal web application for the "Centre des Jeunes Dirigeants (CJD) d'Amiens." Its primary purpose is to facilitate collaborative idea sharing ("Boîte à Kiffs"), enable voting on proposals, and manage events with HelloAsso integration. The application serves internal CJD Amiens members (business leaders, entrepreneurs). The project aims to provide a modern, responsive, and optimized architecture, high performance, and a user-friendly interface. Key capabilities include a comprehensive CRM for patron and member management, an engagement scoring system, subscription tracking, and an admin dashboard for quick overviews.
 
+## Recent Changes (October 2025)
+### Playwright Test Infrastructure Improvements
+- **Public API Test Coverage**: Added comprehensive E2E tests for all public API endpoints (health checks, ideas, events, inscriptions, unsubscriptions) with 12/12 tests passing
+- **Test Isolation**: Implemented unique event IDs in test fixtures to prevent cross-worker collisions during parallel test execution
+- **Rate Limiting for Tests**: Added test environment detection in rate limiters (`server/middleware/rate-limit.ts`) to bypass rate limits during automated testing
+- **Test Server Configuration**: Modified Playwright webServer to launch directly with `NODE_ENV=test tsx server/index.ts` instead of `npm run dev`, ensuring correct environment variables for test-specific behavior
+- **Auto-cleanup System**: Validated automatic cleanup of test data with parallel execution support
+
 ## User Preferences
 ### Primary Communication Rule
 **🎯 CRITICAL**: Les remarques de l'utilisateur concernent **TOUJOURS** ce qu'il voit dans l'interface utilisateur (UI/frontend), sauf indication contraire explicite. Interpréter systématiquement depuis la perspective visuelle de l'utilisateur.
