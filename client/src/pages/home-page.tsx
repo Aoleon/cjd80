@@ -3,6 +3,7 @@ import Layout from "@/components/layout";
 import IdeasSection from "@/components/ideas-section";
 import EventsSection from "@/components/events-section";
 import { branding, getShortAppName } from '@/config/branding';
+import { SiGithub } from 'react-icons/si';
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
@@ -41,8 +42,19 @@ export default function HomePage() {
               >
                 Administration
               </button>
-              <div className="text-xs sm:text-sm text-gray-400">
+              <div className="text-xs sm:text-sm text-gray-400 flex items-center gap-2 sm:gap-3">
                 <span>Créé avec ❤️ par <a href="https://robinswood.io" target="_blank" rel="noopener noreferrer" className="text-cjd-green hover:text-success-light transition-colors duration-200">Thibault</a></span>
+                <span className="hidden sm:inline">•</span>
+                <a 
+                  href="https://github.com/Aoleon/cjd80" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center gap-1 text-gray-400 hover:text-cjd-green transition-colors duration-200"
+                  data-testid="link-github"
+                >
+                  <SiGithub className="w-4 h-4" />
+                  <span>Open Source</span>
+                </a>
               </div>
             </div>
           </div>
