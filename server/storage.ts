@@ -97,6 +97,7 @@ export interface IStorage {
   updateIdeaStatus(id: string, status: string): Promise<Result<void>>;
   updateIdea(id: string, ideaData: { title?: string; description?: string | null; proposedBy?: string; proposedByEmail?: string }): Promise<Result<Idea>>;
   transformIdeaToEvent(ideaId: string): Promise<Result<Event>>;
+  toggleIdeaFeatured(id: string): Promise<Result<boolean>>;
   isDuplicateIdea(title: string): Promise<boolean>;
   getAllIdeas(options?: { page?: number; limit?: number }): Promise<Result<{
     data: (Idea & { voteCount: number })[];
@@ -109,6 +110,7 @@ export interface IStorage {
   getVotesByIdea(ideaId: string): Promise<Result<Vote[]>>;
   getIdeaVotes(ideaId: string): Promise<Result<Vote[]>>;
   createVote(vote: InsertVote): Promise<Result<Vote>>;
+  deleteVote(voteId: string): Promise<Result<void>>;
   hasUserVoted(ideaId: string, email: string): Promise<boolean>;
   
   // Events - Ultra-robust with validation
@@ -135,6 +137,7 @@ export interface IStorage {
   // Inscriptions - Ultra-robust with duplicate protection
   getEventInscriptions(eventId: string): Promise<Result<Inscription[]>>;
   createInscription(inscription: InsertInscription): Promise<Result<Inscription>>;
+  deleteInscription(inscriptionId: string): Promise<Result<void>>;
   unsubscribeFromEvent(eventId: string, name: string, email: string): Promise<Result<void>>;
   hasUserRegistered(eventId: string, email: string): Promise<boolean>;
   

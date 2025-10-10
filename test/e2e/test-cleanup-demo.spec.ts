@@ -40,15 +40,17 @@ test.describe('Système de nettoyage automatique - Démonstration', () => {
     const createdIdea = await response.json();
     console.log(`[Test Cleanup Demo] Idée créée avec ID: ${createdIdea.id}`);
     console.log(`[Test Cleanup Demo] Titre: ${testIdea.title}`);
+    console.log(`[Test Cleanup Demo] Statut: ${createdIdea.status}`);
+    
+    // Vérifier que l'idée a été créée avec les bonnes données
+    expect(createdIdea).toBeDefined();
+    expect(createdIdea.id).toBeDefined();
+    expect(createdIdea.title).toBe(testIdea.title);
+    expect(createdIdea.status).toBe('pending'); // Les nouvelles idées ont le statut 'pending' par défaut
+    
+    // Note: GET /api/ideas filtre par status 'approved' ou 'completed', donc l'idée ne sera pas visible
+    // Cette idée avec status 'pending' ne sera visible que dans l'interface admin
     console.log(`[Test Cleanup Demo] ✅ Cette idée sera automatiquement supprimée après le test`);
-    
-    // Vérifier que l'idée existe
-    const getResponse = await page.request.get(`/api/ideas`);
-    expect(getResponse.ok()).toBeTruthy();
-    
-    const ideas = await getResponse.json();
-    const foundIdea = ideas.data?.data?.find((i: any) => i.title === testIdea.title);
-    expect(foundIdea).toBeDefined();
     
     // Note: Après ce test, la fixture autoCleanup supprimera automatiquement cette idée
   });
@@ -66,7 +68,12 @@ test.describe('Système de nettoyage automatique - Démonstration', () => {
       }
     });
     
+    // Vérifier que l'idée a été créée avec succès
+    expect(ideaResponse.ok()).toBeTruthy();
     const createdIdea = await ideaResponse.json();
+    expect(createdIdea.id).toBeDefined();
+    
+    console.log(`[Test Cleanup Demo] Idée créée avec ID: ${createdIdea.id}`);
     
     // Générer des données de vote
     const testVote = generateTestVote({
@@ -82,7 +89,13 @@ test.describe('Système de nettoyage automatique - Démonstration', () => {
       }
     });
     
+    // Vérifier que le vote a été créé avec succès
     expect(voteResponse.ok()).toBeTruthy();
+    
+    const voteResult = await voteResponse.json();
+    expect(voteResult.success).toBe(true);
+    expect(voteResult.data).toBeDefined();
+    expect(voteResult.data.ideaId).toBe(createdIdea.id);
     
     console.log(`[Test Cleanup Demo] Vote créé pour l'idée: ${createdIdea.id}`);
     console.log(`[Test Cleanup Demo] Votant: ${testVote.voterEmail}`);
@@ -91,62 +104,27 @@ test.describe('Système de nettoyage automatique - Démonstration', () => {
     // Note: Le vote ET l'idée seront supprimés automatiquement
   });
 
-  test('should create and auto-cleanup test event and inscription', async ({ page }) => {
-    // Générer un événement de test
+  // Test 3: Événement et inscription - SKIPPED car nécessite authentification admin
+  test.skip('should create and auto-cleanup test event and inscription', async ({ page }) => {
+    // Note: POST /api/admin/events nécessite authentification avec requireAuth middleware
+    // Ce test est désactivé car il ne peut pas fonctionner sans session admin
+    // Pour tester les événements, utiliser plutôt les tests d'intégration avec authentification
+    
     const testEvent = generateTestEvent({
       title: 'Événement de test',
       daysFromNow: 15,
       location: 'Salle de test'
     });
     
-    // Créer l'événement
-    const eventResponse = await page.request.post('/api/admin/events', {
-      data: {
-        title: testEvent.title,
-        description: testEvent.description,
-        date: testEvent.date.toISOString(),
-        location: testEvent.location,
-      }
-    });
-    
-    // Note: Cette requête peut échouer si l'utilisateur n'est pas authentifié
-    // C'est normal dans un test de démonstration
-    if (eventResponse.ok()) {
-      const createdEvent = await eventResponse.json();
-      console.log(`[Test Cleanup Demo] Événement créé avec ID: ${createdEvent.id}`);
-      
-      // Générer une inscription
-      const testInscription = generateTestInscription({
-        name: 'Participant de test',
-        includePhone: true
-      });
-      
-      // Créer l'inscription
-      const inscriptionResponse = await page.request.post('/api/inscriptions', {
-        data: {
-          eventId: createdEvent.id,
-          name: testInscription.name,
-          email: testInscription.email,
-          company: testInscription.company,
-          phone: testInscription.phone,
-        }
-      });
-      
-      if (inscriptionResponse.ok()) {
-        console.log(`[Test Cleanup Demo] Inscription créée pour: ${testInscription.email}`);
-        console.log(`[Test Cleanup Demo] ✅ L'inscription et l'événement seront automatiquement supprimés`);
-      }
-    } else {
-      console.log(`[Test Cleanup Demo] ⚠️  Événement non créé (authentification requise)`);
-    }
+    console.log(`[Test Cleanup Demo] ⚠️  Test d'événement désactivé - nécessite authentification admin`);
+    console.log(`[Test Cleanup Demo] Événement: ${testEvent.title}`);
   });
 
   test('should demonstrate multiple test data creation', async ({ page }) => {
-    // Créer plusieurs idées de test
+    // Créer plusieurs idées de test (réduit à 2 pour éviter rate limiting)
     const ideas = [
       generateTestIdea({ title: 'Idée 1' }),
       generateTestIdea({ title: 'Idée 2' }),
-      generateTestIdea({ title: 'Idée 3' }),
     ];
     
     let createdCount = 0;
@@ -164,6 +142,9 @@ test.describe('Système de nettoyage automatique - Démonstration', () => {
       if (response.ok()) {
         createdCount++;
       }
+      
+      // Délai pour éviter rate limiting
+      await page.waitForTimeout(600);
     }
     
     console.log(`[Test Cleanup Demo] ${createdCount} idées créées`);
