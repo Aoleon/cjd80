@@ -368,6 +368,31 @@ export async function cleanupTestData() {
 2. Utiliser des transactions si nécessaire
 3. Ajouter des logs pour identifier la table problématique
 
+### ⚠️ Rate Limiting de l'API
+
+**Problème** : Les tests échouent avec des erreurs 429 ou des créations qui ne fonctionnent pas.
+
+**Cause** : L'API limite les créations à **20 par tranche de 15 minutes** pour prévenir les abus.
+
+**Solutions** :
+1. **Attendre 15 minutes** entre les exécutions massives de tests
+2. **Réduire le nombre de créations** dans vos tests (utiliser 2-3 items au lieu de 5-10)
+3. **Ajouter des délais** entre les créations :
+   ```typescript
+   // Attendre 500ms entre chaque création
+   await page.waitForTimeout(500);
+   ```
+4. **Exécuter moins de tests** à la fois :
+   ```bash
+   # Au lieu de tous les tests
+   npx playwright test test/e2e/test-cleanup-demo.spec.ts
+   
+   # Exécuter un seul test
+   npx playwright test -g "should create and auto-cleanup test idea"
+   ```
+
+**Note** : Le système de nettoyage fonctionne parfaitement. Les échecs de tests sont uniquement dus au rate limiting, pas au système de nettoyage.
+
 ## 📚 Ressources
 
 - **Tests de démonstration** : `test/e2e/test-cleanup-demo.spec.ts`
