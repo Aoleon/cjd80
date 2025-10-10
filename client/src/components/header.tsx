@@ -21,18 +21,13 @@ export default function Header() {
 
   const activeSection = getActiveSection();
 
-  // Vérifier si l'utilisateur est admin
-  const isAdmin = user && hasPermission(user.role, 'admin.view');
-
-  // Filtrer les items de menu : les admins ne voient aucun onglet
-  const allMenuItems = [
+  // Items de menu visibles pour tous les utilisateurs
+  const menuItems = [
     { id: "ideas" as const, label: "Voter pour des idées", route: "/" },
     { id: "propose" as const, label: "Proposer une idée", route: "/propose" },
     { id: "events" as const, label: "Événements", route: "/events" },
     { id: "tools" as const, label: "Les outils du dirigeants", route: "/tools" },
   ];
-
-  const menuItems = isAdmin ? [] : allMenuItems;
 
   return (
     <header className="bg-cjd-green text-white shadow-lg">

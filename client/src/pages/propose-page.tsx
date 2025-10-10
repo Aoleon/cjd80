@@ -185,6 +185,7 @@ export default function ProposePage() {
   const { data: patrons = [], isLoading: isLoadingPatrons } = useQuery<Patron[]>({
     queryKey: ["/api/patrons"],
     enabled: isAdmin,
+    select: (data: any) => data?.data || []
   });
 
   // Mutation to create a new patron (admin dialog - NO proposer fields)

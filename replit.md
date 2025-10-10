@@ -11,6 +11,16 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
 - **Test Server Configuration**: Modified Playwright webServer to launch directly with `NODE_ENV=test tsx server/index.ts` instead of `npm run dev`, ensuring correct environment variables for test-specific behavior
 - **Auto-cleanup System**: Validated automatic cleanup of test data with parallel execution support
 
+### Admin Navigation & UI Fixes (October 10, 2025)
+- **Admin Header Navigation Fix**: Resolved bug where header navigation menu disappeared for admin users when navigating outside admin area
+  - **Root Cause**: Line 35 in `client/src/components/header.tsx` had conditional logic `menuItems = isAdmin ? [] : allMenuItems` that hid all menu items for admins
+  - **Solution**: Removed admin filtering logic - all users now see navigation menu items ("Voter pour des idées", "Proposer une idée", "Événements", "Les outils du dirigeants") regardless of role
+  - **Verification**: E2E test confirms header navigation remains visible across all pages (/, /propose, /events, /tools) for admin users
+- **Propose Page Patron Data Fix**: Fixed runtime error `patrons.map is not a function` on `/propose` page
+  - **Root Cause**: API `/api/patrons` returns paginated object `{data: [...], total, page, limit}` but frontend query expected direct array
+  - **Solution**: Added `select: (data: any) => data?.data || []` to useQuery in `client/src/pages/propose-page.tsx` to extract array from API response
+- **Footer Enhancement**: Added GitHub open-source link (https://github.com/Aoleon/cjd80) with icon to homepage footer
+
 ## User Preferences
 ### Primary Communication Rule
 **🎯 CRITICAL**: Les remarques de l'utilisateur concernent **TOUJOURS** ce qu'il voit dans l'interface utilisateur (UI/frontend), sauf indication contraire explicite. Interpréter systématiquement depuis la perspective visuelle de l'utilisateur.
