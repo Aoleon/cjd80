@@ -2248,6 +2248,89 @@ export function createRouter(storageInstance: IStorage): any {
     }
   });
 
+  // Test de configuration email (envoie un email de test au premier admin)
+  router.get("/api/admin/test-email", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await emailNotificationService.testEmailConfiguration();
+      
+      if (!result.success) {
+        return res.status(500).json({ 
+          success: false, 
+          message: result.error?.message || "Erreur lors du test email" 
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Email de test envoyé avec succès" 
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Test email simple et direct (debug)
+  router.get("/api/admin/test-email-simple", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      console.log('[Test Email] Début du test d\'envoi email simple...');
+      
+      const { emailService } = await import('./email-service');
+      console.log('[Test Email] Service email importé');
+      
+      // Récupérer le premier admin actif
+      const adminsResult = await storageInstance.getAllAdmins();
+      
+      if (!adminsResult.success) {
+        console.log('[Test Email] Erreur lors de la récupération des admins');
+        return res.status(500).json({ 
+          success: false, 
+          message: "Erreur lors de la récupération des administrateurs" 
+        });
+      }
+      
+      console.log('[Test Email] Admins récupérés:', adminsResult.data?.length || 0);
+      
+      const activeAdmins = adminsResult.data?.filter((a: any) => a.isActive && a.status === 'active') || [];
+      console.log('[Test Email] Admins actifs:', activeAdmins.length);
+      
+      if (activeAdmins.length === 0) {
+        console.log('[Test Email] Aucun admin actif trouvé');
+        return res.status(400).json({ 
+          success: false, 
+          message: "Aucun administrateur actif trouvé" 
+        });
+      }
+      
+      const testEmail = activeAdmins[0].email;
+      console.log('[Test Email] Envoi vers:', testEmail);
+      
+      const result = await emailService.sendEmail({
+        to: [testEmail],
+        subject: "Test Configuration SMTP - CJD Amiens",
+        html: `
+          <h2>Test de Configuration Email</h2>
+          <p>Si vous recevez cet email, la configuration SMTP OVH est correcte!</p>
+          <p>Serveur: ssl0.ovh.net</p>
+          <p>Date: ${new Date().toLocaleString('fr-FR')}</p>
+        `
+      });
+      
+      console.log('[Test Email] Résultat:', result.success ? 'SUCCÈS' : 'ÉCHEC');
+      if (!result.success) {
+        console.error('[Test Email] Erreur:', result.error);
+      }
+      
+      res.json({
+        success: result.success,
+        message: result.success ? `Email envoyé à ${testEmail}` : "Erreur lors de l'envoi",
+        details: result
+      });
+    } catch (error: any) {
+      console.error('[Test Email] Exception:', error);
+      next(error);
+    }
+  });
+
   return router;
 }
 
