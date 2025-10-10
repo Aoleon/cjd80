@@ -6,21 +6,23 @@ export interface NotificationContext {
   adminDashboardUrl: string;
 }
 
-// CSS inline pour une meilleure compatibilité email
+// CSS inline simplifié pour éviter les filtres anti-spam
 const emailStyles = {
-  container: 'max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; line-height: 1.6; color: #333;',
-  header: 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;',
-  title: 'margin: 0; font-size: 24px; font-weight: bold;',
-  subtitle: 'margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;',
-  content: 'background: #ffffff; padding: 30px; border: 1px solid #e0e0e0;',
-  badge: 'display: inline-block; background: #4CAF50; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-bottom: 15px;',
-  itemTitle: 'font-size: 20px; font-weight: bold; color: #2c3e50; margin: 0 0 10px 0;',
-  description: 'background: #f8f9fa; padding: 15px; border-left: 4px solid #667eea; margin: 15px 0; border-radius: 0 4px 4px 0;',
-  metaInfo: 'background: #f0f0f0; padding: 15px; border-radius: 6px; margin: 15px 0;',
-  metaLabel: 'font-weight: bold; color: #555; margin-right: 8px;',
-  metaValue: 'color: #333;',
-  button: 'display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold;',
-  footer: 'background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 12px; border-radius: 0 0 8px 8px; border: 1px solid #e0e0e0; border-top: none;'
+  container: 'max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; line-height: 1.6; color: #333;',
+  header: 'background: #2c3e50; color: white; padding: 24px; text-align: center;',
+  title: 'margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.5px;',
+  subtitle: 'margin: 8px 0 0 0; font-size: 13px; opacity: 0.85; font-weight: 400;',
+  content: 'background: #ffffff; padding: 32px 24px;',
+  label: 'display: inline-block; background: #f4f4f4; color: #555; padding: 4px 10px; border-radius: 3px; font-size: 11px; font-weight: 500; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;',
+  itemTitle: 'font-size: 18px; font-weight: 600; color: #1a1a1a; margin: 0 0 16px 0; line-height: 1.4;',
+  description: 'background: #fafafa; padding: 16px; border-left: 3px solid #e0e0e0; margin: 16px 0; color: #444; font-size: 14px;',
+  metaInfo: 'margin: 24px 0; padding: 16px 0; border-top: 1px solid #e8e8e8; border-bottom: 1px solid #e8e8e8;',
+  metaRow: 'margin: 8px 0; font-size: 14px;',
+  metaLabel: 'font-weight: 500; color: #666; display: inline-block; width: 140px;',
+  metaValue: 'color: #1a1a1a;',
+  button: 'display: inline-block; background: #2c3e50; color: white; padding: 12px 32px; text-decoration: none; border-radius: 4px; margin: 24px 0; font-weight: 500; font-size: 14px;',
+  note: 'color: #666; font-size: 13px; margin-top: 24px; padding: 16px; background: #f9f9f9; border-radius: 4px;',
+  footer: 'background: #f4f4f4; padding: 20px; text-align: center; color: #666; font-size: 12px;'
 };
 
 export function createNewIdeaEmailTemplate(
@@ -28,7 +30,7 @@ export function createNewIdeaEmailTemplate(
   proposedBy: string, 
   context: NotificationContext
 ): { subject: string; html: string } {
-  const subject = `🌟 Nouvelle idée proposée : ${idea.title}`;
+  const subject = `Nouvelle idée : ${idea.title}`;
   
   const html = `
     <!DOCTYPE html>
@@ -40,65 +42,57 @@ export function createNewIdeaEmailTemplate(
     </head>
     <body style="margin: 0; padding: 20px; background-color: #f5f5f5;">
       <div style="${emailStyles.container}">
-        <!-- Header -->
         <header style="${emailStyles.header}">
           <h1 style="${emailStyles.title}">${getShortAppName()}</h1>
-          <p style="${emailStyles.subtitle}">Nouvelle idée proposée dans la ${brandingCore.app.ideaBoxName}</p>
+          <p style="${emailStyles.subtitle}">Notification administrative</p>
         </header>
 
-        <!-- Content -->
         <main style="${emailStyles.content}">
-          <div style="${emailStyles.badge}">💡 NOUVELLE IDÉE</div>
+          <div style="${emailStyles.label}">Nouvelle idée</div>
           
           <h2 style="${emailStyles.itemTitle}">${idea.title}</h2>
           
           ${idea.description ? `
           <div style="${emailStyles.description}">
-            <strong>Description :</strong><br>
             ${idea.description.replace(/\n/g, '<br>')}
           </div>
           ` : ''}
 
           <div style="${emailStyles.metaInfo}">
-            <div style="margin-bottom: 8px;">
-              <span style="${emailStyles.metaLabel}">Proposée par :</span>
-              <span style="${emailStyles.metaValue}">${proposedBy} (${idea.proposedByEmail})</span>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Proposée par</span>
+              <span style="${emailStyles.metaValue}">${proposedBy}</span>
             </div>
-            <div style="margin-bottom: 8px;">
-              <span style="${emailStyles.metaLabel}">Statut :</span>
-              <span style="${emailStyles.metaValue}">${idea.status}</span>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Contact</span>
+              <span style="${emailStyles.metaValue}">${idea.proposedByEmail}</span>
             </div>
-            ${idea.featured ? `
-            <div style="margin-bottom: 8px;">
-              <span style="${emailStyles.metaLabel}">🌟 Idée mise en avant</span>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Statut</span>
+              <span style="${emailStyles.metaValue}">${idea.status === 'pending' ? 'En attente' : idea.status}</span>
             </div>
-            ` : ''}
             ${idea.deadline ? `
-            <div>
-              <span style="${emailStyles.metaLabel}">📅 Échéance :</span>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Échéance</span>
               <span style="${emailStyles.metaValue}">${new Date(idea.deadline).toLocaleDateString('fr-FR')}</span>
             </div>
             ` : ''}
           </div>
 
-          <div style="text-align: center; margin: 30px 0;">
+          <div style="text-align: center;">
             <a href="${context.adminDashboardUrl}" style="${emailStyles.button}">
-              📊 Accéder au tableau de bord
+              Accéder au tableau de bord
             </a>
           </div>
 
-          <p style="color: #666; font-style: italic; margin-top: 25px;">
-            Cette idée attend votre évaluation et vos commentaires. 
-            Connectez-vous à l'interface d'administration pour la traiter.
-          </p>
+          <div style="${emailStyles.note}">
+            Cette idée nécessite votre évaluation. Connectez-vous à l'interface d'administration pour la traiter.
+          </div>
         </main>
 
-        <!-- Footer -->
         <footer style="${emailStyles.footer}">
-          <p style="margin: 0;">
-            ${brandingCore.organization.fullName}<br>
-            Système de gestion des idées et événements
-          </p>
+          ${brandingCore.organization.fullName}<br>
+          Notification automatique
         </footer>
       </div>
     </body>
@@ -113,9 +107,8 @@ export function createNewEventEmailTemplate(
   organizer: string, 
   context: NotificationContext
 ): { subject: string; html: string } {
-  const subject = `📅 Nouvel événement proposé : ${event.title}`;
+  const subject = `Nouvel événement : ${event.title}`;
   
-  // Formatage de la date
   const eventDate = new Date(event.date);
   const formattedDate = eventDate.toLocaleDateString('fr-FR', {
     weekday: 'long',
@@ -136,66 +129,59 @@ export function createNewEventEmailTemplate(
     </head>
     <body style="margin: 0; padding: 20px; background-color: #f5f5f5;">
       <div style="${emailStyles.container}">
-        <!-- Header -->
         <header style="${emailStyles.header}">
           <h1 style="${emailStyles.title}">${getShortAppName()}</h1>
-          <p style="${emailStyles.subtitle}">Nouvel événement proposé</p>
+          <p style="${emailStyles.subtitle}">Notification administrative</p>
         </header>
 
-        <!-- Content -->
         <main style="${emailStyles.content}">
-          <div style="${emailStyles.badge}">📅 NOUVEL ÉVÉNEMENT</div>
+          <div style="${emailStyles.label}">Nouvel événement</div>
           
           <h2 style="${emailStyles.itemTitle}">${event.title}</h2>
           
           ${event.description ? `
           <div style="${emailStyles.description}">
-            <strong>Description :</strong><br>
             ${event.description.replace(/\n/g, '<br>')}
           </div>
           ` : ''}
 
           <div style="${emailStyles.metaInfo}">
-            <div style="margin-bottom: 8px;">
-              <span style="${emailStyles.metaLabel}">Organisé par :</span>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Organisé par</span>
               <span style="${emailStyles.metaValue}">${organizer}</span>
             </div>
-            <div style="margin-bottom: 8px;">
-              <span style="${emailStyles.metaLabel}">📅 Date :</span>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Date</span>
               <span style="${emailStyles.metaValue}">${formattedDate}</span>
             </div>
             ${event.location ? `
-            <div style="margin-bottom: 8px;">
-              <span style="${emailStyles.metaLabel}">📍 Lieu :</span>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Lieu</span>
               <span style="${emailStyles.metaValue}">${event.location}</span>
             </div>
             ` : ''}
             ${event.maxParticipants ? `
-            <div>
-              <span style="${emailStyles.metaLabel}">👥 Places disponibles :</span>
-              <span style="${emailStyles.metaValue}">${event.maxParticipants} participants maximum</span>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Places</span>
+              <span style="${emailStyles.metaValue}">${event.maxParticipants} participants max</span>
             </div>
             ` : ''}
           </div>
 
-          <div style="text-align: center; margin: 30px 0;">
+          <div style="text-align: center;">
             <a href="${context.adminDashboardUrl}" style="${emailStyles.button}">
-              📊 Accéder au tableau de bord
+              Accéder au tableau de bord
             </a>
           </div>
 
-          <p style="color: #666; font-style: italic; margin-top: 25px;">
-            Cet événement attend votre validation. 
-            Connectez-vous à l'interface d'administration pour l'approuver ou le modifier.
-          </p>
+          <div style="${emailStyles.note}">
+            Cet événement attend votre validation. Connectez-vous à l'interface d'administration pour l'approuver.
+          </div>
         </main>
 
-        <!-- Footer -->
         <footer style="${emailStyles.footer}">
-          <p style="margin: 0;">
-            ${brandingCore.organization.fullName}<br>
-            Système de gestion des idées et événements
-          </p>
+          ${brandingCore.organization.fullName}<br>
+          Notification automatique
         </footer>
       </div>
     </body>
@@ -205,9 +191,8 @@ export function createNewEventEmailTemplate(
   return { subject, html };
 }
 
-// Template pour les emails de test
 export function createTestEmailTemplate(): { subject: string; html: string } {
-  const subject = `✅ Test de configuration email - ${getShortAppName()}`;
+  const subject = `Test configuration email - ${getShortAppName()}`;
   
   const html = `
     <!DOCTYPE html>
@@ -221,39 +206,37 @@ export function createTestEmailTemplate(): { subject: string; html: string } {
       <div style="${emailStyles.container}">
         <header style="${emailStyles.header}">
           <h1 style="${emailStyles.title}">${getShortAppName()}</h1>
-          <p style="${emailStyles.subtitle}">Test de configuration email</p>
+          <p style="${emailStyles.subtitle}">Test de configuration</p>
         </header>
 
         <main style="${emailStyles.content}">
-          <h2 style="${emailStyles.itemTitle}">✅ Configuration email réussie !</h2>
+          <h2 style="${emailStyles.itemTitle}">Configuration email réussie</h2>
           
           <p>Ce message confirme que la configuration SMTP avec OVH fonctionne correctement.</p>
           
           <div style="${emailStyles.metaInfo}">
-            <div style="margin-bottom: 8px;">
-              <span style="${emailStyles.metaLabel}">📧 Service :</span>
-              <span style="${emailStyles.metaValue}">OVH SMTP (ssl0.ovh.net)</span>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Service</span>
+              <span style="${emailStyles.metaValue}">OVH SMTP</span>
             </div>
-            <div style="margin-bottom: 8px;">
-              <span style="${emailStyles.metaLabel}">🕐 Envoyé le :</span>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Envoyé le</span>
               <span style="${emailStyles.metaValue}">${new Date().toLocaleString('fr-FR')}</span>
             </div>
-            <div>
-              <span style="${emailStyles.metaLabel}">🎯 Fonctionnalité :</span>
-              <span style="${emailStyles.metaValue}">Notifications automatiques pour les administrateurs</span>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Fonctionnalité</span>
+              <span style="${emailStyles.metaValue}">Notifications automatiques</span>
             </div>
           </div>
 
-          <p style="color: #4CAF50; font-weight: bold; text-align: center; margin: 20px 0;">
-            🎉 Les notifications par email sont maintenant opérationnelles !
-          </p>
+          <div style="${emailStyles.note}">
+            Les notifications par email sont maintenant opérationnelles.
+          </div>
         </main>
 
         <footer style="${emailStyles.footer}">
-          <p style="margin: 0;">
-            Centre des Jeunes Dirigeants d'Amiens<br>
-            Système de notifications automatiques
-          </p>
+          ${brandingCore.organization.fullName}<br>
+          Système de notifications automatiques
         </footer>
       </div>
     </body>
