@@ -20,7 +20,14 @@ export const createRateLimiter = rateLimit({
   },
   skip: (req) => {
     // Skip rate limiting for authenticated admin users
-    return req.isAuthenticated && req.isAuthenticated() && req.user?.role === 'super_admin';
+    if (req.isAuthenticated && req.isAuthenticated() && req.user?.role === 'super_admin') {
+      return true;
+    }
+    // Skip rate limiting for test environment
+    if (process.env.NODE_ENV === 'test') {
+      return true;
+    }
+    return false;
   }
 });
 
@@ -43,7 +50,14 @@ export const strictCreateRateLimiter = rateLimit({
   },
   skip: (req) => {
     // Skip rate limiting for authenticated admin users
-    return req.isAuthenticated && req.isAuthenticated() && req.user?.role === 'super_admin';
+    if (req.isAuthenticated && req.isAuthenticated() && req.user?.role === 'super_admin') {
+      return true;
+    }
+    // Skip rate limiting for test environment
+    if (process.env.NODE_ENV === 'test') {
+      return true;
+    }
+    return false;
   }
 });
 
@@ -65,6 +79,13 @@ export const voteRateLimiter = rateLimit({
   },
   skip: (req) => {
     // Skip rate limiting for authenticated admin users
-    return req.isAuthenticated && req.isAuthenticated() && req.user?.role === 'super_admin';
+    if (req.isAuthenticated && req.isAuthenticated() && req.user?.role === 'super_admin') {
+      return true;
+    }
+    // Skip rate limiting for test environment
+    if (process.env.NODE_ENV === 'test') {
+      return true;
+    }
+    return false;
   }
 });
