@@ -4,6 +4,21 @@
 This project is an internal web application for the "Centre des Jeunes Dirigeants (CJD) d'Amiens." Its primary purpose is to facilitate collaborative idea sharing ("Boîte à Kiffs"), enable voting on proposals, and manage events with HelloAsso integration. The application serves internal CJD Amiens members (business leaders, entrepreneurs). The project aims to provide a modern, responsive, and optimized architecture, high performance, and a user-friendly interface. Key capabilities include a comprehensive CRM for patron and member management, an engagement scoring system, subscription tracking, and an admin dashboard for quick overviews.
 
 ## Recent Changes (October 2025)
+### CJD Roles & Targeted Email Notifications (October 17, 2025)
+- **CJD Roles System**: Implemented comprehensive role management system for CJD members with 8 distinct organizational roles
+  - **Schema Updates**: Added `cjdRole` field (nullable varchar) to members table with CJD_ROLES enum containing: president, co_president, tresorier, secretaire, responsable_recrutement, responsable_jeunes, responsable_plenieres, responsable_parrains
+  - **Admin CRM Integration**: Added CJD role dropdown selector in member edit dialog (`client/src/pages/admin-members-page.tsx`)
+  - **Database Method**: Created dedicated `getMemberByCjdRole(cjdRole: string)` method in storage for deterministic role-based member lookup without pagination limits
+- **Member Proposal Email Workflow**: Automated intelligent email routing for new member proposals
+  - **Email Template**: Created `createNewMemberProposalEmailTemplate()` in `server/email-templates.ts` with consistent branding and member information display
+  - **Smart Routing Logic**: `emailNotificationService.notifyNewMemberProposal()` method implements fallback hierarchy:
+    1. Primary: Sends to active member with `responsable_recrutement` role (if assigned)
+    2. Fallback: Sends to all active admins (if no recruitment manager)
+    3. Error: Returns configuration error if no recipients available (prevents silent failures)
+  - **Integration**: POST /api/members/propose triggers notification after successful member creation
+  - **Type Safety**: Proper Member type usage throughout, no `any` types in notification service
+  - **E2E Validation**: Test confirmed email delivered to designated recruitment manager (sebastien.moret@cjd.net) as single recipient, not broadcast to all admins
+
 ### "Nouveau" Badge for Recent Ideas (October 17, 2025)
 - **Visual Badge System**: Added automatic "Nouveau" badge display for ideas created within the last 30 days across all interfaces
   - **Utility Function**: Created `isNewIdea(createdAt)` helper in `client/src/lib/adminUtils.ts` with strict `< 30 days` logic
