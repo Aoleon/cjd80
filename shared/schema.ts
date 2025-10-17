@@ -343,6 +343,60 @@ export const memberSubscriptions = pgTable("member_subscriptions", {
   startDateIdx: index("member_subscriptions_start_date_idx").on(table.startDate.desc()),
 }));
 
+// Event sponsorship levels definition
+export const SPONSORSHIP_LEVEL = {
+  PLATINUM: "platinum",
+  GOLD: "gold",
+  SILVER: "silver",
+  BRONZE: "bronze",
+  PARTNER: "partner"
+} as const;
+
+export type SponsorshipLevel = typeof SPONSORSHIP_LEVEL[keyof typeof SPONSORSHIP_LEVEL];
+
+// Sponsorship level labels
+export const SPONSORSHIP_LEVEL_LABELS: Record<SponsorshipLevel, string> = {
+  [SPONSORSHIP_LEVEL.PLATINUM]: "Platine",
+  [SPONSORSHIP_LEVEL.GOLD]: "Or",
+  [SPONSORSHIP_LEVEL.SILVER]: "Argent",
+  [SPONSORSHIP_LEVEL.BRONZE]: "Bronze",
+  [SPONSORSHIP_LEVEL.PARTNER]: "Partenaire",
+};
+
+// Event sponsorship status definition
+export const SPONSORSHIP_STATUS = {
+  PROPOSED: "proposed",     // Proposé au mécène
+  CONFIRMED: "confirmed",   // Confirmé par le mécène
+  COMPLETED: "completed",   // Réalisé (événement passé)
+  CANCELLED: "cancelled"    // Annulé
+} as const;
+
+export type SponsorshipStatus = typeof SPONSORSHIP_STATUS[keyof typeof SPONSORSHIP_STATUS];
+
+// Event sponsorships table - Sponsoring d'événements par les mécènes
+export const eventSponsorships = pgTable("event_sponsorships", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => events.id, { onDelete: "cascade" }).notNull(),
+  patronId: varchar("patron_id").references(() => patrons.id, { onDelete: "cascade" }).notNull(),
+  level: text("level").notNull(), // platinum, gold, silver, bronze, partner
+  amount: integer("amount").notNull(), // Montant en centimes
+  benefits: text("benefits"), // Contreparties offertes (texte libre)
+  isPubliclyVisible: boolean("is_publicly_visible").default(true).notNull(), // Affichage public
+  status: text("status").default(SPONSORSHIP_STATUS.PROPOSED).notNull(), // proposed, confirmed, completed, cancelled
+  logoUrl: text("logo_url"), // URL du logo du sponsor (optionnel)
+  websiteUrl: text("website_url"), // URL du site web du sponsor (optionnel)
+  proposedByAdminEmail: text("proposed_by_admin_email").notNull(), // Email de l'admin qui propose
+  confirmedAt: timestamp("confirmed_at"), // Date de confirmation
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueEventPatron: unique().on(table.eventId, table.patronId),
+  eventIdIdx: index("event_sponsorships_event_id_idx").on(table.eventId),
+  patronIdIdx: index("event_sponsorships_patron_id_idx").on(table.patronId),
+  statusIdx: index("event_sponsorships_status_idx").on(table.status),
+  levelIdx: index("event_sponsorships_level_idx").on(table.level),
+}));
+
 // Branding configuration table - For customizable branding settings
 export const brandingConfig = pgTable("branding_config", {
   id: serial("id").primaryKey(),
@@ -380,6 +434,7 @@ export const votesRelations = relations(votes, ({ one }) => ({
 export const eventsRelations = relations(events, ({ many }) => ({
   inscriptions: many(inscriptions),
   unsubscriptions: many(unsubscriptions),
+  sponsorships: many(eventSponsorships),
 }));
 
 export const inscriptionsRelations = relations(inscriptions, ({ one }) => ({
@@ -400,6 +455,7 @@ export const patronsRelations = relations(patrons, ({ many }) => ({
   donations: many(patronDonations),
   proposals: many(ideaPatronProposals),
   updates: many(patronUpdates),
+  sponsorships: many(eventSponsorships),
 }));
 
 export const patronDonationsRelations = relations(patronDonations, ({ one }) => ({
@@ -423,6 +479,17 @@ export const ideaPatronProposalsRelations = relations(ideaPatronProposals, ({ on
   }),
   patron: one(patrons, {
     fields: [ideaPatronProposals.patronId],
+    references: [patrons.id],
+  }),
+}));
+
+export const eventSponsorshipsRelations = relations(eventSponsorships, ({ one }) => ({
+  event: one(events, {
+    fields: [eventSponsorships.eventId],
+    references: [events.id],
+  }),
+  patron: one(patrons, {
+    fields: [eventSponsorships.patronId],
     references: [patrons.id],
   }),
 }));
@@ -972,6 +1039,81 @@ export const updateIdeaPatronProposalSchema = z.object({
     .optional(),
 });
 
+export const insertEventSponsorshipSchema = createInsertSchema(eventSponsorships).pick({
+  eventId: true,
+  patronId: true,
+  level: true,
+  amount: true,
+  benefits: true,
+  isPubliclyVisible: true,
+  status: true,
+  logoUrl: true,
+  websiteUrl: true,
+  proposedByAdminEmail: true,
+  confirmedAt: true,
+}).extend({
+  eventId: z.string()
+    .uuid("L'identifiant de l'événement n'est pas valide")
+    .transform(sanitizeText),
+  patronId: z.string()
+    .uuid("L'identifiant du mécène n'est pas valide")
+    .transform(sanitizeText),
+  level: z.enum(["platinum", "gold", "silver", "bronze", "partner"], {
+    errorMap: () => ({ message: "Niveau de sponsoring invalide" })
+  }),
+  amount: z.number()
+    .int("Le montant doit être un nombre entier")
+    .min(0, "Le montant ne peut pas être négatif"),
+  benefits: z.string()
+    .max(2000, "Les contreparties ne peuvent pas dépasser 2000 caractères")
+    .transform(val => val ? sanitizeText(val) : undefined)
+    .optional(),
+  isPubliclyVisible: z.boolean().default(true),
+  status: z.enum(["proposed", "confirmed", "completed", "cancelled"]).default("proposed"),
+  logoUrl: z.string()
+    .url("URL du logo invalide")
+    .max(500, "L'URL du logo est trop longue")
+    .transform(val => val ? sanitizeText(val) : undefined)
+    .optional(),
+  websiteUrl: z.string()
+    .url("URL du site web invalide")
+    .max(500, "L'URL du site web est trop longue")
+    .transform(val => val ? sanitizeText(val) : undefined)
+    .optional(),
+  proposedByAdminEmail: z.string()
+    .email("Email de l'administrateur invalide")
+    .transform(sanitizeText),
+  confirmedAt: z.string()
+    .optional()
+    .nullable()
+    .transform(val => {
+      if (!val) return null;
+      return val;
+    }),
+});
+
+export const updateEventSponsorshipSchema = z.object({
+  level: z.enum(["platinum", "gold", "silver", "bronze", "partner"]).optional(),
+  amount: z.number().int().min(0).optional(),
+  benefits: z.string()
+    .max(2000, "Les contreparties ne peuvent pas dépasser 2000 caractères")
+    .transform(val => sanitizeText(val))
+    .optional(),
+  isPubliclyVisible: z.boolean().optional(),
+  status: z.enum(["proposed", "confirmed", "completed", "cancelled"]).optional(),
+  logoUrl: z.string()
+    .url("URL du logo invalide")
+    .max(500)
+    .transform(val => sanitizeText(val))
+    .optional(),
+  websiteUrl: z.string()
+    .url("URL du site web invalide")
+    .max(500)
+    .transform(val => sanitizeText(val))
+    .optional(),
+  confirmedAt: z.string().optional().nullable(),
+});
+
 export const insertMemberSchema = createInsertSchema(members).pick({
   email: true,
   firstName: true,
@@ -1066,6 +1208,9 @@ export type InsertPatronUpdate = z.infer<typeof insertPatronUpdateSchema>;
 
 export type IdeaPatronProposal = typeof ideaPatronProposals.$inferSelect;
 export type InsertIdeaPatronProposal = z.infer<typeof insertIdeaPatronProposalSchema>;
+
+export type EventSponsorship = typeof eventSponsorships.$inferSelect;
+export type InsertEventSponsorship = z.infer<typeof insertEventSponsorshipSchema>;
 
 export type Member = typeof members.$inferSelect;
 export type InsertMember = z.infer<typeof insertMemberSchema>;
