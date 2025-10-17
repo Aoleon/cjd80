@@ -9,8 +9,9 @@ import { notificationService } from "./notification-service";
 import { emailNotificationService } from "./email-notification-service";
 import { emailService } from "./email-service";
 import { hashPassword } from "./auth";
-import { sql } from "drizzle-orm";
+import { sql, eq, and, or } from "drizzle-orm";
 import { pool, getPoolStats, db } from "./db";
+import { eventSponsorships, patrons } from "@shared/schema";
 import { 
   insertIdeaSchema,
   insertVoteSchema,
@@ -2164,7 +2165,7 @@ export function createRouter(storageInstance: IStorage): any {
     }
   });
 
-  // Récupérer les sponsorings d'un événement
+  // Récupérer les sponsorings d'un événement (ADMIN)
   router.get("/api/events/:eventId/sponsorships", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const result = await storageInstance.getEventSponsorships(req.params.eventId);
@@ -2174,6 +2175,58 @@ export function createRouter(storageInstance: IStorage): any {
       }
       
       res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Récupérer les sponsorings publics d'un événement (PUBLIC - pas d'auth requise)
+  router.get("/api/public/events/:eventId/sponsorships", async (req, res, next) => {
+    try {
+      const result = await db
+        .select({
+          id: eventSponsorships.id,
+          eventId: eventSponsorships.eventId,
+          patronId: eventSponsorships.patronId,
+          level: eventSponsorships.level,
+          amount: eventSponsorships.amount,
+          benefits: eventSponsorships.benefits,
+          isPubliclyVisible: eventSponsorships.isPubliclyVisible,
+          status: eventSponsorships.status,
+          logoUrl: eventSponsorships.logoUrl,
+          websiteUrl: eventSponsorships.websiteUrl,
+          confirmedAt: eventSponsorships.confirmedAt,
+          createdAt: eventSponsorships.createdAt,
+          updatedAt: eventSponsorships.updatedAt,
+          patronFirstName: patrons.firstName,
+          patronLastName: patrons.lastName,
+          patronCompany: patrons.company,
+        })
+        .from(eventSponsorships)
+        .innerJoin(patrons, eq(eventSponsorships.patronId, patrons.id))
+        .where(
+          and(
+            eq(eventSponsorships.eventId, req.params.eventId),
+            eq(eventSponsorships.isPubliclyVisible, true),
+            or(
+              eq(eventSponsorships.status, 'confirmed'),
+              eq(eventSponsorships.status, 'completed')
+            )
+          )
+        )
+        .orderBy(
+          // Sort by level priority: platinum > gold > silver > bronze > partner
+          sql`CASE ${eventSponsorships.level}
+            WHEN 'platinum' THEN 1
+            WHEN 'gold' THEN 2
+            WHEN 'silver' THEN 3
+            WHEN 'bronze' THEN 4
+            WHEN 'partner' THEN 5
+            ELSE 6
+          END`
+        );
+      
+      res.json(result);
     } catch (error) {
       next(error);
     }

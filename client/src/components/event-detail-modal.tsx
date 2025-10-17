@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Calendar, MapPin, Users, Edit, Trash2, Download, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, Users, Edit, Trash2, Download, ExternalLink, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import type { Event, Inscription, Unsubscription } from "@shared/schema";
+import { 
+  getSponsorshipLevelLabel, 
+  getSponsorshipLevelBadgeClass, 
+  getSponsorshipLevelIcon,
+  isPremiumSponsorship,
+  type PublicSponsorship 
+} from "@/lib/sponsorship-utils";
 
 interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
   inscriptionCount: number;
@@ -46,6 +53,12 @@ export default function EventDetailModal({
   // Fetch unsubscriptions for this event - Always load to get count
   const { data: unsubscriptions, isLoading: unsubscriptionsLoading } = useQuery<Unsubscription[]>({
     queryKey: [`/api/admin/events/${event?.id}/unsubscriptions`],
+    enabled: !!event,
+  });
+
+  // Fetch public sponsors for this event (visible to everyone)
+  const { data: sponsors, isLoading: sponsorsLoading } = useQuery<PublicSponsorship[]>({
+    queryKey: [`/api/public/events/${event?.id}/sponsorships`],
     enabled: !!event,
   });
 
@@ -196,6 +209,82 @@ export default function EventDetailModal({
                 Ouvrir HelloAsso
               </a>
             </div>
+          )}
+
+          {/* Sponsors Section - Public */}
+          {sponsors && sponsors.length > 0 && (
+            <>
+              <Separator />
+              <div data-testid={`sponsors-section-${event.id}`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <Award className="w-5 h-5 text-cjd-green" />
+                  <h4 className="font-semibold text-gray-800 text-lg">
+                    Sponsors de l'événement ({sponsors.length})
+                  </h4>
+                </div>
+                
+                {sponsorsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin w-8 h-8 border-2 border-cjd-green border-t-transparent rounded-full"></div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {sponsors.map((sponsor) => (
+                      <div
+                        key={sponsor.id}
+                        data-testid={`sponsor-item-${sponsor.id}`}
+                        className={`flex items-start gap-4 p-4 rounded-lg border-2 transition-all duration-200 ${
+                          isPremiumSponsorship(sponsor.level)
+                            ? 'border-cjd-green bg-gradient-to-br from-green-50 to-white hover:shadow-lg'
+                            : 'border-gray-200 bg-white hover:border-cjd-green hover:shadow-md'
+                        }`}
+                      >
+                        {/* Logo */}
+                        <div className="flex-shrink-0">
+                          {sponsor.logoUrl ? (
+                            <img
+                              src={sponsor.logoUrl}
+                              alt={`Logo ${sponsor.patronFirstName} ${sponsor.patronLastName}`}
+                              data-testid={`sponsor-logo-${sponsor.id}`}
+                              className="w-20 h-20 object-contain rounded-lg border border-gray-200 bg-white p-2"
+                            />
+                          ) : (
+                            <div className="w-20 h-20 bg-gradient-to-br from-cjd-green to-success-dark rounded-lg flex items-center justify-center text-white font-bold text-2xl">
+                              {getSponsorshipLevelIcon(sponsor.level)}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Sponsor Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-gray-900 text-lg mb-1">
+                            {sponsor.patronFirstName} {sponsor.patronLastName}
+                          </div>
+                          {sponsor.patronCompany && (
+                            <div className="text-sm text-gray-600 mb-2">{sponsor.patronCompany}</div>
+                          )}
+                          <div className={getSponsorshipLevelBadgeClass(sponsor.level)}>
+                            {getSponsorshipLevelIcon(sponsor.level)} {getSponsorshipLevelLabel(sponsor.level)}
+                          </div>
+                          {sponsor.websiteUrl && (
+                            <a
+                              href={sponsor.websiteUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              data-testid={`sponsor-link-${sponsor.id}`}
+                              className="inline-flex items-center gap-1 mt-3 text-sm text-cjd-green hover:text-cjd-green-dark font-medium transition-colors"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                              Visiter le site web
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
           )}
 
           {isAdmin && <Separator />}

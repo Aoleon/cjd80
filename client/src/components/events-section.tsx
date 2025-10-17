@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, MapPin, Users, CalendarPlus, UserMinus, Loader2, Clock, Star, MessageCircle, Share2 } from "lucide-react";
+import { Calendar, MapPin, Users, CalendarPlus, UserMinus, Loader2, Clock, Star, MessageCircle, Share2, ExternalLink, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SimplePagination } from "@/components/ui/pagination";
@@ -10,6 +10,12 @@ import { shareContent, isShareSupported } from "@/lib/share-utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { getShortAppName } from '@/config/branding';
+import { 
+  getSponsorshipLevelLabel, 
+  getSponsorshipLevelBadgeClass, 
+  getSponsorshipLevelIcon,
+  type PublicSponsorship 
+} from "@/lib/sponsorship-utils";
 
 interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
   inscriptionCount: number;
@@ -23,6 +29,81 @@ interface PaginatedEventsResponse {
     page: number;
     limit: number;
   };
+}
+
+// Sponsors Preview Component
+function SponsorsPreview({ eventId }: { eventId: string }) {
+  const { data: sponsors, isLoading } = useQuery<PublicSponsorship[]>({
+    queryKey: [`/api/public/events/${eventId}/sponsorships`],
+    enabled: !!eventId,
+  });
+
+  if (isLoading) {
+    return null; // Don't show loading state to keep card clean
+  }
+
+  if (!sponsors || sponsors.length === 0) {
+    return null; // Don't show section if no sponsors
+  }
+
+  // Limit to top 5 sponsors (already sorted by level priority from API)
+  const topSponsors = sponsors.slice(0, 5);
+
+  return (
+    <div className="mb-5" data-testid={`sponsors-section-${eventId}`}>
+      <div className="flex items-center gap-2 mb-3">
+        <Award className="w-5 h-5 text-cjd-green" />
+        <h4 className="font-semibold text-gray-800">
+          Sponsors {sponsors.length > 5 && <span className="text-sm text-gray-500 font-normal">({sponsors.length})</span>}
+        </h4>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {topSponsors.map((sponsor) => (
+          <div
+            key={sponsor.id}
+            data-testid={`sponsor-item-${sponsor.id}`}
+            className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-cjd-green hover:shadow-md transition-all duration-200"
+          >
+            {sponsor.logoUrl ? (
+              <img
+                src={sponsor.logoUrl}
+                alt={`Logo ${sponsor.patronFirstName} ${sponsor.patronLastName}`}
+                data-testid={`sponsor-logo-${sponsor.id}`}
+                className="w-12 h-12 object-contain flex-shrink-0"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-gradient-to-br from-cjd-green to-success-dark rounded-lg flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                {getSponsorshipLevelIcon(sponsor.level)}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-gray-900 text-sm truncate">
+                {sponsor.patronFirstName} {sponsor.patronLastName}
+              </div>
+              {sponsor.patronCompany && (
+                <div className="text-xs text-gray-500 truncate">{sponsor.patronCompany}</div>
+              )}
+              <div className={getSponsorshipLevelBadgeClass(sponsor.level)}>
+                {getSponsorshipLevelIcon(sponsor.level)} {getSponsorshipLevelLabel(sponsor.level)}
+              </div>
+            </div>
+            {sponsor.websiteUrl && (
+              <a
+                href={sponsor.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid={`sponsor-link-${sponsor.id}`}
+                className="flex-shrink-0 p-2 text-cjd-green hover:bg-cjd-green hover:text-white rounded-full transition-colors"
+                title="Visiter le site web"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function EventsSection() {
@@ -240,6 +321,9 @@ export default function EventsSection() {
                               <p className="text-gray-700 text-base leading-relaxed whitespace-pre-line">{event.description}</p>
                             </div>
                           )}
+
+                          {/* Sponsors Section - Public */}
+                          <SponsorsPreview eventId={event.id} />
 
                           {/* Participants Info - Admin only */}
                           {isAdmin && (event.maxParticipants || event.showInscriptionsCount) && (
