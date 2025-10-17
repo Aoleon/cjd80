@@ -1,10 +1,11 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
-import type { Result } from '@shared/schema';
+import type { Result, EmailConfig } from '@shared/schema';
 import { DatabaseError } from '@shared/schema';
 import { getShortAppName } from '../client/src/config/branding-core';
+import type { IStorage } from './storage';
 
-export interface EmailConfig {
+interface TransporterConfig {
   host: string;
   port: number;
   secure: boolean;
@@ -12,6 +13,8 @@ export interface EmailConfig {
     user: string;
     pass: string;
   };
+  fromName?: string;
+  fromEmail?: string;
 }
 
 export interface EmailData {
@@ -23,23 +26,40 @@ export interface EmailData {
 
 class EmailService {
   private transporter: Transporter | null = null;
-  private config: EmailConfig | null = null;
+  private config: TransporterConfig | null = null;
+  private storage: IStorage | null = null;
 
   constructor() {
+    // Initialisation différée pour permettre l'injection du storage
+  }
+
+  setStorage(storage: IStorage) {
+    this.storage = storage;
     this.initializeTransporter();
   }
 
-  private initializeTransporter() {
+  private async initializeTransporter() {
     try {
-      // Configuration SMTP OVH
+      // Charger la configuration depuis la DB si disponible
+      let dbConfig: EmailConfig | null = null;
+      if (this.storage) {
+        const result = await this.storage.getEmailConfig();
+        if (result.success && result.data) {
+          dbConfig = result.data;
+        }
+      }
+
+      // Configuration SMTP avec priorité: DB > Env vars
       this.config = {
-        host: process.env.SMTP_HOST || 'ssl0.ovh.net',
-        port: parseInt(process.env.SMTP_PORT || '465'),
-        secure: process.env.SMTP_SECURE === 'true' || true, // true pour port 465
+        host: dbConfig?.host || process.env.SMTP_HOST || 'ssl0.ovh.net',
+        port: dbConfig?.port || parseInt(process.env.SMTP_PORT || '465'),
+        secure: dbConfig?.secure ?? (process.env.SMTP_SECURE === 'true' || true),
         auth: {
           user: process.env.SMTP_USER || '',
           pass: process.env.SMTP_PASS || ''
-        }
+        },
+        fromName: dbConfig?.fromName || process.env.SMTP_FROM_NAME || getShortAppName(),
+        fromEmail: dbConfig?.fromEmail || process.env.SMTP_FROM_EMAIL || 'noreply@cjd-amiens.fr'
       };
 
       if (!this.config.auth.user || !this.config.auth.pass) {
@@ -47,8 +67,15 @@ class EmailService {
         return;
       }
 
-      this.transporter = nodemailer.createTransport(this.config);
-      console.log('[Email] Service email initialisé avec OVH SMTP');
+      this.transporter = nodemailer.createTransport({
+        host: this.config.host,
+        port: this.config.port,
+        secure: this.config.secure,
+        auth: this.config.auth
+      });
+      
+      const source = dbConfig ? 'base de données' : 'variables d\'environnement';
+      console.log(`[Email] Service email initialisé depuis ${source} (${this.config.host}:${this.config.port})`);
 
       // Vérifier la connexion
       this.verifyConnection();
@@ -77,8 +104,11 @@ class EmailService {
     }
 
     try {
+      const fromName = this.config.fromName || getShortAppName();
+      const fromEmail = this.config.fromEmail || this.config.auth.user;
+      
       const mailOptions = {
-        from: `"${getShortAppName()}" <${this.config.auth.user}>`,
+        from: `"${fromName}" <${fromEmail}>`,
         to: emailData.to.join(', '),
         subject: emailData.subject,
         html: emailData.html,
@@ -130,9 +160,14 @@ class EmailService {
     }
   }
 
-  // Réinitialiser la configuration (utile pour les changements d'environnement)
-  reinitialize(): void {
-    this.initializeTransporter();
+  // Recharger la configuration depuis la base de données
+  async reloadConfig(): Promise<void> {
+    await this.initializeTransporter();
+  }
+
+  // Réinitialiser la configuration (pour compatibilité)
+  async reinitialize(): Promise<void> {
+    await this.reloadConfig();
   }
 }
 

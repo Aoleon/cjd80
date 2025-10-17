@@ -7,6 +7,7 @@ import { strictCreateRateLimiter, voteRateLimiter } from "./middleware/rate-limi
 import { checkDatabaseHealth } from "./utils/db-health";
 import { notificationService } from "./notification-service";
 import { emailNotificationService } from "./email-notification-service";
+import { emailService } from "./email-service";
 import { hashPassword } from "./auth";
 import { sql } from "drizzle-orm";
 import { pool, getPoolStats, db } from "./db";
@@ -1673,6 +1674,9 @@ export function createRouter(storageInstance: IStorage): any {
       if (!result.success) {
         return res.status(400).json({ success: false, error: result.error.message });
       }
+      
+      // Recharger la configuration email dans le service
+      await emailService.reloadConfig();
       
       res.json({ success: true, data: result.data });
     } catch (error: any) {

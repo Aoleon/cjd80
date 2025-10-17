@@ -2661,3 +2661,7 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+
+// Injecter le storage dans emailService pour charger la config email
+import { emailService } from './email-service';
+emailService.setStorage(storage);
