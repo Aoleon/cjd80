@@ -164,7 +164,7 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
                   Nouveau
                 </div>
               )}
-              <CardContent className="p-5 sm:p-6">
+              <CardContent className={`pt-5 pb-5 pl-5 sm:pt-6 sm:pb-6 sm:pl-6 ${isNewIdea(idea.createdAt) ? 'pr-20' : 'pr-5 sm:pr-6'}`}>
                 <div className="flex flex-col gap-3 mb-4">
                   <h3 className="font-bold text-lg sm:text-xl text-gray-900 line-clamp-3 leading-tight">
                     <div className="flex items-start gap-2">

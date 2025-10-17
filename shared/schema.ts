@@ -260,6 +260,32 @@ export const ideaPatronProposals = pgTable("idea_patron_proposals", {
   statusIdx: index("idea_patron_proposals_status_idx").on(table.status),
 }));
 
+// CJD Roles definition - Rôles organisationnels CJD
+export const CJD_ROLES = {
+  PRESIDENT: "president",
+  CO_PRESIDENT: "co_president",
+  TRESORIER: "tresorier",
+  SECRETAIRE: "secretaire",
+  RESPONSABLE_RECRUTEMENT: "responsable_recrutement",
+  RESPONSABLE_JEUNESSE: "responsable_jeunesse",
+  RESPONSABLE_PLENIERES: "responsable_plenieres",
+  RESPONSABLE_MECENES: "responsable_mecenes",
+} as const;
+
+export type CjdRole = typeof CJD_ROLES[keyof typeof CJD_ROLES];
+
+// Helper to get role label
+export const CJD_ROLE_LABELS: Record<CjdRole, string> = {
+  [CJD_ROLES.PRESIDENT]: "Président",
+  [CJD_ROLES.CO_PRESIDENT]: "Co-Président",
+  [CJD_ROLES.TRESORIER]: "Trésorier",
+  [CJD_ROLES.SECRETAIRE]: "Secrétaire",
+  [CJD_ROLES.RESPONSABLE_RECRUTEMENT]: "Responsable recrutement",
+  [CJD_ROLES.RESPONSABLE_JEUNESSE]: "Responsable jeunesse",
+  [CJD_ROLES.RESPONSABLE_PLENIERES]: "Responsable plénières",
+  [CJD_ROLES.RESPONSABLE_MECENES]: "Responsable mécènes",
+};
+
 // Members table - CRM pour la gestion des membres
 export const members = pgTable("members", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -268,7 +294,8 @@ export const members = pgTable("members", {
   lastName: text("last_name").notNull(),
   company: text("company"),
   phone: text("phone"),
-  role: text("role"),
+  role: text("role"), // Rôle professionnel/métier
+  cjdRole: text("cjd_role"), // Rôle organisationnel CJD (président, trésorier, etc.)
   notes: text("notes"),
   status: text("status").default("active").notNull(),
   proposedBy: text("proposed_by"),
@@ -283,6 +310,7 @@ export const members = pgTable("members", {
   lastActivityAtIdx: index("members_last_activity_at_idx").on(table.lastActivityAt.desc()),
   engagementScoreIdx: index("members_engagement_score_idx").on(table.engagementScore.desc()),
   statusIdx: index("members_status_idx").on(table.status),
+  cjdRoleIdx: index("members_cjd_role_idx").on(table.cjdRole),
 }));
 
 // Member activities table - Journal d'activité des membres
