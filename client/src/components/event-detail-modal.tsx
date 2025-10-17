@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import type { Event, Inscription, Unsubscription } from "@shared/schema";
 
@@ -29,9 +30,12 @@ export default function EventDetailModal({
   onEdit 
 }: EventDetailModalProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showInscriptions, setShowInscriptions] = useState(false);
   const [showUnsubscriptions, setShowUnsubscriptions] = useState(false);
+
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   // Fetch inscriptions for this event
   const { data: inscriptions, isLoading: inscriptionsLoading } = useQuery<Inscription[]>({
@@ -134,10 +138,12 @@ export default function EventDetailModal({
             <Badge variant={isUpcoming ? "default" : "secondary"} className="text-sm">
               {isUpcoming ? "📅 À venir" : "✅ Terminé"}
             </Badge>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Users className="w-4 h-4" />
-              {event.inscriptionCount} inscription{event.inscriptionCount !== 1 ? 's' : ''}
-            </div>
+            {isAdmin && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Users className="w-4 h-4" />
+                {event.inscriptionCount} inscription{event.inscriptionCount !== 1 ? 's' : ''}
+              </div>
+            )}
           </div>
 
           {/* Title */}
@@ -192,14 +198,15 @@ export default function EventDetailModal({
             </div>
           )}
 
-          <Separator />
+          {isAdmin && <Separator />}
 
-          {/* Inscriptions Section */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="font-medium text-gray-700">
-                Inscriptions ({event.inscriptionCount})
-              </h4>
+          {/* Inscriptions Section - Admin only */}
+          {isAdmin && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-medium text-gray-700">
+                  Inscriptions ({event.inscriptionCount})
+                </h4>
               <div className="flex gap-2">
                 {inscriptions && inscriptions.length > 0 && (
                   <Button
@@ -267,12 +274,14 @@ export default function EventDetailModal({
                 )}
               </div>
             )}
-          </div>
+            </div>
+          )}
 
-          <Separator />
+          {isAdmin && <Separator />}
 
-          {/* Unsubscriptions (Absences) Section */}
-          <div>
+          {/* Unsubscriptions (Absences) Section - Admin only */}
+          {isAdmin && (
+            <div>
             <div className="flex items-center justify-between mb-4">
               <h4 className="font-medium text-gray-700">
                 Absences déclarées ({unsubscriptions?.length || 0})
@@ -340,12 +349,14 @@ export default function EventDetailModal({
                 )}
               </div>
             )}
-          </div>
+            </div>
+          )}
 
-          <Separator />
+          {isAdmin && <Separator />}
 
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          {/* Actions - Admin only */}
+          {isAdmin && (
+            <div className="flex flex-col sm:flex-row gap-3">
             <Button
               onClick={handleEdit}
               className="bg-cjd-green hover:bg-cjd-green-dark text-white flex-1"
@@ -363,7 +374,8 @@ export default function EventDetailModal({
               <Trash2 className="w-4 h-4 mr-2" />
               Supprimer
             </Button>
-          </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

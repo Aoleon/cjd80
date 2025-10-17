@@ -8,6 +8,7 @@ import EventRegistrationModal from "./event-registration-modal";
 import type { Event } from "@shared/schema";
 import { shareContent, isShareSupported } from "@/lib/share-utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { getShortAppName } from '@/config/branding';
 
 interface EventWithInscriptions extends Omit<Event, "inscriptionCount"> {
@@ -31,6 +32,9 @@ export default function EventsSection() {
   const [page, setPage] = useState(1);
   const limit = 20;
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   const { data: response, isLoading, error } = useQuery<PaginatedEventsResponse>({
     queryKey: ["/api/events", page, limit],
@@ -237,8 +241,8 @@ export default function EventsSection() {
                             </div>
                           )}
 
-                          {/* Participants Info */}
-                          {(event.maxParticipants || event.showInscriptionsCount) && (
+                          {/* Participants Info - Admin only */}
+                          {isAdmin && (event.maxParticipants || event.showInscriptionsCount) && (
                             <div className="flex flex-wrap items-center gap-3 p-4 bg-gradient-to-r from-info-light to-success-light rounded-lg border border-info">
                               {event.showInscriptionsCount && (
                                 <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
