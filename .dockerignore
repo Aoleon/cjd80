@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+.github
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Development
+*.md
+!README.md
+.vscode
+.idea
+*.log
+
+# Testing
+coverage
+.nyc_output
+playwright-report
+test-results
+
+# Build artifacts (seront générés dans le container)
+dist
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Replit
+.replit
+replit.nix
+.cache
+.upm
+
+# Misc
+*.swp
+*.swo
+*~
+.tmp
+temp

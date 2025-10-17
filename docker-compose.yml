@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  cjd-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cjd-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - DATABASE_URL=${DATABASE_URL}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_REPO_OWNER=${GITHUB_REPO_OWNER}
+      - GITHUB_REPO_NAME=${GITHUB_REPO_NAME}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_MAILTO=${VAPID_MAILTO}
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); });"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - cjd-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 512M
+
+networks:
+  cjd-network:
+    driver: bridge
