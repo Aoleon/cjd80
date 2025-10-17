@@ -425,11 +425,11 @@ export default function DevelopmentRequestsSection({ userRole }: DevelopmentRequ
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-xs">
-                          <div className="font-medium truncate" title={request.title}>
+                        <div className="max-w-md">
+                          <div className="font-medium mb-1">
                             {request.title}
                           </div>
-                          <div className="text-sm text-gray-500 truncate" title={request.description}>
+                          <div className="text-sm text-gray-600 whitespace-pre-wrap break-words">
                             {request.description}
                           </div>
                         </div>
