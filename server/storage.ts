@@ -214,6 +214,7 @@ export interface IStorage {
     limit: number;
   }>>;
   getMemberByEmail(email: string): Promise<Result<Member | null>>;
+  getMemberByCjdRole(cjdRole: string): Promise<Result<Member | null>>;
   updateMember(email: string, data: z.infer<typeof updateMemberSchema>): Promise<Result<Member>>;
   deleteMember(email: string): Promise<Result<void>>;
 
@@ -2314,6 +2315,23 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: member || null };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération du membre: ${error}`) };
+    }
+  }
+
+  async getMemberByCjdRole(cjdRole: string): Promise<Result<Member | null>> {
+    try {
+      const [member] = await db
+        .select()
+        .from(members)
+        .where(and(
+          eq(members.cjdRole, cjdRole),
+          eq(members.status, 'active')
+        ))
+        .limit(1);
+
+      return { success: true, data: member || null };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération du membre par rôle CJD: ${error}`) };
     }
   }
 

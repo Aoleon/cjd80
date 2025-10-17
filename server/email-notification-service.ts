@@ -1,7 +1,7 @@
 import { emailService } from './email-service';
 import { storage } from './storage';
 import { createNewIdeaEmailTemplate, createNewEventEmailTemplate, createNewMemberProposalEmailTemplate, type NotificationContext } from './email-templates';
-import type { Idea, Event, Result } from '@shared/schema';
+import type { Idea, Event, Result, Member } from '@shared/schema';
 import { CJD_ROLES } from '@shared/schema';
 
 class EmailNotificationService {
@@ -145,17 +145,14 @@ class EmailNotificationService {
   // Récupérer l'email du responsable recrutement
   private async getRecruitmentManagerEmail(): Promise<Result<string | null>> {
     try {
-      const membersResult = await storage.getMembers({ limit: 1000 });
+      // Utiliser la méthode dédiée pour récupérer le responsable recrutement
+      const memberResult = await storage.getMemberByCjdRole(CJD_ROLES.RESPONSABLE_RECRUTEMENT);
       
-      if (!membersResult.success) {
-        return membersResult;
+      if (!memberResult.success) {
+        return memberResult;
       }
 
-      // Trouver le membre avec le rôle de responsable recrutement
-      const recruitmentManager = membersResult.data.data.find(
-        (member: any) => member.cjdRole === CJD_ROLES.RESPONSABLE_RECRUTEMENT && member.status === 'active'
-      );
-
+      const recruitmentManager = memberResult.data;
       console.log('[Email Notifications] Responsable recrutement:', recruitmentManager ? recruitmentManager.email : 'Non défini');
 
       return {
@@ -207,10 +204,10 @@ class EmailNotificationService {
       }
 
       if (recipients.length === 0) {
-        console.warn('[Email Notifications] Aucun destinataire trouvé pour la proposition de membre');
+        console.error('[Email Notifications] ❌ Configuration erreur: Aucun destinataire trouvé pour la proposition de membre');
         return {
-          success: true,
-          data: { message: 'Aucun destinataire à notifier' }
+          success: false,
+          error: new Error('Aucun destinataire configuré pour les notifications de proposition de membre. Veuillez assigner un responsable recrutement ou activer des administrateurs.')
         };
       }
 
