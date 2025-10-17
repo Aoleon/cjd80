@@ -1611,6 +1611,75 @@ export function createRouter(storageInstance: IStorage): any {
     }
   });
 
+  // ==================== CONFIGURATION EMAIL ====================
+  
+  // Get email configuration (public pour tous les admins)
+  router.get("/api/admin/email-config", async (req, res) => {
+    try {
+      const result = await storageInstance.getEmailConfig();
+      
+      if (!result.success) {
+        return res.status(500).json({ success: false, error: result.error.message });
+      }
+      
+      // If no config exists, return default values from environment
+      if (!result.data) {
+        const defaultConfig = {
+          provider: 'ovh',
+          host: process.env.SMTP_HOST || 'ssl0.ovh.net',
+          port: parseInt(process.env.SMTP_PORT || '465'),
+          secure: process.env.SMTP_SECURE === 'true',
+          fromName: process.env.SMTP_FROM_NAME || 'CJD Amiens',
+          fromEmail: process.env.SMTP_FROM_EMAIL || 'noreply@cjd-amiens.fr',
+          isDefault: true
+        };
+        return res.json({ 
+          success: true, 
+          data: defaultConfig
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        data: { 
+          ...result.data,
+          isDefault: false 
+        } 
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Update email configuration (super admin uniquement)
+  router.put("/api/admin/email-config", requirePermission('admin.manage'), async (req, res) => {
+    try {
+      const { provider, host, port, secure, fromName, fromEmail } = req.body;
+      
+      if (!host || !port || !fromEmail) {
+        return res.status(400).json({ success: false, error: "Configuration manquante (host, port, fromEmail requis)" });
+      }
+      
+      const user = req.user as { email: string };
+      const result = await storageInstance.updateEmailConfig({
+        provider,
+        host,
+        port,
+        secure,
+        fromName,
+        fromEmail
+      }, user.email);
+      
+      if (!result.success) {
+        return res.status(400).json({ success: false, error: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // ==================== GESTION DES MÉCÈNES ====================
   
   // Proposer un mécène potentiel (accessible à tous les utilisateurs connectés)
