@@ -351,6 +351,19 @@ export const brandingConfig = pgTable("branding_config", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Email configuration table - For SMTP settings
+export const emailConfig = pgTable("email_config", {
+  id: serial("id").primaryKey(),
+  provider: varchar("provider", { length: 50 }).notNull().default('ovh'), // ovh, gmail, smtp, etc.
+  host: varchar("host", { length: 255 }).notNull(),
+  port: integer("port").notNull().default(465),
+  secure: boolean("secure").notNull().default(true),
+  fromName: varchar("from_name", { length: 255 }),
+  fromEmail: varchar("from_email", { length: 255 }).notNull(),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const ideasRelations = relations(ideas, ({ many }) => ({
   votes: many(votes),
@@ -1263,6 +1276,19 @@ export const insertBrandingConfigSchema = createInsertSchema(brandingConfig, {
 
 export type InsertBrandingConfig = z.infer<typeof insertBrandingConfigSchema>;
 export type BrandingConfig = typeof brandingConfig.$inferSelect;
+
+// Email config schemas
+export const insertEmailConfigSchema = createInsertSchema(emailConfig, {
+  host: z.string().min(1, "Host requis"),
+  port: z.number().min(1).max(65535, "Port invalide"),
+  secure: z.boolean(),
+  fromEmail: z.string().email("Email invalide"),
+  fromName: z.string().optional(),
+  provider: z.enum(['ovh', 'gmail', 'outlook', 'smtp', 'other']).default('ovh'),
+}).omit({ id: true, updatedAt: true });
+
+export type InsertEmailConfig = z.infer<typeof insertEmailConfigSchema>;
+export type EmailConfig = typeof emailConfig.$inferSelect;
 
 // Legacy compatibility
 export type AdminUser = Admin;

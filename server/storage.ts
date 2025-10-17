@@ -14,6 +14,7 @@ import {
   memberActivities,
   memberSubscriptions,
   brandingConfig,
+  emailConfig,
   type Admin, 
   type InsertAdmin,
   type User,
@@ -45,6 +46,8 @@ import {
   type MemberSubscription,
   type InsertMemberSubscription,
   type BrandingConfig,
+  type EmailConfig,
+  type InsertEmailConfig,
   type Result,
   ValidationError,
   DuplicateError,
@@ -230,6 +233,10 @@ export interface IStorage {
   // Branding configuration
   getBrandingConfig(): Promise<Result<BrandingConfig | null>>;
   updateBrandingConfig(config: string, updatedBy: string): Promise<Result<BrandingConfig>>;
+  
+  // Email configuration
+  getEmailConfig(): Promise<Result<EmailConfig | null>>;
+  updateEmailConfig(config: InsertEmailConfig, updatedBy: string): Promise<Result<EmailConfig>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2506,6 +2513,53 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: result };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la configuration: ${error}`) };
+    }
+  }
+
+  // Email configuration methods
+  async getEmailConfig(): Promise<Result<EmailConfig | null>> {
+    try {
+      const [config] = await db.select().from(emailConfig).limit(1);
+      return { success: true, data: config || null };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération de la configuration email: ${error}`) };
+    }
+  }
+
+  async updateEmailConfig(config: InsertEmailConfig, updatedBy: string): Promise<Result<EmailConfig>> {
+    try {
+      const result = await db.transaction(async (tx) => {
+        // Check if config exists
+        const [existing] = await tx.select().from(emailConfig).limit(1);
+        
+        if (existing) {
+          // Update existing config
+          const [updated] = await tx
+            .update(emailConfig)
+            .set({
+              ...config,
+              updatedBy,
+              updatedAt: sql`NOW()`
+            })
+            .where(eq(emailConfig.id, existing.id))
+            .returning();
+          return updated;
+        } else {
+          // Insert new config
+          const [inserted] = await tx
+            .insert(emailConfig)
+            .values({
+              ...config,
+              updatedBy
+            })
+            .returning();
+          return inserted;
+        }
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la configuration email: ${error}`) };
     }
   }
 
