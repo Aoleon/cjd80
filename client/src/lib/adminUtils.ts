@@ -58,5 +58,5 @@ export function isNewIdea(createdAt: string | Date): boolean {
   const now = new Date();
   const ideaDate = new Date(createdAt);
   const diffInDays = Math.floor((now.getTime() - ideaDate.getTime()) / (1000 * 60 * 60 * 24));
-  return diffInDays <= 30;
+  return diffInDays < 30;
 }
