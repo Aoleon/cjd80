@@ -10,6 +10,7 @@ import {
   patronDonations,
   patronUpdates,
   ideaPatronProposals,
+  eventSponsorships,
   members,
   memberActivities,
   memberSubscriptions,
@@ -39,6 +40,8 @@ import {
   type InsertPatronUpdate,
   type IdeaPatronProposal,
   type InsertIdeaPatronProposal,
+  type EventSponsorship,
+  type InsertEventSponsorship,
   type Member,
   type InsertMember,
   type MemberActivity,
@@ -57,6 +60,7 @@ import {
   EVENT_STATUS,
   updatePatronSchema,
   updateIdeaPatronProposalSchema,
+  updateEventSponsorshipSchema,
   updateMemberSchema
 } from "@shared/schema";
 import { z } from "zod";
@@ -68,6 +72,12 @@ import { pool } from "./db";
 import { logger } from "./lib/logger";
 
 const PostgresSessionStore = connectPg(session);
+
+export type PublicEventSponsorship = EventSponsorship & {
+  patronFirstName: string;
+  patronLastName: string;
+  patronCompany: string | null;
+};
 
 export interface IStorage {
   sessionStore: session.Store;
@@ -210,6 +220,7 @@ export interface IStorage {
   // Gestion des sponsorings événements
   createEventSponsorship(sponsorship: InsertEventSponsorship): Promise<Result<EventSponsorship>>;
   getEventSponsorships(eventId: string): Promise<Result<EventSponsorship[]>>;
+  getPublicEventSponsorships(eventId: string): Promise<Result<PublicEventSponsorship[]>>;
   getPatronSponsorships(patronId: string): Promise<Result<EventSponsorship[]>>;
   getAllSponsorships(): Promise<Result<EventSponsorship[]>>;
   updateEventSponsorship(id: string, data: z.infer<typeof updateEventSponsorshipSchema>): Promise<Result<EventSponsorship>>;
@@ -2232,6 +2243,57 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: sponsorships };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération des sponsorings de l'événement: ${error}`) };
+    }
+  }
+
+  async getPublicEventSponsorships(eventId: string): Promise<Result<PublicEventSponsorship[]>> {
+    try {
+      const sponsorships = await db
+        .select({
+          id: eventSponsorships.id,
+          eventId: eventSponsorships.eventId,
+          patronId: eventSponsorships.patronId,
+          level: eventSponsorships.level,
+          amount: eventSponsorships.amount,
+          benefits: eventSponsorships.benefits,
+          isPubliclyVisible: eventSponsorships.isPubliclyVisible,
+          status: eventSponsorships.status,
+          logoUrl: eventSponsorships.logoUrl,
+          websiteUrl: eventSponsorships.websiteUrl,
+          confirmedAt: eventSponsorships.confirmedAt,
+          createdAt: eventSponsorships.createdAt,
+          updatedAt: eventSponsorships.updatedAt,
+          patronFirstName: patrons.firstName,
+          patronLastName: patrons.lastName,
+          patronCompany: patrons.company,
+        })
+        .from(eventSponsorships)
+        .innerJoin(patrons, eq(eventSponsorships.patronId, patrons.id))
+        .where(
+          and(
+            eq(eventSponsorships.eventId, eventId),
+            eq(eventSponsorships.isPubliclyVisible, true),
+            or(
+              eq(eventSponsorships.status, 'confirmed'),
+              eq(eventSponsorships.status, 'completed')
+            )
+          )
+        )
+        .orderBy(
+          sql`CASE ${eventSponsorships.level}
+            WHEN 'platinum' THEN 1
+            WHEN 'gold' THEN 2
+            WHEN 'silver' THEN 3
+            WHEN 'bronze' THEN 4
+            WHEN 'partner' THEN 5
+            ELSE 6
+          END`
+        );
+      
+      logger.debug('Public event sponsorships retrieved', { eventId, count: sponsorships.length });
+      return { success: true, data: sponsorships };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des sponsorings publics de l'événement: ${error}`) };
     }
   }
 
