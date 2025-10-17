@@ -4,6 +4,15 @@
 This project is an internal web application for the "Centre des Jeunes Dirigeants (CJD) d'Amiens." Its primary purpose is to facilitate collaborative idea sharing ("Boîte à Kiffs"), enable voting on proposals, and manage events with HelloAsso integration. The application serves internal CJD Amiens members (business leaders, entrepreneurs). The project aims to provide a modern, responsive, and optimized architecture, high performance, and a user-friendly interface. Key capabilities include a comprehensive CRM for patron and member management, an engagement scoring system, subscription tracking, and an admin dashboard for quick overviews.
 
 ## Recent Changes (October 2025)
+### "Nouveau" Badge for Recent Ideas (October 17, 2025)
+- **Visual Badge System**: Added automatic "Nouveau" badge display for ideas created within the last 30 days across all interfaces
+  - **Utility Function**: Created `isNewIdea(createdAt)` helper in `client/src/lib/adminUtils.ts` with strict `< 30 days` logic
+  - **Homepage Display**: Green badge positioned top-right on idea cards with `absolute top-3 right-3 bg-success text-white` styling
+  - **Admin Mobile View**: Inline badge next to idea title in `IdeaMobileCardItem.tsx` component
+  - **Admin Desktop View**: Inline badge in table rows in `IdeaTableRow.tsx` component
+  - **Bug Fix**: Corrected boundary condition from `<= 30` to `< 30` days ensuring ideas exactly 30 days old do not show badge
+  - **E2E Testing**: Verified badge appears on recent ideas and is absent on ideas older than 30 days in both public and admin interfaces
+
 ### Playwright Test Infrastructure Improvements
 - **Public API Test Coverage**: Added comprehensive E2E tests for all public API endpoints (health checks, ideas, events, inscriptions, unsubscriptions) with 12/12 tests passing
 - **Test Isolation**: Implemented unique event IDs in test fixtures to prevent cross-worker collisions during parallel test execution
