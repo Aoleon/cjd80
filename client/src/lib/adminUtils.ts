@@ -53,3 +53,10 @@ export function getEventStatusInfo(status: string | null): { label: string; clas
       return { label: status, class: "bg-gray-100 text-gray-800" };
   }
 }
+
+export function isNewIdea(createdAt: string | Date): boolean {
+  const now = new Date();
+  const ideaDate = new Date(createdAt);
+  const diffInDays = Math.floor((now.getTime() - ideaDate.getTime()) / (1000 * 60 * 60 * 24));
+  return diffInDays <= 30;
+}
