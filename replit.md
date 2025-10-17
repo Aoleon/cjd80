@@ -1,49 +1,7 @@
 # CJD Amiens - Application Web Interne "Boîte à Kiffs"
 
 ## Overview
-This project is an internal web application for the "Centre des Jeunes Dirigeants (CJD) d'Amiens." Its primary purpose is to facilitate collaborative idea sharing ("Boîte à Kiffs"), enable voting on proposals, and manage events with HelloAsso integration. The application serves internal CJD Amiens members (business leaders, entrepreneurs). The project aims to provide a modern, responsive, and optimized architecture, high performance, and a user-friendly interface. Key capabilities include a comprehensive CRM for patron and member management, an engagement scoring system, subscription tracking, and an admin dashboard for quick overviews.
-
-## Recent Changes (October 2025)
-### CJD Roles & Targeted Email Notifications (October 17, 2025)
-- **CJD Roles System**: Implemented comprehensive role management system for CJD members with 8 distinct organizational roles
-  - **Schema Updates**: Added `cjdRole` field (nullable varchar) to members table with CJD_ROLES enum containing: president, co_president, tresorier, secretaire, responsable_recrutement, responsable_jeunes, responsable_plenieres, responsable_parrains
-  - **Admin CRM Integration**: Added CJD role dropdown selector in member edit dialog (`client/src/pages/admin-members-page.tsx`)
-  - **Database Method**: Created dedicated `getMemberByCjdRole(cjdRole: string)` method in storage for deterministic role-based member lookup without pagination limits
-- **Member Proposal Email Workflow**: Automated intelligent email routing for new member proposals
-  - **Email Template**: Created `createNewMemberProposalEmailTemplate()` in `server/email-templates.ts` with consistent branding and member information display
-  - **Smart Routing Logic**: `emailNotificationService.notifyNewMemberProposal()` method implements fallback hierarchy:
-    1. Primary: Sends to active member with `responsable_recrutement` role (if assigned)
-    2. Fallback: Sends to all active admins (if no recruitment manager)
-    3. Error: Returns configuration error if no recipients available (prevents silent failures)
-  - **Integration**: POST /api/members/propose triggers notification after successful member creation
-  - **Type Safety**: Proper Member type usage throughout, no `any` types in notification service
-  - **E2E Validation**: Test confirmed email delivered to designated recruitment manager (sebastien.moret@cjd.net) as single recipient, not broadcast to all admins
-
-### "Nouveau" Badge for Recent Ideas (October 17, 2025)
-- **Visual Badge System**: Added automatic "Nouveau" badge display for ideas created within the last 30 days across all interfaces
-  - **Utility Function**: Created `isNewIdea(createdAt)` helper in `client/src/lib/adminUtils.ts` with strict `< 30 days` logic
-  - **Homepage Display**: Green badge positioned top-right on idea cards with `absolute top-3 right-3 bg-success text-white` styling
-  - **Admin Mobile View**: Inline badge next to idea title in `IdeaMobileCardItem.tsx` component
-  - **Admin Desktop View**: Inline badge in table rows in `IdeaTableRow.tsx` component
-  - **Bug Fix**: Corrected boundary condition from `<= 30` to `< 30` days ensuring ideas exactly 30 days old do not show badge
-  - **E2E Testing**: Verified badge appears on recent ideas and is absent on ideas older than 30 days in both public and admin interfaces
-
-### Playwright Test Infrastructure Improvements
-- **Public API Test Coverage**: Added comprehensive E2E tests for all public API endpoints (health checks, ideas, events, inscriptions, unsubscriptions) with 12/12 tests passing
-- **Test Isolation**: Implemented unique event IDs in test fixtures to prevent cross-worker collisions during parallel test execution
-- **Rate Limiting for Tests**: Added test environment detection in rate limiters (`server/middleware/rate-limit.ts`) to bypass rate limits during automated testing
-- **Test Server Configuration**: Modified Playwright webServer to launch directly with `NODE_ENV=test tsx server/index.ts` instead of `npm run dev`, ensuring correct environment variables for test-specific behavior
-- **Auto-cleanup System**: Validated automatic cleanup of test data with parallel execution support
-
-### Admin Navigation & UI Fixes (October 10, 2025)
-- **Admin Header Navigation Fix**: Resolved bug where header navigation menu disappeared for admin users when navigating outside admin area
-  - **Root Cause**: Line 35 in `client/src/components/header.tsx` had conditional logic `menuItems = isAdmin ? [] : allMenuItems` that hid all menu items for admins
-  - **Solution**: Removed admin filtering logic - all users now see navigation menu items ("Voter pour des idées", "Proposer une idée", "Événements", "Les outils du dirigeants") regardless of role
-  - **Verification**: E2E test confirms header navigation remains visible across all pages (/, /propose, /events, /tools) for admin users
-- **Propose Page Patron Data Fix**: Fixed runtime error `patrons.map is not a function` on `/propose` page
-  - **Root Cause**: API `/api/patrons` returns paginated object `{data: [...], total, page, limit}` but frontend query expected direct array
-  - **Solution**: Added `select: (data: any) => data?.data || []` to useQuery in `client/src/pages/propose-page.tsx` to extract array from API response
-- **Footer Enhancement**: Added GitHub open-source link (https://github.com/Aoleon/cjd80) with icon to homepage footer
+This project is an internal web application for the "Centre des Jeunes Dirigeants (CJD) d'Amiens," designed to facilitate collaborative idea sharing ("Boîte à Kiffs"), enable voting on proposals, and manage events with HelloAsso integration. It targets internal CJD Amiens members (business leaders, entrepreneurs), aiming to provide a modern, responsive, and high-performance platform with a user-friendly interface. Key capabilities include comprehensive CRM for patron and member management, an engagement scoring system, subscription tracking, and an admin dashboard for quick overviews. The project emphasizes a modern, optimized architecture.
 
 ## User Preferences
 ### Primary Communication Rule
@@ -88,15 +46,14 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
 - **Anti-Pattern Prevention**: Strategies to detect and prevent common issues like state mutation, missing list keys, incorrect `useEffect` dependencies, unhandled promises, and SQL injection.
 
 ### Feature Specifications
-- **Admin Interface**: Separate visual and functional admin interface with distinct navigation and responsive design.
-- **Pagination**: Backend pagination for lists and a reusable frontend component.
-- **CRM Systems**: Patron Management (schema, API, frontend CRM with search, tabs), Member Management (schema, engagement scoring, API, frontend CRM with search, member cards, activity timelines), Member Subscriptions (schema, API, frontend tab).
-- **Admin Dashboard**: Aggregated platform statistics, quick actions section, responsive design.
-- **Performance Optimizations**: Consolidated database queries, composite indexes, CSS cleanup, and backend/frontend optimizations.
-- **PWA Enhancements**: Offline queue and synchronization (IndexedDB-based), automatic sync service, offline status banner, native sharing (Web Share API), rich push notifications with inline actions, and Badge API for notification counters.
-- **Branding & Customization**: Fully centralized branding configuration system enabling easy multi-tenant support and open-source deployment. Three-layer architecture: `branding-core.ts` (pure config, Node.js compatible), `branding.ts` (extends with Vite assets for frontend), and generation script for static files (index.html, manifest.json). All 15+ components use branding helpers (getAppName, getShortAppName, getOrgName). Systematic theme unification across all application layers: service worker (generic cache names), CSS variables (documented aliases), email templates (dynamic branding), and static files. Comprehensive customization guide in `CUSTOMIZATION.md`. Execute `npm run generate:config` to regenerate static files after branding changes. README.md includes complete documentation of features, installation, and branding configuration.
-- **Admin Branding UI**: SUPER_ADMIN interface for live branding customization via `/admin/branding`. Database-backed configuration with deep merge system (DB values > defaults). BrandingContext provides global branding access with automatic reload. Form organized in 5 Accordion sections (Application, Organisation, Apparence, PWA/Metadata, Links). Real-time save/reset with persistence, Zod validation, color pickers, and status badge (Personnalisé/Par défaut). Hybrid loading: custom config from DB or fallback to `branding-core.ts` defaults. API: GET /api/admin/branding (public read), PUT (SUPER_ADMIN only). Changes propagate instantly across the app via `reloadBranding()`.
-- **Unified Semantic Color System**: Complete replacement of all hardcoded Tailwind colors with semantic color tokens across the entire application (168+ instances → 0). Four semantic color families (success, warning, error, info) with light/dark/base variants defined in `branding-core.ts` and `index.css`. Admin interface extended with 17 new color fields (12 semantic + 5 chart colors) for full customization. CSS utility classes (bg-, text-, border-, ring-) auto-generate for all semantic colors with light/dark mode support. Brand colors (cjd-green, cjd-green-dark, cjd-green-light) preserved for identity consistency. All components now use thematic classes ensuring visual coherence and easy global color updates. Final color mapping: green→success, blue→info, red→error, orange/amber/yellow→warning, purple/violet/pink→info/success (context-dependent). Neutral states use slate/gray for appropriate contexts (e.g., POSTPONED status).
+- **Admin Interface**: Dedicated visual and functional admin interface with distinct navigation and responsive design.
+- **CRM Systems**: Comprehensive Patron and Member Management with search, tabs, engagement scoring, and activity timelines. Includes tracking of member subscriptions and CJD Roles.
+- **Event Management**: Integration with HelloAsso, and a comprehensive event sponsorship system allowing multi-level tracking, public visibility, and management via admin interfaces and public display.
+- **Idea Management**: Collaborative "Boîte à Kiffs" for proposing and voting on ideas, including a "Nouveau" badge for recent ideas.
+- **Admin Dashboard**: Provides aggregated platform statistics and quick actions.
+- **Branding & Customization**: A centralized, multi-tenant branding configuration system with a SUPER_ADMIN UI for live customization, allowing dynamic branding across all application layers, including PWA enhancements, email templates, and static files. Features a unified semantic color system.
+- **Performance Optimizations**: Consolidated database queries, composite indexes, and general backend/frontend optimizations.
+- **PWA Enhancements**: Offline queue and synchronization, automatic sync service, offline status banner, native sharing, rich push notifications, and Badge API.
 
 ### Security Measures
 - **Authentication**: Scrypt password hashing, rolling session timeout, CSRF tokens, login rate limiting.
@@ -108,7 +65,6 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
 ### Deployment Strategy
 - **Autoscale Deployments**: Preferred for web applications and APIs.
 - **Reserved VM Deployments**: For background processes and real-time systems.
-- **Process**: Local testing, staging, performance validation, production with auto-scaling, and continuous monitoring.
 
 ## External Dependencies
 - **Core**: `react`, `typescript`, `vite`, `express`, `postgresql`, `winston` (logging)
