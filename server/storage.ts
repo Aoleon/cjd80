@@ -207,6 +207,20 @@ export interface IStorage {
   updateIdeaPatronProposal(id: string, data: z.infer<typeof updateIdeaPatronProposalSchema>): Promise<Result<IdeaPatronProposal>>;
   deleteIdeaPatronProposal(id: string): Promise<Result<void>>;
   
+  // Gestion des sponsorings événements
+  createEventSponsorship(sponsorship: InsertEventSponsorship): Promise<Result<EventSponsorship>>;
+  getEventSponsorships(eventId: string): Promise<Result<EventSponsorship[]>>;
+  getPatronSponsorships(patronId: string): Promise<Result<EventSponsorship[]>>;
+  getAllSponsorships(): Promise<Result<EventSponsorship[]>>;
+  updateEventSponsorship(id: string, data: z.infer<typeof updateEventSponsorshipSchema>): Promise<Result<EventSponsorship>>;
+  deleteEventSponsorship(id: string): Promise<Result<void>>;
+  getSponsorshipStats(): Promise<Result<{
+    totalSponsorships: number;
+    totalAmount: number;
+    sponsorshipsByLevel: { level: string; count: number; totalAmount: number }[];
+    sponsorshipsByStatus: { status: string; count: number }[];
+  }>>;
+  
   // Gestion des membres
   createOrUpdateMember(memberData: Partial<InsertMember> & { email: string }): Promise<Result<Member>>;
   proposeMember(memberData: Partial<InsertMember> & { email: string; firstName: string; lastName: string; proposedBy: string }): Promise<Result<Member>>;
@@ -2173,6 +2187,184 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: undefined };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la suppression de la proposition: ${error}`) };
+    }
+  }
+
+  // ===== GESTION DES SPONSORINGS ÉVÉNEMENTS (7 méthodes) =====
+  
+  async createEventSponsorship(sponsorship: InsertEventSponsorship): Promise<Result<EventSponsorship>> {
+    try {
+      const sponsorshipData: any = {
+        ...sponsorship,
+      };
+
+      if (sponsorship.confirmedAt) {
+        sponsorshipData.confirmedAt = new Date(sponsorship.confirmedAt);
+      }
+
+      const [newSponsorship] = await db
+        .insert(eventSponsorships)
+        .values(sponsorshipData)
+        .returning();
+      
+      logger.info('Event sponsorship created', { 
+        sponsorshipId: newSponsorship.id, 
+        eventId: newSponsorship.eventId, 
+        patronId: newSponsorship.patronId,
+        level: newSponsorship.level,
+        amount: newSponsorship.amount 
+      });
+      return { success: true, data: newSponsorship };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création du sponsoring: ${error}`) };
+    }
+  }
+
+  async getEventSponsorships(eventId: string): Promise<Result<EventSponsorship[]>> {
+    try {
+      const sponsorships = await db
+        .select()
+        .from(eventSponsorships)
+        .where(eq(eventSponsorships.eventId, eventId))
+        .orderBy(desc(eventSponsorships.createdAt));
+      
+      logger.debug('Event sponsorships retrieved', { eventId, count: sponsorships.length });
+      return { success: true, data: sponsorships };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des sponsorings de l'événement: ${error}`) };
+    }
+  }
+
+  async getPatronSponsorships(patronId: string): Promise<Result<EventSponsorship[]>> {
+    try {
+      const sponsorships = await db
+        .select()
+        .from(eventSponsorships)
+        .where(eq(eventSponsorships.patronId, patronId))
+        .orderBy(desc(eventSponsorships.createdAt));
+      
+      logger.debug('Patron sponsorships retrieved', { patronId, count: sponsorships.length });
+      return { success: true, data: sponsorships };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des sponsorings du mécène: ${error}`) };
+    }
+  }
+
+  async getAllSponsorships(): Promise<Result<EventSponsorship[]>> {
+    try {
+      const sponsorships = await db
+        .select()
+        .from(eventSponsorships)
+        .orderBy(desc(eventSponsorships.createdAt));
+      
+      logger.debug('All sponsorships retrieved', { count: sponsorships.length });
+      return { success: true, data: sponsorships };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des sponsorings: ${error}`) };
+    }
+  }
+
+  async updateEventSponsorship(id: string, data: z.infer<typeof updateEventSponsorshipSchema>): Promise<Result<EventSponsorship>> {
+    try {
+      const [existingSponsorship] = await db
+        .select()
+        .from(eventSponsorships)
+        .where(eq(eventSponsorships.id, id));
+
+      if (!existingSponsorship) {
+        return { success: false, error: new NotFoundError("Sponsoring introuvable") };
+      }
+
+      const updateData: any = { ...data };
+      if (data.confirmedAt !== undefined) {
+        updateData.confirmedAt = data.confirmedAt ? new Date(data.confirmedAt) : null;
+      }
+
+      const [updatedSponsorship] = await db
+        .update(eventSponsorships)
+        .set(updateData)
+        .where(eq(eventSponsorships.id, id))
+        .returning();
+
+      logger.info('Event sponsorship updated', { sponsorshipId: id, updates: Object.keys(data) });
+      return { success: true, data: updatedSponsorship };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du sponsoring: ${error}`) };
+    }
+  }
+
+  async deleteEventSponsorship(id: string): Promise<Result<void>> {
+    try {
+      const [sponsorship] = await db
+        .select()
+        .from(eventSponsorships)
+        .where(eq(eventSponsorships.id, id));
+
+      if (!sponsorship) {
+        return { success: false, error: new NotFoundError("Sponsoring introuvable") };
+      }
+
+      await db.transaction(async (tx) => {
+        await tx.delete(eventSponsorships).where(eq(eventSponsorships.id, id));
+        logger.info('Event sponsorship deleted', { sponsorshipId: id });
+      });
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression du sponsoring: ${error}`) };
+    }
+  }
+
+  async getSponsorshipStats(): Promise<Result<{
+    totalSponsorships: number;
+    totalAmount: number;
+    sponsorshipsByLevel: { level: string; count: number; totalAmount: number }[];
+    sponsorshipsByStatus: { status: string; count: number }[];
+  }>> {
+    try {
+      const allSponsorships = await db
+        .select()
+        .from(eventSponsorships);
+
+      const totalSponsorships = allSponsorships.length;
+      const totalAmount = allSponsorships.reduce((sum, s) => sum + s.amount, 0);
+
+      // Group by level
+      const levelMap = new Map<string, { count: number; totalAmount: number }>();
+      allSponsorships.forEach(s => {
+        const current = levelMap.get(s.level) || { count: 0, totalAmount: 0 };
+        levelMap.set(s.level, {
+          count: current.count + 1,
+          totalAmount: current.totalAmount + s.amount
+        });
+      });
+      const sponsorshipsByLevel = Array.from(levelMap.entries()).map(([level, stats]) => ({
+        level,
+        ...stats
+      }));
+
+      // Group by status
+      const statusMap = new Map<string, number>();
+      allSponsorships.forEach(s => {
+        statusMap.set(s.status, (statusMap.get(s.status) || 0) + 1);
+      });
+      const sponsorshipsByStatus = Array.from(statusMap.entries()).map(([status, count]) => ({
+        status,
+        count
+      }));
+
+      logger.debug('Sponsorship stats calculated', { totalSponsorships, totalAmount });
+      return {
+        success: true,
+        data: {
+          totalSponsorships,
+          totalAmount,
+          sponsorshipsByLevel,
+          sponsorshipsByStatus
+        }
+      };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors du calcul des statistiques de sponsoring: ${error}`) };
     }
   }
 
