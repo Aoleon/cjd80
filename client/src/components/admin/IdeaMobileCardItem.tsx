@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { IDEA_STATUS } from "@shared/schema";
-import { formatDate, getIdeaStatusInfo } from "@/lib/adminUtils";
+import { formatDate, getIdeaStatusInfo, isNewIdea } from "@/lib/adminUtils";
 import type { IdeaWithVotes } from "@/types/admin";
 
 interface IdeaMobileCardItemProps {
@@ -46,11 +46,16 @@ export default function IdeaMobileCardItem({
             className="flex-1 text-left"
             data-testid={`button-view-idea-mobile-${idea.id}`}
           >
-            <h4 className="font-semibold text-info hover:text-cjd-green transition-colors hover:underline flex items-center gap-1">
+            <h4 className="font-semibold text-info hover:text-cjd-green transition-colors hover:underline flex items-center gap-1.5 flex-wrap">
               {idea.featured && (
                 <Star className="w-4 h-4 text-warning fill-current flex-shrink-0" />
               )}
-              {idea.title}
+              <span>{idea.title}</span>
+              {isNewIdea(idea.createdAt) && (
+                <span className="bg-success text-white px-1.5 py-0.5 rounded text-[10px] font-semibold">
+                  Nouveau
+                </span>
+              )}
             </h4>
             {idea.description && (
               <p className="text-sm text-gray-500 mt-1 line-clamp-2">

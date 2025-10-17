@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { IDEA_STATUS } from "@shared/schema";
-import { formatDate, getIdeaStatusInfo } from "@/lib/adminUtils";
+import { formatDate, getIdeaStatusInfo, isNewIdea } from "@/lib/adminUtils";
 import type { IdeaWithVotes } from "@/types/admin";
 
 interface IdeaTableRowProps {
@@ -50,11 +50,16 @@ export default function IdeaTableRow({
             className="font-semibold text-left hover:text-cjd-green transition-colors cursor-pointer text-info hover:underline"
             data-testid={`button-view-idea-${idea.id}`}
           >
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
               {idea.featured && (
                 <Star className="w-4 h-4 text-warning fill-current flex-shrink-0" />
               )}
-              {idea.title}
+              <span>{idea.title}</span>
+              {isNewIdea(idea.createdAt) && (
+                <span className="bg-success text-white px-1.5 py-0.5 rounded text-[10px] font-semibold">
+                  Nouveau
+                </span>
+              )}
             </div>
           </button>
           {idea.description && (
