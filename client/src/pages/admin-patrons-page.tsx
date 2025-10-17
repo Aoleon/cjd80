@@ -59,9 +59,10 @@ import { Badge } from "@/components/ui/badge";
 import { SimplePagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Loader2, Search, Plus, Edit, Trash2, Euro, Calendar, User, Building2, Phone, Mail, FileText, Coffee, Star } from "lucide-react";
+import { Loader2, Search, Plus, Edit, Trash2, Euro, Calendar, User, Building2, Phone, Mail, FileText, Coffee, Star, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Types from schema
 type Patron = {
@@ -112,6 +113,27 @@ type PatronUpdate = {
   updatedAt: Date | string;
 };
 
+type Event = {
+  id: string;
+  title: string;
+  date: Date | string;
+  status: string;
+};
+
+type EventSponsorship = {
+  id: string;
+  eventId: string;
+  patronId: string;
+  level: "platinum" | "gold" | "silver" | "bronze" | "partner";
+  amount: number;
+  benefits: string | null;
+  isPubliclyVisible: boolean;
+  status: "proposed" | "confirmed" | "completed" | "cancelled";
+  event?: Event;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
 // Form schemas
 const patronFormSchema = z.object({
   firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
@@ -144,9 +166,23 @@ const updateFormSchema = z.object({
   notes: z.string().optional(),
 });
 
+const sponsorshipFormSchema = z.object({
+  eventId: z.string().min(1, "Veuillez sélectionner un événement"),
+  level: z.enum(["platinum", "gold", "silver", "bronze", "partner"], {
+    errorMap: () => ({ message: "Veuillez sélectionner un niveau" })
+  }),
+  amount: z.number().min(0, "Le montant ne peut pas être négatif"),
+  benefits: z.string().optional(),
+  isPubliclyVisible: z.boolean().default(true),
+  status: z.enum(["proposed", "confirmed", "completed", "cancelled"], {
+    errorMap: () => ({ message: "Veuillez sélectionner un statut" })
+  }),
+});
+
 type PatronFormValues = z.infer<typeof patronFormSchema>;
 type DonationFormValues = z.infer<typeof donationFormSchema>;
 type UpdateFormValues = z.infer<typeof updateFormSchema>;
+type SponsorshipFormValues = z.infer<typeof sponsorshipFormSchema>;
 
 interface PaginatedPatronsResponse {
   success: boolean;
@@ -167,6 +203,9 @@ export default function AdminPatronsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDonationDialogOpen, setIsDonationDialogOpen] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [isSponsorshipDialogOpen, setIsSponsorshipDialogOpen] = useState(false);
+  const [isEditSponsorshipDialogOpen, setIsEditSponsorshipDialogOpen] = useState(false);
+  const [editingSponsorshipId, setEditingSponsorshipId] = useState<string | null>(null);
   const [deletePatronId, setDeletePatronId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const limit = 20;
@@ -203,6 +242,23 @@ export default function AdminPatronsPage() {
     queryKey: [`/api/patrons/${selectedPatronId}/updates`],
     enabled: isSuperAdmin && !!selectedPatronId,
   });
+
+  const { data: sponsorships = [], isLoading: sponsorshipsLoading } = useQuery<EventSponsorship[]>({
+    queryKey: [`/api/patrons/${selectedPatronId}/sponsorships`],
+    enabled: isSuperAdmin && !!selectedPatronId,
+  });
+
+  const { data: eventsResponse } = useQuery<{ data: Event[] }>({
+    queryKey: ["/api/events"],
+    queryFn: async () => {
+      const res = await fetch("/api/events");
+      if (!res.ok) throw new Error('Failed to fetch events');
+      return res.json();
+    },
+    enabled: isSuperAdmin,
+  });
+
+  const events = eventsResponse?.data || [];
 
   // Récupérer la liste des membres pour le champ prescripteur
   const { data: membersResponse } = useQuery<{ data: Array<{ id: string; firstName: string; lastName: string; email: string; company: string | null }> }>({
@@ -264,6 +320,18 @@ export default function AdminPatronsPage() {
       duration: undefined,
       description: "",
       notes: "",
+    },
+  });
+
+  const sponsorshipForm = useForm<SponsorshipFormValues>({
+    resolver: zodResolver(sponsorshipFormSchema),
+    defaultValues: {
+      eventId: "",
+      level: "partner",
+      amount: 0,
+      benefits: "",
+      isPubliclyVisible: true,
+      status: "proposed",
     },
   });
 
@@ -389,6 +457,70 @@ export default function AdminPatronsPage() {
     },
   });
 
+  const addSponsorshipMutation = useMutation({
+    mutationFn: (data: SponsorshipFormValues) => {
+      const amountInCents = Math.round(data.amount * 100);
+      return apiRequest("POST", `/api/patrons/${selectedPatronId}/sponsorships`, {
+        ...data,
+        amount: amountInCents,
+        patronId: selectedPatronId,
+        proposedByAdminEmail: user?.email,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/patrons/${selectedPatronId}/sponsorships`] });
+      setIsSponsorshipDialogOpen(false);
+      sponsorshipForm.reset();
+      toast({ title: "Sponsoring ajouté avec succès" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'ajouter le sponsoring",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateSponsorshipMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: SponsorshipFormValues }) => {
+      const amountInCents = Math.round(data.amount * 100);
+      return apiRequest("PATCH", `/api/sponsorships/${id}`, {
+        ...data,
+        amount: amountInCents,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/patrons/${selectedPatronId}/sponsorships`] });
+      setIsEditSponsorshipDialogOpen(false);
+      setEditingSponsorshipId(null);
+      sponsorshipForm.reset();
+      toast({ title: "Sponsoring modifié avec succès" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de modifier le sponsoring",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteSponsorshipMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/sponsorships/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/patrons/${selectedPatronId}/sponsorships`] });
+      toast({ title: "Sponsoring supprimé avec succès" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer le sponsoring",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handlers
   const handleCreatePatron = (data: PatronFormValues) => {
     createPatronMutation.mutate(data);
@@ -427,6 +559,28 @@ export default function AdminPatronsPage() {
     addUpdateMutation.mutate(data);
   };
 
+  const handleAddSponsorship = (data: SponsorshipFormValues) => {
+    addSponsorshipMutation.mutate(data);
+  };
+
+  const handleEditSponsorship = (sponsorship: EventSponsorship) => {
+    sponsorshipForm.reset({
+      eventId: sponsorship.eventId,
+      level: sponsorship.level,
+      amount: sponsorship.amount / 100,
+      benefits: sponsorship.benefits || "",
+      isPubliclyVisible: sponsorship.isPubliclyVisible,
+      status: sponsorship.status,
+    });
+    setEditingSponsorshipId(sponsorship.id);
+    setIsEditSponsorshipDialogOpen(true);
+  };
+
+  const handleUpdateSponsorship = (data: SponsorshipFormValues) => {
+    if (!editingSponsorshipId) return;
+    updateSponsorshipMutation.mutate({ id: editingSponsorshipId, data });
+  };
+
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -459,6 +613,48 @@ export default function AdminPatronsPage() {
     };
     const Icon = icons[type as keyof typeof icons] || Calendar;
     return <Icon className="h-4 w-4" />;
+  };
+
+  const getSponsorshipLevelLabel = (level: string) => {
+    const labels = {
+      platinum: "Platine",
+      gold: "Or",
+      silver: "Argent",
+      bronze: "Bronze",
+      partner: "Partenaire",
+    };
+    return labels[level as keyof typeof labels] || level;
+  };
+
+  const getSponsorshipLevelBadgeClass = (level: string) => {
+    const classes = {
+      platinum: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200",
+      gold: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+      silver: "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200",
+      bronze: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+      partner: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    };
+    return classes[level as keyof typeof classes] || "";
+  };
+
+  const getSponsorshipStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    const variants = {
+      proposed: "secondary" as const,
+      confirmed: "default" as const,
+      completed: "outline" as const,
+      cancelled: "destructive" as const,
+    };
+    return variants[status as keyof typeof variants] || "secondary";
+  };
+
+  const getSponsorshipStatusLabel = (status: string) => {
+    const labels = {
+      proposed: "Proposé",
+      confirmed: "Confirmé",
+      completed: "Réalisé",
+      cancelled: "Annulé",
+    };
+    return labels[status as keyof typeof labels] || status;
   };
 
   if (patronsLoading) {
@@ -624,7 +820,7 @@ export default function AdminPatronsPage() {
                     </div>
                   ) : (
                     <Tabs defaultValue="info" className="w-full">
-                      <TabsList className="grid w-full grid-cols-3">
+                      <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="info" data-testid="tab-info">
                           Informations
                         </TabsTrigger>
@@ -633,6 +829,9 @@ export default function AdminPatronsPage() {
                         </TabsTrigger>
                         <TabsTrigger value="updates" data-testid="tab-updates">
                           Actualités ({updates.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="sponsorships" data-testid="tab-sponsorships">
+                          Sponsorings ({sponsorships.length})
                         </TabsTrigger>
                       </TabsList>
 
@@ -847,6 +1046,107 @@ export default function AdminPatronsPage() {
                                   )}
                                 </div>
                               ))}
+                          </div>
+                        )}
+                      </TabsContent>
+
+                      <TabsContent value="sponsorships" className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="font-medium">Sponsorings d'événements</h3>
+                          <Button
+                            size="sm"
+                            onClick={() => setIsSponsorshipDialogOpen(true)}
+                            data-testid="button-add-sponsorship"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Nouveau sponsoring
+                          </Button>
+                        </div>
+                        {sponsorshipsLoading ? (
+                          <div className="flex justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                          </div>
+                        ) : sponsorships.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            Aucun sponsoring enregistré
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {sponsorships.map((sponsorship) => (
+                              <div
+                                key={sponsorship.id}
+                                className="p-4 border rounded-lg"
+                                data-testid={`sponsorship-${sponsorship.id}`}
+                              >
+                                <div className="flex items-start justify-between mb-2">
+                                  <div className="flex-1">
+                                    <div className="font-medium mb-1" data-testid={`sponsorship-event-${sponsorship.id}`}>
+                                      {sponsorship.event?.title || "Événement inconnu"}
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <Badge 
+                                        className={getSponsorshipLevelBadgeClass(sponsorship.level)}
+                                        data-testid={`sponsorship-level-${sponsorship.id}`}
+                                      >
+                                        {getSponsorshipLevelLabel(sponsorship.level)}
+                                      </Badge>
+                                      <Badge 
+                                        variant={getSponsorshipStatusBadgeVariant(sponsorship.status)}
+                                        data-testid={`sponsorship-status-${sponsorship.id}`}
+                                      >
+                                        {getSponsorshipStatusLabel(sponsorship.status)}
+                                      </Badge>
+                                      {sponsorship.isPubliclyVisible ? (
+                                        <Eye className="h-4 w-4 text-green-600" data-testid={`sponsorship-visible-${sponsorship.id}`} />
+                                      ) : (
+                                        <EyeOff className="h-4 w-4 text-gray-400" data-testid={`sponsorship-hidden-${sponsorship.id}`} />
+                                      )}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground mt-2">
+                                      <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-1">
+                                          <Euro className="h-3 w-3" />
+                                          <span data-testid={`sponsorship-amount-${sponsorship.id}`}>
+                                            {formatAmount(sponsorship.amount)}
+                                          </span>
+                                        </div>
+                                        {sponsorship.event?.date && (
+                                          <div className="flex items-center gap-1">
+                                            <Calendar className="h-3 w-3" />
+                                            <span data-testid={`sponsorship-date-${sponsorship.id}`}>
+                                              {formatDate(sponsorship.event.date)}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {sponsorship.benefits && (
+                                      <div className="text-sm mt-2 text-muted-foreground" data-testid={`sponsorship-benefits-${sponsorship.id}`}>
+                                        <strong>Contreparties:</strong> {sponsorship.benefits}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEditSponsorship(sponsorship)}
+                                      data-testid={`button-edit-sponsorship-${sponsorship.id}`}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => deleteSponsorshipMutation.mutate(sponsorship.id)}
+                                      data-testid={`button-delete-sponsorship-${sponsorship.id}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </TabsContent>
@@ -1444,6 +1744,351 @@ export default function AdminPatronsPage() {
                   data-testid="button-submit-update"
                 >
                   {addUpdateMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Enregistrer
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Créer un sponsoring */}
+      <Dialog open={isSponsorshipDialogOpen} onOpenChange={setIsSponsorshipDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nouveau sponsoring</DialogTitle>
+            <DialogDescription>
+              Ajouter un sponsoring d'événement pour ce mécène
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...sponsorshipForm}>
+            <form onSubmit={sponsorshipForm.handleSubmit(handleAddSponsorship)} className="space-y-4">
+              <FormField
+                control={sponsorshipForm.control}
+                name="eventId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Événement *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-event">
+                          <SelectValue placeholder="Sélectionner un événement" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {events.map((event) => (
+                          <SelectItem key={event.id} value={event.id} data-testid={`event-option-${event.id}`}>
+                            {event.title} - {formatDate(event.date)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={sponsorshipForm.control}
+                  name="level"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Niveau *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-level">
+                            <SelectValue placeholder="Sélectionner un niveau" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="platinum" data-testid="level-platinum">Platine</SelectItem>
+                          <SelectItem value="gold" data-testid="level-gold">Or</SelectItem>
+                          <SelectItem value="silver" data-testid="level-silver">Argent</SelectItem>
+                          <SelectItem value="bronze" data-testid="level-bronze">Bronze</SelectItem>
+                          <SelectItem value="partner" data-testid="level-partner">Partenaire</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={sponsorshipForm.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Montant (€) *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          placeholder="Ex: 1000.00"
+                          data-testid="input-amount"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={sponsorshipForm.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Statut *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-status">
+                          <SelectValue placeholder="Sélectionner un statut" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="proposed" data-testid="status-proposed">Proposé</SelectItem>
+                        <SelectItem value="confirmed" data-testid="status-confirmed">Confirmé</SelectItem>
+                        <SelectItem value="completed" data-testid="status-completed">Réalisé</SelectItem>
+                        <SelectItem value="cancelled" data-testid="status-cancelled">Annulé</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={sponsorshipForm.control}
+                name="benefits"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contreparties</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        rows={4}
+                        placeholder="Décrire les contreparties offertes au mécène..."
+                        data-testid="input-benefits"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={sponsorshipForm.control}
+                name="isPubliclyVisible"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        data-testid="checkbox-visible"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Visibilité publique
+                      </FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Le sponsoring sera visible publiquement sur la page de l'événement
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsSponsorshipDialogOpen(false)}
+                  data-testid="button-cancel-sponsorship"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={addSponsorshipMutation.isPending}
+                  data-testid="button-submit-sponsorship"
+                >
+                  {addSponsorshipMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Enregistrer
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Modifier un sponsoring */}
+      <Dialog open={isEditSponsorshipDialogOpen} onOpenChange={setIsEditSponsorshipDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Modifier le sponsoring</DialogTitle>
+            <DialogDescription>
+              Modifier les informations du sponsoring
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...sponsorshipForm}>
+            <form onSubmit={sponsorshipForm.handleSubmit(handleUpdateSponsorship)} className="space-y-4">
+              <FormField
+                control={sponsorshipForm.control}
+                name="eventId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Événement *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-edit-event">
+                          <SelectValue placeholder="Sélectionner un événement" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {events.map((event) => (
+                          <SelectItem key={event.id} value={event.id}>
+                            {event.title} - {formatDate(event.date)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={sponsorshipForm.control}
+                  name="level"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Niveau *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-edit-level">
+                            <SelectValue placeholder="Sélectionner un niveau" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="platinum">Platine</SelectItem>
+                          <SelectItem value="gold">Or</SelectItem>
+                          <SelectItem value="silver">Argent</SelectItem>
+                          <SelectItem value="bronze">Bronze</SelectItem>
+                          <SelectItem value="partner">Partenaire</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={sponsorshipForm.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Montant (€) *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          placeholder="Ex: 1000.00"
+                          data-testid="input-edit-amount"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={sponsorshipForm.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Statut *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-edit-status">
+                          <SelectValue placeholder="Sélectionner un statut" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="proposed">Proposé</SelectItem>
+                        <SelectItem value="confirmed">Confirmé</SelectItem>
+                        <SelectItem value="completed">Réalisé</SelectItem>
+                        <SelectItem value="cancelled">Annulé</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={sponsorshipForm.control}
+                name="benefits"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contreparties</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        rows={4}
+                        placeholder="Décrire les contreparties offertes au mécène..."
+                        data-testid="input-edit-benefits"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={sponsorshipForm.control}
+                name="isPubliclyVisible"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        data-testid="checkbox-edit-visible"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Visibilité publique
+                      </FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Le sponsoring sera visible publiquement sur la page de l'événement
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditSponsorshipDialogOpen(false);
+                    setEditingSponsorshipId(null);
+                  }}
+                  data-testid="button-cancel-edit-sponsorship"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateSponsorshipMutation.isPending}
+                  data-testid="button-submit-edit-sponsorship"
+                >
+                  {updateSponsorshipMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   Enregistrer
