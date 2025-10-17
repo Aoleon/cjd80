@@ -17,6 +17,7 @@ import EventsPage from "@/pages/events-page";
 import ToolsPage from "@/pages/tools-page";
 import AdminPage from "@/pages/admin-page";
 import AdminPatronsPage from "@/pages/admin-patrons-page";
+import AdminSponsorshipsPage from "@/pages/admin-sponsorships-page";
 import AdminMembersPage from "@/pages/admin-members-page";
 import AdminBrandingPage from "@/pages/admin-branding-page";
 import AdminEmailConfigPage from "@/pages/admin-email-config-page";
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/test-error" component={TestErrorPage} />
       <ProtectedRoute path="/admin" component={AdminPage} />
       <ProtectedRoute path="/admin/patrons" component={AdminPatronsPage} />
+      <ProtectedRoute path="/admin/sponsorships" component={AdminSponsorshipsPage} />
       <ProtectedRoute path="/admin/members" component={AdminMembersPage} />
       <ProtectedRoute path="/admin/branding" component={AdminBrandingPage} />
       <ProtectedRoute path="/admin/email-config" component={AdminEmailConfigPage} />

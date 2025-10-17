@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Shield, Home, Lightbulb, Plus, Calendar, UserCircle, Users, LogOut, Menu, X, Palette, Mail } from "lucide-react";
+import { Shield, Home, Lightbulb, Plus, Calendar, UserCircle, Users, LogOut, Menu, X, Palette, Mail, Award } from "lucide-react";
 import { getShortAppName } from '@/config/branding';
 
 export default function AdminHeader() {
@@ -23,6 +23,7 @@ export default function AdminHeader() {
   const superAdminItems = user?.role === "super_admin" 
     ? [
         { id: "patrons", label: "Mécènes", icon: Users, path: "/admin/patrons" },
+        { id: "sponsorships", label: "Sponsorings", icon: Award, path: "/admin/sponsorships" },
         { id: "branding", label: "Branding", icon: Palette, path: "/admin/branding" },
         { id: "email-config", label: "Email SMTP", icon: Mail, path: "/admin/email-config" }
       ]
