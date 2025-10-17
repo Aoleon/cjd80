@@ -2108,6 +2108,163 @@ export function createRouter(storageInstance: IStorage): any {
     }
   });
 
+  // ==================== GESTION DES SPONSORINGS ÉVÉNEMENTS ====================
+
+  // Créer un sponsoring pour un événement
+  router.post("/api/events/:eventId/sponsorships", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = insertEventSponsorshipSchema.parse({
+        ...req.body,
+        eventId: req.params.eventId,
+        proposedByAdminEmail: req.user!.email
+      });
+      
+      const result = await storageInstance.createEventSponsorship(validatedData);
+      
+      if (!result.success) {
+        if (result.error instanceof DuplicateError) {
+          return res.status(409).json({ message: result.error.message });
+        }
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Créer un sponsoring pour un mécène
+  router.post("/api/patrons/:patronId/sponsorships", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = insertEventSponsorshipSchema.parse({
+        ...req.body,
+        patronId: req.params.patronId,
+        proposedByAdminEmail: req.user!.email
+      });
+      
+      const result = await storageInstance.createEventSponsorship(validatedData);
+      
+      if (!result.success) {
+        if (result.error instanceof DuplicateError) {
+          return res.status(409).json({ message: result.error.message });
+        }
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Récupérer les sponsorings d'un événement
+  router.get("/api/events/:eventId/sponsorships", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getEventSponsorships(req.params.eventId);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Récupérer les sponsorings d'un mécène
+  router.get("/api/patrons/:patronId/sponsorships", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getPatronSponsorships(req.params.patronId);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Récupérer tous les sponsorings
+  router.get("/api/sponsorships", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getAllSponsorships();
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Récupérer les statistiques de sponsorings
+  router.get("/api/sponsorships/stats", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getSponsorshipStats();
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Mettre à jour un sponsoring
+  router.patch("/api/sponsorships/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = updateEventSponsorshipSchema.parse(req.body);
+      
+      const result = await storageInstance.updateEventSponsorship(req.params.id, validatedData);
+      
+      if (!result.success) {
+        if (result.error.name === 'NotFoundError') {
+          return res.status(404).json({ message: result.error.message });
+        }
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Supprimer un sponsoring
+  router.delete("/api/sponsorships/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.deleteEventSponsorship(req.params.id);
+      
+      if (!result.success) {
+        if (result.error.name === 'NotFoundError') {
+          return res.status(404).json({ message: result.error.message });
+        }
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // ==================== GESTION DES MEMBRES (CRM) ====================
 
   // Lister tous les membres avec leur score d'engagement et dernière activité
