@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
@@ -102,6 +103,17 @@ type ProposeMemberForm = {
   proposerCompany?: string;
 };
 
+// LocalStorage key for saved proposer info
+const PROPOSER_INFO_KEY = 'cjd_proposer_info';
+
+// Type for saved proposer information
+interface SavedProposerInfo {
+  firstName: string;
+  lastName: string;
+  email: string;
+  company: string;
+}
+
 export default function ProposePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -115,6 +127,37 @@ export default function ProposePage() {
   // Patron-related state
   const [selectedPatronId, setSelectedPatronId] = useState<string | null>(null);
   const [isPatronDialogOpen, setIsPatronDialogOpen] = useState(false);
+  
+  // Remember me state
+  const [rememberMe, setRememberMe] = useState(false);
+  
+  // Load saved proposer info
+  const loadSavedProposerInfo = (): SavedProposerInfo | null => {
+    try {
+      const saved = localStorage.getItem(PROPOSER_INFO_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  };
+  
+  // Save proposer info to localStorage
+  const saveProposerInfo = (info: SavedProposerInfo) => {
+    try {
+      localStorage.setItem(PROPOSER_INFO_KEY, JSON.stringify(info));
+    } catch (error) {
+      console.error('Error saving proposer info:', error);
+    }
+  };
+  
+  // Clear saved proposer info
+  const clearProposerInfo = () => {
+    try {
+      localStorage.removeItem(PROPOSER_INFO_KEY);
+    } catch (error) {
+      console.error('Error clearing proposer info:', error);
+    }
+  };
 
   const form = useForm<ProposeIdeaForm>({
     resolver: zodResolver(proposeIdeaFormSchema),
@@ -177,6 +220,69 @@ export default function ProposePage() {
       proposerCompany: "",
     },
   });
+  
+  // Load saved proposer info on mount and pre-fill forms
+  useEffect(() => {
+    const savedInfo = loadSavedProposerInfo();
+    if (savedInfo) {
+      setRememberMe(true);
+      
+      // Pre-fill idea form (proposedBy is full name)
+      form.setValue('proposedBy', `${savedInfo.firstName} ${savedInfo.lastName}`);
+      form.setValue('proposedByEmail', savedInfo.email);
+      form.setValue('company', savedInfo.company);
+      
+      // Pre-fill patron proposal form
+      patronProposalForm.setValue('proposerFirstName', savedInfo.firstName);
+      patronProposalForm.setValue('proposerLastName', savedInfo.lastName);
+      patronProposalForm.setValue('proposerEmail', savedInfo.email);
+      patronProposalForm.setValue('proposerCompany', savedInfo.company);
+      
+      // Pre-fill member proposal form
+      memberProposalForm.setValue('proposerFirstName', savedInfo.firstName);
+      memberProposalForm.setValue('proposerLastName', savedInfo.lastName);
+      memberProposalForm.setValue('proposerEmail', savedInfo.email);
+      memberProposalForm.setValue('proposerCompany', savedInfo.company);
+    }
+  }, []);
+  
+  // Handle remember me checkbox change
+  const handleRememberMeChange = (checked: boolean) => {
+    setRememberMe(checked);
+    
+    if (checked) {
+      // Save current form values
+      if (proposalType === 'idea') {
+        const fullName = form.getValues('proposedBy') || '';
+        const nameParts = fullName.trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        saveProposerInfo({
+          firstName,
+          lastName,
+          email: form.getValues('proposedByEmail') || '',
+          company: form.getValues('company') || '',
+        });
+      } else if (proposalType === 'patron') {
+        saveProposerInfo({
+          firstName: patronProposalForm.getValues('proposerFirstName') || '',
+          lastName: patronProposalForm.getValues('proposerLastName') || '',
+          email: patronProposalForm.getValues('proposerEmail') || '',
+          company: patronProposalForm.getValues('proposerCompany') || '',
+        });
+      } else if (proposalType === 'member') {
+        saveProposerInfo({
+          firstName: memberProposalForm.getValues('proposerFirstName') || '',
+          lastName: memberProposalForm.getValues('proposerLastName') || '',
+          email: memberProposalForm.getValues('proposerEmail') || '',
+          company: memberProposalForm.getValues('proposerCompany') || '',
+        });
+      }
+    } else {
+      clearProposerInfo();
+    }
+  };
 
   // Check if user is admin (has admin.manage permission)
   const isAdmin = user?.role === "super_admin" || user?.role === "ideas_manager";
@@ -569,6 +675,22 @@ export default function ProposePage() {
                     )}
                   />
                 </div>
+                
+                {/* Remember me checkbox */}
+                <div className="flex items-center space-x-2 pt-2">
+                  <Checkbox 
+                    id="remember-me-idea" 
+                    checked={rememberMe} 
+                    onCheckedChange={handleRememberMeChange}
+                    data-testid="checkbox-remember-me"
+                  />
+                  <label
+                    htmlFor="remember-me-idea"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    Se souvenir de mes coordonnées pour les prochaines propositions
+                  </label>
+                </div>
               </div>
 
               {/* Section: Échéance */}
@@ -741,6 +863,22 @@ export default function ProposePage() {
                       )}
                     />
                   </div>
+                  
+                  {/* Remember me checkbox */}
+                  <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox 
+                      id="remember-me-patron" 
+                      checked={rememberMe} 
+                      onCheckedChange={handleRememberMeChange}
+                      data-testid="checkbox-remember-me"
+                    />
+                    <label
+                      htmlFor="remember-me-patron"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Se souvenir de mes coordonnées pour les prochaines propositions
+                    </label>
+                  </div>
                 </div>
 
                 {/* Section: Informations du mécène */}
@@ -826,6 +964,28 @@ export default function ProposePage() {
                           <FormControl>
                             <Input placeholder="Ex: Directeur Général" {...field} data-testid="input-patron-role" />
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={patronProposalForm.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel className="text-base font-medium">Notes / Informations complémentaires</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Ajoutez des informations complémentaires sur ce mécène potentiel..."
+                              className="min-h-24"
+                              {...field}
+                              data-testid="input-patron-notes"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Contexte, motivations, domaines d'intérêt, etc.
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -932,6 +1092,22 @@ export default function ProposePage() {
                         </FormItem>
                       )}
                     />
+                  </div>
+                  
+                  {/* Remember me checkbox */}
+                  <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox 
+                      id="remember-me-member" 
+                      checked={rememberMe} 
+                      onCheckedChange={handleRememberMeChange}
+                      data-testid="checkbox-remember-me"
+                    />
+                    <label
+                      htmlFor="remember-me-member"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Se souvenir de mes coordonnées pour les prochaines propositions
+                    </label>
                   </div>
                 </div>
 
