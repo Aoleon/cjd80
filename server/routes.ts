@@ -37,6 +37,8 @@ import {
   updateIdeaPatronProposalSchema,
   proposeMemberSchema,
   insertMemberSubscriptionSchema,
+  insertEventSponsorshipSchema,
+  updateEventSponsorshipSchema,
   hasPermission,
   ADMIN_ROLES,
   DuplicateError
