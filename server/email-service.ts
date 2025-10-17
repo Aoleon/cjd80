@@ -50,10 +50,22 @@ class EmailService {
       }
 
       // Configuration SMTP avec priorité: DB > Env vars
+      const port = dbConfig?.port || parseInt(process.env.SMTP_PORT || '465');
+      
+      // Déterminer secure: DB > Env > Défaut basé sur le port (465=true, autres=false)
+      let secure: boolean;
+      if (dbConfig?.secure !== undefined) {
+        secure = dbConfig.secure;
+      } else if (process.env.SMTP_SECURE !== undefined) {
+        secure = process.env.SMTP_SECURE === 'true';
+      } else {
+        secure = port === 465; // Port 465 utilise SSL/TLS par défaut
+      }
+      
       this.config = {
         host: dbConfig?.host || process.env.SMTP_HOST || 'ssl0.ovh.net',
-        port: dbConfig?.port || parseInt(process.env.SMTP_PORT || '465'),
-        secure: dbConfig?.secure ?? (process.env.SMTP_SECURE === 'true' || true),
+        port,
+        secure,
         auth: {
           user: process.env.SMTP_USER || '',
           pass: process.env.SMTP_PASS || ''

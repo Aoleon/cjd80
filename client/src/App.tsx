@@ -19,6 +19,7 @@ import AdminPage from "@/pages/admin-page";
 import AdminPatronsPage from "@/pages/admin-patrons-page";
 import AdminMembersPage from "@/pages/admin-members-page";
 import AdminBrandingPage from "@/pages/admin-branding-page";
+import AdminEmailConfigPage from "@/pages/admin-email-config-page";
 import TestErrorPage from "@/pages/test-error-page";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
@@ -40,6 +41,7 @@ function Router() {
       <ProtectedRoute path="/admin/patrons" component={AdminPatronsPage} />
       <ProtectedRoute path="/admin/members" component={AdminMembersPage} />
       <ProtectedRoute path="/admin/branding" component={AdminBrandingPage} />
+      <ProtectedRoute path="/admin/email-config" component={AdminEmailConfigPage} />
       <Route component={NotFound} />
     </Switch>
   );
