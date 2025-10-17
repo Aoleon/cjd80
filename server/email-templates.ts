@@ -245,3 +245,97 @@ export function createTestEmailTemplate(): { subject: string; html: string } {
 
   return { subject, html };
 }
+
+export function createNewMemberProposalEmailTemplate(
+  memberData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    company?: string;
+    phone?: string;
+    role?: string;
+    notes?: string;
+    proposedBy: string;
+  },
+  context: NotificationContext
+): { subject: string; html: string } {
+  const subject = `Nouveau membre proposé : ${memberData.firstName} ${memberData.lastName}`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${subject}</title>
+    </head>
+    <body style="margin: 0; padding: 20px; background-color: #f5f5f5;">
+      <div style="${emailStyles.container}">
+        <header style="${emailStyles.header}">
+          <h1 style="${emailStyles.title}">${getShortAppName()}</h1>
+          <p style="${emailStyles.subtitle}">Notification recrutement</p>
+        </header>
+
+        <main style="${emailStyles.content}">
+          <div style="${emailStyles.label}">Nouveau membre proposé</div>
+          
+          <h2 style="${emailStyles.itemTitle}">${memberData.firstName} ${memberData.lastName}</h2>
+          
+          <div style="${emailStyles.metaInfo}">
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Email</span>
+              <span style="${emailStyles.metaValue}">${memberData.email}</span>
+            </div>
+            ${memberData.company ? `
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Société</span>
+              <span style="${emailStyles.metaValue}">${memberData.company}</span>
+            </div>
+            ` : ''}
+            ${memberData.phone ? `
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Téléphone</span>
+              <span style="${emailStyles.metaValue}">${memberData.phone}</span>
+            </div>
+            ` : ''}
+            ${memberData.role ? `
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Fonction</span>
+              <span style="${emailStyles.metaValue}">${memberData.role}</span>
+            </div>
+            ` : ''}
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Proposé par</span>
+              <span style="${emailStyles.metaValue}">${memberData.proposedBy}</span>
+            </div>
+          </div>
+
+          ${memberData.notes ? `
+          <div style="${emailStyles.description}">
+            <strong>Notes :</strong><br>
+            ${memberData.notes.replace(/\n/g, '<br>')}
+          </div>
+          ` : ''}
+
+          <div style="text-align: center;">
+            <a href="${context.adminDashboardUrl}/members" style="${emailStyles.button}">
+              Voir dans le CRM
+            </a>
+          </div>
+
+          <div style="${emailStyles.note}">
+            Ce nouveau membre a été suggéré et attend votre contact pour intégrer ${brandingCore.organization.name}.
+          </div>
+        </main>
+
+        <footer style="${emailStyles.footer}">
+          ${brandingCore.organization.fullName}<br>
+          Notification automatique
+        </footer>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return { subject, html };
+}

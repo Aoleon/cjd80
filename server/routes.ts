@@ -2193,6 +2193,18 @@ export function createRouter(storageInstance: IStorage): any {
         return res.status(400).json({ message: result.error.message });
       }
       
+      // Envoyer la notification au responsable recrutement
+      await emailNotificationService.notifyNewMemberProposal({
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+        email: validatedData.email,
+        company: validatedData.company,
+        phone: validatedData.phone,
+        role: validatedData.role,
+        notes: validatedData.notes,
+        proposedBy: validatedData.proposedBy,
+      });
+      
       res.status(201).json({ success: true, data: result.data });
     } catch (error) {
       if (error instanceof ZodError) {

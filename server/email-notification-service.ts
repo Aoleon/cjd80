@@ -1,7 +1,8 @@
 import { emailService } from './email-service';
 import { storage } from './storage';
-import { createNewIdeaEmailTemplate, createNewEventEmailTemplate, type NotificationContext } from './email-templates';
+import { createNewIdeaEmailTemplate, createNewEventEmailTemplate, createNewMemberProposalEmailTemplate, type NotificationContext } from './email-templates';
 import type { Idea, Event, Result } from '@shared/schema';
+import { CJD_ROLES } from '@shared/schema';
 
 class EmailNotificationService {
   private context: NotificationContext;
@@ -137,6 +138,107 @@ class EmailNotificationService {
       return {
         success: false,
         error: new Error(`Erreur notification événement: ${error}`)
+      };
+    }
+  }
+
+  // Récupérer l'email du responsable recrutement
+  private async getRecruitmentManagerEmail(): Promise<Result<string | null>> {
+    try {
+      const membersResult = await storage.getMembers({ limit: 1000 });
+      
+      if (!membersResult.success) {
+        return membersResult;
+      }
+
+      // Trouver le membre avec le rôle de responsable recrutement
+      const recruitmentManager = membersResult.data.data.find(
+        (member: any) => member.cjdRole === CJD_ROLES.RESPONSABLE_RECRUTEMENT && member.status === 'active'
+      );
+
+      console.log('[Email Notifications] Responsable recrutement:', recruitmentManager ? recruitmentManager.email : 'Non défini');
+
+      return {
+        success: true,
+        data: recruitmentManager?.email || null
+      };
+    } catch (error) {
+      console.error('[Email Notifications] Erreur lors de la récupération du responsable recrutement:', error);
+      return {
+        success: false,
+        error: new Error(`Erreur récupération responsable recrutement: ${error}`)
+      };
+    }
+  }
+
+  // Notifier le responsable recrutement d'un nouveau membre proposé
+  async notifyNewMemberProposal(memberData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    company?: string;
+    phone?: string;
+    role?: string;
+    notes?: string;
+    proposedBy: string;
+  }): Promise<Result<any>> {
+    try {
+      console.log(`[Email Notifications] Envoi notification nouveau membre: ${memberData.firstName} ${memberData.lastName}`);
+
+      // Récupérer l'email du responsable recrutement
+      const recruitmentManagerEmailResult = await this.getRecruitmentManagerEmail();
+      
+      if (!recruitmentManagerEmailResult.success) {
+        return recruitmentManagerEmailResult;
+      }
+
+      // Si aucun responsable recrutement défini, envoyer aux admins
+      let recipients: string[];
+      if (recruitmentManagerEmailResult.data) {
+        recipients = [recruitmentManagerEmailResult.data];
+        console.log(`[Email Notifications] Envoi au responsable recrutement: ${recruitmentManagerEmailResult.data}`);
+      } else {
+        const adminEmailsResult = await this.getAdminEmails();
+        if (!adminEmailsResult.success) {
+          return adminEmailsResult;
+        }
+        recipients = adminEmailsResult.data;
+        console.log(`[Email Notifications] Aucun responsable recrutement défini, envoi aux admins (${recipients.length})`);
+      }
+
+      if (recipients.length === 0) {
+        console.warn('[Email Notifications] Aucun destinataire trouvé pour la proposition de membre');
+        return {
+          success: true,
+          data: { message: 'Aucun destinataire à notifier' }
+        };
+      }
+
+      // Créer le template d'email
+      const { subject, html } = createNewMemberProposalEmailTemplate(
+        memberData,
+        this.context
+      );
+
+      // Envoyer l'email
+      const emailResult = await emailService.sendEmail({
+        to: recipients,
+        subject,
+        html
+      });
+
+      if (emailResult.success) {
+        console.log(`[Email Notifications] ✅ Notification proposition membre envoyée à ${recipients.length} destinataire(s)`);
+      } else {
+        console.error('[Email Notifications] ❌ Erreur envoi notification proposition membre:', emailResult.error);
+      }
+
+      return emailResult;
+    } catch (error) {
+      console.error('[Email Notifications] Erreur notification nouvelle proposition membre:', error);
+      return {
+        success: false,
+        error: new Error(`Erreur notification proposition membre: ${error}`)
       };
     }
   }
