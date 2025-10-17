@@ -55,6 +55,7 @@ const updateMemberSchema = z.object({
   company: z.string().optional(),
   phone: z.string().optional(),
   role: z.string().optional(),
+  cjdRole: z.string().optional(),
   notes: z.string().optional(),
 });
 

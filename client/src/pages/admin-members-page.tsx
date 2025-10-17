@@ -63,8 +63,15 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { hasPermission } from "@shared/schema";
+import { hasPermission, CJD_ROLES, CJD_ROLE_LABELS } from "@shared/schema";
 import type { Member, MemberActivity, MemberSubscription } from "@shared/schema";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PaginatedMembersResponse {
   success: boolean;
@@ -80,6 +87,7 @@ const updateMemberFormSchema = z.object({
   company: z.string().optional(),
   phone: z.string().optional(),
   role: z.string().optional(),
+  cjdRole: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -302,6 +310,7 @@ export default function AdminMembersPage() {
         company: member.company || "",
         phone: member.phone || "",
         role: member.role || "",
+        cjdRole: member.cjdRole || "",
         notes: member.notes || "",
       });
     }
@@ -768,6 +777,32 @@ export default function AdminMembersPage() {
                                   <FormControl>
                                     <Input {...field} data-testid="input-member-role" />
                                   </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={memberForm.control}
+                              name="cjdRole"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Rôle CJD</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger data-testid="select-cjd-role">
+                                        <SelectValue placeholder="Sélectionner un rôle..." />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="">Aucun rôle</SelectItem>
+                                      {Object.entries(CJD_ROLE_LABELS).map(([key, label]) => (
+                                        <SelectItem key={key} value={CJD_ROLES[key as keyof typeof CJD_ROLES]}>
+                                          {label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                   <FormMessage />
                                 </FormItem>
                               )}
