@@ -1,14 +1,69 @@
-name: Deploy to VPS
+name: Deploy to VPS (cjd80.fr)
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
-  deploy:
+  build-and-push:
+    name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    timeout-minutes: 45  # Timeout global étendu pour les builds longs
+    permissions:
+      contents: read
+      packages: write
+    
+    outputs:
+      image_tag: ${{ steps.image-tag.outputs.tag }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Generate image tag
+        id: image-tag
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${SHORT_SHA}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "🏷️ Image tag: ${TAG}"
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.image-tag.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  deploy:
+    name: Deploy to VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://cjd80.fr
+    
     steps:
       - name: Precheck secrets
         env:
@@ -16,54 +71,111 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
           VPS_USER: ${{ secrets.VPS_USER }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          GH_REPO_OWNER: ${{ secrets.GH_REPO_OWNER }}
-          GH_REPO_NAME: ${{ secrets.GH_REPO_NAME }}
         run: |
           set -e
-          for v in VPS_SSH_KEY VPS_HOST VPS_PORT VPS_USER GH_TOKEN GH_REPO_OWNER GH_REPO_NAME; do
-            if [ -z "${!v}" ]; then echo "::error::Missing secret: $v"; exit 1; fi
+          for v in VPS_SSH_KEY VPS_HOST VPS_PORT VPS_USER; do
+            if [ -z "${!v}" ]; then 
+              echo "::error::Missing secret: $v"
+              exit 1
+            fi
           done
           echo "✅ Tous les secrets requis sont configurés"
-
-      - name: Deploy on VPS
+      
+      - name: Checkout deployment scripts
+        uses: actions/checkout@v4
+      
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${{ secrets.VPS_PORT }} -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+      
+      - name: Copy deployment script to VPS
+        run: |
+          scp -P ${{ secrets.VPS_PORT }} \
+            scripts/vps-deploy.sh \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/docker/cjd80/scripts/vps-deploy.sh
+          
+          ssh -p ${{ secrets.VPS_PORT }} \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "chmod +x /docker/cjd80/scripts/vps-deploy.sh"
+      
+      - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           port: ${{ secrets.VPS_PORT }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: 45m  # Aligné sur le timeout global
+          command_timeout: 25m
+          envs: IMAGE_TAG
           script: |
             set -e
             
-            # Heartbeat pour éviter les timeouts GitHub Actions
-            (while sleep 60; do echo "[keepalive] $(date)"; done) &
-            HEARTBEAT_PID=$!
-            trap "kill $HEARTBEAT_PID 2>/dev/null || true" EXIT
+            echo "🚀 Déploiement de l'image: ${IMAGE_TAG}"
             
-            export GITHUB_TOKEN="${{ secrets.GH_TOKEN }}"
-            export GITHUB_REPO_OWNER="${{ secrets.GH_REPO_OWNER }}"
-            export GITHUB_REPO_NAME="${{ secrets.GH_REPO_NAME }}"
+            cd /docker/cjd80
             
-            echo "🚀 Début du déploiement..."
-            bash /docker/cjd80/deploy.sh
+            # Exporter l'image tag pour docker-compose
+            export DOCKER_IMAGE="${IMAGE_TAG}"
             
-            echo "✅ Déploiement terminé avec succès"
-
-      - name: Cleanup old Docker containers & images on VPS
-        if: always()
+            # Exécuter le script de déploiement
+            bash scripts/vps-deploy.sh
+      
+      - name: Verify deployment health
+        run: |
+          echo "🔍 Vérification du déploiement..."
+          sleep 10
+          
+          MAX_ATTEMPTS=30
+          ATTEMPT=0
+          
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            
+            if curl -f -s -o /dev/null -w "%{http_code}" https://cjd80.fr/api/health | grep -q "200"; then
+              echo "✅ Déploiement réussi! Application en ligne sur https://cjd80.fr"
+              curl -s https://cjd80.fr/api/health | jq '.' || true
+              exit 0
+            fi
+            
+            echo "⏳ Tentative $ATTEMPT/$MAX_ATTEMPTS: En attente de la réponse..."
+            sleep 2
+          done
+          
+          echo "❌ Le health check a échoué après $((MAX_ATTEMPTS * 2)) secondes"
+          echo "📋 Logs du conteneur (dernières 50 lignes):"
+          ssh -p ${{ secrets.VPS_PORT }} \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "cd /docker/cjd80 && docker-compose logs --tail=50 cjd-app"
+          exit 1
+      
+      - name: Cleanup old images on VPS
+        if: success()
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           port: ${{ secrets.VPS_PORT }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: 10m  # 10 minutes pour le nettoyage
+          command_timeout: 5m
           script: |
-            echo '🧹 Nettoyage des vieux conteneurs et images...'
-            # Nettoyage conservateur pour préserver le cache Docker
+            echo '🧹 Nettoyage des anciennes images Docker...'
+            docker image prune -f
             docker container prune -f
-            docker image prune -f  # Supprime seulement les images "dangling"
-            docker volume prune -f
             echo '✅ Nettoyage terminé'
+      
+      - name: Deployment summary
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "🎉 ✅ Déploiement réussi sur https://cjd80.fr"
+            echo "📦 Image: ${{ needs.build-and-push.outputs.image_tag }}"
+            echo "🔗 Health check: https://cjd80.fr/api/health"
+          else
+            echo "❌ Échec du déploiement"
+            echo "📋 Vérifiez les logs ci-dessus pour plus de détails"
+          fi
