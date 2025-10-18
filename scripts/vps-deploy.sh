@@ -13,7 +13,7 @@ echo "=================================================="
 # Variables
 DEPLOY_DIR="/docker/cjd80"
 BACKUP_TAG="backup-$(date +%Y%m%d-%H%M%S)"
-CURRENT_IMAGE=$(docker-compose images -q cjd-app 2>/dev/null || echo "none")
+CURRENT_IMAGE=$(docker compose images -q cjd-app 2>/dev/null || echo "none")
 
 cd "$DEPLOY_DIR"
 
@@ -63,7 +63,7 @@ if [ ! -f "$DEPLOY_DIR/.env" ]; then
 fi
 
 # Exécuter les migrations dans un conteneur temporaire
-docker-compose run --rm \
+docker compose run --rm \
     --no-deps \
     --entrypoint "npx drizzle-kit push" \
     cjd-app || {
@@ -78,10 +78,10 @@ echo "✅ Migrations terminées"
 echo "🔄 Démarrage de la nouvelle version..."
 
 # Arrêter l'ancienne version (sans supprimer les volumes)
-docker-compose down --remove-orphans
+docker compose down --remove-orphans
 
 # Démarrer la nouvelle version
-docker-compose up -d
+docker compose up -d
 
 echo "⏳ Attente du démarrage de l'application (60s max)..."
 
@@ -96,7 +96,7 @@ while [ $HEALTH_CHECK_ATTEMPT -lt $HEALTH_CHECK_MAX_ATTEMPTS ]; do
     HEALTH_CHECK_ATTEMPT=$((HEALTH_CHECK_ATTEMPT + 1))
     
     # Vérifier le health check
-    if docker-compose exec -T cjd-app wget --spider -q http://localhost:5000/api/health 2>/dev/null; then
+    if docker compose exec -T cjd-app wget --spider -q http://localhost:5000/api/health 2>/dev/null; then
         echo "✅ Health check réussi!"
         HEALTH_CHECK_PASSED=true
         break
@@ -113,7 +113,7 @@ if [ "$HEALTH_CHECK_PASSED" = false ]; then
     echo ""
     echo "❌ ERREUR: Le health check a échoué!"
     echo "📋 Logs de l'application:"
-    docker-compose logs --tail=50 cjd-app
+    docker compose logs --tail=50 cjd-app
     
     if [ "$CURRENT_IMAGE" != "none" ] && [ -n "$CURRENT_IMAGE" ]; then
         echo ""
@@ -121,8 +121,8 @@ if [ "$HEALTH_CHECK_PASSED" = false ]; then
         
         # Restaurer l'ancienne version
         export DOCKER_IMAGE="ghcr.io/aoleon/cjd80:${BACKUP_TAG}"
-        docker-compose down
-        docker-compose up -d
+        docker compose down
+        docker compose up -d
         
         echo "✅ Rollback effectué vers ${BACKUP_TAG}"
         echo "⚠️  Le déploiement a échoué et a été annulé"
@@ -146,7 +146,7 @@ echo "💚 Health check: https://cjd80.fr/api/health"
 echo ""
 
 # Afficher le statut
-docker-compose ps
+docker compose ps
 
 echo ""
 echo "📊 Statistiques du conteneur:"

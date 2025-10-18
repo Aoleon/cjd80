@@ -150,7 +150,7 @@ jobs:
           echo "📋 Logs du conteneur (dernières 50 lignes):"
           ssh -p ${{ secrets.VPS_PORT }} \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-            "cd /docker/cjd80 && docker-compose logs --tail=50 cjd-app"
+            "cd /docker/cjd80 && docker compose logs --tail=50 cjd-app"
           exit 1
       
       - name: Cleanup old images on VPS
