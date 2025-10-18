@@ -5,11 +5,13 @@ server/public
 vite.config.ts.*
 *.tar.gz
 
-# Configuration et données locales
+# Configuration et données locales Replit
 replit.md
 .replit
 replit.nix
+attached_assets/
 
-# Tests et développement local
-test/test-validation-report.md
+# Logs et rapports
+logs/
 *.log
+tests/reports/

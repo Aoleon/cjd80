@@ -58,7 +58,7 @@ L'application utilise un **système de configuration centralisé** qui permet un
 - **15+ composants** : Utilisation automatique des valeurs de branding via helpers
 - **Multi-tenant ready** : Adaptation facile pour d'autres organisations
 
-📖 **Guide complet** : Voir [CUSTOMIZATION.md](./CUSTOMIZATION.md) pour personnaliser l'application
+📖 **Guide complet** : Voir [docs/features/CUSTOMIZATION.md](./docs/features/CUSTOMIZATION.md) pour personnaliser l'application
 
 ### Système de couleurs sémantiques
 
@@ -87,11 +87,11 @@ L'application utilise un **système de couleurs sémantiques unifié** pour gara
 ```
 ├── client/                 # Application React frontend
 │   ├── public/            # Assets statiques et PWA
-│   ├── src/
-│   │   ├── components/    # Composants réutilisables
-│   │   ├── hooks/         # Hooks personnalisés
-│   │   ├── lib/           # Utilitaires et configuration
-│   │   └── pages/         # Pages de l'application
+│   └── src/
+│       ├── components/    # Composants réutilisables
+│       ├── hooks/         # Hooks personnalisés
+│       ├── lib/           # Utilitaires et configuration
+│       └── pages/         # Pages de l'application
 ├── server/                # API Express backend
 │   ├── middleware/        # Middlewares personnalisés
 │   ├── utils/            # Utilitaires serveur
@@ -101,8 +101,20 @@ L'application utilise un **système de couleurs sémantiques unifié** pour gara
 │   └── storage.ts        # Interface de stockage
 ├── shared/               # Types et schémas partagés
 │   └── schema.ts         # Schémas Drizzle + validation Zod
-└── attached_assets/      # Assets du projet (logos, etc.)
+├── docs/                 # 📚 Documentation organisée
+│   ├── deployment/       # Guides de déploiement
+│   ├── features/         # Documentation des fonctionnalités
+│   └── testing/          # Rapports de tests
+├── tests/                # 🧪 Tests (Vitest, Playwright)
+│   ├── e2e/             # Tests end-to-end
+│   └── reports/         # Rapports générés
+├── scripts/              # 🛠️ Scripts utilitaires
+└── assets/               # 🖼️ Ressources statiques
+    ├── screenshots/     # Screenshots de démo
+    └── archive/         # Données historiques
 ```
+
+📖 **Documentation complète** : Voir [docs/README.md](./docs/README.md) pour la navigation dans la documentation
 
 ## 🚀 Installation et développement
 
@@ -274,7 +286,7 @@ Pour personnaliser les couleurs, logos et textes :
 2. **Via le code** : Modifier `client/src/config/branding-core.ts` → Exécuter `npm run generate:config`
 3. Redémarrer l'application
 
-📖 **Guide détaillé** : [CUSTOMIZATION.md](./CUSTOMIZATION.md)
+📖 **Guide détaillé** : [docs/features/CUSTOMIZATION.md](./docs/features/CUSTOMIZATION.md)
 
 ### Patterns responsifs
 
