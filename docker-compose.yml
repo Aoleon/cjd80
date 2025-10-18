@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Configuration Docker Compose multi-environnement
 # - Développement local: build depuis Dockerfile
 # - Production VPS: utilise l'image GHCR (définie via DOCKER_IMAGE)

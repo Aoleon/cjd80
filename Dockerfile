@@ -40,8 +40,8 @@ COPY --from=builder /app/server ./server
 COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/client ./client
 
-# Changer le propriétaire des fichiers
-RUN chown -R cjduser:cjd /app
+# Créer le dossier logs avec les bonnes permissions
+RUN mkdir -p /app/logs && chown -R cjduser:cjd /app
 
 # Utiliser l'utilisateur non-root
 USER cjduser

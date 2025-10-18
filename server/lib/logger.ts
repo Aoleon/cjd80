@@ -1,14 +1,12 @@
 import winston from 'winston';
 import { existsSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { join } from 'path';
 
 const { combine, timestamp, printf, colorize, errors, json } = winston.format;
 
-const logsDir = join(__dirname, '../../logs');
+// Utiliser process.cwd() pour que le chemin soit relatif au projet
+// En production (Docker), cwd = /app, donc logs = /app/logs
+const logsDir = join(process.cwd(), 'logs');
 if (!existsSync(logsDir)) {
   mkdirSync(logsDir, { recursive: true });
 }
