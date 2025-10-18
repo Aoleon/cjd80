@@ -95,6 +95,43 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p ${{ secrets.VPS_PORT }} -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
       
+      - name: Prepare VPS directories and repository
+        run: |
+          ssh -p ${{ secrets.VPS_PORT }} \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            'bash -s' << 'ENDSSH'
+          set -e
+          
+          # Créer le répertoire si nécessaire
+          mkdir -p /docker/cjd80/scripts
+          
+          # Cloner le repository si pas déjà présent
+          if [ ! -d "/docker/cjd80/.git" ]; then
+            echo "📦 Clonage initial du repository..."
+            cd /docker/cjd80
+            git init
+            git remote add origin https://github.com/${{ github.repository }}.git
+            git fetch origin main
+            git reset --hard origin/main
+          else
+            echo "🔄 Mise à jour du repository..."
+            cd /docker/cjd80
+            git fetch origin main
+            git reset --hard origin/main
+          fi
+          
+          # Vérifier que .env existe
+          if [ ! -f "/docker/cjd80/.env" ]; then
+            echo "⚠️  ATTENTION: Le fichier .env n'existe pas encore!"
+            echo "   Vous devez le créer à partir de .env.example"
+            if [ -f "/docker/cjd80/.env.example" ]; then
+              echo "   Fichier .env.example disponible comme référence"
+            fi
+          fi
+          
+          echo "✅ Préparation du VPS terminée"
+          ENDSSH
+      
       - name: Copy deployment script to VPS
         run: |
           scp -P ${{ secrets.VPS_PORT }} \
