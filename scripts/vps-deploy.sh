@@ -18,6 +18,26 @@ CURRENT_IMAGE=$(docker compose images -q cjd-app 2>/dev/null || echo "none")
 cd "$DEPLOY_DIR"
 
 # ============================================================================
+# 0. VÉRIFICATIONS PRÉLIMINAIRES
+# ============================================================================
+echo "🔍 Vérification des fichiers nécessaires..."
+
+# Vérifier que docker-compose.yml existe et n'est pas vide
+if [ ! -f "docker-compose.yml" ]; then
+    echo "❌ ERREUR: Le fichier docker-compose.yml est manquant!"
+    echo "   Le repository n'a peut-être pas été synchronisé correctement."
+    exit 1
+fi
+
+if [ ! -s "docker-compose.yml" ]; then
+    echo "❌ ERREUR: Le fichier docker-compose.yml est vide!"
+    echo "   Le repository n'a peut-être pas été synchronisé correctement."
+    exit 1
+fi
+
+echo "✅ Fichier docker-compose.yml présent et valide"
+
+# ============================================================================
 # 1. BACKUP de l'image actuelle (pour rollback)
 # ============================================================================
 if [ "$CURRENT_IMAGE" != "none" ] && [ -n "$CURRENT_IMAGE" ]; then

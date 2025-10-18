@@ -150,12 +150,14 @@ jobs:
             
             cd /docker/cjd80
             
-            # Synchroniser le repository pour avoir les derniers fichiers
-            echo "🔄 Synchronisation du repository..."
+            # Mise à jour du repository (sans écraser les fichiers locaux comme .env)
+            echo "🔄 Mise à jour du repository..."
             git fetch origin main
-            git reset --hard origin/main
+            git pull --ff-only origin main || {
+              echo "⚠️  Fast-forward impossible, utilisation de la version préparée"
+            }
             chmod +x scripts/vps-deploy.sh
-            echo "✅ Repository synchronisé"
+            echo "✅ Repository à jour"
             
             # Exporter l'image tag pour docker-compose
             export DOCKER_IMAGE="${IMAGE_TAG}"
