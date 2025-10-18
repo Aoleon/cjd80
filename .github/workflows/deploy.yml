@@ -39,9 +39,13 @@ jobs:
         id: image-tag
         run: |
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
-          TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${SHORT_SHA}"
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          TAG="${{ env.REGISTRY }}/${REPO_LOWER}:main-${SHORT_SHA}"
+          LATEST_TAG="${{ env.REGISTRY }}/${REPO_LOWER}:latest"
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
           echo "🏷️ Image tag: ${TAG}"
+          echo "🏷️ Latest tag: ${LATEST_TAG}"
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -50,7 +54,7 @@ jobs:
           push: true
           tags: |
             ${{ steps.image-tag.outputs.tag }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ steps.image-tag.outputs.latest }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
