@@ -526,10 +526,13 @@ export default function ProposePage() {
                     <Lightbulb className="inline h-4 w-4 mr-2" />
                     Idée
                   </SelectItem>
-                  <SelectItem value="patron" data-testid="option-proposal-patron">
-                    <UserPlus className="inline h-4 w-4 mr-2" />
-                    Mécène potentiel
-                  </SelectItem>
+                  {/* Option Mécène - ADMIN ONLY pour confidentialité */}
+                  {isAdmin && (
+                    <SelectItem value="patron" data-testid="option-proposal-patron">
+                      <UserPlus className="inline h-4 w-4 mr-2" />
+                      Mécène potentiel
+                    </SelectItem>
+                  )}
                   <SelectItem value="member" data-testid="option-proposal-member">
                     <UserPlus className="inline h-4 w-4 mr-2" />
                     Membre potentiel
