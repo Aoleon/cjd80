@@ -1,59 +1,106 @@
 # Guide de Déploiement - CJD Amiens (cjd80.fr)
 
-Ce guide explique comment déployer l'application CJD Amiens sur votre VPS avec le domaine cjd80.fr.
+Ce guide explique comment déployer automatiquement l'application CJD Amiens sur votre VPS avec le domaine cjd80.fr via GitHub Actions.
 
-## 📋 Prérequis
+## 📋 Vue d'ensemble
 
-### Sur le VPS
-- Ubuntu 20.04+ ou Debian 11+
-- Docker et Docker Compose installés
-- Nginx installé
-- Certificat SSL (Let's Encrypt recommandé)
-- Base de données PostgreSQL accessible
-- Accès SSH avec clé
+Le déploiement utilise une approche moderne avec **GitHub Container Registry (GHCR)** :
 
-### Variables d'environnement
-Toutes les variables listées dans `.env.example` doivent être configurées.
+1. **GitHub Actions** build l'image Docker et la push vers GHCR
+2. Le workflow **SSH sur le VPS** pour déclencher le déploiement
+3. Le VPS **pull l'image**, exécute les **migrations** et redémarre l'app
+4. Un **health check automatique** valide le déploiement
+5. En cas d'échec, un **rollback automatique** restaure la version précédente
 
 ---
 
-## 🚀 Installation Initiale
+## 🚀 Installation Initiale sur le VPS
 
-### 1. Préparer le VPS
+### 1. Prérequis VPS
+
+- Ubuntu 20.04+ ou Debian 11+
+- Docker et Docker Compose installés
+- Nginx installé
+- Accès SSH avec clé
+- Base de données PostgreSQL accessible
+
+### 2. Installation Docker (si nécessaire)
+
+```bash
+# Mettre à jour le système
+sudo apt update && sudo apt upgrade -y
+
+# Installer Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Installer Docker Compose
+sudo apt install docker-compose-plugin -y
+
+# Ajouter votre utilisateur au groupe docker
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Vérifier l'installation
+docker --version
+docker compose version
+```
+
+### 3. Préparer le répertoire de déploiement
 
 ```bash
 # Se connecter au VPS
 ssh user@cjd80.fr
 
-# Créer le répertoire de déploiement
-sudo mkdir -p /docker/cjd80
-sudo chown $USER:$USER /docker/cjd80
+# Créer la structure de répertoires
+sudo mkdir -p /docker/cjd80/scripts
+sudo chown -R $USER:$USER /docker/cjd80
 cd /docker/cjd80
 
-# Cloner le repository (ou utiliser votre méthode actuelle)
+# Cloner le repository
 git clone https://github.com/Aoleon/cjd80.git .
 ```
 
-### 2. Configurer les variables d'environnement
+### 4. Configurer les variables d'environnement
 
 ```bash
 # Copier le fichier exemple
 cp .env.example .env
 
-# Éditer le fichier .env avec vos vraies valeurs
+# Éditer avec vos vraies valeurs
 nano .env
 ```
 
 **Variables critiques à configurer :**
-- `DATABASE_URL` : Connexion à votre PostgreSQL
-- `SESSION_SECRET` : Générez avec `openssl rand -base64 32`
-- `SMTP_USER` et `SMTP_PASS` : Configuration email
-- `VAPID_PUBLIC_KEY` et `VAPID_PRIVATE_KEY` : Générez avec `npx web-push generate-vapid-keys`
 
-### 3. Configurer Nginx
+| Variable | Description | Comment l'obtenir |
+|----------|-------------|-------------------|
+| `DATABASE_URL` | Connexion PostgreSQL | `postgresql://user:pass@host:5432/dbname` |
+| `SESSION_SECRET` | Clé de session | `openssl rand -base64 32` |
+| `SMTP_USER` | Email SMTP | Votre email |
+| `SMTP_PASS` | Mot de passe SMTP | Mot de passe ou app password |
+| `VAPID_PUBLIC_KEY` | Clé publique push | `npx web-push generate-vapid-keys` |
+| `VAPID_PRIVATE_KEY` | Clé privée push | Même commande |
+| `GITHUB_TOKEN` | Token GitHub API | Settings > Developer > Personal tokens |
+
+### 5. Se connecter à GitHub Container Registry
 
 ```bash
-# Copier la configuration exemple
+# Créer un Personal Access Token sur GitHub
+# https://github.com/settings/tokens
+# Permissions requises: read:packages
+
+# Se connecter à GHCR
+echo "VOTRE_TOKEN" | docker login ghcr.io -u VOTRE_USERNAME --password-stdin
+
+# Vérifier la connexion
+docker pull ghcr.io/aoleon/cjd80:latest || echo "Pas encore d'image (c'est normal au premier déploiement)"
+```
+
+### 6. Configurer Nginx
+
+```bash
+# Copier la configuration
 sudo cp nginx.conf.example /etc/nginx/sites-available/cjd80.fr
 
 # Créer le lien symbolique
@@ -66,286 +113,381 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-### 4. Obtenir un certificat SSL (Let's Encrypt)
+### 7. Obtenir un certificat SSL
 
 ```bash
-# Installer certbot si nécessaire
-sudo apt install certbot python3-certbot-nginx
+# Installer certbot
+sudo apt install certbot python3-certbot-nginx -y
 
-# Obtenir le certificat
+# Obtenir le certificat (interactive)
 sudo certbot --nginx -d cjd80.fr -d www.cjd80.fr
 
-# Le renouvellement automatique est configuré par défaut
+# Vérifier le renouvellement automatique
+sudo certbot renew --dry-run
 ```
 
 ---
 
-## 🔄 Déploiement avec GitHub Actions
+## 🔧 Configuration GitHub Actions
 
-### Configuration des secrets GitHub
+### 1. Créer les secrets GitHub
 
-Dans votre repository GitHub, allez dans `Settings > Secrets and variables > Actions` et ajoutez :
+Dans votre repository GitHub : `Settings > Secrets and variables > Actions > New repository secret`
 
-| Secret | Description |
-|--------|-------------|
-| `VPS_SSH_KEY` | Clé privée SSH pour accéder au VPS |
-| `VPS_HOST` | Adresse du VPS (cjd80.fr ou IP) |
-| `VPS_PORT` | Port SSH (généralement 22) |
-| `VPS_USER` | Utilisateur SSH |
-| `GH_TOKEN` | Token GitHub pour l'API |
-| `GH_REPO_OWNER` | Aoleon |
-| `GH_REPO_NAME` | cjd80 |
+**Secrets requis :**
 
-### Script de déploiement sur le VPS
+| Secret | Description | Exemple |
+|--------|-------------|---------|
+| `VPS_SSH_KEY` | Clé privée SSH (tout le contenu de `~/.ssh/id_rsa`) | `-----BEGIN OPENSSH PRIVATE KEY-----\n...` |
+| `VPS_HOST` | Adresse du VPS | `cjd80.fr` ou `123.45.67.89` |
+| `VPS_PORT` | Port SSH | `22` (ou votre port custom) |
+| `VPS_USER` | Utilisateur SSH | `ubuntu`, `root`, etc. |
 
-Créez `/docker/cjd80/deploy.sh` :
+### 2. Générer une clé SSH (si nécessaire)
 
 ```bash
-#!/bin/bash
-set -e
+# Sur votre machine locale
+ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/github-deploy
 
-echo "🔄 Pulling latest code..."
-cd /docker/cjd80
-git fetch origin
-git reset --hard origin/main
+# Copier la clé publique sur le VPS
+ssh-copy-id -i ~/.ssh/github-deploy.pub user@cjd80.fr
 
-echo "🐳 Building and starting Docker containers..."
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
-
-echo "⏳ Waiting for health check..."
-sleep 10
-
-# Vérifier que l'application répond
-for i in {1..30}; do
-    if curl -f http://localhost:5000/api/health > /dev/null 2>&1; then
-        echo "✅ Application is healthy!"
-        exit 0
-    fi
-    echo "Attempt $i/30: Waiting for application to start..."
-    sleep 2
-done
-
-echo "❌ Health check failed after 60 seconds"
-docker-compose logs --tail=50
-exit 1
+# Afficher la clé privée à copier dans GitHub Secrets
+cat ~/.ssh/github-deploy
 ```
 
-Rendez-le exécutable :
+### 3. Tester la connexion SSH
+
 ```bash
-chmod +x /docker/cjd80/deploy.sh
+# Depuis votre machine locale
+ssh -i ~/.ssh/github-deploy -p 22 user@cjd80.fr "echo 'SSH OK'"
 ```
 
-### Déploiement automatique
+---
 
-Chaque push sur la branche `main` déclenche automatiquement le déploiement via GitHub Actions (`.github/workflows/deploy.yml`).
+## 🚀 Déploiement Automatique
+
+### Workflow de déploiement
+
+Chaque **push sur la branche `main`** déclenche automatiquement :
+
+1. ✅ Build de l'image Docker
+2. ✅ Push vers GitHub Container Registry
+3. ✅ SSH sur le VPS
+4. ✅ Pull de la nouvelle image
+5. ✅ Exécution des migrations de base de données
+6. ✅ Redémarrage de l'application
+7. ✅ Validation avec health check
+8. ✅ Rollback automatique en cas d'échec
+
+### Déclencher un déploiement
+
+```bash
+# Méthode 1: Push sur main (automatique)
+git add .
+git commit -m "Nouvelle fonctionnalité"
+git push origin main
+
+# Méthode 2: Déploiement manuel via GitHub
+# Allez sur: Actions > Deploy to VPS > Run workflow
+```
+
+### Suivre le déploiement
+
+1. Allez sur `https://github.com/Aoleon/cjd80/actions`
+2. Cliquez sur le workflow en cours
+3. Suivez les logs en temps réel
 
 ---
 
 ## 🔍 Vérification Post-Déploiement
 
-### Vérifier que l'application fonctionne
+### Health Checks
 
 ```bash
-# Health check
+# Vérifier que l'application répond
 curl https://cjd80.fr/api/health
 
-# Réponse attendue:
-# {"status":"healthy","timestamp":"...","uptime":123,"version":"1.0.0",...}
+# Réponse attendue
+{
+  "status": "healthy",
+  "timestamp": "2024-10-18T10:00:00.000Z",
+  "uptime": 123,
+  "version": "1.0.0",
+  "database": "connected"
+}
+```
 
-# Vérifier les logs
-docker-compose logs -f --tail=100
+### Vérifier les logs
 
-# Vérifier le statut du container
-docker-compose ps
+```bash
+# SSH sur le VPS
+ssh user@cjd80.fr
+
+# Aller dans le répertoire
+cd /docker/cjd80
+
+# Voir les logs en temps réel
+docker compose logs -f
+
+# Dernières 100 lignes
+docker compose logs --tail=100
+
+# Statut des conteneurs
+docker compose ps
 ```
 
 ### Tests fonctionnels
 
-1. **Frontend** : https://cjd80.fr
-2. **Admin** : https://cjd80.fr/admin
-3. **API Health** : https://cjd80.fr/api/health
-4. **API Events** : https://cjd80.fr/api/events
+| Test | URL | Attendu |
+|------|-----|---------|
+| Frontend | https://cjd80.fr | Page d'accueil |
+| Admin | https://cjd80.fr/admin | Page de login admin |
+| API Health | https://cjd80.fr/api/health | JSON avec status "healthy" |
+| API Events | https://cjd80.fr/api/events | JSON avec liste d'événements |
 
 ---
 
 ## 🛠️ Opérations Courantes
 
-### Voir les logs
-
-```bash
-# Logs en temps réel
-docker-compose logs -f
-
-# Dernières 100 lignes
-docker-compose logs --tail=100
-
-# Logs d'un service spécifique
-docker-compose logs -f cjd-app
-```
-
 ### Redémarrer l'application
 
 ```bash
 cd /docker/cjd80
-docker-compose restart
+docker compose restart
 ```
 
-### Mettre à jour l'application manuellement
+### Voir les logs d'erreur
+
+```bash
+docker compose logs --tail=200 cjd-app | grep -i error
+```
+
+### Mettre à jour manuellement
 
 ```bash
 cd /docker/cjd80
-./deploy.sh
+
+# Exporter l'image tag (ou utiliser :latest)
+export DOCKER_IMAGE="ghcr.io/aoleon/cjd80:latest"
+
+# Lancer le script de déploiement
+bash scripts/vps-deploy.sh
 ```
 
-### Accéder au container
+### Rollback manuel vers une version précédente
 
 ```bash
-docker-compose exec cjd-app sh
+cd /docker/cjd80
+
+# Lister les images disponibles
+docker images | grep cjd80
+
+# Exporter l'image souhaitée
+export DOCKER_IMAGE="ghcr.io/aoleon/cjd80:backup-20241018-120000"
+
+# Redéployer
+docker compose down
+docker compose up -d
 ```
 
-### Nettoyer les ressources Docker
+### Accéder au conteneur
 
 ```bash
-# Supprimer les images inutilisées
-docker image prune -a -f
+# Shell interactif
+docker compose exec cjd-app sh
 
-# Supprimer les volumes non utilisés
-docker volume prune -f
-
-# Nettoyer complètement (ATTENTION: supprime tout ce qui n'est pas utilisé)
-docker system prune -a -f
+# Exécuter une commande
+docker compose exec cjd-app npm run db:push
 ```
 
 ---
 
 ## 🐛 Dépannage
 
-### L'application retourne 404
+### Le déploiement échoue au health check
 
-**Causes possibles :**
-1. Le container n'a pas démarré → Vérifier avec `docker-compose ps`
-2. Nginx mal configuré → Vérifier avec `sudo nginx -t`
-3. Le build a échoué → Vérifier les logs `docker-compose logs`
+**Diagnostic :**
+```bash
+# Vérifier les logs
+docker compose logs --tail=100 cjd-app
+
+# Vérifier le health check en local
+docker compose exec cjd-app wget --spider http://localhost:5000/api/health
+```
 
 **Solutions :**
+- Vérifier que le fichier `.env` est correct
+- Vérifier que la base de données est accessible
+- Vérifier que tous les secrets sont définis
+
+### L'image ne se pull pas depuis GHCR
+
+**Diagnostic :**
 ```bash
-# Vérifier le health check
+# Vérifier la connexion à GHCR
+docker login ghcr.io
+
+# Tester manuellement
+docker pull ghcr.io/aoleon/cjd80:latest
+```
+
+**Solutions :**
+- Reconnecter à GHCR : `docker login ghcr.io`
+- Vérifier les permissions du token GitHub
+- Vérifier que l'image existe : `https://github.com/Aoleon/cjd80/pkgs/container/cjd80`
+
+### Nginx retourne 502 Bad Gateway
+
+**Diagnostic :**
+```bash
+# Vérifier que l'app tourne
+docker compose ps
+
+# Vérifier les logs nginx
+sudo tail -f /var/log/nginx/cjd80.fr.error.log
+
+# Tester en local
 curl http://localhost:5000/api/health
-
-# Vérifier que Nginx proxy correctement
-curl -I https://cjd80.fr
-
-# Reconstruire complètement
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
-```
-
-### La base de données ne se connecte pas
-
-**Vérifications :**
-```bash
-# Tester la connexion PostgreSQL depuis le container
-docker-compose exec cjd-app sh
-# Puis dans le container:
-# npm install -g pg
-# node -e "const {Client} = require('pg'); const c = new Client(process.env.DATABASE_URL); c.connect().then(() => console.log('OK')).catch(e => console.error(e));"
 ```
 
 **Solutions :**
-- Vérifier que `DATABASE_URL` est correcte dans `.env`
-- Vérifier que PostgreSQL accepte les connexions externes
-- Vérifier les règles de firewall
+- Vérifier que le conteneur écoute sur le port 5000
+- Redémarrer nginx : `sudo systemctl restart nginx`
+- Vérifier la config nginx : `sudo nginx -t`
 
-### Le certificat SSL ne se renouvelle pas
+### Les migrations échouent
 
+**Diagnostic :**
 ```bash
-# Tester le renouvellement manuellement
-sudo certbot renew --dry-run
-
-# Forcer le renouvellement
-sudo certbot renew --force-renewal
-
-# Vérifier que le service certbot est actif
-sudo systemctl status certbot.timer
+# Exécuter manuellement
+docker compose run --rm cjd-app npx drizzle-kit push --force
 ```
 
-### Problèmes de performances
-
-```bash
-# Vérifier l'utilisation des ressources
-docker stats
-
-# Augmenter les limites dans docker-compose.yml si nécessaire
-# Section deploy.resources.limits
-```
+**Solutions :**
+- Vérifier `DATABASE_URL` dans `.env`
+- Vérifier que PostgreSQL est accessible
+- Utiliser `--force` si les changements sont intentionnels
 
 ---
 
 ## 📊 Monitoring
 
-### Health Checks disponibles
+### Endpoints de santé disponibles
 
-| Endpoint | Description |
-|----------|-------------|
-| `/api/health` | Health check global (DB + uptime) |
-| `/api/health/db` | Santé de la base de données |
-| `/api/health/ready` | Readiness check (pour orchestrateurs) |
-| `/api/health/live` | Liveness check (toujours 200) |
+| Endpoint | Description | Usage |
+|----------|-------------|-------|
+| `/api/health` | Health check global | Monitoring automatique |
+| `/api/health/db` | Santé de la base de données | Debug DB |
+| `/api/health/ready` | Readiness check | Kubernetes/orchestrateurs |
+| `/api/health/live` | Liveness check | Toujours 200 OK |
 
-### Alertes recommandées
+### Configuration d'alertes (recommandé)
 
-Configurez des alertes (UptimeRobot, StatusCake, etc.) sur :
-- `https://cjd80.fr/api/health` - toutes les 5 minutes
-- Temps de réponse > 3 secondes
-- Certificat SSL expire dans < 30 jours
+Services gratuits pour monitoring :
+- **UptimeRobot** (https://uptimerobot.com)
+- **StatusCake** (https://www.statuscake.com)
+- **Better Uptime** (https://betteruptime.com)
+
+Configuration recommandée :
+- URL : `https://cjd80.fr/api/health`
+- Intervalle : 5 minutes
+- Alerte si : temps de réponse > 3s OU status ≠ 200
 
 ---
 
 ## 🔒 Sécurité
 
-### Recommandations
+### Checklist de sécurité
 
-1. **Firewall** : Ouvrir uniquement les ports 80, 443, et SSH
-2. **SSH** : Désactiver l'authentification par mot de passe
-3. **Base de données** : Ne pas exposer PostgreSQL publiquement
-4. **Secrets** : Ne jamais committer `.env` dans Git
-5. **Updates** : Maintenir le système à jour (`apt update && apt upgrade`)
+- [ ] Firewall configuré (ports 80, 443, SSH uniquement)
+- [ ] SSH par clé uniquement (pas de mot de passe)
+- [ ] Certificat SSL actif et auto-renouvelé
+- [ ] PostgreSQL non exposé publiquement
+- [ ] Fichier `.env` jamais commité dans Git
+- [ ] Secrets GitHub Actions correctement configurés
+- [ ] Mises à jour système régulières
 
-### Backup de la base de données
+### Durcissement SSH
 
 ```bash
-# Backup manuel
-pg_dump $DATABASE_URL > backup-$(date +%Y%m%d).sql
+# Éditer la config SSH
+sudo nano /etc/ssh/sshd_config
 
-# Automatiser avec cron (quotidien à 2h du matin)
-0 2 * * * pg_dump $DATABASE_URL > /backups/cjd-$(date +\%Y\%m\%d).sql
+# Désactiver l'authentification par mot de passe
+PasswordAuthentication no
+PubkeyAuthentication yes
+
+# Changer le port SSH (optionnel)
+Port 2222
+
+# Redémarrer SSH
+sudo systemctl restart sshd
+```
+
+### Backup automatique de la base de données
+
+```bash
+# Créer le script de backup
+cat > /docker/cjd80/scripts/backup-db.sh << 'EOF'
+#!/bin/bash
+BACKUP_DIR="/backups/cjd80"
+mkdir -p $BACKUP_DIR
+pg_dump $DATABASE_URL > $BACKUP_DIR/cjd-$(date +\%Y\%m\%d-\%H\%M\%S).sql
+# Garder seulement les 7 derniers backups
+ls -t $BACKUP_DIR/cjd-*.sql | tail -n +8 | xargs rm -f
+EOF
+
+chmod +x /docker/cjd80/scripts/backup-db.sh
+
+# Ajouter au crontab (quotidien à 2h)
+crontab -e
+# Ajouter la ligne:
+0 2 * * * cd /docker/cjd80 && bash scripts/backup-db.sh
 ```
 
 ---
 
-## 📞 Support
+## 📞 Support & Ressources
 
-En cas de problème :
-1. Vérifier les logs : `docker-compose logs`
-2. Vérifier le health check : `curl http://localhost:5000/api/health`
-3. Consulter ce guide de déploiement
-4. Vérifier les issues GitHub
+### En cas de problème
+
+1. **Vérifier les logs** : `docker compose logs --tail=100`
+2. **Vérifier le health check** : `curl http://localhost:5000/api/health`
+3. **Consulter ce guide** de déploiement
+4. **Vérifier les GitHub Actions** : logs disponibles dans l'onglet Actions
+
+### Ressources utiles
+
+- Repository : https://github.com/Aoleon/cjd80
+- GitHub Actions : https://github.com/Aoleon/cjd80/actions
+- Container Registry : https://github.com/Aoleon/cjd80/pkgs/container/cjd80
 
 ---
 
-## ✅ Checklist de déploiement
+## ✅ Checklist de Déploiement Initial
 
-- [ ] VPS configuré avec Docker et Nginx
-- [ ] Certificat SSL obtenu et configuré
+- [ ] VPS configuré avec Docker et Docker Compose
+- [ ] Nginx installé et configuré
+- [ ] Certificat SSL Let's Encrypt obtenu
+- [ ] Répertoire `/docker/cjd80` créé
+- [ ] Repository cloné sur le VPS
 - [ ] Fichier `.env` créé avec toutes les variables
-- [ ] Nginx configuré pour cjd80.fr
-- [ ] Script `deploy.sh` créé et exécutable
+- [ ] Connexion à GHCR configurée (`docker login ghcr.io`)
 - [ ] Secrets GitHub Actions configurés
-- [ ] Premier déploiement réussi
-- [ ] Health check répond correctement
+- [ ] Clé SSH autorisée sur le VPS
+- [ ] Test de connexion SSH réussi
+- [ ] Premier déploiement manuel réussi
+- [ ] Health check répond sur https://cjd80.fr/api/health
 - [ ] Frontend accessible sur https://cjd80.fr
-- [ ] Monitoring/alertes configurés
-- [ ] Backup base de données configuré
+- [ ] Workflow GitHub Actions activé
+- [ ] Monitoring/alertes configurés (optionnel)
+- [ ] Backup automatique configuré (optionnel)
+
+---
+
+## 🎉 Félicitations !
+
+Votre application CJD Amiens est maintenant déployée automatiquement sur https://cjd80.fr ! 
+
+Chaque fois que vous pushez sur `main`, l'application se déploie automatiquement avec validation et rollback en cas de problème.
