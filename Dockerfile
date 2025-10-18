@@ -27,11 +27,12 @@ WORKDIR /app
 # Créer un utilisateur non-root pour la sécurité
 RUN addgroup -S cjd && adduser -S cjduser -G cjd
 
-# Copier les fichiers de dépendances pour production
-COPY package*.json ./
+# Copier package.json pour référence
+COPY --from=builder /app/package*.json ./
 
-# Installer UNIQUEMENT les dépendances de production
-RUN npm ci --only=production
+# Copier node_modules complets depuis le builder
+# (nécessaire car Vite est utilisé en production comme middleware)
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copier les fichiers buildés depuis le stage builder
 COPY --from=builder /app/dist ./dist
