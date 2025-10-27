@@ -145,12 +145,23 @@ export default function EventAdminModal({
   const [editingSponsorId, setEditingSponsorId] = useState<string | null>(null);
   const [deleteSponsorId, setDeleteSponsorId] = useState<string | null>(null);
 
+  // Helper function to format UTC date for datetime-local input (in local timezone)
+  const formatDateForInput = (utcDate: string | Date): string => {
+    const date = new Date(utcDate);
+    // Get timezone offset in minutes and convert to milliseconds
+    const offset = date.getTimezoneOffset() * 60 * 1000;
+    // Create a new date adjusted for local timezone
+    const localDate = new Date(date.getTime() - offset);
+    // Format as YYYY-MM-DDTHH:mm for datetime-local input
+    return localDate.toISOString().slice(0, 16);
+  };
+
   // Initialize form when modal opens or event changes
   useEffect(() => {
     if (open) {
       if (mode === "edit" && event) {
-        // Format date for datetime-local input
-        const formattedDate = new Date(event.date).toISOString().slice(0, 16);
+        // Format date for datetime-local input (preserving local timezone)
+        const formattedDate = formatDateForInput(event.date);
         setFormData({
           title: event.title,
           description: event.description || "",
@@ -584,13 +595,16 @@ export default function EventAdminModal({
                 </Label>
                 <Input
                   id="event-helloasso"
-                  type="url"
+                  type="text"
                   value={formData.helloAssoLink}
                   onChange={(e) => handleInputChange("helloAssoLink", e.target.value)}
                   placeholder="https://www.helloasso.com/..."
                   className="focus:ring-cjd-green focus:border-cjd-green"
                   data-testid="input-event-helloasso"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Laissez vide si vous n'utilisez pas HelloAsso. Le lien peut être supprimé ou modifié librement.
+                </p>
               </div>
 
               {/* Redirection externe */}
