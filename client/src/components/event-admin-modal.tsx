@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import RichTextEditor from "@/components/ui/rich-text-editor";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -513,17 +514,15 @@ export default function EventAdminModal({
             {/* Description */}
             <div>
               <Label htmlFor="event-description" className="text-sm font-medium text-gray-700">
-                Description
+                Description (vous pouvez ajouter des images)
               </Label>
-              <Textarea
-                id="event-description"
-                value={formData.description}
-                onChange={(e) => handleInputChange("description", e.target.value)}
-                placeholder="Décrivez l'événement, le programme, les intervenants..."
-                rows={2}
-                className="mt-1 focus:ring-cjd-green focus:border-cjd-green resize-none"
-                maxLength={1000}
-                data-testid="input-event-description"
+              <RichTextEditor
+                content={formData.description}
+                onChange={(html) => handleInputChange("description", html)}
+                placeholder="Décrivez l'événement, le programme, les intervenants... Vous pouvez ajouter du formatage et des images."
+                maxLength={10000}
+                className="mt-1"
+                testId="editor-event-description"
               />
             </div>
 

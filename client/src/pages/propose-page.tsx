@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import RichTextEditor from "@/components/ui/rich-text-editor";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -593,17 +594,17 @@ export default function ProposePage() {
                     name="description"
                     render={({ field }) => (
                       <FormItem className="md:col-span-2">
-                        <FormLabel className="text-base font-medium">Description détaillée</FormLabel>
+                        <FormLabel className="text-base font-medium">Description détaillée (vous pouvez ajouter des images)</FormLabel>
                         <FormControl>
-                          <Textarea
-                            placeholder="Décrivez votre idée, ses bénéfices, comment la mettre en œuvre..."
-                            className="min-h-32 text-base"
-                            maxLength={5000}
-                            {...field}
-                            data-testid="input-idea-description"
+                          <RichTextEditor
+                            content={field.value || ""}
+                            onChange={field.onChange}
+                            placeholder="Décrivez votre idée, ses bénéfices, comment la mettre en œuvre... Vous pouvez ajouter du formatage et des images."
+                            maxLength={10000}
+                            testId="editor-idea-description"
                           />
                         </FormControl>
-                        <FormDescription>Expliquez votre idée en détail (max 5000 caractères)</FormDescription>
+                        <FormDescription>Expliquez votre idée en détail avec formatage riche (max 10000 caractères)</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

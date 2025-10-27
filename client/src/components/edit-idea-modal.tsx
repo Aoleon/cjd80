@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/ui/rich-text-editor";
 import { Loader2, Edit, Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Idea } from "@shared/schema";
@@ -151,20 +151,15 @@ export default function EditIdeaModal({ open, onOpenChange, idea }: EditIdeaModa
           {/* Description Field */}
           <div className="space-y-2">
             <Label htmlFor="edit-description" className="text-sm font-medium text-gray-700">
-              Description
+              Description (vous pouvez ajouter des images)
             </Label>
-            <Textarea
-              id="edit-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Décrivez votre idée en détail..."
-              className="w-full min-h-32 resize-y"
-              maxLength={5000}
-              data-testid="textarea-edit-description"
+            <RichTextEditor
+              content={description}
+              onChange={setDescription}
+              placeholder="Décrivez votre idée en détail... Vous pouvez ajouter du formatage et des images."
+              maxLength={10000}
+              testId="editor-edit-description"
             />
-            <p className="text-xs text-gray-500">
-              {description.length}/5000 caractères
-            </p>
           </div>
 
           {/* Author Fields */}
