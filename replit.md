@@ -51,6 +51,7 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
 - **Event Management**: Integration with HelloAsso, and a comprehensive event sponsorship system allowing multi-level tracking, public visibility, and management via admin interfaces and public display.
 - **Idea Management**: Collaborative "Boîte à Kiffs" for proposing and voting on ideas, including a "Nouveau" badge for recent ideas.
 - **Admin Dashboard**: Provides aggregated platform statistics and quick actions.
+- **System Status Page**: Centralized monitoring page (`/statuts`) displaying real-time health checks for all services (Application, Database, Database Pool, Memory, Email, Push Notifications). Features visual indicators, auto-refresh every 30 seconds, and manual refresh. Public endpoint `/api/status/all` with strongly-typed responses using shared Zod schemas.
 - **Branding & Customization**: A centralized, multi-tenant branding configuration system with a SUPER_ADMIN UI for live customization, allowing dynamic branding across all application layers, including PWA enhancements, email templates, and static files. Features a unified semantic color system.
 - **Performance Optimizations**: Consolidated database queries, composite indexes, and general backend/frontend optimizations.
 - **PWA Enhancements**: Offline queue and synchronization, automatic sync service, offline status banner, native sharing, rich push notifications, and Badge API.
