@@ -15,6 +15,7 @@ import AuthPage from "@/pages/auth-page";
 import ProposePage from "@/pages/propose-page";
 import EventsPage from "@/pages/events-page";
 import ToolsPage from "@/pages/tools-page";
+import StatusPage from "@/pages/status-page";
 import AdminPage from "@/pages/admin-page";
 import AdminPatronsPage from "@/pages/admin-patrons-page";
 import AdminSponsorshipsPage from "@/pages/admin-sponsorships-page";
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/propose" component={ProposePage} />
       <Route path="/events" component={EventsPage} />
       <Route path="/tools" component={ToolsPage} />
+      <Route path="/statuts" component={StatusPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/test-error" component={TestErrorPage} />
       <ProtectedRoute path="/admin" component={AdminPage} />

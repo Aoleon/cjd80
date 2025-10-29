@@ -1444,3 +1444,36 @@ export const adminUsers = admins;
 export const insertAdminUserSchema = insertAdminSchema;
 export const eventRegistrations = inscriptions;
 export const insertEventRegistrationSchema = insertInscriptionSchema;
+
+// ===================================
+// System Status / Health Check Types
+// ===================================
+// Note: These are runtime/operational types, not persistent database tables
+
+export const statusCheckSchema = z.object({
+  name: z.string(),
+  status: z.enum(['healthy', 'warning', 'unhealthy', 'unknown']),
+  message: z.string(),
+  responseTime: z.number().optional(),
+  details: z.record(z.any()).optional(),
+  error: z.string().optional(),
+});
+
+export type StatusCheck = z.infer<typeof statusCheckSchema>;
+
+export const statusResponseSchema = z.object({
+  timestamp: z.string(),
+  uptime: z.number(),
+  environment: z.string(),
+  overallStatus: z.enum(['healthy', 'warning', 'unhealthy', 'error']),
+  checks: z.object({
+    application: statusCheckSchema.optional(),
+    database: statusCheckSchema.optional(),
+    databasePool: statusCheckSchema.optional(),
+    memory: statusCheckSchema.optional(),
+    email: statusCheckSchema.optional(),
+    pushNotifications: statusCheckSchema.optional(),
+  }),
+});
+
+export type StatusResponse = z.infer<typeof statusResponseSchema>;

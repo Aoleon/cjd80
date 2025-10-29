@@ -41,7 +41,9 @@ import {
   updateEventSponsorshipSchema,
   hasPermission,
   ADMIN_ROLES,
-  DuplicateError
+  DuplicateError,
+  type StatusResponse,
+  type StatusCheck
 } from "@shared/schema";
 import { ZodError, z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -319,6 +321,177 @@ export function createRouter(storageInstance: IStorage): any {
       status: 'alive',
       timestamp: new Date().toISOString()
     });
+  });
+
+  // 6. GET /api/status/all - Centralisation de tous les checks (accessible sans auth)
+  router.get("/api/status/all", async (req, res) => {
+    try {
+      const results: StatusResponse = {
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development',
+        overallStatus: 'healthy', // Will be calculated below
+        checks: {}
+      };
+
+      // 1. Application status
+      results.checks.application = {
+        name: 'Application',
+        status: 'healthy',
+        message: 'Application is running',
+        responseTime: 0
+      };
+
+      // 2. Database connection
+      try {
+        const dbStartTime = Date.now();
+        await db.execute(sql`SELECT 1 as test`);
+        const dbResponseTime = Date.now() - dbStartTime;
+        
+        results.checks.database = {
+          name: 'Database',
+          status: 'healthy',
+          message: 'Database connection successful',
+          responseTime: dbResponseTime
+        };
+      } catch (error) {
+        results.checks.database = {
+          name: 'Database',
+          status: 'unhealthy',
+          message: 'Database connection failed',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
+
+      // 3. Database pool
+      try {
+        const poolStats = getPoolStats();
+        const poolUtilization = poolStats.maxConnections > 0 
+          ? (poolStats.totalCount / poolStats.maxConnections) * 100 
+          : 0;
+        
+        results.checks.databasePool = {
+          name: 'Database Pool',
+          status: poolUtilization < 80 ? 'healthy' : 'warning',
+          message: `Pool utilization: ${poolUtilization.toFixed(1)}%`,
+          details: {
+            total: poolStats.totalCount,
+            idle: poolStats.idleCount,
+            waiting: poolStats.waitingCount,
+            max: poolStats.maxConnections
+          }
+        };
+      } catch (error) {
+        results.checks.databasePool = {
+          name: 'Database Pool',
+          status: 'unknown',
+          message: 'Could not retrieve pool stats',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
+
+      // 4. Memory usage
+      try {
+        const memoryUsage = process.memoryUsage();
+        const heapUsedMB = Math.round(memoryUsage.heapUsed / 1024 / 1024);
+        const heapTotalMB = Math.round(memoryUsage.heapTotal / 1024 / 1024);
+        const memoryPercent = (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100;
+        
+        results.checks.memory = {
+          name: 'Memory',
+          status: memoryPercent < 80 ? 'healthy' : 'warning',
+          message: `Heap usage: ${heapUsedMB}MB / ${heapTotalMB}MB (${memoryPercent.toFixed(1)}%)`,
+          details: {
+            heapUsed: heapUsedMB,
+            heapTotal: heapTotalMB,
+            rss: Math.round(memoryUsage.rss / 1024 / 1024)
+          }
+        };
+      } catch (error) {
+        results.checks.memory = {
+          name: 'Memory',
+          status: 'unknown',
+          message: 'Could not retrieve memory stats'
+        };
+      }
+
+      // 5. Email service
+      try {
+        const emailConfigResult = await storageInstance.getEmailConfig();
+        
+        if (emailConfigResult.success && emailConfigResult.data) {
+          const emailConfig = emailConfigResult.data;
+          results.checks.email = {
+            name: 'Email Service',
+            status: 'healthy',
+            message: `SMTP configured (${emailConfig.host}:${emailConfig.port})`,
+            details: {
+              host: emailConfig.host,
+              port: emailConfig.port,
+              secure: emailConfig.secure,
+              fromEmail: emailConfig.fromEmail
+            }
+          };
+        } else {
+          results.checks.email = {
+            name: 'Email Service',
+            status: 'warning',
+            message: 'Email not configured'
+          };
+        }
+      } catch (error) {
+        results.checks.email = {
+          name: 'Email Service',
+          status: 'unknown',
+          message: 'Could not retrieve email service status',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
+
+      // 6. Push notifications
+      try {
+        const pushStats = notificationService.getStats();
+        const vapidConfigured = !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
+        
+        results.checks.pushNotifications = {
+          name: 'Push Notifications',
+          status: vapidConfigured ? 'healthy' : 'warning',
+          message: vapidConfigured 
+            ? `${pushStats.activeSubscriptions} active subscription(s)` 
+            : 'VAPID keys not configured',
+          details: {
+            activeSubscriptions: pushStats.activeSubscriptions,
+            vapidConfigured: vapidConfigured
+          }
+        };
+      } catch (error) {
+        results.checks.pushNotifications = {
+          name: 'Push Notifications',
+          status: 'unknown',
+          message: 'Could not retrieve push notification stats',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
+
+      // Calcul du statut global
+      const allStatuses = Object.values(results.checks)
+        .filter((check): check is StatusCheck => check !== undefined)
+        .map(check => check.status);
+      const hasUnhealthy = allStatuses.includes('unhealthy');
+      const hasWarning = allStatuses.includes('warning');
+      
+      results.overallStatus = hasUnhealthy ? 'unhealthy' : hasWarning ? 'warning' : 'healthy';
+
+      // Retourner 200 même si unhealthy pour permettre l'affichage du statut
+      res.status(200).json(results);
+    } catch (error) {
+      logger.error('Status check failed', { error });
+      res.status(500).json({
+        overallStatus: 'error',
+        timestamp: new Date().toISOString(),
+        error: 'Failed to perform status checks'
+      });
+    }
   });
 
   // Log frontend errors
