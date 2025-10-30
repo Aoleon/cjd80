@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 import { logger } from "./lib/logger";
+import { DatabaseResilience } from "./lib/db-resilience";
 
 // Configuration optimisée pour Neon PostgreSQL
 neonConfig.webSocketConstructor = ws;
@@ -23,7 +24,7 @@ const poolConfig = {
   min: 2,  // Maintenir 2 connexions chaudes minimum
   // Timeouts optimisés pour garder les connexions chaudes
   idleTimeoutMillis: 60000, // 60s - garde les connexions chaudes plus longtemps
-  connectionTimeoutMillis: 5000, // 5s - timeout de connexion standard
+  connectionTimeoutMillis: 3000, // 3s - timeout de connexion réduit pour fail-fast
   // Gestion des erreurs de connexion
   maxUses: 10000, // Recycle les connexions après 10000 utilisations
   // Pool de requêtes pour éviter les blocages
@@ -36,6 +37,9 @@ const poolConfig = {
 };
 
 export const pool = new Pool(poolConfig);
+
+// Couche de résilience avec circuit breaker et retry logic
+export const dbResilience = new DatabaseResilience(pool, 'neon-database');
 
 // Gestionnaire d'événements pour le monitoring du pool (logs réduits)
 if (process.env.NODE_ENV === 'development') {
@@ -72,6 +76,61 @@ export const db = drizzle({
     }
   } : false
 });
+
+// Profils de timeout pour différents types de requêtes
+export const QUERY_TIMEOUT_PROFILES = {
+  quick: {
+    timeout: 2000,    // 2s - Pour les requêtes simples (SELECT simple, COUNT)
+    retry: false
+  },
+  normal: {
+    timeout: 5000,    // 5s - Pour les requêtes standards (SELECT avec JOIN)
+    retry: true
+  },
+  complex: {
+    timeout: 10000,   // 10s - Pour les requêtes complexes (INSERT/UPDATE/DELETE)
+    retry: true
+  },
+  background: {
+    timeout: 15000,   // 15s - Pour les tâches background non-critiques
+    retry: true
+  }
+} as const;
+
+export type QueryTimeoutProfile = keyof typeof QUERY_TIMEOUT_PROFILES;
+
+/**
+ * Wrapper pour exécuter des requêtes DB avec protection circuit breaker
+ * 
+ * @param queryFn - Fonction qui exécute la requête DB
+ * @param profile - Profil de timeout ('quick' | 'normal' | 'complex' | 'background')
+ * @returns Résultat de la requête
+ * 
+ * @example
+ * // Requête rapide (2s timeout, pas de retry)
+ * const count = await runDbQuery(
+ *   async () => db.select().from(users).limit(1),
+ *   'quick'
+ * );
+ * 
+ * @example
+ * // Requête normale (5s timeout, avec retry)
+ * const users = await runDbQuery(
+ *   async () => db.select().from(users).where(eq(users.email, email)),
+ *   'normal'
+ * );
+ */
+export async function runDbQuery<T>(
+  queryFn: () => Promise<T>,
+  profile: QueryTimeoutProfile = 'normal'
+): Promise<T> {
+  const config = QUERY_TIMEOUT_PROFILES[profile];
+  
+  return dbResilience.executeQuery(queryFn, {
+    timeout: config.timeout,
+    retry: config.retry
+  });
+}
 
 // Fonction utilitaire pour obtenir les statistiques du pool
 export const getPoolStats = () => ({

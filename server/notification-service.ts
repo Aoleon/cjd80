@@ -1,7 +1,8 @@
 import webpush from 'web-push';
-import { db } from './db';
+import { db, runDbQuery } from './db';
 import { eq } from 'drizzle-orm';
 import { pushSubscriptions } from '@shared/schema';
+import { logger } from './lib/logger';
 
 // Configuration des clés VAPID - générées pour le développement
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BPKt_8r2V3SJwVJLGnrvbHcwXBHbMhKYPr3rXjMQhUZOQVbgMZC9_X8fK3HSDx9rDKXe7CgVGaYSLnwJVFtUnQM';
@@ -45,31 +46,79 @@ interface NotificationPayload {
 
 export class NotificationService {
   private subscriptions: Map<string, PushSubscription> = new Map();
+  private isLoaded: boolean = false;
+  private loadingPromise: Promise<void> | null = null;
 
   constructor() {
-    // Charger les abonnements existants au démarrage
-    this.loadSubscriptions();
+    // Ne rien charger dans le constructor pour éviter de bloquer le démarrage
+    // Les abonnements seront chargés en background au premier accès
   }
 
+  /**
+   * Charge les abonnements en background avec timeout court et fallback gracieux
+   */
   private async loadSubscriptions(): Promise<void> {
-    try {
-      // Charger tous les abonnements depuis la base de données
-      const subs = await db.select().from(pushSubscriptions);
-      
-      // Remplir le cache en mémoire
-      subs.forEach(sub => {
-        this.subscriptions.set(sub.endpoint, {
-          endpoint: sub.endpoint,
-          p256dh: sub.p256dh,
-          auth: sub.auth,
-          userId: sub.userEmail || undefined
-        });
-      });
-      
-      console.log(`[Notifications] Service initialisé avec ${subs.length} abonnements`);
-    } catch (error) {
-      console.error('[Notifications] Erreur chargement abonnements:', error);
+    // Éviter les chargements multiples simultanés
+    if (this.loadingPromise) {
+      return this.loadingPromise;
     }
+
+    this.loadingPromise = (async () => {
+      try {
+        logger.info('[Notifications] Démarrage du chargement des abonnements...');
+        
+        // Utiliser runDbQuery avec profil 'background' (15s timeout, avec retry)
+        const subs = await runDbQuery(
+          async () => db.select().from(pushSubscriptions),
+          'background'
+        );
+        
+        // Remplir le cache en mémoire
+        subs.forEach(sub => {
+          this.subscriptions.set(sub.endpoint, {
+            endpoint: sub.endpoint,
+            p256dh: sub.p256dh,
+            auth: sub.auth,
+            userId: sub.userEmail || undefined
+          });
+        });
+        
+        this.isLoaded = true;
+        logger.info(`[Notifications] Service initialisé avec ${subs.length} abonnements`);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.warn('[Notifications] Impossible de charger les abonnements (fallback: mode dégradé)', {
+          error: errorMessage,
+          message: 'Le service fonctionnera en mode dégradé - les nouveaux abonnements seront ajoutés au fur et à mesure'
+        });
+        
+        // Mode dégradé: continuer avec un cache vide
+        // Les abonnements seront chargés lors du prochain ajout
+        this.isLoaded = true;
+      } finally {
+        this.loadingPromise = null;
+      }
+    })();
+
+    return this.loadingPromise;
+  }
+
+  /**
+   * S'assure que les abonnements sont chargés avant d'effectuer une opération
+   */
+  private async ensureLoaded(): Promise<void> {
+    if (!this.isLoaded) {
+      await this.loadSubscriptions();
+    }
+  }
+
+  /**
+   * Démarre le chargement des abonnements en arrière-plan (non-bloquant)
+   */
+  startBackgroundLoad(): void {
+    this.loadSubscriptions().catch(error => {
+      logger.error('[Notifications] Erreur fatale lors du chargement background', { error });
+    });
   }
 
   // Ajouter un nouvel abonnement
@@ -141,10 +190,13 @@ export class NotificationService {
 
   // Envoyer une notification à tous les abonnés
   async sendToAll(payload: NotificationPayload): Promise<{ sent: number; failed: number }> {
+    // S'assurer que les abonnements sont chargés
+    await this.ensureLoaded();
+    
     const results = { sent: 0, failed: 0 };
     const subscriptions = Array.from(this.subscriptions.values());
 
-    console.log(`[Notifications] Envoi à ${subscriptions.length} abonnés: ${payload.title}`);
+    logger.info(`[Notifications] Envoi à ${subscriptions.length} abonnés: ${payload.title}`);
 
     // Envoyer en parallèle avec limite de concurrent
     const batchSize = 10;
@@ -163,7 +215,7 @@ export class NotificationService {
       });
     }
 
-    console.log(`[Notifications] Résultats: ${results.sent} envoyées, ${results.failed} échouées`);
+    logger.info(`[Notifications] Résultats: ${results.sent} envoyées, ${results.failed} échouées`);
     return results;
   }
 
@@ -286,3 +338,6 @@ export class NotificationService {
 
 // Instance singleton
 export const notificationService = new NotificationService();
+
+// Démarrer le chargement en arrière-plan (non-bloquant)
+notificationService.startBackgroundLoad();

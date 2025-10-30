@@ -10,7 +10,7 @@ import { emailNotificationService } from "./email-notification-service";
 import { emailService } from "./email-service";
 import { hashPassword } from "./auth";
 import { sql } from "drizzle-orm";
-import { pool, getPoolStats, db } from "./db";
+import { pool, getPoolStats, db, dbResilience } from "./db";
 import { patrons } from "@shared/schema";
 import { 
   insertIdeaSchema,
@@ -297,20 +297,31 @@ export function createRouter(storageInstance: IStorage): any {
     }
   });
 
-  // 4. GET /api/health/ready - Readiness probe
+  // 4. GET /api/health/ready - Readiness probe (utilise résilience avec timeout court)
   router.get("/api/health/ready", async (req, res) => {
     try {
-      await db.execute(sql`SELECT 1 as test`);
+      // Utilise dbResilience avec timeout court (2s)
+      const dbStatus = await dbResilience.healthCheck('readiness', 3000);
       
-      res.status(200).json({
-        status: 'ready',
-        timestamp: new Date().toISOString()
-      });
+      if (dbStatus.status === 'healthy' || dbStatus.status === 'warning') {
+        res.status(200).json({
+          status: 'ready',
+          timestamp: new Date().toISOString(),
+          database: dbStatus
+        });
+      } else {
+        res.status(503).json({
+          status: 'not ready',
+          timestamp: new Date().toISOString(),
+          database: dbStatus
+        });
+      }
     } catch (error) {
       logger.warn('Readiness check failed', { error });
       res.status(503).json({
         status: 'not ready',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
@@ -342,53 +353,11 @@ export function createRouter(storageInstance: IStorage): any {
         responseTime: 0
       };
 
-      // 2. Database connection
-      try {
-        const dbStartTime = Date.now();
-        await db.execute(sql`SELECT 1 as test`);
-        const dbResponseTime = Date.now() - dbStartTime;
-        
-        results.checks.database = {
-          name: 'Database',
-          status: 'healthy',
-          message: 'Database connection successful',
-          responseTime: dbResponseTime
-        };
-      } catch (error) {
-        results.checks.database = {
-          name: 'Database',
-          status: 'unhealthy',
-          message: 'Database connection failed',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        };
-      }
+      // 2. Database connection (utilise résilience avec timeout court et cache)
+      results.checks.database = await dbResilience.healthCheck('status-all', 5000);
 
-      // 3. Database pool
-      try {
-        const poolStats = getPoolStats();
-        const poolUtilization = poolStats.maxConnections > 0 
-          ? (poolStats.totalCount / poolStats.maxConnections) * 100 
-          : 0;
-        
-        results.checks.databasePool = {
-          name: 'Database Pool',
-          status: poolUtilization < 80 ? 'healthy' : 'warning',
-          message: `Pool utilization: ${poolUtilization.toFixed(1)}%`,
-          details: {
-            total: poolStats.totalCount,
-            idle: poolStats.idleCount,
-            waiting: poolStats.waitingCount,
-            max: poolStats.maxConnections
-          }
-        };
-      } catch (error) {
-        results.checks.databasePool = {
-          name: 'Database Pool',
-          status: 'unknown',
-          message: 'Could not retrieve pool stats',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        };
-      }
+      // 3. Database pool (utilise résilience)
+      results.checks.databasePool = await dbResilience.poolHealthCheck();
 
       // 4. Memory usage
       try {

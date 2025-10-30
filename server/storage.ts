@@ -64,7 +64,7 @@ import {
   updateMemberSchema
 } from "@shared/schema";
 import { z } from "zod";
-import { db } from "./db";
+import { db, runDbQuery } from "./db";
 import { eq, desc, and, count, sql, or, asc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -1569,10 +1569,14 @@ export class DatabaseStorage implements IStorage {
   // Development requests methods
   async getDevelopmentRequests(): Promise<Result<DevelopmentRequest[]>> {
     try {
-      const requests = await db
-        .select()
-        .from(developmentRequests)
-        .orderBy(desc(developmentRequests.createdAt));
+      // Utiliser runDbQuery avec profil 'background' - timeout 15s avec retry
+      const requests = await runDbQuery(
+        async () => db
+          .select()
+          .from(developmentRequests)
+          .orderBy(desc(developmentRequests.createdAt)),
+        'background'
+      );
       
       logger.debug('Development requests retrieved', { count: requests.length });
       return { success: true, data: requests };
@@ -2260,6 +2264,7 @@ export class DatabaseStorage implements IStorage {
           status: eventSponsorships.status,
           logoUrl: eventSponsorships.logoUrl,
           websiteUrl: eventSponsorships.websiteUrl,
+          proposedByAdminEmail: eventSponsorships.proposedByAdminEmail,
           confirmedAt: eventSponsorships.confirmedAt,
           createdAt: eventSponsorships.createdAt,
           updatedAt: eventSponsorships.updatedAt,
@@ -2719,7 +2724,11 @@ export class DatabaseStorage implements IStorage {
   // Branding configuration methods
   async getBrandingConfig(): Promise<Result<BrandingConfig | null>> {
     try {
-      const [config] = await db.select().from(brandingConfig).limit(1);
+      // Utiliser runDbQuery avec profil 'quick' - timeout 2s, pas de retry (requête simple)
+      const [config] = await runDbQuery(
+        async () => db.select().from(brandingConfig).limit(1),
+        'quick'
+      );
       return { success: true, data: config || null };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération de la configuration: ${error}`) };
@@ -2773,7 +2782,11 @@ export class DatabaseStorage implements IStorage {
   // Email configuration methods
   async getEmailConfig(): Promise<Result<EmailConfig | null>> {
     try {
-      const [config] = await db.select().from(emailConfig).limit(1);
+      // Utiliser runDbQuery avec profil 'quick' - timeout 2s, pas de retry (requête simple)
+      const [config] = await runDbQuery(
+        async () => db.select().from(emailConfig).limit(1),
+        'quick'
+      );
       return { success: true, data: config || null };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération de la configuration email: ${error}`) };
