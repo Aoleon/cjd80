@@ -62,6 +62,7 @@ This project is an internal web application for the "Centre des Jeunes Dirigeant
 
 ### Monitoring & Observability
 - Integrated performance monitoring for database queries, API calls, and error capture (Winston for logging).
+- **Database Resilience Layer**: Circuit breaker pattern with CLOSED/OPEN/HALF_OPEN states, automatic retry logic with exponential backoff, differentiated timeouts (2s health checks, 5s normal queries, 10s complex operations), health status caching for graceful degradation during Neon outages. Prevents application hangs (300s → 2-5s max) and enables fail-fast behavior.
 
 ### Deployment Strategy
 - **Autoscale Deployments**: Preferred for web applications and APIs.
