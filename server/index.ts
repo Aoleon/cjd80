@@ -17,6 +17,13 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Servir les fichiers uploadés (photos) - accessible en dev et prod
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads'), {
+  maxAge: '1y', // Cache long pour les images
+  etag: true,
+  lastModified: true
+}));
+
 process.on('uncaughtException', (error: Error) => {
   logger.error('CRITICAL: Uncaught Exception', {
     type: 'uncaughtException',

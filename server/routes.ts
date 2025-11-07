@@ -39,6 +39,10 @@ import {
   insertMemberSubscriptionSchema,
   insertEventSponsorshipSchema,
   updateEventSponsorshipSchema,
+  insertLoanItemSchema,
+  updateLoanItemSchema,
+  updateLoanItemStatusSchema,
+  LOAN_STATUS,
   hasPermission,
   ADMIN_ROLES,
   DuplicateError,
@@ -51,6 +55,8 @@ import { logger } from "./lib/logger";
 import { promises as fs } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import multer from "multer";
+import { singlePhotoUpload, getPhotoUrl, deletePhoto } from "./utils/file-upload";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -2732,6 +2738,215 @@ export function createRouter(storageInstance: IStorage): any {
       console.error('[Test Email] Exception:', error);
       next(error);
     }
+  });
+
+  // ==================== LOAN ITEMS (PRÊT) ====================
+  
+  // Liste publique des items disponibles au prêt
+  router.get("/api/loan-items", async (req, res, next) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const search = req.query.search as string | undefined;
+      
+      // Seulement les items avec status 'available'
+      const result = await storageInstance.getLoanItems({
+        page,
+        limit,
+        search,
+        status: LOAN_STATUS.AVAILABLE
+      });
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Proposer un matériel (public, rate limited)
+  router.post("/api/loan-items", strictCreateRateLimiter, async (req, res, next) => {
+    try {
+      const validatedData = insertLoanItemSchema.parse(req.body);
+      const result = await storageInstance.createLoanItem(validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      // Envoyer notification aux admins
+      try {
+        await emailNotificationService.notifyNewLoanItem(result.data);
+      } catch (notifError) {
+        logger.warn('Loan item notification failed', { itemId: result.data.id, error: notifError });
+      }
+      
+      res.status(201).json(result.data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Admin: Liste de tous les items (avec tous les statuts)
+  router.get("/api/admin/loan-items", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const search = req.query.search as string | undefined;
+      
+      const result = await storageInstance.getAllLoanItems({ page, limit, search });
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Admin: Récupérer un item spécifique
+  router.get("/api/admin/loan-items/:id", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getLoanItem(req.params.id);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      if (!result.data) {
+        return res.status(404).json({ message: "Fiche prêt non trouvée" });
+      }
+      
+      res.json(result.data);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Admin: Modifier un item
+  router.put("/api/admin/loan-items/:id", requirePermission('admin.edit'), async (req, res, next) => {
+    try {
+      const validatedData = updateLoanItemSchema.parse(req.body);
+      const result = await storageInstance.updateLoanItem(req.params.id, validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Admin: Changer le statut d'un item
+  router.patch("/api/admin/loan-items/:id/status", requirePermission('admin.edit'), async (req, res, next) => {
+    try {
+      const validatedData = updateLoanItemStatusSchema.parse(req.body);
+      const result = await storageInstance.updateLoanItemStatus(
+        req.params.id,
+        validatedData.status,
+        req.user?.email
+      );
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.sendStatus(200);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // Admin: Supprimer un item
+  router.delete("/api/admin/loan-items/:id", requirePermission('admin.edit'), async (req, res, next) => {
+    try {
+      // Récupérer l'item avant suppression pour supprimer la photo
+      const itemResult = await storageInstance.getLoanItem(req.params.id);
+      if (itemResult.success && itemResult.data?.photoUrl) {
+        // Extraire le nom du fichier de l'URL
+        const filename = itemResult.data.photoUrl.split('/').pop();
+        if (filename) {
+          await deletePhoto(filename).catch(err => {
+            logger.warn('Failed to delete photo file', { filename, error: err });
+          });
+        }
+      }
+
+      const result = await storageInstance.deleteLoanItem(req.params.id);
+      
+      if (!result.success) {
+        const statusCode = result.error.name === 'NotFoundError' ? 404 : 400;
+        return res.status(statusCode).json({ message: result.error.message });
+      }
+      
+      res.sendStatus(204);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Admin: Upload de photo pour un item
+  router.post("/api/admin/loan-items/:id/photo", requirePermission('admin.edit'), (req, res, next) => {
+    singlePhotoUpload(req, res, async (err) => {
+      if (err) {
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ message: 'Le fichier est trop volumineux (max 5MB)' });
+          }
+          return res.status(400).json({ message: `Erreur upload: ${err.message}` });
+        }
+        return res.status(400).json({ message: err.message || 'Erreur lors de l\'upload' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: 'Aucun fichier fourni' });
+      }
+
+      try {
+        // Récupérer l'item pour supprimer l'ancienne photo si elle existe
+        const itemResult = await storageInstance.getLoanItem(req.params.id);
+        if (itemResult.success && itemResult.data?.photoUrl) {
+          const oldFilename = itemResult.data.photoUrl.split('/').pop();
+          if (oldFilename) {
+            await deletePhoto(oldFilename).catch(err => {
+              logger.warn('Failed to delete old photo', { filename: oldFilename, error: err });
+            });
+          }
+        }
+
+        // Mettre à jour l'item avec la nouvelle URL de photo
+        const photoUrl = getPhotoUrl(req.file.filename);
+        const updateResult = await storageInstance.updateLoanItem(req.params.id, { photoUrl });
+
+        if (!updateResult.success) {
+          // Supprimer le fichier uploadé si la mise à jour échoue
+          await deletePhoto(req.file.filename).catch(() => {});
+          return res.status(400).json({ message: updateResult.error.message });
+        }
+
+        res.json({ success: true, photoUrl, data: updateResult.data });
+      } catch (error) {
+        // Supprimer le fichier uploadé en cas d'erreur
+        await deletePhoto(req.file.filename).catch(() => {});
+        next(error);
+      }
+    });
   });
 
   return router;

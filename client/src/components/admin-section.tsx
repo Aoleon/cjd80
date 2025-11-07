@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { Calendar, Users, Lightbulb, LogOut, Database, TrendingUp } from "lucide-react";
+import { Calendar, Users, Lightbulb, LogOut, Database, TrendingUp, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,8 @@ import EventAdminModal from "./event-admin-modal";
 import EventDetailModal from "./event-detail-modal";
 import IdeaDetailModal from "./idea-detail-modal";
 import EditIdeaModal from "./edit-idea-modal";
+import LoanItemDetailModal from "./LoanItemDetailModal";
+import EditLoanItemModal from "./EditLoanItemModal";
 import InscriptionExportModal from "./inscription-export-modal";
 import ManageInscriptionsModal from "./manage-inscriptions-modal";
 import ManageVotesModal from "./manage-votes-modal";
@@ -21,6 +23,7 @@ import DevelopmentRequestsSection from "./development-requests-section";
 import AdminDashboardOverview from "./admin/AdminDashboardOverview";
 import AdminIdeasPanel from "./admin/AdminIdeasPanel";
 import AdminEventsPanel from "./admin/AdminEventsPanel";
+import AdminLoanItemsPanel from "./admin/AdminLoanItemsPanel";
 import type { IdeaWithVotes, EventWithInscriptions, AdminStats } from "@/types/admin";
 
 export default function AdminSection() {
@@ -48,6 +51,10 @@ export default function AdminSection() {
   const [eventToManageInscriptions, setEventToManageInscriptions] = useState<EventWithInscriptions | null>(null);
   const [manageVotesModalOpen, setManageVotesModalOpen] = useState(false);
   const [ideaToManageVotes, setIdeaToManageVotes] = useState<IdeaWithVotes | null>(null);
+  const [loanItemDetailModalOpen, setLoanItemDetailModalOpen] = useState(false);
+  const [selectedLoanItem, setSelectedLoanItem] = useState<any | null>(null);
+  const [editLoanItemModalOpen, setEditLoanItemModalOpen] = useState(false);
+  const [loanItemToEdit, setLoanItemToEdit] = useState<any | null>(null);
 
   if (!user) return <AdminLogin />;
 
@@ -69,7 +76,7 @@ export default function AdminSection() {
 
       <Card>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className={`w-full grid ${user?.role === "super_admin" ? "grid-cols-5" : "grid-cols-4"}`}>
+          <TabsList className={`w-full grid ${user?.role === "super_admin" ? "grid-cols-6" : "grid-cols-5"}`}>
             <TabsTrigger value="dashboard" className="text-xs sm:text-sm">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Tableau de bord</span>
@@ -84,6 +91,11 @@ export default function AdminSection() {
               <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Gestion des événements</span>
               <span className="sm:hidden">Événements</span>
+            </TabsTrigger>
+            <TabsTrigger value="loan-items" className="text-xs sm:text-sm">
+              <Package className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Gestion du prêt</span>
+              <span className="sm:hidden">Prêt</span>
             </TabsTrigger>
             <TabsTrigger value="admins" className="text-xs sm:text-sm">
               <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
@@ -153,6 +165,17 @@ export default function AdminSection() {
       />
       <IdeaDetailModal open={ideaDetailModalOpen} onOpenChange={setIdeaDetailModalOpen} idea={selectedIdea} />
       <EditIdeaModal open={editIdeaModalOpen} onOpenChange={setEditIdeaModalOpen} idea={ideaToEdit} />
+      <LoanItemDetailModal 
+        open={loanItemDetailModalOpen} 
+        onOpenChange={setLoanItemDetailModalOpen} 
+        item={selectedLoanItem}
+        onEdit={(item) => { setLoanItemToEdit(item); setEditLoanItemModalOpen(true); }}
+      />
+      <EditLoanItemModal 
+        open={editLoanItemModalOpen} 
+        onOpenChange={setEditLoanItemModalOpen} 
+        item={loanItemToEdit}
+      />
       <InscriptionExportModal open={exportModalOpen} onOpenChange={setExportModalOpen} event={eventToExport} />
       <ManageInscriptionsModal open={manageInscriptionsModalOpen} onOpenChange={setManageInscriptionsModalOpen} event={eventToManageInscriptions} />
       <ManageVotesModal open={manageVotesModalOpen} onOpenChange={setManageVotesModalOpen} idea={ideaToManageVotes} />
