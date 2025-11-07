@@ -18,7 +18,13 @@ export function useAdminLoanItems(enabled: boolean = true) {
     queryFn: async () => {
       const res = await fetch("/api/admin/loan-items?page=1&limit=1000");
       if (!res.ok) throw new Error("Failed to fetch loan items");
-      return res.json();
+      const json = await res.json();
+      // Gérer la nouvelle structure de réponse { success: true, data: {...} }
+      if (json.success && json.data) {
+        return json.data;
+      }
+      // Fallback pour l'ancienne structure
+      return json;
     },
     enabled,
   });

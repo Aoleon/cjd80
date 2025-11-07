@@ -2850,18 +2850,39 @@ export class DatabaseStorage implements IStorage {
         'normal'
       );
 
+      // S'assurer que items est toujours un tableau
+      const itemsArray = Array.isArray(items) ? items : [];
+
       return {
         success: true,
         data: {
-          data: items,
+          data: itemsArray,
           total,
           page,
           limit
         }
       };
-    } catch (error) {
-      logger.error('Error fetching loan items', { error, options });
-      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des fiches prêt: ${error}`) };
+    } catch (error: any) {
+      // Si la table n'existe pas, retourner une liste vide plutôt qu'une erreur
+      const errorMessage = error?.message || String(error);
+      if (errorMessage.includes('does not exist') || errorMessage.includes('relation') || errorMessage.includes('loan_items')) {
+        logger.warn('Loan items table does not exist yet, returning empty list', { error: errorMessage });
+        return {
+          success: true,
+          data: {
+            data: [],
+            total: 0,
+            page: options?.page || 1,
+            limit: options?.limit || 20
+          }
+        };
+      }
+      
+      logger.error('Error fetching loan items', { error: errorMessage, stack: error?.stack, options });
+      return { 
+        success: false, 
+        error: new DatabaseError(`Erreur lors de la récupération des fiches prêt: ${errorMessage}`) 
+      };
     }
   }
 
@@ -3032,18 +3053,39 @@ export class DatabaseStorage implements IStorage {
         'normal'
       );
 
+      // S'assurer que items est toujours un tableau
+      const itemsArray = Array.isArray(items) ? items : [];
+
       return {
         success: true,
         data: {
-          data: items,
+          data: itemsArray,
           total,
           page,
           limit
         }
       };
-    } catch (error) {
-      logger.error('Error fetching all loan items', { error, options });
-      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des fiches prêt: ${error}`) };
+    } catch (error: any) {
+      // Si la table n'existe pas, retourner une liste vide plutôt qu'une erreur
+      const errorMessage = error?.message || String(error);
+      if (errorMessage.includes('does not exist') || errorMessage.includes('relation') || errorMessage.includes('loan_items')) {
+        logger.warn('Loan items table does not exist yet, returning empty list', { error: errorMessage });
+        return {
+          success: true,
+          data: {
+            data: [],
+            total: 0,
+            page: options?.page || 1,
+            limit: options?.limit || 20
+          }
+        };
+      }
+      
+      logger.error('Error fetching all loan items', { error: errorMessage, stack: error?.stack, options });
+      return { 
+        success: false, 
+        error: new DatabaseError(`Erreur lors de la récupération des fiches prêt: ${errorMessage}`) 
+      };
     }
   }
 
