@@ -1,7 +1,7 @@
 import { emailService } from './email-service';
 import { storage } from './storage';
-import { createNewIdeaEmailTemplate, createNewEventEmailTemplate, createNewMemberProposalEmailTemplate, type NotificationContext } from './email-templates';
-import type { Idea, Event, Result, Member } from '@shared/schema';
+import { createNewIdeaEmailTemplate, createNewEventEmailTemplate, createNewMemberProposalEmailTemplate, createNewLoanItemEmailTemplate, type NotificationContext } from './email-templates';
+import type { Idea, Event, Result, Member, LoanItem } from '@shared/schema';
 import { CJD_ROLES } from '@shared/schema';
 
 class EmailNotificationService {
@@ -279,6 +279,54 @@ class EmailNotificationService {
       return {
         success: false,
         error: new Error(`Erreur test email: ${error}`)
+      };
+    }
+  }
+
+  // Notifier les admins d'un nouveau matériel proposé au prêt
+  async notifyNewLoanItem(loanItem: LoanItem): Promise<Result<any>> {
+    try {
+      console.log(`[Email Notifications] Envoi notification nouveau matériel: ${loanItem.title}`);
+
+      // Récupérer les emails des administrateurs
+      const adminEmailsResult = await this.getAdminEmails();
+      if (!adminEmailsResult.success) {
+        return adminEmailsResult;
+      }
+
+      if (adminEmailsResult.data.length === 0) {
+        console.warn('[Email Notifications] Aucun administrateur actif trouvé');
+        return {
+          success: true,
+          data: { message: 'Aucun administrateur à notifier' }
+        };
+      }
+
+      // Créer le template d'email
+      const { subject, html } = createNewLoanItemEmailTemplate(
+        loanItem,
+        this.context
+      );
+
+      // Envoyer l'email à tous les administrateurs
+      const emailResult = await emailService.sendEmail({
+        to: adminEmailsResult.data,
+        subject,
+        html
+      });
+
+      if (emailResult.success) {
+        console.log(`[Email Notifications] ✅ Notification matériel envoyée à ${adminEmailsResult.data.length} administrateurs`);
+      } else {
+        console.error('[Email Notifications] ❌ Erreur envoi notification matériel:', emailResult.error);
+      }
+
+      return emailResult;
+    } catch (error) {
+      console.error('[Email Notifications] Erreur notification nouveau matériel:', error);
+      return {
+        success: false,
+        error: new Error(`Erreur notification matériel: ${error}`)
       };
     }
   }

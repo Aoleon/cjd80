@@ -58,6 +58,13 @@ export const EVENT_STATUS = {
   COMPLETED: "completed"
 } as const;
 
+export const LOAN_STATUS = {
+  PENDING: "pending",
+  AVAILABLE: "available",
+  BORROWED: "borrowed",
+  UNAVAILABLE: "unavailable"
+} as const;
+
 // Ideas table - Flexible status workflow management
 export const ideas = pgTable("ideas", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -116,6 +123,24 @@ export const events = pgTable("events", {
   statusIdx: index("events_status_idx").on(table.status),
   dateIdx: index("events_date_idx").on(table.date),
   statusDateIdx: index("events_status_date_idx").on(table.status, table.date),
+}));
+
+// Loan items table - Matériel disponible au prêt
+export const loanItems = pgTable("loan_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  lenderName: text("lender_name").notNull(), // Nom du JD qui prête (texte libre)
+  photoUrl: text("photo_url"), // URL de la photo uploadée
+  status: text("status").default(LOAN_STATUS.PENDING).notNull(), // pending, available, borrowed, unavailable
+  proposedBy: text("proposed_by").notNull(), // Nom de la personne qui propose
+  proposedByEmail: text("proposed_by_email").notNull(), // Email de la personne qui propose
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedBy: text("updated_by"), // Email de l'admin qui a modifié
+}, (table) => ({
+  statusIdx: index("loan_items_status_idx").on(table.status),
+  createdAtIdx: index("loan_items_created_at_idx").on(table.createdAt),
 }));
 
 // Inscriptions table  
@@ -816,6 +841,68 @@ export const insertUnsubscriptionSchema = createInsertSchema(unsubscriptions).pi
     .transform(val => val ? sanitizeText(val) : undefined),
 });
 
+// Loan items schemas
+export const insertLoanItemSchema = createInsertSchema(loanItems).pick({
+  title: true,
+  description: true,
+  lenderName: true,
+  photoUrl: true,
+  proposedBy: true,
+  proposedByEmail: true,
+}).extend({
+  title: z.string()
+    .min(3, "Le titre doit contenir au moins 3 caractères")
+    .max(200, "Le titre est trop long (maximum 200 caractères)")
+    .transform(sanitizeText),
+  description: z.string()
+    .max(5000, "La description est trop longue (maximum 5000 caractères)")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  lenderName: z.string()
+    .min(2, "Le nom du JD qui prête doit contenir au moins 2 caractères")
+    .max(100, "Le nom du JD est trop long (maximum 100 caractères)")
+    .transform(sanitizeText),
+  photoUrl: z.string()
+    .url("L'URL de la photo n'est pas valide")
+    .optional()
+    .transform(val => val ? sanitizeText(val) : undefined),
+  proposedBy: z.string()
+    .min(2, "Votre nom doit contenir au moins 2 caractères")
+    .max(100, "Votre nom est trop long (maximum 100 caractères)")
+    .transform(sanitizeText),
+  proposedByEmail: z.string()
+    .email("Adresse email invalide. Veuillez saisir une adresse email valide (ex: nom@domaine.fr)")
+    .transform(sanitizeText),
+});
+
+export const updateLoanItemSchema = z.object({
+  title: z.string()
+    .min(3, "Le titre doit contenir au moins 3 caractères")
+    .max(200, "Le titre est trop long (maximum 200 caractères)")
+    .optional(),
+  description: z.string()
+    .max(5000, "La description est trop longue (maximum 5000 caractères)")
+    .optional()
+    .nullable(),
+  lenderName: z.string()
+    .min(2, "Le nom du JD qui prête doit contenir au moins 2 caractères")
+    .max(100, "Le nom du JD est trop long (maximum 100 caractères)")
+    .optional(),
+  photoUrl: z.string()
+    .url("L'URL de la photo n'est pas valide")
+    .optional()
+    .nullable(),
+});
+
+export const updateLoanItemStatusSchema = z.object({
+  status: z.enum([
+    LOAN_STATUS.PENDING,
+    LOAN_STATUS.AVAILABLE,
+    LOAN_STATUS.BORROWED,
+    LOAN_STATUS.UNAVAILABLE
+  ]),
+});
+
 export const insertPatronSchema = createInsertSchema(patrons).pick({
   firstName: true,
   lastName: true,
@@ -1187,6 +1274,9 @@ export type InsertVote = z.infer<typeof insertVoteSchema>;
 
 export type Event = typeof events.$inferSelect;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
+
+export type LoanItem = typeof loanItems.$inferSelect;
+export type InsertLoanItem = z.infer<typeof insertLoanItemSchema>;
 
 export type Inscription = typeof inscriptions.$inferSelect;
 export type InsertInscription = z.infer<typeof insertInscriptionSchema>;

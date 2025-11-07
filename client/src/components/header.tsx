@@ -12,10 +12,11 @@ export default function Header() {
   const { user } = useAuth();
 
   // Map routes to section names
-  const getActiveSection = (): "ideas" | "propose" | "events" | "tools" => {
+  const getActiveSection = (): "ideas" | "propose" | "events" | "tools" | "loan" => {
     if (location === "/propose") return "propose";
     if (location === "/events") return "events";
     if (location === "/tools") return "tools";
+    if (location === "/loan") return "loan";
     return "ideas";
   };
 
@@ -26,6 +27,7 @@ export default function Header() {
     { id: "ideas" as const, label: "Voter pour des idées", route: "/" },
     { id: "propose" as const, label: "Proposer une idée", route: "/propose" },
     { id: "events" as const, label: "Événements", route: "/events" },
+    { id: "loan" as const, label: "Prêt", route: "/loan" },
     { id: "tools" as const, label: "Les outils du dirigeants", route: "/tools" },
   ];
 

@@ -1,4 +1,4 @@
-import type { Idea, Event, User } from '@shared/schema';
+import type { Idea, Event, User, LoanItem } from '@shared/schema';
 import { brandingCore, getShortAppName } from '../client/src/config/branding-core';
 
 export interface NotificationContext {
@@ -325,6 +325,80 @@ export function createNewMemberProposalEmailTemplate(
 
           <div style="${emailStyles.note}">
             Ce nouveau membre a été suggéré et attend votre contact pour intégrer ${brandingCore.organization.name}.
+          </div>
+        </main>
+
+        <footer style="${emailStyles.footer}">
+          ${brandingCore.organization.fullName}<br>
+          Notification automatique
+        </footer>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return { subject, html };
+}
+
+export function createNewLoanItemEmailTemplate(
+  loanItem: LoanItem,
+  context: NotificationContext
+): { subject: string; html: string } {
+  const subject = `Nouveau matériel proposé au prêt : ${loanItem.title}`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${subject}</title>
+    </head>
+    <body style="margin: 0; padding: 20px; background-color: #f5f5f5;">
+      <div style="${emailStyles.container}">
+        <header style="${emailStyles.header}">
+          <h1 style="${emailStyles.title}">${getShortAppName()}</h1>
+          <p style="${emailStyles.subtitle}">Notification administrative</p>
+        </header>
+
+        <main style="${emailStyles.content}">
+          <div style="${emailStyles.label}">Nouveau matériel au prêt</div>
+          
+          <h2 style="${emailStyles.itemTitle}">${loanItem.title}</h2>
+          
+          ${loanItem.description ? `
+          <div style="${emailStyles.description}">
+            ${loanItem.description.replace(/\n/g, '<br>')}
+          </div>
+          ` : ''}
+
+          <div style="${emailStyles.metaInfo}">
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Prêté par</span>
+              <span style="${emailStyles.metaValue}">${loanItem.lenderName}</span>
+            </div>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Proposé par</span>
+              <span style="${emailStyles.metaValue}">${loanItem.proposedBy}</span>
+            </div>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Contact</span>
+              <span style="${emailStyles.metaValue}">${loanItem.proposedByEmail}</span>
+            </div>
+            <div style="${emailStyles.metaRow}">
+              <span style="${emailStyles.metaLabel}">Statut</span>
+              <span style="${emailStyles.metaValue}">En attente de validation</span>
+            </div>
+          </div>
+
+          <div style="text-align: center;">
+            <a href="${context.adminDashboardUrl}" style="${emailStyles.button}">
+              Accéder au tableau de bord
+            </a>
+          </div>
+
+          <div style="${emailStyles.note}">
+            Ce matériel nécessite votre validation avant d'être visible publiquement. Connectez-vous à l'interface d'administration pour le traiter.
           </div>
         </main>
 

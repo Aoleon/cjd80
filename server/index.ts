@@ -17,6 +17,13 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Servir les fichiers uploadés (photos) - accessible en dev et prod
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads'), {
+  maxAge: '1y', // Cache long pour les images
+  etag: true,
+  lastModified: true
+}));
+
 process.on('uncaughtException', (error: Error) => {
   logger.error('CRITICAL: Uncaught Exception', {
     type: 'uncaughtException',
@@ -181,11 +188,7 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
+  server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
     log(`DB pool monitoring activé`);
     

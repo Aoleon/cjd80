@@ -16,6 +16,7 @@ import {
   memberSubscriptions,
   brandingConfig,
   emailConfig,
+  loanItems,
   type Admin, 
   type InsertAdmin,
   type User,
@@ -51,6 +52,8 @@ import {
   type BrandingConfig,
   type EmailConfig,
   type InsertEmailConfig,
+  type LoanItem,
+  type InsertLoanItem,
   type Result,
   ValidationError,
   DuplicateError,
@@ -58,6 +61,7 @@ import {
   NotFoundError,
   IDEA_STATUS,
   EVENT_STATUS,
+  LOAN_STATUS,
   updatePatronSchema,
   updateIdeaPatronProposalSchema,
   updateEventSponsorshipSchema,
@@ -245,6 +249,25 @@ export interface IStorage {
   getMemberByCjdRole(cjdRole: string): Promise<Result<Member | null>>;
   updateMember(email: string, data: z.infer<typeof updateMemberSchema>): Promise<Result<Member>>;
   deleteMember(email: string): Promise<Result<void>>;
+
+  // Loan items - Matériel disponible au prêt
+  getLoanItems(options?: { page?: number; limit?: number; search?: string; status?: string }): Promise<Result<{
+    data: LoanItem[];
+    total: number;
+    page: number;
+    limit: number;
+  }>>;
+  getLoanItem(id: string): Promise<Result<LoanItem | null>>;
+  createLoanItem(item: InsertLoanItem): Promise<Result<LoanItem>>;
+  updateLoanItem(id: string, itemData: { title?: string; description?: string | null; lenderName?: string; photoUrl?: string | null }): Promise<Result<LoanItem>>;
+  updateLoanItemStatus(id: string, status: string, updatedBy?: string): Promise<Result<void>>;
+  deleteLoanItem(id: string): Promise<Result<void>>;
+  getAllLoanItems(options?: { page?: number; limit?: number; search?: string }): Promise<Result<{
+    data: LoanItem[];
+    total: number;
+    page: number;
+    limit: number;
+  }>>;
 
   // Gestion des activités membres
   trackMemberActivity(activity: InsertMemberActivity): Promise<Result<MemberActivity>>;
@@ -2779,7 +2802,293 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Email configuration methods
+  // ==================== LOAN ITEMS ====================
+  
+  async getLoanItems(options?: { page?: number; limit?: number; search?: string; status?: string }): Promise<Result<{
+    data: LoanItem[];
+    total: number;
+    page: number;
+    limit: number;
+  }>> {
+    try {
+      const page = options?.page || 1;
+      const limit = options?.limit || 20;
+      const offset = (page - 1) * limit;
+      const search = options?.search?.trim();
+      const status = options?.status || LOAN_STATUS.AVAILABLE; // Par défaut, seulement les disponibles
+
+      // Construire les conditions
+      const conditions = [eq(loanItems.status, status)];
+      
+      if (search) {
+        conditions.push(
+          or(
+            sql`${loanItems.title} ILIKE ${`%${search}%`}`,
+            sql`${loanItems.description} ILIKE ${`%${search}%`}`
+          )!
+        );
+      }
+
+      const whereClause = and(...conditions);
+
+      // Compter le total
+      const [totalResult] = await runDbQuery(
+        async () => db.select({ count: count() }).from(loanItems).where(whereClause!),
+        'quick'
+      );
+      const total = totalResult?.count || 0;
+
+      // Récupérer les items
+      const items = await runDbQuery(
+        async () => db
+          .select()
+          .from(loanItems)
+          .where(whereClause!)
+          .orderBy(desc(loanItems.createdAt))
+          .limit(limit)
+          .offset(offset),
+        'normal'
+      );
+
+      // S'assurer que items est toujours un tableau
+      const itemsArray = Array.isArray(items) ? items : [];
+
+      return {
+        success: true,
+        data: {
+          data: itemsArray,
+          total,
+          page,
+          limit
+        }
+      };
+    } catch (error: any) {
+      // Si la table n'existe pas, retourner une liste vide plutôt qu'une erreur
+      const errorMessage = error?.message || String(error);
+      if (errorMessage.includes('does not exist') || errorMessage.includes('relation') || errorMessage.includes('loan_items')) {
+        logger.warn('Loan items table does not exist yet, returning empty list', { error: errorMessage });
+        return {
+          success: true,
+          data: {
+            data: [],
+            total: 0,
+            page: options?.page || 1,
+            limit: options?.limit || 20
+          }
+        };
+      }
+      
+      logger.error('Error fetching loan items', { error: errorMessage, stack: error?.stack, options });
+      return { 
+        success: false, 
+        error: new DatabaseError(`Erreur lors de la récupération des fiches prêt: ${errorMessage}`) 
+      };
+    }
+  }
+
+  async getLoanItem(id: string): Promise<Result<LoanItem | null>> {
+    try {
+      const [item] = await runDbQuery(
+        async () => db.select().from(loanItems).where(eq(loanItems.id, id)).limit(1),
+        'quick'
+      );
+      return { success: true, data: item || null };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération de la fiche prêt: ${error}`) };
+    }
+  }
+
+  async createLoanItem(item: InsertLoanItem): Promise<Result<LoanItem>> {
+    try {
+      const [newItem] = await runDbQuery(
+        async () => db.insert(loanItems).values({
+          ...item,
+          status: LOAN_STATUS.PENDING, // Toujours créer en pending
+        }).returning(),
+        'normal'
+      );
+
+      if (!newItem) {
+        return { success: false, error: new DatabaseError('Erreur lors de la création de la fiche prêt') };
+      }
+
+      return { success: true, data: newItem };
+    } catch (error) {
+      logger.error('Error creating loan item', { error, item });
+      return { success: false, error: new DatabaseError(`Erreur lors de la création de la fiche prêt: ${error}`) };
+    }
+  }
+
+  async updateLoanItem(id: string, itemData: { title?: string; description?: string | null; lenderName?: string; photoUrl?: string | null }): Promise<Result<LoanItem>> {
+    try {
+      // Vérifier que l'item existe
+      const itemResult = await this.getLoanItem(id);
+      if (!itemResult.success) {
+        return { success: false, error: itemResult.error };
+      }
+      if (!itemResult.data) {
+        return { success: false, error: new NotFoundError('Fiche prêt non trouvée') };
+      }
+
+      const [updated] = await runDbQuery(
+        async () => db
+          .update(loanItems)
+          .set({
+            ...itemData,
+            updatedAt: sql`NOW()`
+          })
+          .where(eq(loanItems.id, id))
+          .returning(),
+        'normal'
+      );
+
+      if (!updated) {
+        return { success: false, error: new DatabaseError('Erreur lors de la mise à jour de la fiche prêt') };
+      }
+
+      return { success: true, data: updated };
+    } catch (error) {
+      logger.error('Error updating loan item', { error, id, itemData });
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la fiche prêt: ${error}`) };
+    }
+  }
+
+  async updateLoanItemStatus(id: string, status: string, updatedBy?: string): Promise<Result<void>> {
+    try {
+      // Vérifier que l'item existe
+      const itemResult = await this.getLoanItem(id);
+      if (!itemResult.success) {
+        return { success: false, error: itemResult.error };
+      }
+      if (!itemResult.data) {
+        return { success: false, error: new NotFoundError('Fiche prêt non trouvée') };
+      }
+
+      await runDbQuery(
+        async () => db
+          .update(loanItems)
+          .set({
+            status,
+            updatedBy,
+            updatedAt: sql`NOW()`
+          })
+          .where(eq(loanItems.id, id)),
+        'normal'
+      );
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      logger.error('Error updating loan item status', { error, id, status });
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du statut: ${error}`) };
+    }
+  }
+
+  async deleteLoanItem(id: string): Promise<Result<void>> {
+    try {
+      // Vérifier que l'item existe
+      const itemResult = await this.getLoanItem(id);
+      if (!itemResult.success) {
+        return { success: false, error: itemResult.error };
+      }
+      if (!itemResult.data) {
+        return { success: false, error: new NotFoundError('Fiche prêt non trouvée') };
+      }
+
+      await runDbQuery(
+        async () => db.delete(loanItems).where(eq(loanItems.id, id)),
+        'normal'
+      );
+
+      return { success: true, data: undefined };
+    } catch (error) {
+      logger.error('Error deleting loan item', { error, id });
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression de la fiche prêt: ${error}`) };
+    }
+  }
+
+  async getAllLoanItems(options?: { page?: number; limit?: number; search?: string }): Promise<Result<{
+    data: LoanItem[];
+    total: number;
+    page: number;
+    limit: number;
+  }>> {
+    try {
+      const page = options?.page || 1;
+      const limit = options?.limit || 20;
+      const offset = (page - 1) * limit;
+      const search = options?.search?.trim();
+
+      // Construire les conditions
+      const conditions: any[] = [];
+      
+      if (search) {
+        conditions.push(
+          or(
+            sql`${loanItems.title} ILIKE ${`%${search}%`}`,
+            sql`${loanItems.description} ILIKE ${`%${search}%`}`
+          )!
+        );
+      }
+
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+      // Compter le total
+      const totalQuery = whereClause 
+        ? db.select({ count: count() }).from(loanItems).where(whereClause)
+        : db.select({ count: count() }).from(loanItems);
+      
+      const [totalResult] = await runDbQuery(
+        async () => totalQuery,
+        'quick'
+      );
+      const total = totalResult?.count || 0;
+
+      // Récupérer les items
+      const itemsQuery = whereClause
+        ? db.select().from(loanItems).where(whereClause).orderBy(desc(loanItems.createdAt)).limit(limit).offset(offset)
+        : db.select().from(loanItems).orderBy(desc(loanItems.createdAt)).limit(limit).offset(offset);
+      
+      const items = await runDbQuery(
+        async () => itemsQuery,
+        'normal'
+      );
+
+      // S'assurer que items est toujours un tableau
+      const itemsArray = Array.isArray(items) ? items : [];
+
+      return {
+        success: true,
+        data: {
+          data: itemsArray,
+          total,
+          page,
+          limit
+        }
+      };
+    } catch (error: any) {
+      // Si la table n'existe pas, retourner une liste vide plutôt qu'une erreur
+      const errorMessage = error?.message || String(error);
+      if (errorMessage.includes('does not exist') || errorMessage.includes('relation') || errorMessage.includes('loan_items')) {
+        logger.warn('Loan items table does not exist yet, returning empty list', { error: errorMessage });
+        return {
+          success: true,
+          data: {
+            data: [],
+            total: 0,
+            page: options?.page || 1,
+            limit: options?.limit || 20
+          }
+        };
+      }
+      
+      logger.error('Error fetching all loan items', { error: errorMessage, stack: error?.stack, options });
+      return { 
+        success: false, 
+        error: new DatabaseError(`Erreur lors de la récupération des fiches prêt: ${errorMessage}`) 
+      };
+    }
+  }
+
   async getEmailConfig(): Promise<Result<EmailConfig | null>> {
     try {
       // Utiliser runDbQuery avec profil 'quick' - timeout 2s, pas de retry (requête simple)

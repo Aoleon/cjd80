@@ -9,6 +9,7 @@
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push",
+    "db:create-loan-table": "node scripts/create-loan-items-table.js",
     "generate:config": "tsx scripts/generate-static-config.ts"
   },
   "dependencies": {
@@ -52,6 +53,7 @@
     "@tiptap/pm": "^3.8.0",
     "@tiptap/react": "^3.8.0",
     "@tiptap/starter-kit": "^3.8.0",
+    "@types/multer": "^2.0.0",
     "@types/nodemailer": "^7.0.1",
     "@types/supertest": "^6.0.3",
     "@types/web-push": "^3.6.4",
@@ -72,6 +74,7 @@
     "lucide-react": "^0.453.0",
     "memorystore": "^1.6.7",
     "msw": "^2.10.5",
+    "multer": "^2.0.2",
     "nanoid": "^5.1.5",
     "next-themes": "^0.4.6",
     "nodemailer": "^7.0.6",
