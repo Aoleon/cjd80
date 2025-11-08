@@ -48,7 +48,7 @@ export async function createGitHubIssue(request: Omit<InsertDevelopmentRequest, 
     });
     
     if (!repoResponse.ok) {
-      const repoError = await repoResponse.json();
+      const repoError = await repoResponse.json() as GitHubErrorResponse;
       console.error(`[GitHub] Erreur accès repository (${repoResponse.status}):`, repoError);
       return null;
     }
@@ -92,7 +92,7 @@ export async function createGitHubIssue(request: Omit<InsertDevelopmentRequest, 
     });
 
     if (!response.ok) {
-      const errorData: GitHubErrorResponse = await response.json();
+      const errorData = await response.json() as GitHubErrorResponse;
       console.error("[GitHub] Erreur création issue:", response.status, errorData);
       
       // Debug supplémentaire
@@ -106,7 +106,7 @@ export async function createGitHubIssue(request: Omit<InsertDevelopmentRequest, 
       return null;
     }
 
-    const issueData: GitHubIssueResponse = await response.json();
+    const issueData = await response.json() as GitHubIssueResponse;
     console.log(`[GitHub] Issue créée avec succès: #${issueData.number} - ${request.title}`);
     
     return issueData;
@@ -142,7 +142,7 @@ export async function syncGitHubIssueStatus(issueNumber: number): Promise<{ stat
       return null;
     }
 
-    const issueData: GitHubIssueResponse = await response.json();
+    const issueData = await response.json() as GitHubIssueResponse;
     
     return {
       status: issueData.state,

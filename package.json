@@ -4,10 +4,10 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "dotenv -e .env -- tsx server/index.ts",
+    "dev": "dotenv -e .env -- tsx --project tsconfig.server.json server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
-    "check": "tsc",
+    "check": "tsc -p tsconfig.json && tsc -p tsconfig.server.json",
     "db:push": "drizzle-kit push",
     "db:create-loan-table": "node scripts/create-loan-items-table.js",
     "generate:config": "tsx scripts/generate-static-config.ts"
