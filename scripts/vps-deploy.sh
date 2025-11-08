@@ -97,6 +97,16 @@ echo "✅ Migrations terminées"
 # ============================================================================
 echo "🔄 Démarrage de la nouvelle version..."
 
+# Vérifier que le réseau Traefik existe
+if ! docker network ls | grep -q "proxy"; then
+    echo "⚠️  Le réseau 'proxy' n'existe pas. Création..."
+    docker network create proxy || {
+        echo "❌ ERREUR: Impossible de créer le réseau 'proxy'"
+        echo "   Assurez-vous que Traefik est configuré correctement"
+        exit 1
+    }
+fi
+
 # Arrêter l'ancienne version (sans supprimer les volumes)
 docker compose down --remove-orphans
 
@@ -104,6 +114,27 @@ docker compose down --remove-orphans
 docker compose up -d
 
 echo "⏳ Attente du démarrage de l'application (60s max)..."
+sleep 5
+
+# Vérifier que le conteneur est démarré
+CONTAINER_STARTED=false
+for i in {1..12}; do
+    if docker compose ps | grep -q "cjd-app.*Up"; then
+        CONTAINER_STARTED=true
+        break
+    fi
+    echo "   Attente du démarrage du conteneur ($i/12)..."
+    sleep 5
+done
+
+if [ "$CONTAINER_STARTED" = false ]; then
+    echo "❌ ERREUR: Le conteneur n'a pas démarré"
+    docker compose ps
+    docker compose logs --tail=50 cjd-app
+    exit 1
+fi
+
+echo "✅ Conteneur démarré"
 
 # ============================================================================
 # 6. HEALTH CHECK
@@ -112,28 +143,89 @@ HEALTH_CHECK_MAX_ATTEMPTS=30
 HEALTH_CHECK_ATTEMPT=0
 HEALTH_CHECK_PASSED=false
 
+echo "🔍 Vérification de la santé de l'application..."
+
 while [ $HEALTH_CHECK_ATTEMPT -lt $HEALTH_CHECK_MAX_ATTEMPTS ]; do
     HEALTH_CHECK_ATTEMPT=$((HEALTH_CHECK_ATTEMPT + 1))
     
-    # Vérifier le health check
-    if docker compose exec -T cjd-app wget --spider -q http://localhost:5000/api/health 2>/dev/null; then
-        echo "✅ Health check réussi!"
+    # Vérifier que le conteneur est toujours en cours d'exécution
+    if ! docker compose ps | grep -q "cjd-app.*Up"; then
+        echo "❌ Le conteneur s'est arrêté!"
+        docker compose ps
+        docker compose logs --tail=50 cjd-app
+        HEALTH_CHECK_PASSED=false
+        break
+    fi
+    
+    # Vérifier le health check Docker natif
+    CONTAINER_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' cjd-app 2>/dev/null || echo "none")
+    if [ "$CONTAINER_HEALTH" = "healthy" ]; then
+        echo "✅ Health check Docker: healthy"
         HEALTH_CHECK_PASSED=true
         break
     fi
     
-    echo "   Tentative $HEALTH_CHECK_ATTEMPT/$HEALTH_CHECK_MAX_ATTEMPTS..."
+    # Vérifier le health check via wget dans le conteneur
+    if docker compose exec -T cjd-app wget --spider -q http://localhost:5000/api/health 2>/dev/null; then
+        echo "✅ Health check réussi via wget!"
+        HEALTH_CHECK_PASSED=true
+        break
+    fi
+    
+    # Vérifier via curl depuis le VPS (si le port est exposé localement)
+    if curl -f -s -o /dev/null http://localhost:5000/api/health 2>/dev/null; then
+        echo "✅ Health check réussi via curl!"
+        HEALTH_CHECK_PASSED=true
+        break
+    fi
+    
+    echo "   Tentative $HEALTH_CHECK_ATTEMPT/$HEALTH_CHECK_MAX_ATTEMPTS (Health: $CONTAINER_HEALTH)..."
     sleep 2
 done
 
 # ============================================================================
-# 7. ROLLBACK si nécessaire
+# 7. VÉRIFICATION TRAEFIK
+# ============================================================================
+if [ "$HEALTH_CHECK_PASSED" = true ]; then
+    echo ""
+    echo "🔍 Vérification de la connexion Traefik..."
+    
+    # Vérifier que le conteneur est sur le réseau proxy
+    if docker network inspect proxy 2>/dev/null | grep -q "cjd-app"; then
+        echo "✅ Conteneur connecté au réseau Traefik"
+    else
+        echo "⚠️  Le conteneur n'est pas visible sur le réseau Traefik"
+        echo "   Vérification des réseaux..."
+        docker network inspect proxy 2>/dev/null || echo "   Réseau proxy non trouvé"
+        docker network inspect cjd-network 2>/dev/null || echo "   Réseau cjd-network non trouvé"
+    fi
+    
+    # Vérifier les labels Traefik
+    TRAEFIK_ENABLED=$(docker inspect cjd-app 2>/dev/null | grep -o '"traefik.enable":"true"' || echo "")
+    if [ -n "$TRAEFIK_ENABLED" ]; then
+        echo "✅ Labels Traefik configurés"
+    else
+        echo "⚠️  Labels Traefik non trouvés"
+    fi
+fi
+
+# ============================================================================
+# 8. ROLLBACK si nécessaire
 # ============================================================================
 if [ "$HEALTH_CHECK_PASSED" = false ]; then
     echo ""
     echo "❌ ERREUR: Le health check a échoué!"
     echo "📋 Logs de l'application:"
     docker compose logs --tail=50 cjd-app
+    echo ""
+    echo "📊 Statut du conteneur:"
+    docker compose ps
+    echo ""
+    echo "🌐 Réseaux Docker:"
+    docker network ls
+    echo ""
+    echo "🔍 Inspection du conteneur:"
+    docker inspect cjd-app 2>/dev/null | grep -A 10 "Health" || echo "   Pas d'information de santé disponible"
     
     if [ "$CURRENT_IMAGE" != "none" ] && [ -n "$CURRENT_IMAGE" ]; then
         echo ""
@@ -154,7 +246,7 @@ if [ "$HEALTH_CHECK_PASSED" = false ]; then
 fi
 
 # ============================================================================
-# 8. SUCCÈS - Nettoyage
+# 9. SUCCÈS - Nettoyage
 # ============================================================================
 echo ""
 echo "=================================================="

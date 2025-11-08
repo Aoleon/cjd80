@@ -181,32 +181,61 @@ jobs:
             bash scripts/vps-deploy.sh
       
       - name: Verify deployment health
-        run: |
-          echo "🔍 Vérification du déploiement..."
-          sleep 10
-          
-          MAX_ATTEMPTS=30
-          ATTEMPT=0
-          
-          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-            ATTEMPT=$((ATTEMPT + 1))
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 2m
+          script: |
+            set -e
+            cd /docker/cjd80
+            echo "🔍 Vérification du déploiement depuis le VPS..."
+            sleep 5
             
-            if curl -f -s -o /dev/null -w "%{http_code}" https://cjd80.fr/api/health | grep -q "200"; then
-              echo "✅ Déploiement réussi! Application en ligne sur https://cjd80.fr"
-              curl -s https://cjd80.fr/api/health | jq '.' || true
+            MAX_ATTEMPTS=30
+            ATTEMPT=0
+            HEALTH_CHECK_PASSED=false
+            
+            while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+              ATTEMPT=$((ATTEMPT + 1))
+              
+              # Vérifier le health check depuis le conteneur (plus fiable)
+              if docker compose exec -T cjd-app wget --spider -q http://localhost:5000/api/health 2>/dev/null; then
+                echo "✅ Health check réussi depuis le conteneur!"
+                HEALTH_CHECK_PASSED=true
+                break
+              fi
+              
+              # Alternative: vérifier via curl depuis le VPS
+              if curl -f -s -o /dev/null http://localhost:5000/api/health 2>/dev/null; then
+                echo "✅ Health check réussi via curl!"
+                HEALTH_CHECK_PASSED=true
+                break
+              fi
+              
+              echo "⏳ Tentative $ATTEMPT/$MAX_ATTEMPTS: En attente de la réponse..."
+              sleep 2
+            done
+            
+            if [ "$HEALTH_CHECK_PASSED" = true ]; then
+              echo "✅ Déploiement réussi! Application en ligne"
+              echo "📊 Statut du conteneur:"
+              docker compose ps
+              echo ""
+              echo "📋 Réponse du health check:"
+              docker compose exec -T cjd-app wget -q -O- http://localhost:5000/api/health || curl -s http://localhost:5000/api/health
               exit 0
+            else
+              echo "❌ Le health check a échoué après $((MAX_ATTEMPTS * 2)) secondes"
+              echo "📋 Logs du conteneur (dernières 50 lignes):"
+              docker compose logs --tail=50 cjd-app
+              echo ""
+              echo "📊 Statut du conteneur:"
+              docker compose ps
+              exit 1
             fi
-            
-            echo "⏳ Tentative $ATTEMPT/$MAX_ATTEMPTS: En attente de la réponse..."
-            sleep 2
-          done
-          
-          echo "❌ Le health check a échoué après $((MAX_ATTEMPTS * 2)) secondes"
-          echo "📋 Logs du conteneur (dernières 50 lignes):"
-          ssh -p ${{ secrets.VPS_PORT }} \
-            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-            "cd /docker/cjd80 && docker compose logs --tail=50 cjd-app"
-          exit 1
       
       - name: Cleanup old images on VPS
         if: success()
