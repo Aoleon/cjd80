@@ -141,6 +141,9 @@ app.use((req, res, next) => {
   } else {
     // Headers de cache pour forcer le rechargement après déploiement
     app.use((req, res, next) => {
+      // Empêcher l'indexation par les moteurs de recherche
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet, noimageindex');
+      
       // Pas de cache pour HTML - toujours récupérer la dernière version
       if (req.path === '/' || req.path.endsWith('.html')) {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -179,6 +182,8 @@ app.use((req, res, next) => {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
+      // Empêcher l'indexation
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet, noimageindex');
       return res.sendFile(path.join(__dirname, '../dist/public/index.html'));
     });
   }

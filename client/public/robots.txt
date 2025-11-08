@@ -1,0 +1,37 @@
+# Interdire l'indexation de l'application par les moteurs de recherche
+# Cette application est réservée à un usage interne
+
+User-agent: *
+Disallow: /
+
+# Interdire spécifiquement les robots de recherche courants
+User-agent: Googlebot
+Disallow: /
+
+User-agent: Bingbot
+Disallow: /
+
+User-agent: Slurp
+Disallow: /
+
+User-agent: DuckDuckBot
+Disallow: /
+
+User-agent: Baiduspider
+Disallow: /
+
+User-agent: YandexBot
+Disallow: /
+
+User-agent: Sogou
+Disallow: /
+
+User-agent: Exabot
+Disallow: /
+
+User-agent: facebot
+Disallow: /
+
+User-agent: ia_archiver
+Disallow: /
+

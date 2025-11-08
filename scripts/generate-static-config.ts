@@ -16,6 +16,10 @@ function generateIndexHtml() {
     <title>${getAppName()}</title>
     <meta name="description" content="${brandingCore.app.description}" />
     
+    <!-- Empêcher l'indexation par les moteurs de recherche -->
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+    
     <!-- Disable cache in development -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
