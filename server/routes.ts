@@ -2757,57 +2757,13 @@ export function createRouter(storageInstance: IStorage): any {
         status: LOAN_STATUS.AVAILABLE
       });
       
-      // Même si result.success est false, on retourne une liste vide plutôt qu'une erreur
-      // Cela permet à l'application de fonctionner même en cas de problème temporaire
       if (!result.success) {
-        logger.warn('Error fetching loan items, returning empty list', { error: result.error?.message, page, limit, search });
-        return res.json({
-          success: true,
-          data: {
-            data: [],
-            total: 0,
-            page,
-            limit
-          }
-        });
+        return res.status(400).json({ message: result.error.message });
       }
       
-      // S'assurer que result.data existe et a la bonne structure
-      const responseData = result.data || {
-        data: [],
-        total: 0,
-        page,
-        limit
-      };
-      
-      // S'assurer que responseData.data est toujours un tableau
-      if (!Array.isArray(responseData.data)) {
-        logger.warn('Loan items response data is not an array', { responseData });
-        responseData.data = [];
-      }
-      
-      // Retourner une structure cohérente même si la liste est vide
-      res.json({
-        success: true,
-        data: responseData
-      });
-    } catch (error: any) {
-      // En cas d'exception, retourner une liste vide plutôt qu'une erreur
-      logger.error('Exception in loan-items route, returning empty list', { 
-        error: error?.message || String(error), 
-        stack: error?.stack,
-        page: req.query.page, 
-        limit: req.query.limit 
-      });
-      return res.json({
-        success: true,
-        data: {
-          data: [],
-          total: 0,
-          page: parseInt(req.query.page as string) || 1,
-          limit: parseInt(req.query.limit as string) || 20
-        }
-      });
+      res.json(result);
+    } catch (error) {
+      next(error);
     }
   });
 
@@ -2841,31 +2797,17 @@ export function createRouter(storageInstance: IStorage): any {
   router.get("/api/admin/loan-items", requirePermission('admin.view'), async (req, res, next) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 1000;
+      const limit = parseInt(req.query.limit as string) || 20;
       const search = req.query.search as string | undefined;
       
       const result = await storageInstance.getAllLoanItems({ page, limit, search });
       
       if (!result.success) {
-        logger.error('Error fetching all loan items (admin)', { error: result.error, page, limit, search });
-        return res.status(400).json({ 
-          success: false,
-          message: result.error.message 
-        });
+        return res.status(400).json({ message: result.error.message });
       }
       
-      // Retourner une structure cohérente même si la liste est vide
-      res.json({
-        success: true,
-        data: result.data || {
-          data: [],
-          total: 0,
-          page,
-          limit
-        }
-      });
+      res.json(result.data);
     } catch (error) {
-      logger.error('Exception in admin loan-items route', { error, page: req.query.page, limit: req.query.limit });
       next(error);
     }
   });

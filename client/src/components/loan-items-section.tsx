@@ -37,70 +37,20 @@ export default function LoanItemsSection({ onNavigateToPropose }: LoanItemsSecti
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: response, isLoading } = useQuery<PaginatedLoanItemsResponse>({
+  const { data: response, isLoading, error } = useQuery<PaginatedLoanItemsResponse>({
     queryKey: ["/api/loan-items", page, limit, searchQuery],
     queryFn: async () => {
-      try {
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: limit.toString(),
-        });
-        if (searchQuery.trim()) {
-          params.append("search", searchQuery.trim());
-        }
-        const res = await fetch(`/api/loan-items?${params}`);
-        
-        // Toujours parser la réponse, même si le status n'est pas OK
-        let json: any;
-        try {
-          const text = await res.text();
-          if (!text) {
-            console.warn('Empty response from API');
-            return { success: true, data: { data: [], total: 0, page: 1, limit } };
-          }
-          json = JSON.parse(text);
-        } catch (parseError) {
-          // Si le JSON ne peut pas être parsé, retourner une liste vide
-          console.warn('Failed to parse API response:', parseError);
-          return { success: true, data: { data: [], total: 0, page: 1, limit } };
-        }
-        
-        if (!res.ok) {
-          // Si erreur serveur, logger et retourner une structure vide
-          console.warn('API error:', res.status, res.statusText, json);
-          return { success: true, data: { data: [], total: 0, page: 1, limit } };
-        }
-        
-        // Log pour debug
-        console.log('[Loan Items] API Response:', { status: res.status, json });
-        
-        // Gérer la nouvelle structure de réponse { success: true, data: {...} }
-        if (json.success && json.data) {
-          return json;
-        }
-        
-        // Fallback pour l'ancienne structure (rétrocompatibilité)
-        if (json.data && Array.isArray(json.data.data)) {
-          return { success: true, data: json.data };
-        }
-        
-        // Si json.data existe directement (ancienne structure directe)
-        if (json.data && typeof json.data === 'object' && 'data' in json.data) {
-          return { success: true, data: json.data };
-        }
-        
-        // Si aucune structure valide, retourner une liste vide
-        console.warn('Unexpected API response structure:', json);
-        return { success: true, data: { data: [], total: 0, page: 1, limit } };
-      } catch (err) {
-        // En cas d'erreur réseau, retourner une liste vide plutôt que de throw
-        console.warn('Network error fetching loan items:', err);
-        return { success: true, data: { data: [], total: 0, page: 1, limit } };
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+      if (searchQuery.trim()) {
+        params.append("search", searchQuery.trim());
       }
-    },
-    // Désactiver la gestion d'erreur par défaut de React Query
-    retry: false,
-    throwOnError: false,
+      const res = await fetch(`/api/loan-items?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch loan items');
+      return res.json();
+    }
   });
 
   const form = useForm<InsertLoanItem>({
@@ -146,13 +96,7 @@ export default function LoanItemsSection({ onNavigateToPropose }: LoanItemsSecti
     }
   });
 
-  // Extraire les données de la réponse, avec fallback sur liste vide
-  // Ignorer complètement la variable error car on gère tout dans le queryFn
-  const loanItems = Array.isArray(response?.data?.data) 
-    ? response.data.data 
-    : Array.isArray(response?.data) 
-      ? response.data 
-      : [];
+  const loanItems = response?.data?.data || [];
   const total = response?.data?.total || 0;
   const totalPages = Math.ceil(total / limit);
 
@@ -185,8 +129,13 @@ export default function LoanItemsSection({ onNavigateToPropose }: LoanItemsSecti
     return labels[status as keyof typeof labels] || status;
   };
 
-  // Ne jamais afficher d'erreur - on gère tout dans le queryFn pour retourner une liste vide
-  // Même si error existe, on ignore car le queryFn retourne toujours une structure valide
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-error">Erreur lors du chargement du matériel</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -222,7 +171,7 @@ export default function LoanItemsSection({ onNavigateToPropose }: LoanItemsSecti
         <div className="flex justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
         </div>
-      ) : Array.isArray(loanItems) && loanItems.length > 0 ? (
+      ) : loanItems && loanItems.length > 0 ? (
         <div className="grid gap-5 sm:gap-7 md:grid-cols-2 xl:grid-cols-3">
           {loanItems.map((item) => (
             <Card key={item.id} className="bg-white border-2 border-gray-100 hover:border-cjd-green/30 hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] overflow-hidden">
@@ -268,31 +217,19 @@ export default function LoanItemsSection({ onNavigateToPropose }: LoanItemsSecti
             </Card>
           ))}
         </div>
-      ) : !isLoading ? (
+      ) : (
         <div className="text-center py-12">
           <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-600 mb-2">
-            {searchQuery ? "Aucun matériel trouvé" : "Aucun matériel disponible pour le moment"}
+            {searchQuery ? "Aucun matériel trouvé" : "Aucun matériel disponible"}
           </h3>
-          <p className="text-gray-500 mb-4">
-            {searchQuery 
-              ? "Essayez avec d'autres mots-clés ou consultez tous les matériels disponibles." 
-              : "Il n'y a pas encore de matériel disponible au prêt. Soyez le premier à proposer du matériel à la communauté !"}
+          <p className="text-gray-500">
+            {searchQuery
+              ? "Essayez avec d'autres mots-clés"
+              : "Soyez le premier à proposer du matériel !"}
           </p>
-          {searchQuery && (
-            <Button
-              onClick={() => {
-                setSearchQuery("");
-                setPage(1);
-              }}
-              variant="outline"
-              className="mt-2"
-            >
-              Voir tous les matériels
-            </Button>
-          )}
         </div>
-      ) : null}
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
