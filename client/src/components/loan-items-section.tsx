@@ -236,6 +236,7 @@ export default function LoanItemsSection({ onNavigateToPropose }: LoanItemsSecti
         <SimplePagination
           currentPage={page}
           totalPages={totalPages}
+          totalItems={total}
           onPageChange={setPage}
         />
       )}

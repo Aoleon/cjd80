@@ -14,8 +14,8 @@ RUN npm ci
 # Copier le code source
 COPY . .
 
-# Build de l'application (frontend + backend)
-RUN npm run build || echo "no build step, continuing"
+# Vérifications et build (frontend + backend)
+RUN npm run check && npm run build
 
 # ===================================
 # Stage 2: Runner - Image de production

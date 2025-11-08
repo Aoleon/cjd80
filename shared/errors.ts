@@ -6,7 +6,12 @@ export class ApiError extends Error {
   ) {
     super(message);
     this.name = 'ApiError';
-    Error.captureStackTrace(this, this.constructor);
+    const captureStackTrace = (Error as ErrorConstructor & {
+      captureStackTrace?: (target: Error, ctor: Function) => void;
+    }).captureStackTrace;
+    if (typeof captureStackTrace === 'function') {
+      captureStackTrace(this, this.constructor);
+    }
   }
 }
 

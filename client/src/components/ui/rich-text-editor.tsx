@@ -54,7 +54,7 @@ export default function RichTextEditor({
         class: 'prose prose-sm max-w-none focus:outline-none min-h-[120px] px-3 py-2',
       },
     },
-    onUpdate: ({ editor }) => {
+    onUpdate: ({ editor }: { editor: NonNullable<ReturnType<typeof useEditor>> }) => {
       const html = editor.getHTML();
       // Check max length if specified (count text only, not HTML tags)
       if (maxLength) {
