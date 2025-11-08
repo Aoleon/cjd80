@@ -15,3 +15,8 @@ attached_assets/
 logs/
 *.log
 tests/reports/
+
+# Fichiers d'environnement
+.env
+.env.local
+.env.*.local
