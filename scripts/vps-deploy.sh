@@ -113,6 +113,17 @@ docker compose down --remove-orphans
 # Démarrer la nouvelle version
 docker compose up -d
 
+# Attendre un peu pour que le conteneur démarre
+sleep 3
+
+# Vérifier et reconnecter au réseau proxy si nécessaire
+if ! docker network inspect proxy 2>/dev/null | grep -q "cjd-app"; then
+    echo "⚠️  Le conteneur n'est pas sur le réseau proxy. Reconnexion..."
+    docker network connect proxy cjd-app 2>/dev/null || {
+        echo "⚠️  Impossible de connecter au réseau proxy (peut-être déjà connecté)"
+    }
+fi
+
 echo "⏳ Attente du démarrage de l'application (60s max)..."
 sleep 5
 
