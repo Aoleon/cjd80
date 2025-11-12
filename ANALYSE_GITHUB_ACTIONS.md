@@ -105,6 +105,44 @@ npm warn invalid config Must be one of: null, prod, production
 
 ---
 
+---
+
+### ✅ Problème 4 : Import statique de devDependencies en production (RÉSOLU)
+
+**Symptôme :**
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@vitejs/plugin-react' imported from /app/dist/index.js
+```
+
+**Cause :**
+- Le fichier `server/vite.ts` importait `viteConfig` de manière statique
+- `vite.config.ts` importe `@vitejs/plugin-react` (devDependency)
+- Même si `setupVite()` n'est jamais appelé en production, l'import statique chargeait quand même les dépendances Vite au démarrage
+- `esbuild` avec `--packages=external` gardait la référence externe à `@vitejs/plugin-react`
+- En production, ce package n'est pas disponible car c'est une devDependency
+
+**Solution appliquée :**
+- Remplacement des imports statiques par des imports dynamiques dans `server/vite.ts`
+- Les dépendances Vite ne sont maintenant chargées que lorsque `setupVite()` est appelé (dev/test uniquement)
+- ✅ **Résolu dans le commit suivant**
+
+**Modification effectuée :**
+```typescript
+// AVANT (import statique)
+import { createServer as createViteServer, createLogger } from "vite";
+import viteConfig from "../vite.config";
+
+// APRÈS (import dynamique)
+export async function setupVite(app: Express, server: Server) {
+  const { createServer: createViteServer, createLogger } = await import("vite");
+  const viteConfigModule = await import("../vite.config.js");
+  const viteConfig = viteConfigModule.default;
+  // ...
+}
+```
+
+---
+
 ## 🐛 Problèmes Potentiels Restants
 
 ### 1. Authentification GHCR sur le VPS
