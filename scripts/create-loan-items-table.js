@@ -6,10 +6,14 @@
  * Nécessite DATABASE_URL dans les variables d'environnement
  */
 
+import { config } from 'dotenv';
 import { Pool } from '@neondatabase/serverless';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+
+// Charger le .env
+config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

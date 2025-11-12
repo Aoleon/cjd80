@@ -1,7 +1,7 @@
 import webpush from 'web-push';
 import { db, runDbQuery } from './db';
 import { eq } from 'drizzle-orm';
-import { pushSubscriptions } from '@shared/schema';
+import { pushSubscriptions } from '../shared/schema';
 import { logger } from './lib/logger';
 
 // Configuration des clés VAPID - générées pour le développement
@@ -298,6 +298,21 @@ export class NotificationService {
         {
           action: 'register',
           title: 'S\'inscrire'
+        }
+      ]
+    });
+  }
+
+  async notifyNewLoanItem(loanItem: { title: string; lenderName: string }): Promise<void> {
+    await this.sendToAll({
+      title: '📦 Nouveau matériel proposé au prêt',
+      body: `"${loanItem.title}" prêté par ${loanItem.lenderName}`,
+      tag: 'new-loan-item',
+      data: { type: 'new_loan_item', loanItemTitle: loanItem.title },
+      actions: [
+        {
+          action: 'view',
+          title: 'Voir le matériel'
         }
       ]
     });

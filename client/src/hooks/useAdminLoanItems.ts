@@ -21,6 +21,8 @@ export function useAdminLoanItems(enabled: boolean = true) {
       return res.json();
     },
     enabled,
+    staleTime: 30000, // Cache les résultats pendant 30 secondes
+    gcTime: 5 * 60 * 1000, // Garde en cache pendant 5 minutes
   });
 
   const updateStatus = useMutation({

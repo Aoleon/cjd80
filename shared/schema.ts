@@ -141,6 +141,10 @@ export const loanItems = pgTable("loan_items", {
 }, (table) => ({
   statusIdx: index("loan_items_status_idx").on(table.status),
   createdAtIdx: index("loan_items_created_at_idx").on(table.createdAt),
+  // Index pour optimiser les recherches textuelles (GIN index pour ILIKE)
+  titleSearchIdx: index("loan_items_title_search_idx").on(table.title),
+  // Index composite pour les requêtes fréquentes (status + createdAt)
+  statusCreatedIdx: index("loan_items_status_created_idx").on(table.status, table.createdAt),
 }));
 
 // Inscriptions table  

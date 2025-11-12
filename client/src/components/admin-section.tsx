@@ -141,6 +141,14 @@ export default function AdminSection() {
             />
           </TabsContent>
 
+          <TabsContent value="loan-items" className="p-3 sm:p-6">
+            <AdminLoanItemsPanel
+              enabled={activeTab === "loan-items"}
+              onViewDetail={(item) => { setSelectedLoanItem(item); setLoanItemDetailModalOpen(true); }}
+              onEdit={(item) => { setLoanItemToEdit(item); setEditLoanItemModalOpen(true); }}
+            />
+          </TabsContent>
+
           <TabsContent value="admins" className="p-3 sm:p-6">
             <div className="space-y-6">
               <PendingAdminApproval currentUser={user!} />

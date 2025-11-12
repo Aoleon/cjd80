@@ -11,7 +11,7 @@ import { emailService } from "./email-service";
 import { hashPassword } from "./auth";
 import { sql } from "drizzle-orm";
 import { pool, getPoolStats, db, dbResilience } from "./db";
-import { patrons } from "@shared/schema";
+import { patrons } from "../shared/schema";
 import { 
   insertIdeaSchema,
   insertVoteSchema,
@@ -47,8 +47,9 @@ import {
   ADMIN_ROLES,
   DuplicateError,
   type StatusResponse,
-  type StatusCheck
-} from "@shared/schema";
+  type StatusCheck,
+  type Inscription
+} from "../shared/schema";
 import { ZodError, z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { logger } from "./lib/logger";
@@ -968,8 +969,8 @@ export function createRouter(storageInstance: IStorage): any {
         return res.status(400).json({ message: "eventId et inscriptions (array) requis" });
       }
 
-      const results = [];
-      const errors = [];
+      const results: Inscription[] = [];
+      const errors: string[] = [];
 
       for (const inscription of inscriptions) {
         if (!inscription.name || !inscription.email) {
@@ -2761,7 +2762,7 @@ export function createRouter(storageInstance: IStorage): any {
         return res.status(400).json({ message: result.error.message });
       }
       
-      res.json(result);
+      res.json(result.data);
     } catch (error) {
       next(error);
     }
@@ -2777,8 +2778,15 @@ export function createRouter(storageInstance: IStorage): any {
         return res.status(400).json({ message: result.error.message });
       }
       
-      // Envoyer notification aux admins
+      // Envoyer notifications pour nouveau matériel
       try {
+        // Notification push web
+        await notificationService.notifyNewLoanItem({
+          title: result.data.title,
+          lenderName: result.data.lenderName
+        });
+        
+        // Notification email aux administrateurs
         await emailNotificationService.notifyNewLoanItem(result.data);
       } catch (notifError) {
         logger.warn('Loan item notification failed', { itemId: result.data.id, error: notifError });

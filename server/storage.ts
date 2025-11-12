@@ -66,7 +66,7 @@ import {
   updateIdeaPatronProposalSchema,
   updateEventSponsorshipSchema,
   updateMemberSchema
-} from "@shared/schema";
+} from "../shared/schema";
 import { z } from "zod";
 import { db, runDbQuery } from "./db";
 import { eq, desc, and, count, sql, or, asc } from "drizzle-orm";
@@ -2821,10 +2821,13 @@ export class DatabaseStorage implements IStorage {
       const conditions = [eq(loanItems.status, status)];
       
       if (search) {
+        // Optimisation: utiliser LOWER pour la recherche insensible à la casse
+        // et échapper les caractères spéciaux pour éviter les injections SQL
+        const searchTerm = search.replace(/%/g, '\\%').replace(/_/g, '\\_');
         conditions.push(
           or(
-            sql`${loanItems.title} ILIKE ${`%${search}%`}`,
-            sql`${loanItems.description} ILIKE ${`%${search}%`}`
+            sql`LOWER(${loanItems.title}) LIKE LOWER(${`%${searchTerm}%`})`,
+            sql`LOWER(${loanItems.description}) LIKE LOWER(${`%${searchTerm}%`})`
           )!
         );
       }
@@ -3022,10 +3025,13 @@ export class DatabaseStorage implements IStorage {
       const conditions: any[] = [];
       
       if (search) {
+        // Optimisation: utiliser LOWER pour la recherche insensible à la casse
+        // et échapper les caractères spéciaux pour éviter les injections SQL
+        const searchTerm = search.replace(/%/g, '\\%').replace(/_/g, '\\_');
         conditions.push(
           or(
-            sql`${loanItems.title} ILIKE ${`%${search}%`}`,
-            sql`${loanItems.description} ILIKE ${`%${search}%`}`
+            sql`LOWER(${loanItems.title}) LIKE LOWER(${`%${searchTerm}%`})`,
+            sql`LOWER(${loanItems.description}) LIKE LOWER(${`%${searchTerm}%`})`
           )!
         );
       }

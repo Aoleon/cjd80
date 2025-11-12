@@ -7,7 +7,7 @@ import { startPoolMonitoring } from "./utils/db-health";
 import { startAutoSync } from "./utils/auto-sync";
 import { nanoid } from "nanoid";
 import { logger } from "./lib/logger";
-import { ApiError } from "@shared/errors";
+import { ApiError } from "../shared/errors";
 
 // Support pour ESM (recréer __dirname et __filename)
 const __filename = fileURLToPath(import.meta.url);
@@ -133,10 +133,10 @@ app.use((req, res, next) => {
     });
   });
 
-  // importantly only setup vite in development and after
+  // importantly only setup vite in development and test, and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
     await setupVite(app, server);
   } else {
     // Headers de cache pour forcer le rechargement après déploiement

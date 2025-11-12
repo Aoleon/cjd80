@@ -11,7 +11,7 @@ export default defineConfig({
     ['./tests/playwright-reporter.ts']
   ],
   use: {
-    baseURL: 'http://localhost:5000',
+    baseURL: 'http://localhost:5001',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -24,9 +24,13 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'NODE_ENV=test tsx server/index.ts',
-    url: 'http://localhost:5000',
+    command: 'NODE_ENV=test PORT=5001 tsx server/index.ts',
+    url: 'http://localhost:5001',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    env: {
+      ...process.env,
+      DATABASE_URL: process.env.DATABASE_URL || process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5432/test',
+    },
   },
 });
