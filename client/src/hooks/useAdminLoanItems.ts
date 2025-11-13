@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { invalidateAndRefetch } from "@/lib/queryClient";
 import type { LoanItem, LOAN_STATUS } from "@shared/schema";
 
 interface PaginatedLoanItemsResponse {
@@ -38,8 +39,8 @@ export function useAdminLoanItems(enabled: boolean = true) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/loan-items"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/loan-items"] });
+      invalidateAndRefetch(["/api/admin/loan-items"]);
+      invalidateAndRefetch(["/api/loan-items"]);
       toast({
         title: "Statut mis à jour",
         description: "Le statut du matériel a été modifié avec succès.",
@@ -68,8 +69,8 @@ export function useAdminLoanItems(enabled: boolean = true) {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/loan-items"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/loan-items"] });
+      invalidateAndRefetch(["/api/admin/loan-items"]);
+      invalidateAndRefetch(["/api/loan-items"]);
       toast({
         title: "Matériel mis à jour",
         description: "Les informations ont été modifiées avec succès.",
@@ -95,8 +96,8 @@ export function useAdminLoanItems(enabled: boolean = true) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/loan-items"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/loan-items"] });
+      invalidateAndRefetch(["/api/admin/loan-items"]);
+      invalidateAndRefetch(["/api/loan-items"]);
       toast({
         title: "Matériel supprimé",
         description: "Le matériel a été supprimé avec succès.",
@@ -128,8 +129,8 @@ export function useAdminLoanItems(enabled: boolean = true) {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/loan-items"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/loan-items"] });
+      invalidateAndRefetch(["/api/admin/loan-items"]);
+      invalidateAndRefetch(["/api/loan-items"]);
       toast({
         title: "Photo uploadée",
         description: "La photo a été uploadée avec succès.",

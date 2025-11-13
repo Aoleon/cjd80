@@ -116,3 +116,27 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+/**
+ * Invalide et rafraîchit immédiatement les queries correspondantes
+ * 
+ * IMPORTANT: Utilisez cette fonction au lieu de simplement invalidateQueries
+ * pour garantir que les données se mettent à jour immédiatement, même avec
+ * un staleTime élevé.
+ * 
+ * @param queryKey - La clé de query à invalider (peut être partielle pour invalider plusieurs queries)
+ * 
+ * @example
+ * ```ts
+ * onSuccess: () => {
+ *   invalidateAndRefetch(["/api/loan-items"]);
+ *   invalidateAndRefetch(["/api/admin/loan-items"]);
+ * }
+ * ```
+ */
+export function invalidateAndRefetch(queryKey: readonly unknown[]): void {
+  queryClient.invalidateQueries({ queryKey });
+  // Forcer le rafraîchissement immédiat des queries actives
+  // Nécessaire car invalidateQueries seul ne force pas le refetch si staleTime n'est pas expiré
+  queryClient.refetchQueries({ queryKey });
+}

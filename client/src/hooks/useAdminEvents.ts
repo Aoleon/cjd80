@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, invalidateAndRefetch } from "@/lib/queryClient";
 import type { EventWithInscriptions } from "@/types/admin";
 
 export function useAdminEvents(enabled: boolean = true) {
@@ -22,7 +22,8 @@ export function useAdminEvents(enabled: boolean = true) {
       await apiRequest("DELETE", `/api/events/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
+      invalidateAndRefetch(["/api/admin/events"]);
+      invalidateAndRefetch(["/api/events"]);
       toast({
         title: "Événement supprimé",
         description: "L'événement a été supprimé avec succès",
@@ -42,8 +43,8 @@ export function useAdminEvents(enabled: boolean = true) {
       await apiRequest("PATCH", `/api/admin/events/${id}/status`, { status });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      invalidateAndRefetch(["/api/admin/events"]);
+      invalidateAndRefetch(["/api/events"]);
       toast({
         title: "Statut mis à jour",
         description: "Le statut de l'événement a été mis à jour",

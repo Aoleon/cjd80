@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, invalidateAndRefetch } from "@/lib/queryClient";
 import { updateLoanItemSchema, type LoanItem } from "@shared/schema";
 import { z } from "zod";
 
@@ -88,8 +88,8 @@ export default function EditLoanItemModal({
       return { success: true };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/loan-items"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/loan-items"] });
+      invalidateAndRefetch(["/api/admin/loan-items"]);
+      invalidateAndRefetch(["/api/loan-items"]);
       toast({
         title: "Matériel mis à jour",
         description: "Les informations ont été modifiées avec succès.",

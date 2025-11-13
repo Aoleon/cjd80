@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, invalidateAndRefetch } from "@/lib/queryClient";
 import type { LoanItem } from "@shared/schema";
 import { LOAN_STATUS } from "@shared/schema";
 import { formatDate } from "@/lib/adminUtils";
@@ -33,8 +33,8 @@ export default function LoanItemDetailModal({
       await apiRequest("PATCH", `/api/admin/loan-items/${id}/status`, { status });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/loan-items"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/loan-items"] });
+      invalidateAndRefetch(["/api/admin/loan-items"]);
+      invalidateAndRefetch(["/api/loan-items"]);
       toast({
         title: "Statut mis à jour",
         description: "Le statut du matériel a été mis à jour",
@@ -54,8 +54,8 @@ export default function LoanItemDetailModal({
       await apiRequest("DELETE", `/api/admin/loan-items/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/loan-items"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/loan-items"] });
+      invalidateAndRefetch(["/api/admin/loan-items"]);
+      invalidateAndRefetch(["/api/loan-items"]);
       toast({
         title: "Matériel supprimé",
         description: "Le matériel a été définitivement supprimé",

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, invalidateAndRefetch } from "@/lib/queryClient";
 import type { Idea } from "@shared/schema";
 import { IDEA_STATUS } from "@shared/schema";
 
@@ -32,9 +32,9 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
       await apiRequest("PATCH", `/api/admin/ideas/${id}/status`, { status });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/ideas"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/ideas"] });
+      invalidateAndRefetch(["/api/admin/ideas"]);
+      invalidateAndRefetch(["/api/admin/stats"]);
+      invalidateAndRefetch(["/api/ideas"]);
       toast({
         title: "Statut mis à jour",
         description: "Le statut de l'idée a été mis à jour",
@@ -55,9 +55,9 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
       await apiRequest("DELETE", `/api/admin/ideas/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/ideas"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/ideas"] });
+      invalidateAndRefetch(["/api/admin/ideas"]);
+      invalidateAndRefetch(["/api/admin/stats"]);
+      invalidateAndRefetch(["/api/ideas"]);
       toast({
         title: "Idée supprimée",
         description: "L'idée a été définitivement supprimée",
@@ -78,11 +78,11 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
       await apiRequest("POST", `/api/admin/ideas/${id}/transform-to-event`, {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/ideas"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/ideas"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      invalidateAndRefetch(["/api/admin/ideas"]);
+      invalidateAndRefetch(["/api/admin/events"]);
+      invalidateAndRefetch(["/api/admin/stats"]);
+      invalidateAndRefetch(["/api/ideas"]);
+      invalidateAndRefetch(["/api/events"]);
       toast({
         title: "Idée transformée",
         description: "L'idée a été transformée en événement avec succès",
