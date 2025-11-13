@@ -206,17 +206,42 @@ if [ "$HEALTH_CHECK_PASSED" = true ]; then
         echo "✅ Conteneur connecté au réseau Traefik"
     else
         echo "⚠️  Le conteneur n'est pas visible sur le réseau Traefik"
-        echo "   Vérification des réseaux..."
-        docker network inspect proxy 2>/dev/null || echo "   Réseau proxy non trouvé"
-        docker network inspect cjd-network 2>/dev/null || echo "   Réseau cjd-network non trouvé"
+        echo "   Tentative de reconnexion..."
+        docker network connect proxy cjd-app 2>/dev/null || {
+            echo "   ⚠️  Reconnexion échouée, vérification des réseaux..."
+            docker network inspect proxy 2>/dev/null || echo "   Réseau proxy non trouvé"
+            docker network inspect cjd-network 2>/dev/null || echo "   Réseau cjd-network non trouvé"
+        }
     fi
     
-    # Vérifier les labels Traefik
-    TRAEFIK_ENABLED=$(docker inspect cjd-app 2>/dev/null | grep -o '"traefik.enable":"true"' || echo "")
-    if [ -n "$TRAEFIK_ENABLED" ]; then
-        echo "✅ Labels Traefik configurés"
+    # Vérifier les labels Traefik (meilleure méthode avec jq si disponible, sinon grep)
+    if command -v jq &> /dev/null; then
+        TRAEFIK_ENABLED=$(docker inspect cjd-app 2>/dev/null | jq -r '.[0].Config.Labels["traefik.enable"]' || echo "")
     else
-        echo "⚠️  Labels Traefik non trouvés"
+        TRAEFIK_ENABLED=$(docker inspect cjd-app 2>/dev/null | grep -o '"traefik.enable":"true"' || echo "")
+    fi
+    
+    if [ "$TRAEFIK_ENABLED" = "true" ] || [ -n "$TRAEFIK_ENABLED" ]; then
+        echo "✅ Labels Traefik configurés"
+        
+        # Forcer Traefik à redécouvrir le conteneur en touchant le fichier de configuration
+        # ou en redémarrant Traefik si possible (sans casser les autres services)
+        echo "🔄 Vérification que Traefik détecte le conteneur..."
+        
+        # Attendre quelques secondes pour que Traefik détecte le nouveau conteneur
+        sleep 5
+        
+        # Vérifier que Traefik peut accéder au conteneur
+        if docker exec traefik wget --spider -q http://cjd-app:5000/api/health 2>/dev/null; then
+            echo "✅ Traefik peut accéder au conteneur"
+        else
+            echo "⚠️  Traefik ne peut pas accéder au conteneur directement"
+            echo "   Cela peut être normal si Traefik utilise le réseau proxy"
+        fi
+    else
+        echo "⚠️  Labels Traefik non trouvés dans le conteneur"
+        echo "   Affichage des labels actuels:"
+        docker inspect cjd-app 2>/dev/null | grep -A 20 "Labels" || echo "   Impossible de lire les labels"
     fi
 fi
 
