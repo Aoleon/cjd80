@@ -224,12 +224,44 @@ if [ "$HEALTH_CHECK_PASSED" = true ]; then
     if [ "$TRAEFIK_ENABLED" = "true" ] || [ -n "$TRAEFIK_ENABLED" ]; then
         echo "✅ Labels Traefik configurés"
         
-        # Forcer Traefik à redécouvrir le conteneur en touchant le fichier de configuration
-        # ou en redémarrant Traefik si possible (sans casser les autres services)
-        echo "🔄 Vérification que Traefik détecte le conteneur..."
-        
         # Attendre quelques secondes pour que Traefik détecte le nouveau conteneur
-        sleep 5
+        echo "🔄 Attente de la détection automatique par Traefik (10s)..."
+        sleep 10
+        
+        # Vérifier si Traefik a détecté la route (via l'API Traefik si disponible)
+        TRAEFIK_ROUTE_DETECTED=false
+        if docker ps | grep -q "traefik"; then
+            # Vérifier via l'API Traefik (port 8080 par défaut)
+            if docker exec traefik wget -q -O- http://localhost:8080/api/http/routers 2>/dev/null | grep -q "cjd80"; then
+                TRAEFIK_ROUTE_DETECTED=true
+                echo "✅ Route cjd80 détectée dans Traefik"
+            else
+                echo "⚠️  Route cjd80 non détectée dans Traefik"
+                echo "   🔄 Redémarrage de Traefik pour forcer la détection..."
+                
+                # Redémarrer Traefik pour forcer la détection
+                docker restart traefik 2>/dev/null || {
+                    echo "   ⚠️  Impossible de redémarrer Traefik (peut-être géré par un autre système)"
+                    echo "   💡 Redémarrez Traefik manuellement: docker restart traefik"
+                }
+                
+                # Attendre que Traefik redémarre
+                echo "   ⏳ Attente du redémarrage de Traefik (15s)..."
+                sleep 15
+                
+                # Vérifier à nouveau
+                if docker exec traefik wget -q -O- http://localhost:8080/api/http/routers 2>/dev/null | grep -q "cjd80"; then
+                    TRAEFIK_ROUTE_DETECTED=true
+                    echo "   ✅ Route cjd80 maintenant détectée dans Traefik"
+                else
+                    echo "   ⚠️  Route toujours non détectée après redémarrage"
+                    echo "   💡 Vérifiez les logs Traefik: docker logs traefik"
+                fi
+            fi
+        else
+            echo "⚠️  Traefik n'est pas en cours d'exécution"
+            echo "   💡 Démarrez Traefik pour activer le routage"
+        fi
         
         # Vérifier que Traefik peut accéder au conteneur
         if docker exec traefik wget --spider -q http://cjd-app:5000/api/health 2>/dev/null; then
