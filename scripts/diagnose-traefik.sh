@@ -47,19 +47,30 @@ echo ""
 # 3. Vérifier les labels Traefik
 echo "3️⃣  Vérification des labels Traefik..."
 if command -v jq &> /dev/null; then
-    TRAEFIK_ENABLED=$(docker inspect cjd-app 2>/dev/null | jq -r '.[0].Config.Labels["traefik.enable"]' || echo "")
-    TRAEFIK_RULE=$(docker inspect cjd-app 2>/dev/null | jq -r '.[0].Config.Labels["traefik.http.routers.cjd80.rule"]' || echo "")
+    TRAEFIK_ENABLED=$(docker inspect cjd-app 2>/dev/null | jq -r '.[0].Config.Labels["traefik.enable"] // .[0].Config.Labels."traefik.enable" // empty' || echo "")
+    TRAEFIK_RULE=$(docker inspect cjd-app 2>/dev/null | jq -r '.[0].Config.Labels["traefik.http.routers.cjd80.rule"] // .[0].Config.Labels."traefik.http.routers.cjd80.rule" // empty' || echo "")
 else
-    TRAEFIK_ENABLED=$(docker inspect cjd-app 2>/dev/null | grep -o '"traefik.enable":"true"' || echo "")
-    TRAEFIK_RULE=$(docker inspect cjd-app 2>/dev/null | grep -o '"traefik.http.routers.cjd80.rule":"[^"]*"' || echo "")
+    # Méthode plus robuste avec grep
+    TRAEFIK_ENABLED=$(docker inspect cjd-app 2>/dev/null | grep -o '"traefik.enable"[[:space:]]*:[[:space:]]*"true"' || echo "")
+    TRAEFIK_RULE=$(docker inspect cjd-app 2>/dev/null | grep -o '"traefik.http.routers.cjd80.rule"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"\([^"]*\)".*/\1/' || echo "")
+fi
+
+# Vérifier aussi directement dans la sortie brute
+if [ -z "$TRAEFIK_ENABLED" ]; then
+    TRAEFIK_ENABLED=$(docker inspect cjd-app 2>/dev/null | grep -c '"traefik.enable"' || echo "0")
+    if [ "$TRAEFIK_ENABLED" -gt 0 ]; then
+        TRAEFIK_ENABLED="true"
+    fi
 fi
 
 if [ "$TRAEFIK_ENABLED" = "true" ] || [ -n "$TRAEFIK_ENABLED" ]; then
     echo "   ✅ Label traefik.enable=true trouvé"
-    echo "   📋 Règle de routage: $TRAEFIK_RULE"
+    if [ -n "$TRAEFIK_RULE" ]; then
+        echo "   📋 Règle de routage: $TRAEFIK_RULE"
+    fi
     
     echo "   📋 Tous les labels Traefik:"
-    docker inspect cjd-app 2>/dev/null | grep "traefik" || echo "   Aucun label Traefik trouvé"
+    docker inspect cjd-app 2>/dev/null | grep '"traefik' | sed 's/^[[:space:]]*//' || echo "   Aucun label Traefik trouvé"
 else
     echo "   ❌ Label traefik.enable non trouvé ou incorrect"
     echo "   📋 Labels actuels du conteneur:"
@@ -106,6 +117,25 @@ if curl -f -s -o /dev/null https://cjd80.fr/api/health 2>/dev/null; then
 else
     echo "   ❌ Site non accessible depuis l'extérieur"
     echo "   ⚠️  Cela peut indiquer un problème de configuration Traefik"
+    echo ""
+    echo "   🔍 Vérification des routes Traefik..."
+    if docker exec traefik wget -q -O- http://localhost:8080/api/http/routers 2>/dev/null | grep -q "cjd80"; then
+        echo "   ✅ Route cjd80 détectée dans Traefik"
+        echo "   📋 Détails de la route:"
+        docker exec traefik wget -q -O- http://localhost:8080/api/http/routers 2>/dev/null | grep -A 10 "cjd80" || echo "   Impossible de récupérer les détails"
+    else
+        echo "   ❌ Route cjd80 NON détectée dans Traefik"
+        echo "   💡 Solution: Redémarrer Traefik pour forcer la détection"
+        echo "      docker restart traefik"
+    fi
+    
+    echo ""
+    echo "   🔍 Vérification des services Traefik..."
+    if docker exec traefik wget -q -O- http://localhost:8080/api/http/services 2>/dev/null | grep -q "cjd80"; then
+        echo "   ✅ Service cjd80 détecté dans Traefik"
+    else
+        echo "   ❌ Service cjd80 NON détecté dans Traefik"
+    fi
 fi
 echo ""
 
@@ -121,8 +151,10 @@ else
     echo "❌ Problème avec le conteneur ou le réseau"
 fi
 
-if [ "$TRAEFIK_ENABLED" = "true" ] || [ -n "$TRAEFIK_ENABLED" ]; then
-    echo "✅ Labels Traefik: OK"
+# Vérifier les labels avec une méthode plus robuste
+TRAEFIK_LABELS_COUNT=$(docker inspect cjd-app 2>/dev/null | grep -c '"traefik' || echo "0")
+if [ "$TRAEFIK_LABELS_COUNT" -gt 0 ]; then
+    echo "✅ Labels Traefik: OK ($TRAEFIK_LABELS_COUNT labels trouvés)"
 else
     echo "❌ Labels Traefik: Manquants ou incorrects"
 fi
