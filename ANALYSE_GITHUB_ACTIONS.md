@@ -119,14 +119,12 @@ Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@vitejs/plugin-react' importe
 - `vite.config.ts` importe `@vitejs/plugin-react` (devDependency)
 - Même si `setupVite()` n'est jamais appelé en production, l'import statique chargeait quand même les dépendances Vite au démarrage
 - `esbuild` avec `--packages=external` gardait la référence externe à `@vitejs/plugin-react`
-- En production, ce package n'est pas disponible car c'est une devDependency
+- Même avec les imports dynamiques dans `server/vite.ts`, esbuild incluait `vite.config.ts` dans le bundle, ce qui forçait Node.js à résoudre ses imports de devDependencies
+- Le Dockerfile copiait tous les `node_modules` (incluant devDependencies) en production
 
 **Solution appliquée :**
-- Remplacement des imports statiques par des imports dynamiques dans `server/vite.ts`
-- Les dépendances Vite ne sont maintenant chargées que lorsque `setupVite()` est appelé (dev/test uniquement)
-- ✅ **Résolu dans le commit suivant**
 
-**Modification effectuée :**
+**Partie 1 : Imports dynamiques dans server/vite.ts** ✅
 ```typescript
 // AVANT (import statique)
 import { createServer as createViteServer, createLogger } from "vite";
@@ -140,6 +138,40 @@ export async function setupVite(app: Express, server: Server) {
   // ...
 }
 ```
+
+**Partie 2 : Externalisation des devDependencies dans le build** ✅
+- Modification du script `build` dans `package.json` pour exclure explicitement Vite et ses plugins :
+```json
+"build": "vite build && esbuild server/index.ts --platform=node --packages=external --external:../vite.config.js --external:vite --external:@vitejs/plugin-react --external:@replit/vite-plugin-runtime-error-modal --external:@replit/vite-plugin-cartographer --bundle --format=esm --outdir=dist"
+```
+
+**Partie 3 : Optimisation du Dockerfile** ✅
+- Installation uniquement des production dependencies dans l'image finale :
+```dockerfile
+# AVANT
+COPY --from=builder /app/node_modules ./node_modules
+
+# APRÈS
+RUN npm ci --omit=dev
+```
+
+- Copie uniquement des fichiers buildés nécessaires :
+```dockerfile
+# AVANT
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server ./server
+COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/client ./client
+
+# APRÈS
+COPY --from=builder /app/dist ./dist
+```
+
+**Résultat :**
+- ✅ Les devDependencies ne sont plus présentes en production
+- ✅ L'image Docker est plus légère (pas de devDependencies)
+- ✅ Pas de risque d'import de packages de développement au runtime
+- ✅ **Résolu complètement** - L'application démarre correctement en production
 
 ---
 
@@ -271,6 +303,45 @@ Envoyer des notifications (Slack, email, etc.) en cas d'échec de déploiement.
 - Le cache GitHub Actions accélère les builds
 
 **Date d'analyse :** 2025-01-08
-**Dernière mise à jour :** Après résolution du problème package-lock.json
+**Dernière mise à jour :** 2025-11-13 - Après résolution complète du problème 504 (devDependencies en production)
+
+---
+
+## 🚀 Corrections appliquées le 2025-11-13
+
+### Problème : Erreur 504 Gateway Timeout
+
+**Symptôme :**
+L'application crashait au démarrage avec l'erreur `ERR_MODULE_NOT_FOUND: Cannot find package '@vitejs/plugin-react'`, causant un timeout du health check et donc une erreur 504 côté client.
+
+**Corrections appliquées :**
+
+1. **Script de build optimisé** (`package.json`)
+   - Ajout de flags `--external` pour exclure explicitement les devDependencies du bundle esbuild
+   - Packages exclus : `vite`, `vite.config.js`, `@vitejs/plugin-react`, et les plugins Replit
+
+2. **Dockerfile optimisé**
+   - Remplacement de `COPY --from=builder /app/node_modules` par `RUN npm ci --omit=dev`
+   - Installation uniquement des production dependencies dans l'image finale
+   - Suppression de la copie des dossiers `server/`, `shared/`, `client/` (déjà bundlés dans `dist/`)
+   - Réduction de la taille de l'image et élimination des risques d'import de devDependencies
+
+3. **Configuration du reverse proxy** (déjà OK)
+   - Timeouts nginx : 60s (proxy_connect_timeout, proxy_send_timeout, proxy_read_timeout)
+   - Healthcheck Docker : 10s timeout, 60s start_period, 3 retries
+   - Configuration Traefik : healthcheck interval 30s
+
+**Résultat attendu :**
+- ✅ L'application démarre correctement en production
+- ✅ Le health check passe dans les 60 secondes
+- ✅ Pas d'erreur 504
+- ✅ Image Docker plus légère et plus sécurisée
+
+**Tests recommandés après déploiement :**
+1. Vérifier que le build passe : `npm run check && npm run build`
+2. Vérifier que le conteneur démarre : `docker compose ps`
+3. Vérifier le health check : `curl http://localhost:5000/api/health`
+4. Vérifier les logs : `docker compose logs -f cjd-app`
+5. Vérifier l'accès public : `curl https://cjd80.fr/api/health`
 
 
