@@ -33,15 +33,12 @@ RUN addgroup -S cjd && adduser -S cjduser -G cjd
 # Copier package.json pour référence
 COPY --from=builder /app/package*.json ./
 
-# Copier node_modules complets depuis le builder
-# (nécessaire car Vite est utilisé en production comme middleware)
-COPY --from=builder /app/node_modules ./node_modules
+# Installer UNIQUEMENT les production dependencies
+# (les devDependencies comme Vite ne sont pas nécessaires en production)
+RUN npm ci --omit=dev
 
 # Copier les fichiers buildés depuis le stage builder
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/server ./server
-COPY --from=builder /app/shared ./shared
-COPY --from=builder /app/client ./client
 
 # Créer le dossier logs avec les bonnes permissions
 RUN mkdir -p /app/logs && chown -R cjduser:cjd /app
