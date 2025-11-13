@@ -69,7 +69,7 @@ import {
 } from "../shared/schema";
 import { z } from "zod";
 import { db, runDbQuery } from "./db";
-import { eq, desc, and, count, sql, or, asc } from "drizzle-orm";
+import { eq, desc, and, count, sql, or, asc, ne } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -2815,10 +2815,18 @@ export class DatabaseStorage implements IStorage {
       const limit = options?.limit || 20;
       const offset = (page - 1) * limit;
       const search = options?.search?.trim();
-      const status = options?.status || LOAN_STATUS.AVAILABLE; // Par défaut, seulement les disponibles
+      const status = options?.status;
 
       // Construire les conditions
-      const conditions = [eq(loanItems.status, status)];
+      const conditions = [];
+      
+      // Si un statut spécifique est demandé, l'utiliser
+      // Sinon, exclure les items en pending (afficher tous les items validés)
+      if (status) {
+        conditions.push(eq(loanItems.status, status));
+      } else {
+        conditions.push(ne(loanItems.status, LOAN_STATUS.PENDING));
+      }
       
       if (search) {
         // Optimisation: utiliser LOWER pour la recherche insensible à la casse

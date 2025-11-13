@@ -2750,12 +2750,12 @@ export function createRouter(storageInstance: IStorage): any {
       const limit = parseInt(req.query.limit as string) || 20;
       const search = req.query.search as string | undefined;
       
-      // Seulement les items avec status 'available'
+      // Récupérer tous les items validés (tous sauf pending)
       const result = await storageInstance.getLoanItems({
         page,
         limit,
-        search,
-        status: LOAN_STATUS.AVAILABLE
+        search
+        // Ne pas spécifier de status pour récupérer tous les items validés
       });
       
       if (!result.success) {
