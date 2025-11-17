@@ -95,9 +95,12 @@ fi
 # Note: On utilise docker run au lieu de docker compose run car l'image vient d'être pullée
 # et docker-compose.yml utilise une variable d'environnement qui sera mise à jour après
 echo "   Exécution de drizzle-kit push..."
+# Monter le répertoire pour accéder à drizzle.config.ts et shared/schema.ts
 docker run --rm \
     --env-file "$DEPLOY_DIR/.env" \
     --network proxy \
+    -v "$DEPLOY_DIR:/app" \
+    -w /app \
     "$DOCKER_IMAGE" \
     npx drizzle-kit push || {
     echo "⚠️  Warning: Migration failed, continuing anyway (might be up to date)"
