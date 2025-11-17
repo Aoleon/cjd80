@@ -263,6 +263,7 @@ jobs:
           if [ "${{ job.status }}" == "success" ]; then
             echo "🎉 ✅ Déploiement réussi sur https://cjd80.fr"
             echo "📦 Image: ${{ needs.build-and-push.outputs.image_tag }}"
+            echo "📦 Latest: ${{ needs.build-and-push.outputs.image_latest }}"
             echo "🔗 Health check: https://cjd80.fr/api/health"
           else
             echo "❌ Échec du déploiement"

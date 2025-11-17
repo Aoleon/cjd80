@@ -63,12 +63,21 @@ fi
 echo "⬇️  Téléchargement de la nouvelle image Docker..."
 if [ -n "$DOCKER_IMAGE" ]; then
     echo "   Image: $DOCKER_IMAGE"
-    docker pull "$DOCKER_IMAGE"
+    docker pull "$DOCKER_IMAGE" || {
+        echo "❌ ERREUR: Impossible de télécharger l'image $DOCKER_IMAGE"
+        echo "   Vérifiez que l'image existe dans GHCR et que vous êtes authentifié"
+        exit 1
+    }
 else
     echo "   Image: ghcr.io/aoleon/cjd80:latest (fallback)"
-    docker pull ghcr.io/aoleon/cjd80:latest
+    docker pull ghcr.io/aoleon/cjd80:latest || {
+        echo "❌ ERREUR: Impossible de télécharger l'image latest"
+        exit 1
+    }
     export DOCKER_IMAGE="ghcr.io/aoleon/cjd80:latest"
 fi
+
+echo "✅ Image téléchargée avec succès"
 
 # ============================================================================
 # 4. MIGRATIONS de base de données
@@ -82,12 +91,28 @@ if [ ! -f "$DEPLOY_DIR/.env" ]; then
     exit 1
 fi
 
-# Exécuter les migrations dans un conteneur temporaire
-docker compose run --rm \
-    --no-deps \
-    --entrypoint "npx drizzle-kit push" \
-    cjd-app || {
+# Mettre à jour docker-compose.yml avec la nouvelle image avant les migrations
+if [ -f "$DEPLOY_DIR/docker-compose.yml" ]; then
+    # Sauvegarder temporairement l'image actuelle
+    OLD_IMAGE=$(grep -E "^\s*image:" "$DEPLOY_DIR/docker-compose.yml" | head -1 | sed 's/.*image:\s*//' | tr -d '"' || echo "")
+    
+    # Mettre à jour avec la nouvelle image pour les migrations
+    export DOCKER_IMAGE
+fi
+
+# Exécuter les migrations dans un conteneur temporaire avec la nouvelle image
+# Note: On utilise docker run au lieu de docker compose run car l'image vient d'être pullée
+# et docker-compose.yml pourrait encore référencer l'ancienne image
+echo "   Exécution de drizzle-kit push..."
+docker run --rm \
+    --env-file "$DEPLOY_DIR/.env" \
+    --network proxy \
+    -v "$DEPLOY_DIR:/workspace" \
+    -w /workspace \
+    "$DOCKER_IMAGE" \
+    npx drizzle-kit push || {
     echo "⚠️  Warning: Migration failed, continuing anyway (might be up to date)"
+    echo "   Vérifiez les logs ci-dessus pour plus de détails"
 }
 
 echo "✅ Migrations terminées"
