@@ -20,6 +20,7 @@ jobs:
     
     outputs:
       image_tag: ${{ steps.image-tag.outputs.tag }}
+      image_latest: ${{ steps.image-tag.outputs.latest }}
     
     steps:
       - name: Checkout code
