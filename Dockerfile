@@ -33,9 +33,14 @@ RUN addgroup -S cjd && adduser -S cjduser -G cjd
 # Copier package.json pour référence
 COPY --from=builder /app/package*.json ./
 
-# Installer UNIQUEMENT les production dependencies
-# (les devDependencies comme Vite ne sont pas nécessaires en production)
-RUN npm ci --omit=dev
+# Installer les production dependencies + drizzle-kit pour les migrations
+# drizzle-kit est nécessaire pour exécuter les migrations en production
+RUN npm ci --omit=dev && \
+    npm install drizzle-kit --save-dev --no-audit --no-fund || true
+
+# Copier les fichiers nécessaires pour les migrations (drizzle-kit)
+COPY --from=builder /app/drizzle.config.ts ./
+COPY --from=builder /app/shared ./shared
 
 # Copier les fichiers buildés depuis le stage builder
 COPY --from=builder /app/dist ./dist

@@ -92,17 +92,15 @@ if [ ! -f "$DEPLOY_DIR/.env" ]; then
 fi
 
 # Exécuter les migrations dans un conteneur temporaire avec la nouvelle image
-# Note: On utilise docker run au lieu de docker compose run car l'image vient d'être pullée
-# et docker-compose.yml utilise une variable d'environnement qui sera mise à jour après
+# Note: drizzle.config.ts, shared/schema.ts et drizzle-kit sont maintenant dans l'image Docker
 echo "   Exécution de drizzle-kit push..."
-# Monter le répertoire pour accéder à drizzle.config.ts et shared/schema.ts
+# Utiliser root temporairement pour les migrations (nécessaire pour certaines opérations)
 docker run --rm \
     --env-file "$DEPLOY_DIR/.env" \
     --network proxy \
-    -v "$DEPLOY_DIR:/app" \
-    -w /app \
+    --user root \
     "$DOCKER_IMAGE" \
-    npx drizzle-kit push || {
+    sh -c "cd /app && npx drizzle-kit push" || {
     echo "⚠️  Warning: Migration failed, continuing anyway (might be up to date)"
     echo "   Vérifiez les logs ci-dessus pour plus de détails"
 }
