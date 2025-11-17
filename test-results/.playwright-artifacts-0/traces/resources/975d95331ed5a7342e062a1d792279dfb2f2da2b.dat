@@ -1,0 +1,188 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/admin/AdminEventsPanel.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=8973d617"; const Fragment = __vite__cjsImport0_react_jsxDevRuntime["Fragment"]; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import { Loader2, Calendar, CalendarPlus } from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/lucide-react.js?v=9fe1beea";
+import { Button } from "/src/components/ui/button.tsx";
+import { useAdminEvents } from "/src/hooks/useAdminEvents.ts";
+import EventTable from "/src/components/admin/EventTable.tsx";
+import EventMobileCard from "/src/components/admin/EventMobileCard.tsx";
+export default function AdminEventsPanel({
+  enabled,
+  onCreateEvent,
+  onViewDetail,
+  onEdit,
+  onManageInscriptions,
+  onExportInscriptions
+}) {
+  _s();
+  const {
+    events,
+    isLoading,
+    deleteEvent,
+    isDeleting
+  } = useAdminEvents(enabled);
+  const handleDelete = (id) => {
+    if (confirm("Êtes-vous sûr de vouloir supprimer cet événement ?")) {
+      deleteEvent(id);
+    }
+  };
+  return /* @__PURE__ */ jsxDEV("div", { className: "space-y-4", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3", children: [
+      /* @__PURE__ */ jsxDEV("h3", { className: "text-base sm:text-lg font-semibold", children: "Tous les événements" }, void 0, false, {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+        lineNumber: 60,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        Button,
+        {
+          onClick: onCreateEvent,
+          className: "bg-cjd-green hover:bg-cjd-green-dark text-white w-full sm:w-auto",
+          "data-testid": "button-create-event",
+          children: [
+            /* @__PURE__ */ jsxDEV(CalendarPlus, { className: "w-4 h-4 mr-2" }, void 0, false, {
+              fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+              lineNumber: 66,
+              columnNumber: 11
+            }, this),
+            "Nouvel événement"
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+          lineNumber: 61,
+          columnNumber: 9
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+      lineNumber: 59,
+      columnNumber: 7
+    }, this),
+    isLoading ? /* @__PURE__ */ jsxDEV("div", { className: "flex justify-center py-8", children: /* @__PURE__ */ jsxDEV(Loader2, { className: "h-8 w-8 animate-spin text-cjd-green" }, void 0, false, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+      lineNumber: 73,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+      lineNumber: 72,
+      columnNumber: 7
+    }, this) : events && events.length > 0 ? /* @__PURE__ */ jsxDEV(Fragment, { children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "hidden md:block", children: /* @__PURE__ */ jsxDEV(
+        EventTable,
+        {
+          events,
+          onViewDetail,
+          onEdit,
+          onManageInscriptions,
+          onExportInscriptions,
+          onDelete: handleDelete,
+          isDeleting
+        },
+        void 0,
+        false,
+        {
+          fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+          lineNumber: 78,
+          columnNumber: 13
+        },
+        this
+      ) }, void 0, false, {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+        lineNumber: 77,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "md:hidden", children: /* @__PURE__ */ jsxDEV(
+        EventMobileCard,
+        {
+          events,
+          onViewDetail,
+          onEdit,
+          onManageInscriptions,
+          onExportInscriptions,
+          onDelete: handleDelete,
+          isDeleting
+        },
+        void 0,
+        false,
+        {
+          fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+          lineNumber: 90,
+          columnNumber: 13
+        },
+        this
+      ) }, void 0, false, {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+        lineNumber: 89,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+      lineNumber: 76,
+      columnNumber: 7
+    }, this) : /* @__PURE__ */ jsxDEV("div", { className: "text-center py-8", children: [
+      /* @__PURE__ */ jsxDEV(Calendar, { className: "w-12 h-12 text-gray-400 mx-auto mb-4" }, void 0, false, {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+        lineNumber: 103,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("h3", { className: "text-lg font-medium text-gray-600 mb-2", children: "Aucun événement" }, void 0, false, {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+        lineNumber: 104,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-gray-500", children: "Les événements apparaîtront ici une fois créés" }, void 0, false, {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+        lineNumber: 105,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+      lineNumber: 102,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx",
+    lineNumber: 58,
+    columnNumber: 5
+  }, this);
+}
+_s(AdminEventsPanel, "aErxaEaDekrXYuZQ4k4GoDI3ldU=", false, function() {
+  return [useAdminEvents];
+});
+_c = AdminEventsPanel;
+var _c;
+$RefreshReg$(_c, "AdminEventsPanel");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/AdminEventsPanel.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QUFBZ0I7QUFBQUMsYUFBQUQsSUFBQSIsIm5hbWVzIjpbIkxvYWRlcjIiLCJDYWxlbmRhciIsIkNhbGVuZGFyUGx1cyIsIkJ1dHRvbiIsInVzZUFkbWluRXZlbnRzIiwiRXZlbnRUYWJsZSIsIkV2ZW50TW9iaWxlQ2FyZCIsIkFkbWluRXZlbnRzUGFuZWwiLCJlbmFibGVkIiwib25DcmVhdGVFdmVudCIsIm9uVmlld0RldGFpbCIsIm9uRWRpdCIsIm9uTWFuYWdlSW5zY3JpcHRpb25zIiwib25FeHBvcnRJbnNjcmlwdGlvbnMiLCJfcyIsImV2ZW50cyIsImlzTG9hZGluZyIsImRlbGV0ZUV2ZW50IiwiaXNEZWxldGluZyIsImhhbmRsZURlbGV0ZSIsImlkIiwiY29uZmlybSIsImxlbmd0aCIsIl9jIiwiJFJlZnJlc2hSZWckIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIkFkbWluRXZlbnRzUGFuZWwudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IExvYWRlcjIsIENhbGVuZGFyLCBDYWxlbmRhclBsdXMgfSBmcm9tIFwibHVjaWRlLXJlYWN0XCI7XG5pbXBvcnQgeyBCdXR0b24gfSBmcm9tIFwiQC9jb21wb25lbnRzL3VpL2J1dHRvblwiO1xuaW1wb3J0IHsgdXNlQWRtaW5FdmVudHMgfSBmcm9tIFwiQC9ob29rcy91c2VBZG1pbkV2ZW50c1wiO1xuaW1wb3J0IEV2ZW50VGFibGUgZnJvbSBcIi4vRXZlbnRUYWJsZVwiO1xuaW1wb3J0IEV2ZW50TW9iaWxlQ2FyZCBmcm9tIFwiLi9FdmVudE1vYmlsZUNhcmRcIjtcbmltcG9ydCB0eXBlIHsgRXZlbnRXaXRoSW5zY3JpcHRpb25zIH0gZnJvbSBcIkAvdHlwZXMvYWRtaW5cIjtcblxuaW50ZXJmYWNlIEFkbWluRXZlbnRzUGFuZWxQcm9wcyB7XG4gIGVuYWJsZWQ6IGJvb2xlYW47XG4gIG9uQ3JlYXRlRXZlbnQ6ICgpID0+IHZvaWQ7XG4gIG9uVmlld0RldGFpbDogKGV2ZW50OiBFdmVudFdpdGhJbnNjcmlwdGlvbnMpID0+IHZvaWQ7XG4gIG9uRWRpdDogKGV2ZW50OiBFdmVudFdpdGhJbnNjcmlwdGlvbnMpID0+IHZvaWQ7XG4gIG9uTWFuYWdlSW5zY3JpcHRpb25zOiAoZXZlbnQ6IEV2ZW50V2l0aEluc2NyaXB0aW9ucykgPT4gdm9pZDtcbiAgb25FeHBvcnRJbnNjcmlwdGlvbnM6IChldmVudDogRXZlbnRXaXRoSW5zY3JpcHRpb25zKSA9PiB2b2lkO1xufVxuXG5leHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBBZG1pbkV2ZW50c1BhbmVsKHtcbiAgZW5hYmxlZCxcbiAgb25DcmVhdGVFdmVudCxcbiAgb25WaWV3RGV0YWlsLFxuICBvbkVkaXQsXG4gIG9uTWFuYWdlSW5zY3JpcHRpb25zLFxuICBvbkV4cG9ydEluc2NyaXB0aW9ucyxcbn06IEFkbWluRXZlbnRzUGFuZWxQcm9wcykge1xuICBjb25zdCB7XG4gICAgZXZlbnRzLFxuICAgIGlzTG9hZGluZyxcbiAgICBkZWxldGVFdmVudCxcbiAgICBpc0RlbGV0aW5nLFxuICB9ID0gdXNlQWRtaW5FdmVudHMoZW5hYmxlZCk7XG5cbiAgY29uc3QgaGFuZGxlRGVsZXRlID0gKGlkOiBzdHJpbmcpID0+IHtcbiAgICBpZiAoY29uZmlybShcIsOKdGVzLXZvdXMgc8O7ciBkZSB2b3Vsb2lyIHN1cHByaW1lciBjZXQgw6l2w6luZW1lbnQgP1wiKSkge1xuICAgICAgZGVsZXRlRXZlbnQoaWQpO1xuICAgIH1cbiAgfTtcblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZmxleC1jb2wgc206ZmxleC1yb3cgc206anVzdGlmeS1iZXR3ZWVuIHNtOml0ZW1zLWNlbnRlciBnYXAtM1wiPlxuICAgICAgICA8aDMgY2xhc3NOYW1lPVwidGV4dC1iYXNlIHNtOnRleHQtbGcgZm9udC1zZW1pYm9sZFwiPlRvdXMgbGVzIMOpdsOpbmVtZW50czwvaDM+XG4gICAgICAgIDxCdXR0b25cbiAgICAgICAgICBvbkNsaWNrPXtvbkNyZWF0ZUV2ZW50fVxuICAgICAgICAgIGNsYXNzTmFtZT1cImJnLWNqZC1ncmVlbiBob3ZlcjpiZy1jamQtZ3JlZW4tZGFyayB0ZXh0LXdoaXRlIHctZnVsbCBzbTp3LWF1dG9cIlxuICAgICAgICAgIGRhdGEtdGVzdGlkPVwiYnV0dG9uLWNyZWF0ZS1ldmVudFwiXG4gICAgICAgID5cbiAgICAgICAgICA8Q2FsZW5kYXJQbHVzIGNsYXNzTmFtZT1cInctNCBoLTQgbXItMlwiIC8+XG4gICAgICAgICAgTm91dmVsIMOpdsOpbmVtZW50XG4gICAgICAgIDwvQnV0dG9uPlxuICAgICAgPC9kaXY+XG5cbiAgICAgIHtpc0xvYWRpbmcgPyAoXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBqdXN0aWZ5LWNlbnRlciBweS04XCI+XG4gICAgICAgICAgPExvYWRlcjIgY2xhc3NOYW1lPVwiaC04IHctOCBhbmltYXRlLXNwaW4gdGV4dC1jamQtZ3JlZW5cIiAvPlxuICAgICAgICA8L2Rpdj5cbiAgICAgICkgOiBldmVudHMgJiYgZXZlbnRzLmxlbmd0aCA+IDAgPyAoXG4gICAgICAgIDw+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJoaWRkZW4gbWQ6YmxvY2tcIj5cbiAgICAgICAgICAgIDxFdmVudFRhYmxlXG4gICAgICAgICAgICAgIGV2ZW50cz17ZXZlbnRzfVxuICAgICAgICAgICAgICBvblZpZXdEZXRhaWw9e29uVmlld0RldGFpbH1cbiAgICAgICAgICAgICAgb25FZGl0PXtvbkVkaXR9XG4gICAgICAgICAgICAgIG9uTWFuYWdlSW5zY3JpcHRpb25zPXtvbk1hbmFnZUluc2NyaXB0aW9uc31cbiAgICAgICAgICAgICAgb25FeHBvcnRJbnNjcmlwdGlvbnM9e29uRXhwb3J0SW5zY3JpcHRpb25zfVxuICAgICAgICAgICAgICBvbkRlbGV0ZT17aGFuZGxlRGVsZXRlfVxuICAgICAgICAgICAgICBpc0RlbGV0aW5nPXtpc0RlbGV0aW5nfVxuICAgICAgICAgICAgLz5cbiAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibWQ6aGlkZGVuXCI+XG4gICAgICAgICAgICA8RXZlbnRNb2JpbGVDYXJkXG4gICAgICAgICAgICAgIGV2ZW50cz17ZXZlbnRzfVxuICAgICAgICAgICAgICBvblZpZXdEZXRhaWw9e29uVmlld0RldGFpbH1cbiAgICAgICAgICAgICAgb25FZGl0PXtvbkVkaXR9XG4gICAgICAgICAgICAgIG9uTWFuYWdlSW5zY3JpcHRpb25zPXtvbk1hbmFnZUluc2NyaXB0aW9uc31cbiAgICAgICAgICAgICAgb25FeHBvcnRJbnNjcmlwdGlvbnM9e29uRXhwb3J0SW5zY3JpcHRpb25zfVxuICAgICAgICAgICAgICBvbkRlbGV0ZT17aGFuZGxlRGVsZXRlfVxuICAgICAgICAgICAgICBpc0RlbGV0aW5nPXtpc0RlbGV0aW5nfVxuICAgICAgICAgICAgLz5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgPC8+XG4gICAgICApIDogKFxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQtY2VudGVyIHB5LThcIj5cbiAgICAgICAgICA8Q2FsZW5kYXIgY2xhc3NOYW1lPVwidy0xMiBoLTEyIHRleHQtZ3JheS00MDAgbXgtYXV0byBtYi00XCIgLz5cbiAgICAgICAgICA8aDMgY2xhc3NOYW1lPVwidGV4dC1sZyBmb250LW1lZGl1bSB0ZXh0LWdyYXktNjAwIG1iLTJcIj5BdWN1biDDqXbDqW5lbWVudDwvaDM+XG4gICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1ncmF5LTUwMFwiPkxlcyDDqXbDqW5lbWVudHMgYXBwYXJhw650cm9udCBpY2kgdW5lIGZvaXMgY3LDqcOpczwvcD5cbiAgICAgICAgPC9kaXY+XG4gICAgICApfVxuICAgIDwvZGl2PlxuICApO1xufVxuIl0sImZpbGUiOiIvVXNlcnMvdGhpYmF1bHQvRGXMgXZlbG9wcGVtZW50cyAvQ0pEODAvY2pkODAvY2xpZW50L3NyYy9jb21wb25lbnRzL2FkbWluL0FkbWluRXZlbnRzUGFuZWwudHN4In0=

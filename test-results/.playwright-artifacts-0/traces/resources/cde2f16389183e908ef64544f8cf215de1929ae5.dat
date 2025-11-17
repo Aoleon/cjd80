@@ -1,0 +1,51 @@
+import {
+  Primitive
+} from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-CIWSPAEX.js?v=9b33f788";
+import {
+  require_jsx_runtime
+} from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-KBTYAULA.js?v=9b33f788";
+import {
+  require_react
+} from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-QCHXOAYK.js?v=9b33f788";
+import {
+  __toESM
+} from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-WOOG5QLI.js?v=9b33f788";
+
+// node_modules/@radix-ui/react-visually-hidden/dist/index.mjs
+var React = __toESM(require_react(), 1);
+var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
+var VISUALLY_HIDDEN_STYLES = Object.freeze({
+  // See: https://github.com/twbs/bootstrap/blob/main/scss/mixins/_visually-hidden.scss
+  position: "absolute",
+  border: 0,
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap",
+  wordWrap: "normal"
+});
+var NAME = "VisuallyHidden";
+var VisuallyHidden = React.forwardRef(
+  (props, forwardedRef) => {
+    return (0, import_jsx_runtime.jsx)(
+      Primitive.span,
+      {
+        ...props,
+        ref: forwardedRef,
+        style: { ...VISUALLY_HIDDEN_STYLES, ...props.style }
+      }
+    );
+  }
+);
+VisuallyHidden.displayName = NAME;
+var Root = VisuallyHidden;
+
+export {
+  VISUALLY_HIDDEN_STYLES,
+  VisuallyHidden,
+  Root
+};
+//# sourceMappingURL=chunk-SWCSEZXG.js.map

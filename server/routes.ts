@@ -37,11 +37,20 @@ import {
   updateIdeaPatronProposalSchema,
   proposeMemberSchema,
   insertMemberSubscriptionSchema,
+  insertMemberTagSchema,
+  updateMemberTagSchema,
+  assignMemberTagSchema,
+  insertMemberTaskSchema,
+  updateMemberTaskSchema,
+  insertMemberRelationSchema,
   insertEventSponsorshipSchema,
   updateEventSponsorshipSchema,
   insertLoanItemSchema,
   updateLoanItemSchema,
   updateLoanItemStatusSchema,
+  insertTrackingMetricSchema,
+  insertTrackingAlertSchema,
+  updateTrackingAlertSchema,
   LOAN_STATUS,
   hasPermission,
   ADMIN_ROLES,
@@ -57,7 +66,8 @@ import { promises as fs } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import multer from "multer";
-import { singlePhotoUpload, getPhotoUrl, deletePhoto } from "./utils/file-upload";
+import { singlePhotoUpload, getPhotoUrl, deletePhoto, singleLogoUpload, deleteLogo } from "./utils/file-upload";
+import { getChatbotService } from "./services/chatbot-service";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1707,6 +1717,334 @@ export function createRouter(storageInstance: IStorage): any {
     }
   });
 
+  // ==================== ONBOARDING / PREMIÈRE INSTALLATION ====================
+  
+  // Check if this is a first-time installation (public endpoint)
+  router.get("/api/setup/status", async (req, res) => {
+    try {
+      // Vérifier si le branding est configuré (personnalisé, pas les valeurs par défaut)
+      const brandingResult = await storageInstance.getBrandingConfig();
+      let hasBranding = false;
+      if (brandingResult.success && brandingResult.data) {
+        try {
+          const config = JSON.parse(brandingResult.data.config);
+          // Vérifier si c'est différent des valeurs par défaut (CJD Amiens)
+          const { brandingCore } = await import("../client/src/config/branding-core");
+          hasBranding = config.organization?.name !== brandingCore.organization.name ||
+                       config.organization?.email !== brandingCore.organization.email ||
+                       config.colors?.primary !== brandingCore.colors.primary;
+        } catch {
+          // Si le parsing échoue, considérer comme non configuré
+          hasBranding = false;
+        }
+      }
+      
+      // Vérifier si l'email est configuré (personnalisé, pas les valeurs par défaut)
+      const emailResult = await storageInstance.getEmailConfig();
+      let hasEmailConfig = false;
+      if (emailResult.success && emailResult.data) {
+        // Vérifier si c'est différent des valeurs par défaut
+        const defaultHost = process.env.SMTP_HOST || 'ssl0.ovh.net';
+        const defaultFromEmail = process.env.SMTP_FROM_EMAIL || 'noreply@cjd-amiens.fr';
+        hasEmailConfig = emailResult.data.host !== defaultHost ||
+                        emailResult.data.fromEmail !== defaultFromEmail;
+      }
+      
+      // Vérifier s'il y a des admins (si pas d'admin, c'est une première installation)
+      const adminsResult = await storageInstance.getAllAdmins();
+      const hasAdmins = adminsResult.success && adminsResult.data && adminsResult.data.length > 0;
+      
+      // C'est une première installation si :
+      // - Pas de branding personnalisé OU
+      // - Pas de config email personnalisée OU
+      // - Pas d'admins
+      const isFirstInstall = !hasBranding || !hasEmailConfig || !hasAdmins;
+      
+      res.json({
+        success: true,
+        data: {
+          isFirstInstall,
+          hasBranding,
+          hasEmailConfig,
+          hasAdmins,
+          completedSteps: {
+            branding: hasBranding,
+            email: hasEmailConfig,
+            admins: hasAdmins
+          }
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Create first admin during onboarding (public endpoint only if no admins exist)
+  router.post("/api/setup/create-admin", async (req, res) => {
+    try {
+      // Vérifier s'il y a déjà des admins
+      const adminsResult = await storageInstance.getAllAdmins();
+      if (adminsResult.success && adminsResult.data && adminsResult.data.length > 0) {
+        return res.status(403).json({ 
+          success: false, 
+          error: "Des administrateurs existent déjà. Utilisez la page d'administration pour créer de nouveaux admins." 
+        });
+      }
+
+      const { email, password, firstName, lastName } = req.body;
+      
+      if (!email || !password || !firstName || !lastName) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Tous les champs sont requis (email, password, firstName, lastName)" 
+        });
+      }
+
+      // Valider l'email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Format d'email invalide" 
+        });
+      }
+
+      // Valider le mot de passe (minimum 8 caractères)
+      if (password.length < 8) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Le mot de passe doit contenir au moins 8 caractères" 
+        });
+      }
+
+      // Hasher le mot de passe
+      const hashedPassword = await hashPassword(password);
+      
+      // Créer le premier admin avec rôle super_admin et statut actif
+      const result = await storageInstance.createUser({
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        role: 'super_admin',
+        addedBy: 'system'
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          success: false, 
+          error: result.error.message 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        data: {
+          email: result.data.email,
+          firstName: result.data.firstName,
+          lastName: result.data.lastName,
+          role: result.data.role
+        },
+        message: "Premier administrateur créé avec succès" 
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Test email configuration during onboarding (public endpoint during setup)
+  router.post("/api/setup/test-email", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Email de test requis" 
+        });
+      }
+
+      // Valider l'email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Format d'email invalide" 
+        });
+      }
+
+      // Sauvegarder la configuration email d'abord si elle n'est pas déjà sauvegardée
+      const emailConfigResult = await storageInstance.getEmailConfig();
+      if (!emailConfigResult.success || !emailConfigResult.data) {
+        // Pas de config sauvegardée, utiliser les valeurs par défaut
+        // Le test utilisera les variables d'environnement
+      } else {
+        // Recharger la configuration email depuis la DB
+        await emailService.reloadConfig();
+      }
+
+      // Créer un template de test simple
+      const { createTestEmailTemplate } = await import('./email-templates');
+      const { subject, html } = createTestEmailTemplate();
+
+      // Envoyer l'email de test
+      const testResult = await emailService.sendEmail({
+        to: [email],
+        subject: `[Test] ${subject}`,
+        html
+      });
+
+      if (!testResult.success) {
+        return res.status(500).json({ 
+          success: false, 
+          error: testResult.error?.message || "Erreur lors de l'envoi de l'email de test" 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Email de test envoyé avec succès à ${email}` 
+      });
+    } catch (error: any) {
+      res.status(500).json({ 
+        success: false, 
+        error: error.message || "Erreur lors du test email" 
+      });
+    }
+  });
+
+  // Generate static config files (index.html, manifest.json) - public during setup
+  router.post("/api/setup/generate-config", async (req, res) => {
+    try {
+      // Charger la configuration branding depuis la DB
+      const brandingResult = await storageInstance.getBrandingConfig();
+      let brandingConfig: any = {};
+      
+      if (brandingResult.success && brandingResult.data) {
+        try {
+          brandingConfig = JSON.parse(brandingResult.data.config);
+        } catch {
+          // Si le parsing échoue, utiliser les valeurs par défaut
+          const { brandingCore } = await import("../client/src/config/branding-core");
+          brandingConfig = brandingCore;
+        }
+      } else {
+        // Pas de config, utiliser les valeurs par défaut
+        const { brandingCore } = await import("../client/src/config/branding-core");
+        brandingConfig = brandingCore;
+      }
+
+      // Importer et exécuter directement le script de génération
+      // Utiliser tsx pour exécuter le script TypeScript
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execAsync = promisify(exec);
+      
+      // Exécuter le script de génération avec tsx
+      const projectRoot = join(__dirname, '..');
+      const scriptPath = join(projectRoot, 'scripts/generate-static-config.ts');
+      const { stdout, stderr } = await execAsync(`npx tsx "${scriptPath}"`, {
+        cwd: projectRoot,
+        env: { ...process.env }
+      });
+      
+      if (stderr && !stderr.includes('warning') && !stderr.includes('Generated')) {
+        logger.warn('Warnings lors de la génération', { stderr });
+      }
+      
+      res.json({
+        success: true,
+        message: "Fichiers statiques générés avec succès",
+        output: stdout || stderr
+      });
+    } catch (error: any) {
+      logger.error('Erreur lors de la génération des fichiers statiques', { error });
+      // Ne pas échouer complètement - les fichiers peuvent être générés manuellement
+      res.status(500).json({ 
+        success: false, 
+        error: error.message || "Erreur lors de la génération des fichiers statiques. Vous pouvez les générer manuellement avec 'npm run generate:config'." 
+      });
+    }
+  });
+
+  // Upload logo for onboarding (public endpoint during setup)
+  router.post("/api/setup/upload-logo", singleLogoUpload, async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: "Aucun fichier fourni" });
+      }
+
+      // Le fichier est déjà sauvegardé dans attached_assets par multer
+      // Le nom du fichier est dans req.file.filename
+      // L'URL sera accessible via @assets/ dans le frontend
+      const logoUrl = `@assets/${req.file.filename}`;
+      
+      // Mettre à jour le branding avec le nouveau logo
+      const brandingResult = await storageInstance.getBrandingConfig();
+      let currentConfig: any = {};
+      
+      if (brandingResult.success && brandingResult.data) {
+        try {
+          currentConfig = JSON.parse(brandingResult.data.config);
+        } catch {
+          // Si le parsing échoue, utiliser les valeurs par défaut
+          const { brandingCore } = await import("../client/src/config/branding-core");
+          currentConfig = brandingCore;
+        }
+      } else {
+        // Pas de config, utiliser les valeurs par défaut
+        const { brandingCore } = await import("../client/src/config/branding-core");
+        currentConfig = brandingCore;
+      }
+
+      // Supprimer l'ancien logo s'il existe
+      const oldLogoFilename = currentConfig.logoFilename;
+      if (oldLogoFilename && oldLogoFilename !== req.file.filename) {
+        try {
+          await deleteLogo(oldLogoFilename);
+          logger.info('Ancien logo supprimé', { filename: oldLogoFilename });
+        } catch (error) {
+          // Ne pas bloquer si la suppression échoue
+          logger.warn('Impossible de supprimer l\'ancien logo', { filename: oldLogoFilename, error });
+        }
+      }
+
+      // Mettre à jour avec le nouveau logo
+      // Note: Le logo sera référencé dans branding.ts, mais on peut stocker le nom du fichier
+      const updatedConfig = {
+        ...currentConfig,
+        logoFilename: req.file.filename, // Stocker le nom du fichier pour référence
+      };
+
+      const user = req.user as { email: string } | undefined;
+      const result = await storageInstance.updateBrandingConfig(
+        JSON.stringify(updatedConfig),
+        user?.email || 'system'
+      );
+
+      if (!result.success) {
+        // Supprimer le fichier uploadé si la mise à jour échoue
+        await deleteLogo(req.file.filename).catch(() => {});
+        return res.status(400).json({ success: false, error: result.error.message });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          logoUrl,
+          filename: req.file.filename,
+          message: "Logo uploadé avec succès"
+        }
+      });
+    } catch (error: any) {
+      // Supprimer le fichier uploadé en cas d'erreur
+      if (req.file) {
+        await deleteLogo(req.file.filename).catch(() => {});
+      }
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // ==================== CONFIGURATION DE BRANDING ====================
   
   // Get branding configuration (public endpoint)
@@ -1859,6 +2197,21 @@ export function createRouter(storageInstance: IStorage): any {
         return res.status(400).json({ message: result.error.message });
       }
       
+      // Enregistrer une métrique de tracking pour la proposition
+      if (result.data) {
+        await storageInstance.createTrackingMetric({
+          entityType: 'patron',
+          entityId: result.data.id,
+          entityEmail: result.data.email,
+          metricType: 'status_change',
+          metricValue: 0,
+          description: `Mécène proposé par ${req.user?.email || validatedData.createdBy || 'anonymous'}`,
+          recordedBy: req.user?.email || validatedData.createdBy || undefined,
+        }).catch(err => {
+          logger.error('Failed to create tracking metric for patron proposal', { error: err });
+        });
+      }
+      
       res.status(201).json(result.data);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -1954,10 +2307,48 @@ export function createRouter(storageInstance: IStorage): any {
     try {
       const validatedData = updatePatronSchema.parse(req.body);
       
+      // Récupérer le mécène actuel pour détecter les changements de statut
+      const currentPatronResult = await storageInstance.getPatronById(req.params.id);
+      const currentPatron = currentPatronResult.success ? currentPatronResult.data : null;
+      
       const result = await storageInstance.updatePatron(req.params.id, validatedData);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
+      }
+      
+      // Enregistrer une métrique si le statut a changé
+      if (currentPatron && result.data && 'status' in validatedData && validatedData.status && validatedData.status !== currentPatron.status) {
+        const oldStatus = currentPatron.status;
+        const newStatus = validatedData.status;
+        
+        // Métrique de changement de statut
+        await storageInstance.createTrackingMetric({
+          entityType: 'patron',
+          entityId: result.data.id,
+          entityEmail: result.data.email,
+          metricType: 'status_change',
+          metricValue: newStatus === 'active' ? 1 : 0,
+          description: `Statut changé de "${oldStatus}" à "${newStatus}"`,
+          recordedBy: req.user!.email,
+        }).catch(err => {
+          logger.error('Failed to create tracking metric for patron status change', { error: err });
+        });
+        
+        // Métrique de conversion si passage de proposed à active
+        if (oldStatus === 'proposed' && newStatus === 'active') {
+          await storageInstance.createTrackingMetric({
+            entityType: 'patron',
+            entityId: result.data.id,
+            entityEmail: result.data.email,
+            metricType: 'conversion',
+            metricValue: 1,
+            description: `Conversion de mécène proposé en mécène actif`,
+            recordedBy: req.user!.email,
+          }).catch(err => {
+            logger.error('Failed to create tracking metric for patron conversion', { error: err });
+          });
+        }
       }
       
       res.json(result.data);
@@ -2536,10 +2927,48 @@ export function createRouter(storageInstance: IStorage): any {
     try {
       const validatedData = updateMemberSchema.parse(req.body);
       
+      // Récupérer le membre actuel pour détecter les changements de statut
+      const currentMemberResult = await storageInstance.getMemberByEmail(req.params.email);
+      const currentMember = currentMemberResult.success ? currentMemberResult.data : null;
+      
       const result = await storageInstance.updateMember(req.params.email, validatedData);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
+      }
+      
+      // Enregistrer une métrique si le statut a changé
+      if (currentMember && result.data && 'status' in validatedData && validatedData.status && validatedData.status !== currentMember.status) {
+        const oldStatus = currentMember.status;
+        const newStatus = validatedData.status;
+        
+        // Métrique de changement de statut
+        await storageInstance.createTrackingMetric({
+          entityType: 'member',
+          entityId: result.data.id,
+          entityEmail: result.data.email,
+          metricType: 'status_change',
+          metricValue: newStatus === 'active' ? 1 : 0,
+          description: `Statut changé de "${oldStatus}" à "${newStatus}"`,
+          recordedBy: req.user!.email,
+        }).catch(err => {
+          logger.error('Failed to create tracking metric for member status change', { error: err });
+        });
+        
+        // Métrique de conversion si passage de proposed à active
+        if (oldStatus === 'proposed' && newStatus === 'active') {
+          await storageInstance.createTrackingMetric({
+            entityType: 'member',
+            entityId: result.data.id,
+            entityEmail: result.data.email,
+            metricType: 'conversion',
+            metricValue: 1,
+            description: `Conversion de membre proposé en membre actif`,
+            recordedBy: req.user!.email,
+          }).catch(err => {
+            logger.error('Failed to create tracking metric for member conversion', { error: err });
+          });
+        }
       }
       
       res.json({ success: true, data: result.data });
@@ -2567,6 +2996,279 @@ export function createRouter(storageInstance: IStorage): any {
     }
   });
 
+  // ==================== GESTION DES TAGS MEMBRES ====================
+  
+  // GET /api/admin/member-tags - Récupérer tous les tags
+  router.get("/api/admin/member-tags", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getAllTags();
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // POST /api/admin/member-tags - Créer un tag
+  router.post("/api/admin/member-tags", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const validatedData = insertMemberTagSchema.parse(req.body);
+      const result = await storageInstance.createTag(validatedData);
+      if (!result.success) {
+        const statusCode = result.error.name === 'DuplicateError' ? 409 : 500;
+        return res.status(statusCode).json({ message: result.error.message });
+      }
+      res.status(201).json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // PATCH /api/admin/member-tags/:id - Mettre à jour un tag
+  router.patch("/api/admin/member-tags/:id", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const validatedData = updateMemberTagSchema.parse(req.body);
+      const result = await storageInstance.updateTag(req.params.id, validatedData);
+      if (!result.success) {
+        const statusCode = result.error.name === 'NotFoundError' ? 404 : 500;
+        return res.status(statusCode).json({ message: result.error.message });
+      }
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // DELETE /api/admin/member-tags/:id - Supprimer un tag
+  router.delete("/api/admin/member-tags/:id", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.deleteTag(req.params.id);
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      res.sendStatus(204);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /api/admin/members/:email/tags - Récupérer les tags d'un membre
+  router.get("/api/admin/members/:email/tags", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getTagsByMember(req.params.email);
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // POST /api/admin/members/:email/tags - Assigner un tag à un membre
+  router.post("/api/admin/members/:email/tags", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const validatedData = assignMemberTagSchema.parse({
+        ...req.body,
+        memberEmail: req.params.email,
+        assignedBy: req.user?.email,
+      });
+      const result = await storageInstance.assignTagToMember(validatedData);
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      res.status(201).json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // DELETE /api/admin/members/:email/tags/:tagId - Retirer un tag d'un membre
+  router.delete("/api/admin/members/:email/tags/:tagId", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.removeTagFromMember(req.params.email, req.params.tagId);
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      res.sendStatus(204);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== GESTION DES TÂCHES MEMBRES ====================
+  
+  // GET /api/admin/members/:email/tasks - Récupérer les tâches d'un membre
+  router.get("/api/admin/members/:email/tasks", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getTasksByMember(req.params.email);
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // POST /api/admin/members/:email/tasks - Créer une tâche pour un membre
+  router.post("/api/admin/members/:email/tasks", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const validatedData = insertMemberTaskSchema.parse({
+        ...req.body,
+        memberEmail: req.params.email,
+        createdBy: req.user?.email || 'system',
+      });
+      const result = await storageInstance.createTask(validatedData);
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      res.status(201).json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // PATCH /api/admin/member-tasks/:id - Mettre à jour une tâche
+  router.patch("/api/admin/member-tasks/:id", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const validatedData = updateMemberTaskSchema.parse(req.body);
+      // Si la tâche est marquée comme complétée, ajouter completedBy
+      const updateData: any = { ...validatedData };
+      if (validatedData.status === 'completed' && !validatedData.completedBy) {
+        updateData.completedBy = req.user?.email;
+      }
+      // Convertir null en undefined pour dueDate
+      if (updateData.dueDate === null) {
+        updateData.dueDate = undefined;
+      }
+      const result = await storageInstance.updateTask(req.params.id, updateData);
+      if (!result.success) {
+        const statusCode = result.error.name === 'NotFoundError' ? 404 : 500;
+        return res.status(statusCode).json({ message: result.error.message });
+      }
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // DELETE /api/admin/member-tasks/:id - Supprimer une tâche
+  router.delete("/api/admin/member-tasks/:id", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.deleteTask(req.params.id);
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      res.sendStatus(204);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== GESTION DES RELATIONS MEMBRES ====================
+  
+  // GET /api/admin/members/:email/relations - Récupérer les relations d'un membre
+  router.get("/api/admin/members/:email/relations", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getRelationsByMember(req.params.email);
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // POST /api/admin/members/:email/relations - Créer une relation pour un membre
+  router.post("/api/admin/members/:email/relations", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const validatedData = insertMemberRelationSchema.parse({
+        ...req.body,
+        memberEmail: req.params.email,
+        createdBy: req.user?.email,
+      });
+      const result = await storageInstance.createRelation(validatedData);
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      res.status(201).json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // DELETE /api/admin/member-relations/:id - Supprimer une relation
+  router.delete("/api/admin/member-relations/:id", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.deleteRelation(req.params.id);
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      res.sendStatus(204);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== CHATBOT BASE DE DONNÉES ====================
+  
+  // POST /api/admin/chatbot/query - Interroger la base de données en langage naturel
+  router.post("/api/admin/chatbot/query", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const { question, context } = req.body;
+      
+      if (!question || typeof question !== 'string') {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'La question est requise' 
+        });
+      }
+
+      const chatbotService = getChatbotService();
+      const response = await chatbotService.query({ question, context });
+      
+      if (response.error) {
+        return res.status(500).json({ 
+          success: false, 
+          error: response.error,
+          answer: response.answer 
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        answer: response.answer,
+        sql: response.sql,
+        data: response.data 
+      });
+    } catch (error) {
+      logger.error('Chatbot query error', { error, body: req.body });
+      next(error);
+    }
+  });
+
   // Proposer un membre potentiel (accessible à tous)
   router.post("/api/members/propose", async (req, res, next) => {
     try {
@@ -2588,6 +3290,21 @@ export function createRouter(storageInstance: IStorage): any {
           return res.status(409).json({ message: result.error.message });
         }
         return res.status(400).json({ message: result.error.message });
+      }
+      
+      // Enregistrer une métrique de tracking pour la proposition
+      if (result.data) {
+        await storageInstance.createTrackingMetric({
+          entityType: 'member',
+          entityId: result.data.id,
+          entityEmail: result.data.email,
+          metricType: 'status_change',
+          metricValue: 0,
+          description: `Membre proposé par ${validatedData.proposedBy}`,
+          recordedBy: validatedData.proposedBy,
+        }).catch(err => {
+          logger.error('Failed to create tracking metric for member proposal', { error: err });
+        });
       }
       
       // Envoyer la notification au responsable recrutement
@@ -2955,6 +3672,194 @@ export function createRouter(storageInstance: IStorage): any {
         next(error);
       }
     });
+  });
+
+  // ==================== TRACKING TRANSVERSAL ====================
+
+  // GET /api/tracking/dashboard - Dashboard de suivi transversal
+  router.get("/api/tracking/dashboard", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getTrackingDashboard();
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /api/tracking/metrics - Récupérer les métriques de tracking
+  router.get("/api/tracking/metrics", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const options: any = {};
+      
+      if (req.query.entityType) options.entityType = req.query.entityType;
+      if (req.query.entityId) options.entityId = req.query.entityId;
+      if (req.query.entityEmail) options.entityEmail = req.query.entityEmail;
+      if (req.query.metricType) options.metricType = req.query.metricType;
+      if (req.query.startDate) options.startDate = new Date(req.query.startDate as string);
+      if (req.query.endDate) options.endDate = new Date(req.query.endDate as string);
+      if (req.query.limit) options.limit = parseInt(req.query.limit as string);
+      
+      const result = await storageInstance.getTrackingMetrics(options);
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // POST /api/tracking/metrics - Créer une métrique de tracking
+  router.post("/api/tracking/metrics", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = insertTrackingMetricSchema.parse({
+        ...req.body,
+        recordedBy: req.user!.email,
+      });
+      
+      const result = await storageInstance.createTrackingMetric(validatedData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // GET /api/tracking/alerts - Récupérer les alertes de tracking
+  router.get("/api/tracking/alerts", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const options: any = {};
+      
+      if (req.query.entityType) options.entityType = req.query.entityType;
+      if (req.query.entityId) options.entityId = req.query.entityId;
+      if (req.query.isRead !== undefined) options.isRead = req.query.isRead === 'true';
+      if (req.query.isResolved !== undefined) options.isResolved = req.query.isResolved === 'true';
+      if (req.query.severity) options.severity = req.query.severity;
+      if (req.query.limit) options.limit = parseInt(req.query.limit as string);
+      
+      const result = await storageInstance.getTrackingAlerts(options);
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // POST /api/tracking/alerts - Créer une alerte de tracking
+  router.post("/api/tracking/alerts", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = insertTrackingAlertSchema.parse({
+        ...req.body,
+        createdBy: req.user!.email,
+      });
+      
+      // Convertir expiresAt de string à Date si présent
+      const alertData = {
+        ...validatedData,
+        expiresAt: validatedData.expiresAt ? new Date(validatedData.expiresAt) : undefined,
+      };
+      
+      const result = await storageInstance.createTrackingAlert(alertData);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // PUT /api/tracking/alerts/:id - Mettre à jour une alerte
+  router.put("/api/tracking/alerts/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validatedData = updateTrackingAlertSchema.parse({
+        ...req.body,
+        resolvedBy: req.body.resolved ? req.user!.email : undefined,
+      });
+      
+      const result = await storageInstance.updateTrackingAlert(req.params.id, validatedData);
+      
+      if (!result.success) {
+        return res.status(404).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // POST /api/tracking/alerts/generate - Générer automatiquement les alertes
+  router.post("/api/tracking/alerts/generate", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.generateTrackingAlerts();
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      // Si des alertes critiques ont été créées, envoyer une notification email
+      if (result.data.created > 0) {
+        try {
+          // Récupérer les alertes critiques créées récemment
+          const criticalAlertsResult = await storageInstance.getTrackingAlerts({
+            severity: 'critical',
+            isResolved: false,
+            limit: 10
+          });
+          
+          if (criticalAlertsResult.success && criticalAlertsResult.data.length > 0) {
+            // Notifier les admins des alertes critiques (si le service email est configuré)
+            // Cette notification est optionnelle et ne bloque pas la réponse
+            logger.info('Alertes critiques détectées lors de la génération', {
+              count: criticalAlertsResult.data.length,
+              metadata: {
+                service: 'TrackingAlerts',
+                operation: 'generate',
+                criticalAlerts: criticalAlertsResult.data.length
+              }
+            });
+          }
+        } catch (emailError) {
+          // Ne pas faire échouer la requête si l'email échoue
+          logger.error('Erreur lors de la notification des alertes critiques', { error: emailError });
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        data: result.data,
+        message: `${result.data.created} alertes créées, ${result.data.errors} erreurs`
+      });
+    } catch (error) {
+      next(error);
+    }
   });
 
   return router;

@@ -181,51 +181,118 @@ test.describe('CRM - Patron Management', () => {
 
 test.describe('CRM - Member Management', () => {
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      window.localStorage.setItem('admin-user', JSON.stringify({
-        id: 'admin',
-        email: 'admin@test.com',
-        role: 'admin'
-      }));
+    // Mock authentication API - this is what useAuth actually checks
+    await page.route('/api/user', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'admin',
+          email: 'admin@test.com',
+          role: 'admin'
+        })
+      });
     });
     
     // Mock members API response with engagement scores
-    await page.route('/api/members*', async (route) => {
+    // Note: This route should NOT intercept sub-routes like /activities or /subscriptions
+    await page.route('/api/admin/members*', async (route) => {
       if (route.request().method() === 'GET') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            success: true,
-            data: [
-              {
-                id: 'member-1',
-                firstName: 'Marie',
-                lastName: 'Martin',
-                email: 'marie.martin@example.com',
-                company: 'Société ABC',
-                status: 'active',
-                engagementScore: 75,
-                activityCount: 12,
-                lastActivityAt: new Date().toISOString()
-              },
-              {
-                id: 'member-2',
-                firstName: 'Pierre',
-                lastName: 'Durand',
-                email: 'pierre.durand@example.com',
-                company: 'Corp XYZ',
-                status: 'active',
-                engagementScore: 45,
-                activityCount: 8,
-                lastActivityAt: new Date().toISOString()
-              }
-            ],
-            total: 2,
-            page: 1,
-            limit: 20
-          })
-        });
+        const url = route.request().url();
+        // Skip sub-routes (activities, subscriptions, etc.)
+        if (url.includes('/activities') || url.includes('/subscriptions')) {
+          await route.continue();
+          return;
+        }
+        
+        // Handle list endpoint
+        if (url.includes('?') || !url.match(/\/api\/admin\/members\/[^/]+$/)) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              success: true,
+              data: [
+                {
+                  id: 'member-1',
+                  firstName: 'Marie',
+                  lastName: 'Martin',
+                  email: 'marie.martin@example.com',
+                  company: 'Société ABC',
+                  status: 'active',
+                  engagementScore: 75,
+                  activityCount: 12,
+                  lastActivityAt: new Date().toISOString()
+                },
+                {
+                  id: 'member-2',
+                  firstName: 'Pierre',
+                  lastName: 'Durand',
+                  email: 'pierre.durand@example.com',
+                  company: 'Corp XYZ',
+                  status: 'active',
+                  engagementScore: 45,
+                  activityCount: 8,
+                  lastActivityAt: new Date().toISOString()
+                }
+              ],
+              total: 2,
+              page: 1,
+              limit: 20
+            })
+          });
+        } else {
+          // Handle individual member endpoint
+          const emailMatch = url.match(/\/api\/admin\/members\/([^/]+)$/);
+          if (emailMatch) {
+            const emailEncoded = emailMatch[1];
+            const email = decodeURIComponent(emailEncoded);
+            // Check both encoded and decoded versions
+            if (email === 'marie.martin@example.com' || emailEncoded.includes('marie.martin')) {
+              await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                  success: true,
+                  data: {
+                    id: 'member-1',
+                    firstName: 'Marie',
+                    lastName: 'Martin',
+                    email: 'marie.martin@example.com',
+                    company: 'Société ABC',
+                    status: 'active',
+                    engagementScore: 75,
+                    activityCount: 12,
+                    lastActivityAt: new Date().toISOString()
+                  }
+                })
+              });
+            } else if (email === 'pierre.durand@example.com' || emailEncoded.includes('pierre.durand')) {
+              await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                  success: true,
+                  data: {
+                    id: 'member-2',
+                    firstName: 'Pierre',
+                    lastName: 'Durand',
+                    email: 'pierre.durand@example.com',
+                    company: 'Corp XYZ',
+                    status: 'active',
+                    engagementScore: 45,
+                    activityCount: 8,
+                    lastActivityAt: new Date().toISOString()
+                  }
+                })
+              });
+            } else {
+              await route.continue();
+            }
+          } else {
+            await route.continue();
+          }
+        }
       } else {
         await route.continue();
       }
@@ -233,6 +300,10 @@ test.describe('CRM - Member Management', () => {
     
     await page.goto('/admin/members');
     await page.waitForLoadState('networkidle');
+    
+    // Wait for the page to be authenticated and loaded
+    // Check that we're not on the login page
+    await expect(page.locator('text=Membres')).toBeVisible({ timeout: 10000 });
   });
   
   test('should display members with engagement scores', async ({ page }) => {
@@ -261,39 +332,80 @@ test.describe('CRM - Member Management', () => {
   });
 
   test('should show member activity timeline when selected', async ({ page }) => {
-    // Mock member activities API
-    await page.route('/api/members/marie.martin@example.com/activities', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([
-          {
-            id: 'activity-1',
-            type: 'idea_proposed',
-            occurredAt: new Date().toISOString(),
-            description: 'A proposé une idée'
-          }
-        ])
-      });
+    // Mock member activities API - use pattern to handle URL encoding
+    await page.route('**/api/admin/members/*/activities', async (route) => {
+      const url = route.request().url();
+      if (url.includes('marie.martin@example.com') || url.includes('marie.martin%40example.com')) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: [
+              {
+                id: 'activity-1',
+                memberEmail: 'marie.martin@example.com',
+                activityType: 'idea_proposed',
+                entityType: 'idea',
+                entityId: 'idea-1',
+                entityTitle: 'Nouvelle idée innovante',
+                metadata: null,
+                scoreImpact: 10,
+                occurredAt: new Date().toISOString()
+              }
+            ]
+          })
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: []
+          })
+        });
+      }
     });
 
-    // Mock member subscriptions API
-    await page.route('/api/members/marie.martin@example.com/subscriptions', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([])
-      });
+    // Mock member subscriptions API - use pattern to handle URL encoding
+    await page.route('**/api/admin/members/*/subscriptions', async (route) => {
+      const url = route.request().url();
+      if (url.includes('marie.martin@example.com') || url.includes('marie.martin%40example.com')) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: []
+          })
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: []
+          })
+        });
+      }
     });
+    
+    // Wait for member card to be visible
+    await expect(page.locator('[data-testid="card-member-marie.martin@example.com"]')).toBeVisible({ timeout: 10000 });
     
     // Click on member to view details
     await page.click('[data-testid="card-member-marie.martin@example.com"]');
     
-    // Wait for activities to load
+    // Wait for member details to load (check for member name)
+    await expect(page.locator('[data-testid="member-name"]')).toBeVisible({ timeout: 10000 });
+    
+    // Wait a bit for queries to complete
     await page.waitForTimeout(500);
     
-    // Check for activity timeline tab
-    await expect(page.locator('text=Historique')).toBeVisible({ timeout: 3000 });
+    // Check for activity tab (not "Historique" but "Activité")
+    await expect(page.locator('[data-testid="tab-activity"]')).toBeVisible({ timeout: 5000 });
   });
 
   test('should allow filtering members by engagement score', async ({ page }) => {

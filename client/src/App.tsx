@@ -10,6 +10,7 @@ import { PWAInstallBanner } from "@/components/pwa-install-banner";
 import { PWAInstallTooltip } from "@/components/pwa-install-tooltip";
 import OfflineStatusBanner from "@/components/offline-status-banner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { OnboardingGuard } from "@/components/onboarding-guard";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import ProposePage from "@/pages/propose-page";
@@ -23,6 +24,8 @@ import AdminSponsorshipsPage from "@/pages/admin-sponsorships-page";
 import AdminMembersPage from "@/pages/admin-members-page";
 import AdminBrandingPage from "@/pages/admin-branding-page";
 import AdminEmailConfigPage from "@/pages/admin-email-config-page";
+import AdminTrackingPage from "@/pages/admin-tracking-page";
+import OnboardingPage from "@/pages/onboarding-page";
 import TestErrorPage from "@/pages/test-error-page";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
@@ -41,11 +44,13 @@ function Router() {
       <Route path="/loan" component={LoanPage} />
       <Route path="/statuts" component={StatusPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/onboarding" component={OnboardingPage} />
       <Route path="/test-error" component={TestErrorPage} />
       <ProtectedRoute path="/admin" component={AdminPage} />
       <ProtectedRoute path="/admin/patrons" component={AdminPatronsPage} />
       <ProtectedRoute path="/admin/sponsorships" component={AdminSponsorshipsPage} />
       <ProtectedRoute path="/admin/members" component={AdminMembersPage} />
+      <ProtectedRoute path="/admin/tracking" component={AdminTrackingPage} />
       <ProtectedRoute path="/admin/branding" component={AdminBrandingPage} />
       <ProtectedRoute path="/admin/email-config" component={AdminEmailConfigPage} />
       <Route component={NotFound} />
@@ -104,10 +109,12 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <BrandingProvider>
           <AuthProvider>
-            <PWAWrapper>
-              <Toaster />
-              <Router />
-            </PWAWrapper>
+            <OnboardingGuard>
+              <PWAWrapper>
+                <Toaster />
+                <Router />
+              </PWAWrapper>
+            </OnboardingGuard>
           </AuthProvider>
         </BrandingProvider>
       </QueryClientProvider>

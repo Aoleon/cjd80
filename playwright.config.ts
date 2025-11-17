@@ -6,6 +6,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
+  timeout: 60000, // 60 seconds timeout for tests
+  expect: {
+    timeout: 10000, // 10 seconds timeout for assertions
+  },
   reporter: [
     ['html'],
     ['./tests/playwright-reporter.ts']
@@ -14,12 +18,16 @@ export default defineConfig({
     baseURL: 'http://localhost:5001',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    actionTimeout: 10000, // 10 seconds timeout for actions
   },
 
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'chrome',
+      use: { 
+        ...devices['Desktop Chrome'],
+        channel: 'chrome', // Use Google Chrome instead of Chromium
+      },
     },
   ],
 

@@ -854,7 +854,7 @@ export default function EventAdminModal({
                               </Badge>
                               <div className="flex items-center gap-1" data-testid={`sponsor-visibility-${sponsorship.id}`}>
                                 {sponsorship.isPubliclyVisible ? (
-                                  <><Eye className="w-4 h-4 text-green-600" /><span className="text-xs text-gray-600">Public</span></>
+                                  <><Eye className="w-4 h-4 text-success" /><span className="text-xs text-muted-foreground">Public</span></>
                                 ) : (
                                   <><EyeOff className="w-4 h-4 text-gray-400" /><span className="text-xs text-gray-600">Privé</span></>
                                 )}
@@ -881,7 +881,7 @@ export default function EventAdminModal({
                               onClick={() => setDeleteSponsorId(sponsorship.id)}
                               data-testid={`button-delete-sponsor-${sponsorship.id}`}
                             >
-                              <Trash2 className="w-4 h-4 text-red-600" />
+                              <Trash2 className="w-4 h-4 text-error" />
                             </Button>
                           </div>
                         </div>
@@ -1255,7 +1255,7 @@ export default function EventAdminModal({
               <AlertDialogCancel data-testid="button-cancel-delete-sponsor">Annuler</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => deleteSponsorId && deleteSponsorMutation.mutate(deleteSponsorId)}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-error hover:bg-error-dark"
                 data-testid="button-confirm-delete-sponsor"
               >
                 {deleteSponsorMutation.isPending ? (

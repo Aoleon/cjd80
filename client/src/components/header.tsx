@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { branding, getShortAppName, getOrgName } from '@/config/branding';
+import { getShortAppName, getOrgName } from '@/config/branding';
+import { useBranding } from '@/contexts/BrandingContext';
 import { useAuth } from "@/hooks/use-auth";
 import { hasPermission } from "@shared/schema";
 
@@ -10,6 +11,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [location, setLocation] = useLocation();
   const { user } = useAuth();
+  const { branding } = useBranding();
 
   // Map routes to section names
   const getActiveSection = (): "ideas" | "propose" | "events" | "tools" | "loan" => {
@@ -42,7 +44,7 @@ export default function Header() {
               aria-label="Retour à la page d'accueil - Voter pour des idées"
             >
               <img 
-                src={branding.assets.logo} 
+                src={branding.assets?.logo || '/icon-192.jpg'} 
                 alt={`Logo ${getOrgName()}`} 
                 className="h-8 sm:h-10 lg:h-12 w-auto rounded-[60px]"
               />

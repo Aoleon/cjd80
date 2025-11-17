@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { brandingCore } from '@/config/branding-core';
 import type { BrandingCore } from '@/config/branding-core';
+import { branding as defaultBranding } from '@/config/branding';
 
 interface BrandingContextType {
-  branding: BrandingCore;
+  branding: BrandingCore & { assets?: typeof defaultBranding.assets };
   isLoading: boolean;
   isCustomized: boolean;
   reloadBranding: () => Promise<void>;
@@ -34,7 +35,10 @@ function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>)
 }
 
 export function BrandingProvider({ children }: { children: ReactNode }) {
-  const [branding, setBranding] = useState<BrandingCore>(brandingCore);
+  const [brandingState, setBrandingState] = useState<BrandingCore & { assets?: typeof defaultBranding.assets }>({
+    ...brandingCore,
+    assets: defaultBranding.assets
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isCustomized, setIsCustomized] = useState(false);
 
@@ -52,20 +56,41 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       if (result.success && result.data) {
         if (result.data.isDefault) {
           // Using default values
-          setBranding(brandingCore);
+          setBrandingState({
+            ...brandingCore,
+            assets: defaultBranding.assets
+          });
           setIsCustomized(false);
         } else {
           // Using customized values from DB
           const customConfig = JSON.parse(result.data.config);
           // Deep merge with defaults to preserve nested default values
-          setBranding(deepMerge(brandingCore, customConfig));
+          const mergedConfig = deepMerge(brandingCore, customConfig);
+          
+          // Si un logo a été uploadé, utiliser celui-ci
+          let logoUrl = defaultBranding.assets.logo;
+          if (customConfig.logoFilename) {
+            // Le logo uploadé est accessible via /assets/
+            logoUrl = `/assets/${customConfig.logoFilename}`;
+          }
+          
+          setBrandingState({
+            ...mergedConfig,
+            assets: {
+              ...defaultBranding.assets,
+              logo: logoUrl
+            }
+          });
           setIsCustomized(true);
         }
       }
     } catch (error) {
       console.error('Failed to load branding config:', error);
       // Fallback to default values
-      setBranding(brandingCore);
+      setBrandingState({
+        ...brandingCore,
+        assets: defaultBranding.assets
+      });
       setIsCustomized(false);
     } finally {
       setIsLoading(false);
@@ -78,7 +103,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
 
   return (
     <BrandingContext.Provider value={{ 
-      branding, 
+      branding: brandingState, 
       isLoading, 
       isCustomized,
       reloadBranding: loadBranding 

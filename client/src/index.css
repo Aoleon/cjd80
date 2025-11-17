@@ -99,6 +99,10 @@
   --info-foreground: hsl(0 0% 100%);
   --info-dark: hsl(207 77% 47%);          /* #1976d2 */
   --info-light: hsl(207 89% 94%);         /* #e3f2fd */
+  
+  /* Couleurs utilitaires pour les graphiques */
+  --white: #ffffff;                       /* Blanc */
+  --chart-grid: #cccccc;                  /* Couleur de grille pour les graphiques */
 }
 
 .dark {
@@ -173,6 +177,10 @@
   --info-foreground: hsl(0 0% 100%);
   --info-dark: hsl(207 77% 47%);
   --info-light: hsl(207 50% 25%);
+  
+  /* Couleurs utilitaires pour les graphiques */
+  --white: #ffffff;                       /* Blanc */
+  --chart-grid: #cccccc;                  /* Couleur de grille pour les graphiques */
 }
 
 @layer base {

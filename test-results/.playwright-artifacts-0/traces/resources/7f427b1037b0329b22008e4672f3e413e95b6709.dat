@@ -1,0 +1,13 @@
+import {
+  Placeholder
+} from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-3TBT66ZE.js?v=9b33f788";
+import "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-4V2PMNK5.js?v=9b33f788";
+import "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-WOOG5QLI.js?v=9b33f788";
+
+// node_modules/@tiptap/extension-placeholder/dist/index.js
+var index_default = Placeholder;
+export {
+  Placeholder,
+  index_default as default
+};
+//# sourceMappingURL=@tiptap_extension-placeholder.js.map

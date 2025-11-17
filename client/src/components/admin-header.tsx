@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Shield, Home, Lightbulb, Plus, Calendar, UserCircle, Users, LogOut, Menu, X, Palette, Mail, Award } from "lucide-react";
+import { Shield, Home, Lightbulb, Plus, Calendar, UserCircle, Users, LogOut, Menu, X, Palette, Mail, Award, Activity } from "lucide-react";
 import { getShortAppName } from '@/config/branding';
 
 export default function AdminHeader() {
@@ -24,6 +24,7 @@ export default function AdminHeader() {
     ? [
         { id: "patrons", label: "Mécènes", icon: Users, path: "/admin/patrons" },
         { id: "sponsorships", label: "Sponsorings", icon: Award, path: "/admin/sponsorships" },
+        { id: "tracking", label: "Suivi", icon: Activity, path: "/admin/tracking" },
         { id: "branding", label: "Branding", icon: Palette, path: "/admin/branding" },
         { id: "email-config", label: "Email SMTP", icon: Mail, path: "/admin/email-config" }
       ]

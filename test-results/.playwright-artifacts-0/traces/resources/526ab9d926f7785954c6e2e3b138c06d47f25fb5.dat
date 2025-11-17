@@ -1,0 +1,54 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/layout.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=8973d617"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/thibault/Développements /CJD80/cjd80/client/src/components/layout.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+import Header from "/src/components/header.tsx";
+export default function Layout({ children }) {
+  return /* @__PURE__ */ jsxDEV("div", { className: "font-lato bg-gray-50 min-h-screen", children: [
+    /* @__PURE__ */ jsxDEV(Header, {}, void 0, false, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/layout.tsx",
+      lineNumber: 29,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("main", { children }, void 0, false, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/layout.tsx",
+      lineNumber: 30,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/layout.tsx",
+    lineNumber: 28,
+    columnNumber: 5
+  }, this);
+}
+_c = Layout;
+var _c;
+$RefreshReg$(_c, "Layout");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/thibault/Développements /CJD80/cjd80/client/src/components/layout.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/thibault/Développements /CJD80/cjd80/client/src/components/layout.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBU007Ozs7Ozs7Ozs7Ozs7Ozs7QUFUTixPQUFPQSxZQUFZO0FBTW5CLHdCQUF3QkMsT0FBTyxFQUFFQyxTQUFzQixHQUFHO0FBQ3hELFNBQ0UsdUJBQUMsU0FBSSxXQUFVLHFDQUNiO0FBQUEsMkJBQUMsWUFBRDtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBQU87QUFBQSxJQUNQLHVCQUFDLFVBQU1BLFlBQVA7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQUFnQjtBQUFBLE9BRmxCO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FHQTtBQUVKO0FBQUNDLEtBUHVCRjtBQUFNLElBQUFFO0FBQUFDLGFBQUFELElBQUEiLCJuYW1lcyI6WyJIZWFkZXIiLCJMYXlvdXQiLCJjaGlsZHJlbiIsIl9jIiwiJFJlZnJlc2hSZWckIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbImxheW91dC50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IEhlYWRlciBmcm9tIFwiQC9jb21wb25lbnRzL2hlYWRlclwiO1xuXG5pbnRlcmZhY2UgTGF5b3V0UHJvcHMge1xuICBjaGlsZHJlbjogUmVhY3QuUmVhY3ROb2RlO1xufVxuXG5leHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBMYXlvdXQoeyBjaGlsZHJlbiB9OiBMYXlvdXRQcm9wcykge1xuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPVwiZm9udC1sYXRvIGJnLWdyYXktNTAgbWluLWgtc2NyZWVuXCI+XG4gICAgICA8SGVhZGVyIC8+XG4gICAgICA8bWFpbj57Y2hpbGRyZW59PC9tYWluPlxuICAgIDwvZGl2PlxuICApO1xufVxuIl0sImZpbGUiOiIvVXNlcnMvdGhpYmF1bHQvRGXMgXZlbG9wcGVtZW50cyAvQ0pEODAvY2pkODAvY2xpZW50L3NyYy9jb21wb25lbnRzL2xheW91dC50c3gifQ==

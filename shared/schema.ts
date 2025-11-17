@@ -372,6 +372,68 @@ export const memberSubscriptions = pgTable("member_subscriptions", {
   startDateIdx: index("member_subscriptions_start_date_idx").on(table.startDate.desc()),
 }));
 
+// Member tags table - Tags personnalisables pour les membres
+export const memberTags = pgTable("member_tags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(), // Nom du tag (ex: "VIP", "Ambassadeur")
+  color: text("color").default("#3b82f6").notNull(), // Couleur du tag en hex
+  description: text("description"), // Description optionnelle
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  nameIdx: index("member_tags_name_idx").on(table.name),
+}));
+
+// Member tag assignments table - Association membres <-> tags
+export const memberTagAssignments = pgTable("member_tag_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  memberEmail: text("member_email").references(() => members.email, { onDelete: "cascade" }).notNull(),
+  tagId: varchar("tag_id").references(() => memberTags.id, { onDelete: "cascade" }).notNull(),
+  assignedBy: text("assigned_by"), // Email de l'admin qui a assigné le tag
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+}, (table) => ({
+  memberTagIdx: index("member_tag_assignments_member_tag_idx").on(table.memberEmail, table.tagId),
+  memberEmailIdx: index("member_tag_assignments_member_email_idx").on(table.memberEmail),
+  tagIdIdx: index("member_tag_assignments_tag_id_idx").on(table.tagId),
+}));
+
+// Member tasks table - Tâches de suivi pour les membres
+export const memberTasks = pgTable("member_tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  memberEmail: text("member_email").references(() => members.email, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(), // Titre de la tâche
+  description: text("description"), // Description détaillée
+  taskType: text("task_type").notNull(), // 'call', 'email', 'meeting', 'custom'
+  status: text("status").default("todo").notNull(), // 'todo', 'in_progress', 'completed', 'cancelled'
+  dueDate: timestamp("due_date"), // Date d'échéance
+  completedAt: timestamp("completed_at"), // Date de complétion
+  completedBy: text("completed_by"), // Email de l'admin qui a complété
+  assignedTo: text("assigned_to"), // Email de l'admin assigné à la tâche
+  createdBy: text("created_by").notNull(), // Email de l'admin créateur
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  memberEmailIdx: index("member_tasks_member_email_idx").on(table.memberEmail),
+  statusIdx: index("member_tasks_status_idx").on(table.status),
+  dueDateIdx: index("member_tasks_due_date_idx").on(table.dueDate),
+  createdByIdx: index("member_tasks_created_by_idx").on(table.createdBy),
+}));
+
+// Member relations table - Relations entre membres (parrainage, équipe)
+export const memberRelations = pgTable("member_relations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  memberEmail: text("member_email").references(() => members.email, { onDelete: "cascade" }).notNull(),
+  relatedMemberEmail: text("related_member_email").references(() => members.email, { onDelete: "cascade" }).notNull(),
+  relationType: text("relation_type").notNull(), // 'sponsor' (parrainage), 'team' (équipe), 'custom'
+  description: text("description"), // Description de la relation
+  createdBy: text("created_by"), // Email de l'admin créateur
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  memberRelationIdx: index("member_relations_member_relation_idx").on(table.memberEmail, table.relatedMemberEmail),
+  memberEmailIdx: index("member_relations_member_email_idx").on(table.memberEmail),
+  relatedMemberEmailIdx: index("member_relations_related_member_email_idx").on(table.relatedMemberEmail),
+  relationTypeIdx: index("member_relations_relation_type_idx").on(table.relationType),
+}));
+
 // Event sponsorship levels definition
 export const SPONSORSHIP_LEVEL = {
   PLATINUM: "platinum",
@@ -424,6 +486,54 @@ export const eventSponsorships = pgTable("event_sponsorships", {
   patronIdIdx: index("event_sponsorships_patron_id_idx").on(table.patronId),
   statusIdx: index("event_sponsorships_status_idx").on(table.status),
   levelIdx: index("event_sponsorships_level_idx").on(table.level),
+}));
+
+// Tracking transversal - Suivi des membres potentiels et mécènes
+export const trackingMetrics = pgTable("tracking_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  entityType: text("entity_type").notNull(), // 'member' | 'patron'
+  entityId: varchar("entity_id").notNull(), // ID du membre ou mécène
+  entityEmail: text("entity_email").notNull(), // Email pour faciliter les recherches
+  metricType: text("metric_type").notNull(), // 'status_change', 'engagement', 'contact', 'conversion', 'activity'
+  metricValue: integer("metric_value"), // Valeur numérique de la métrique
+  metricData: text("metric_data"), // Données JSON supplémentaires
+  description: text("description"), // Description de la métrique
+  recordedBy: text("recorded_by"), // Email de l'admin qui a enregistré
+  recordedAt: timestamp("recorded_at").defaultNow().notNull(),
+}, (table) => ({
+  entityTypeIdx: index("tracking_metrics_entity_type_idx").on(table.entityType),
+  entityIdIdx: index("tracking_metrics_entity_id_idx").on(table.entityId),
+  entityEmailIdx: index("tracking_metrics_entity_email_idx").on(table.entityEmail),
+  metricTypeIdx: index("tracking_metrics_metric_type_idx").on(table.metricType),
+  recordedAtIdx: index("tracking_metrics_recorded_at_idx").on(table.recordedAt.desc()),
+}));
+
+// Tracking alerts - Alertes pour le suivi
+export const trackingAlerts = pgTable("tracking_alerts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  entityType: text("entity_type").notNull(), // 'member' | 'patron'
+  entityId: varchar("entity_id").notNull(),
+  entityEmail: text("entity_email").notNull(),
+  alertType: text("alert_type").notNull(), // 'stale', 'high_potential', 'needs_followup', 'conversion_opportunity'
+  severity: text("severity").notNull().default("medium"), // 'low', 'medium', 'high', 'critical'
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  isRead: boolean("is_read").default(false).notNull(),
+  isResolved: boolean("is_resolved").default(false).notNull(),
+  resolvedBy: text("resolved_by"), // Email de l'admin qui a résolu
+  resolvedAt: timestamp("resolved_at"),
+  createdBy: text("created_by"), // Email de l'admin qui a créé (ou système)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"), // Date d'expiration de l'alerte
+}, (table) => ({
+  entityTypeIdx: index("tracking_alerts_entity_type_idx").on(table.entityType),
+  entityIdIdx: index("tracking_alerts_entity_id_idx").on(table.entityId),
+  entityEmailIdx: index("tracking_alerts_entity_email_idx").on(table.entityEmail),
+  alertTypeIdx: index("tracking_alerts_alert_type_idx").on(table.alertType),
+  severityIdx: index("tracking_alerts_severity_idx").on(table.severity),
+  isReadIdx: index("tracking_alerts_is_read_idx").on(table.isRead),
+  isResolvedIdx: index("tracking_alerts_is_resolved_idx").on(table.isResolved),
+  createdAtIdx: index("tracking_alerts_created_at_idx").on(table.createdAt.desc()),
 }));
 
 // Branding configuration table - For customizable branding settings
@@ -1265,6 +1375,87 @@ export const proposeMemberSchema = z.object({
   proposedBy: z.string().email("Email du proposeur invalide").transform(sanitizeText),
 });
 
+// Schemas for member tags
+export const insertMemberTagSchema = z.object({
+  name: z.string().min(1, "Le nom du tag est requis").max(50).transform(sanitizeText),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "La couleur doit être au format hex (#RRGGBB)").default("#3b82f6"),
+  description: z.string().max(500).optional().transform(val => val ? sanitizeText(val) : undefined),
+});
+
+export const updateMemberTagSchema = z.object({
+  name: z.string().min(1).max(50).transform(sanitizeText).optional(),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  description: z.string().max(500).optional().transform(val => val ? sanitizeText(val) : undefined),
+});
+
+export const assignMemberTagSchema = z.object({
+  memberEmail: z.string().email().transform(sanitizeText),
+  tagId: z.string().uuid(),
+  assignedBy: z.string().email().optional().transform(val => val ? sanitizeText(val) : undefined),
+});
+
+// Schemas for member tasks
+export const insertMemberTaskSchema = z.object({
+  memberEmail: z.string().email().transform(sanitizeText),
+  title: z.string().min(1, "Le titre est requis").max(200).transform(sanitizeText),
+  description: z.string().max(2000).optional().transform(val => val ? sanitizeText(val) : undefined),
+  taskType: z.enum(['call', 'email', 'meeting', 'custom']),
+  status: z.enum(['todo', 'in_progress', 'completed', 'cancelled']).default('todo'),
+  dueDate: z.string().datetime().optional(),
+  assignedTo: z.string().email().optional().transform(val => val ? sanitizeText(val) : undefined),
+  createdBy: z.string().email().transform(sanitizeText),
+});
+
+export const updateMemberTaskSchema = z.object({
+  title: z.string().min(1).max(200).transform(sanitizeText).optional(),
+  description: z.string().max(2000).optional().transform(val => val ? sanitizeText(val) : undefined),
+  taskType: z.enum(['call', 'email', 'meeting', 'custom']).optional(),
+  status: z.enum(['todo', 'in_progress', 'completed', 'cancelled']).optional(),
+  dueDate: z.string().datetime().optional().nullable(),
+  assignedTo: z.string().email().optional().transform(val => val ? sanitizeText(val) : undefined),
+  completedBy: z.string().email().optional().transform(val => val ? sanitizeText(val) : undefined),
+});
+
+// Schemas for member relations
+export const insertMemberRelationSchema = z.object({
+  memberEmail: z.string().email().transform(sanitizeText),
+  relatedMemberEmail: z.string().email().transform(sanitizeText),
+  relationType: z.enum(['sponsor', 'team', 'custom']),
+  description: z.string().max(500).optional().transform(val => val ? sanitizeText(val) : undefined),
+  createdBy: z.string().email().optional().transform(val => val ? sanitizeText(val) : undefined),
+});
+
+// Schemas for tracking metrics
+export const insertTrackingMetricSchema = z.object({
+  entityType: z.enum(['member', 'patron']),
+  entityId: z.string().min(1),
+  entityEmail: z.string().email().transform(sanitizeText),
+  metricType: z.enum(['status_change', 'engagement', 'contact', 'conversion', 'activity']),
+  metricValue: z.number().optional(),
+  metricData: z.string().optional().transform(val => val ? sanitizeText(val) : undefined),
+  description: z.string().max(1000).optional().transform(val => val ? sanitizeText(val) : undefined),
+  recordedBy: z.string().email().optional().transform(val => val ? sanitizeText(val) : undefined),
+});
+
+// Schemas for tracking alerts
+export const insertTrackingAlertSchema = z.object({
+  entityType: z.enum(['member', 'patron']),
+  entityId: z.string().min(1),
+  entityEmail: z.string().email().transform(sanitizeText),
+  alertType: z.enum(['stale', 'high_potential', 'needs_followup', 'conversion_opportunity']),
+  severity: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
+  title: z.string().min(1).max(200).transform(sanitizeText),
+  message: z.string().min(1).max(2000).transform(sanitizeText),
+  createdBy: z.string().email().optional().transform(val => val ? sanitizeText(val) : undefined),
+  expiresAt: z.string().datetime().optional(),
+});
+
+export const updateTrackingAlertSchema = z.object({
+  isRead: z.boolean().optional(),
+  isResolved: z.boolean().optional(),
+  resolvedBy: z.string().email().optional().transform(val => val ? sanitizeText(val) : undefined),
+});
+
 // Types
 export type Admin = typeof admins.$inferSelect;
 export type InsertAdmin = z.infer<typeof insertAdminSchema>;
@@ -1298,6 +1489,12 @@ export type PatronDonation = typeof patronDonations.$inferSelect;
 export type InsertPatronDonation = z.infer<typeof insertPatronDonationSchema>;
 
 export type PatronUpdate = typeof patronUpdates.$inferSelect;
+
+export type TrackingMetric = typeof trackingMetrics.$inferSelect;
+export type InsertTrackingMetric = typeof trackingMetrics.$inferInsert;
+
+export type TrackingAlert = typeof trackingAlerts.$inferSelect;
+export type InsertTrackingAlert = typeof trackingAlerts.$inferInsert;
 export type InsertPatronUpdate = z.infer<typeof insertPatronUpdateSchema>;
 
 export type IdeaPatronProposal = typeof ideaPatronProposals.$inferSelect;
@@ -1311,6 +1508,15 @@ export type InsertMember = z.infer<typeof insertMemberSchema>;
 
 export type MemberActivity = typeof memberActivities.$inferSelect;
 export type InsertMemberActivity = z.infer<typeof insertMemberActivitySchema>;
+
+export type MemberTag = typeof memberTags.$inferSelect;
+export type InsertMemberTag = z.infer<typeof insertMemberTagSchema>;
+export type MemberTagAssignment = typeof memberTagAssignments.$inferSelect;
+export type InsertMemberTagAssignment = typeof memberTagAssignments.$inferInsert;
+export type MemberTask = typeof memberTasks.$inferSelect;
+export type InsertMemberTask = z.infer<typeof insertMemberTaskSchema>;
+export type MemberRelation = typeof memberRelations.$inferSelect;
+export type InsertMemberRelation = z.infer<typeof insertMemberRelationSchema>;
 
 // For compatibility with existing auth system
 export const users = admins;

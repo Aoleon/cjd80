@@ -14,9 +14,15 @@ import {
   members,
   memberActivities,
   memberSubscriptions,
+  memberTags,
+  memberTagAssignments,
+  memberTasks,
+  memberRelations,
   brandingConfig,
   emailConfig,
   loanItems,
+  trackingMetrics,
+  trackingAlerts,
   type Admin, 
   type InsertAdmin,
   type User,
@@ -49,11 +55,23 @@ import {
   type InsertMemberActivity,
   type MemberSubscription,
   type InsertMemberSubscription,
+  type MemberTag,
+  type InsertMemberTag,
+  type MemberTagAssignment,
+  type InsertMemberTagAssignment,
+  type MemberTask,
+  type InsertMemberTask,
+  type MemberRelation,
+  type InsertMemberRelation,
   type BrandingConfig,
   type EmailConfig,
   type InsertEmailConfig,
   type LoanItem,
   type InsertLoanItem,
+  type TrackingMetric,
+  type InsertTrackingMetric,
+  type TrackingAlert,
+  type InsertTrackingAlert,
   type Result,
   ValidationError,
   DuplicateError,
@@ -278,6 +296,27 @@ export interface IStorage {
   getSubscriptionsByMember(memberEmail: string): Promise<MemberSubscription[]>;
   createSubscription(subscription: InsertMemberSubscription): Promise<MemberSubscription>;
   
+  // Member Tags
+  getAllTags(): Promise<Result<MemberTag[]>>;
+  createTag(tag: InsertMemberTag): Promise<Result<MemberTag>>;
+  updateTag(tagId: string, data: Partial<InsertMemberTag>): Promise<Result<MemberTag>>;
+  deleteTag(tagId: string): Promise<Result<void>>;
+  getTagsByMember(memberEmail: string): Promise<Result<MemberTag[]>>;
+  assignTagToMember(assignment: InsertMemberTagAssignment): Promise<Result<MemberTagAssignment>>;
+  removeTagFromMember(memberEmail: string, tagId: string): Promise<Result<void>>;
+  
+  // Member Tasks
+  getTasksByMember(memberEmail: string): Promise<Result<MemberTask[]>>;
+  createTask(task: InsertMemberTask): Promise<Result<MemberTask>>;
+  updateTask(taskId: string, data: Partial<InsertMemberTask>): Promise<Result<MemberTask>>;
+  deleteTask(taskId: string): Promise<Result<void>>;
+  getAllTasks(options?: { status?: string; assignedTo?: string }): Promise<Result<MemberTask[]>>;
+  
+  // Member Relations
+  getRelationsByMember(memberEmail: string): Promise<Result<MemberRelation[]>>;
+  createRelation(relation: InsertMemberRelation): Promise<Result<MemberRelation>>;
+  deleteRelation(relationId: string): Promise<Result<void>>;
+  
   // Branding configuration
   getBrandingConfig(): Promise<Result<BrandingConfig | null>>;
   updateBrandingConfig(config: string, updatedBy: string): Promise<Result<BrandingConfig>>;
@@ -285,6 +324,21 @@ export interface IStorage {
   // Email configuration
   getEmailConfig(): Promise<Result<EmailConfig | null>>;
   updateEmailConfig(config: InsertEmailConfig, updatedBy: string): Promise<Result<EmailConfig>>;
+  
+  // Tracking transversal - Suivi des membres potentiels et mécènes
+  createTrackingMetric(metric: { entityType: 'member' | 'patron'; entityId: string; entityEmail: string; metricType: 'status_change' | 'engagement' | 'contact' | 'conversion' | 'activity'; metricValue?: number; metricData?: string; description?: string; recordedBy?: string }): Promise<Result<any>>;
+  getTrackingMetrics(options?: { entityType?: 'member' | 'patron'; entityId?: string; entityEmail?: string; metricType?: string; startDate?: Date; endDate?: Date; limit?: number }): Promise<Result<any[]>>;
+  getTrackingDashboard(): Promise<Result<{
+    members: { total: number; proposed: number; active: number; highPotential: number; stale: number };
+    patrons: { total: number; proposed: number; active: number; highPotential: number; stale: number };
+    recentActivity: any[];
+    conversionRate: { members: number; patrons: number };
+    engagementTrends: { date: string; members: number; patrons: number }[];
+  }>>;
+  createTrackingAlert(alert: { entityType: 'member' | 'patron'; entityId: string; entityEmail: string; alertType: 'stale' | 'high_potential' | 'needs_followup' | 'conversion_opportunity'; severity?: 'low' | 'medium' | 'high' | 'critical'; title: string; message: string; createdBy?: string; expiresAt?: Date }): Promise<Result<any>>;
+  getTrackingAlerts(options?: { entityType?: 'member' | 'patron'; entityId?: string; isRead?: boolean; isResolved?: boolean; severity?: string; limit?: number }): Promise<Result<any[]>>;
+  updateTrackingAlert(alertId: string, data: { isRead?: boolean; isResolved?: boolean; resolvedBy?: string }): Promise<Result<any>>;
+  generateTrackingAlerts(): Promise<Result<{ created: number; errors: number }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2744,6 +2798,288 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
+  // Member Tags implementation
+  async getAllTags(): Promise<Result<MemberTag[]>> {
+    try {
+      const tags = await db.select().from(memberTags).orderBy(asc(memberTags.name));
+      return { success: true, data: tags };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des tags: ${error}`) };
+    }
+  }
+
+  async createTag(tag: InsertMemberTag): Promise<Result<MemberTag>> {
+    try {
+      const [created] = await db.insert(memberTags)
+        .values(tag)
+        .returning();
+      logger.info('Tag créé', { tagId: created.id, name: created.name });
+      return { success: true, data: created };
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('unique')) {
+        return { success: false, error: new DuplicateError('Un tag avec ce nom existe déjà') };
+      }
+      return { success: false, error: new DatabaseError(`Erreur lors de la création du tag: ${error}`) };
+    }
+  }
+
+  async updateTag(tagId: string, data: Partial<InsertMemberTag>): Promise<Result<MemberTag>> {
+    try {
+      const [updated] = await db.update(memberTags)
+        .set(data)
+        .where(eq(memberTags.id, tagId))
+        .returning();
+      
+      if (!updated) {
+        return { success: false, error: new NotFoundError('Tag non trouvé') };
+      }
+      
+      logger.info('Tag mis à jour', { tagId, updates: Object.keys(data) });
+      return { success: true, data: updated };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du tag: ${error}`) };
+    }
+  }
+
+  async deleteTag(tagId: string): Promise<Result<void>> {
+    try {
+      await db.delete(memberTags).where(eq(memberTags.id, tagId));
+      logger.info('Tag supprimé', { tagId });
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression du tag: ${error}`) };
+    }
+  }
+
+  async getTagsByMember(memberEmail: string): Promise<Result<MemberTag[]>> {
+    try {
+      const tags = await db.select({
+        id: memberTags.id,
+        name: memberTags.name,
+        color: memberTags.color,
+        description: memberTags.description,
+        createdAt: memberTags.createdAt,
+      })
+        .from(memberTags)
+        .innerJoin(memberTagAssignments, eq(memberTags.id, memberTagAssignments.tagId))
+        .where(eq(memberTagAssignments.memberEmail, memberEmail))
+        .orderBy(asc(memberTags.name));
+      
+      return { success: true, data: tags };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des tags du membre: ${error}`) };
+    }
+  }
+
+  async assignTagToMember(assignment: InsertMemberTagAssignment): Promise<Result<MemberTagAssignment>> {
+    try {
+      // Vérifier si l'association existe déjà
+      const existing = await db.select()
+        .from(memberTagAssignments)
+        .where(
+          and(
+            eq(memberTagAssignments.memberEmail, assignment.memberEmail),
+            eq(memberTagAssignments.tagId, assignment.tagId)
+          )
+        )
+        .limit(1);
+      
+      if (existing.length > 0) {
+        return { success: true, data: existing[0] };
+      }
+      
+      const [created] = await db.insert(memberTagAssignments)
+        .values(assignment)
+        .returning();
+      
+      logger.info('Tag assigné au membre', { memberEmail: assignment.memberEmail, tagId: assignment.tagId });
+      return { success: true, data: created };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de l'assignation du tag: ${error}`) };
+    }
+  }
+
+  async removeTagFromMember(memberEmail: string, tagId: string): Promise<Result<void>> {
+    try {
+      await db.delete(memberTagAssignments)
+        .where(
+          and(
+            eq(memberTagAssignments.memberEmail, memberEmail),
+            eq(memberTagAssignments.tagId, tagId)
+          )
+        );
+      
+      logger.info('Tag retiré du membre', { memberEmail, tagId });
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression du tag: ${error}`) };
+    }
+  }
+
+  // Member Tasks implementation
+  async getTasksByMember(memberEmail: string): Promise<Result<MemberTask[]>> {
+    try {
+      const tasks = await db.select()
+        .from(memberTasks)
+        .where(eq(memberTasks.memberEmail, memberEmail))
+        .orderBy(desc(memberTasks.createdAt));
+      
+      return { success: true, data: tasks };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des tâches: ${error}`) };
+    }
+  }
+
+  async createTask(task: InsertMemberTask): Promise<Result<MemberTask>> {
+    try {
+      const taskData = {
+        ...task,
+        dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+      };
+      
+      const [created] = await db.insert(memberTasks)
+        .values(taskData)
+        .returning();
+      
+      logger.info('Tâche créée', { taskId: created.id, memberEmail: task.memberEmail });
+      return { success: true, data: created };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création de la tâche: ${error}`) };
+    }
+  }
+
+  async updateTask(taskId: string, data: Partial<InsertMemberTask> & { completedAt?: string | null }): Promise<Result<MemberTask>> {
+    try {
+      const updateData: any = {
+        ...data,
+        updatedAt: sql`NOW()`,
+      };
+      
+      if (data.dueDate !== undefined) {
+        updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null;
+      }
+      
+      if (data.status === 'completed' && !data.completedAt) {
+        updateData.completedAt = sql`NOW()`;
+      } else if (data.status !== 'completed' && data.completedAt === null) {
+        updateData.completedAt = null;
+      }
+      
+      const [updated] = await db.update(memberTasks)
+        .set(updateData)
+        .where(eq(memberTasks.id, taskId))
+        .returning();
+      
+      if (!updated) {
+        return { success: false, error: new NotFoundError('Tâche non trouvée') };
+      }
+      
+      logger.info('Tâche mise à jour', { taskId, updates: Object.keys(data) });
+      return { success: true, data: updated };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la tâche: ${error}`) };
+    }
+  }
+
+  async deleteTask(taskId: string): Promise<Result<void>> {
+    try {
+      await db.delete(memberTasks).where(eq(memberTasks.id, taskId));
+      logger.info('Tâche supprimée', { taskId });
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression de la tâche: ${error}`) };
+    }
+  }
+
+  async getAllTasks(options?: { status?: string; assignedTo?: string }): Promise<Result<MemberTask[]>> {
+    try {
+      if (options?.status && options?.assignedTo) {
+        const tasks = await db.select()
+          .from(memberTasks)
+          .where(and(eq(memberTasks.status, options.status), eq(memberTasks.assignedTo, options.assignedTo)))
+          .orderBy(desc(memberTasks.dueDate), desc(memberTasks.createdAt));
+        return { success: true, data: tasks };
+      } else if (options?.status) {
+        const tasks = await db.select()
+          .from(memberTasks)
+          .where(eq(memberTasks.status, options.status))
+          .orderBy(desc(memberTasks.dueDate), desc(memberTasks.createdAt));
+        return { success: true, data: tasks };
+      } else if (options?.assignedTo) {
+        const tasks = await db.select()
+          .from(memberTasks)
+          .where(eq(memberTasks.assignedTo, options.assignedTo))
+          .orderBy(desc(memberTasks.dueDate), desc(memberTasks.createdAt));
+        return { success: true, data: tasks };
+      } else {
+        const tasks = await db.select()
+          .from(memberTasks)
+          .orderBy(desc(memberTasks.dueDate), desc(memberTasks.createdAt));
+        return { success: true, data: tasks };
+      }
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des tâches: ${error}`) };
+    }
+  }
+
+  // Member Relations implementation
+  async getRelationsByMember(memberEmail: string): Promise<Result<MemberRelation[]>> {
+    try {
+      const relations = await db.select()
+        .from(memberRelations)
+        .where(
+          or(
+            eq(memberRelations.memberEmail, memberEmail),
+            eq(memberRelations.relatedMemberEmail, memberEmail)
+          )
+        )
+        .orderBy(desc(memberRelations.createdAt));
+      
+      return { success: true, data: relations };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des relations: ${error}`) };
+    }
+  }
+
+  async createRelation(relation: InsertMemberRelation): Promise<Result<MemberRelation>> {
+    try {
+      // Vérifier que la relation n'existe pas déjà
+      const existing = await db.select()
+        .from(memberRelations)
+        .where(
+          and(
+            eq(memberRelations.memberEmail, relation.memberEmail),
+            eq(memberRelations.relatedMemberEmail, relation.relatedMemberEmail),
+            eq(memberRelations.relationType, relation.relationType)
+          )
+        )
+        .limit(1);
+      
+      if (existing.length > 0) {
+        return { success: true, data: existing[0] };
+      }
+      
+      const [created] = await db.insert(memberRelations)
+        .values(relation)
+        .returning();
+      
+      logger.info('Relation créée', { relationId: created.id, memberEmail: relation.memberEmail });
+      return { success: true, data: created };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création de la relation: ${error}`) };
+    }
+  }
+
+  async deleteRelation(relationId: string): Promise<Result<void>> {
+    try {
+      await db.delete(memberRelations).where(eq(memberRelations.id, relationId));
+      logger.info('Relation supprimée', { relationId });
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression de la relation: ${error}`) };
+    }
+  }
+
   // Branding configuration methods
   async getBrandingConfig(): Promise<Result<BrandingConfig | null>> {
     try {
@@ -3150,6 +3486,477 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: result };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la configuration email: ${error}`) };
+    }
+  }
+
+  // ==================== TRACKING TRANSVERSAL ====================
+  
+  async createTrackingMetric(metric: { entityType: 'member' | 'patron'; entityId: string; entityEmail: string; metricType: 'status_change' | 'engagement' | 'contact' | 'conversion' | 'activity'; metricValue?: number; metricData?: string; description?: string; recordedBy?: string }): Promise<Result<TrackingMetric>> {
+    try {
+      const [newMetric] = await db.insert(trackingMetrics).values({
+        entityType: metric.entityType,
+        entityId: metric.entityId,
+        entityEmail: metric.entityEmail,
+        metricType: metric.metricType,
+        metricValue: metric.metricValue ?? null,
+        metricData: metric.metricData ?? null,
+        description: metric.description ?? null,
+        recordedBy: metric.recordedBy ?? null,
+        recordedAt: new Date(),
+      }).returning();
+      return { success: true, data: newMetric };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création de la métrique: ${error}`) };
+    }
+  }
+
+  async getTrackingMetrics(options?: { entityType?: 'member' | 'patron'; entityId?: string; entityEmail?: string; metricType?: string; startDate?: Date; endDate?: Date; limit?: number }): Promise<Result<TrackingMetric[]>> {
+    try {
+      const conditions: any[] = [];
+      
+      if (options?.entityType) {
+        conditions.push(eq(trackingMetrics.entityType, options.entityType) as any);
+      }
+      if (options?.entityId) {
+        conditions.push(eq(trackingMetrics.entityId, options.entityId) as any);
+      }
+      if (options?.entityEmail) {
+        conditions.push(eq(trackingMetrics.entityEmail, options.entityEmail) as any);
+      }
+      if (options?.metricType) {
+        conditions.push(eq(trackingMetrics.metricType, options.metricType) as any);
+      }
+      if (options?.startDate) {
+        conditions.push(sql`${trackingMetrics.recordedAt} >= ${options.startDate}` as any);
+      }
+      if (options?.endDate) {
+        conditions.push(sql`${trackingMetrics.recordedAt} <= ${options.endDate}` as any);
+      }
+      
+      let query = db.select().from(trackingMetrics);
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions)) as any;
+      }
+      
+      query = query.orderBy(desc(trackingMetrics.recordedAt)) as any;
+      
+      if (options?.limit) {
+        query = query.limit(options.limit) as any;
+      }
+      
+      const results = await query;
+      return { success: true, data: results };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des métriques: ${error}`) };
+    }
+  }
+
+  async getTrackingDashboard(): Promise<Result<{
+    members: { total: number; proposed: number; active: number; highPotential: number; stale: number };
+    patrons: { total: number; proposed: number; active: number; highPotential: number; stale: number };
+    recentActivity: any[];
+    conversionRate: { members: number; patrons: number };
+    engagementTrends: { date: string; members: number; patrons: number }[];
+  }>> {
+    try {
+      // Statistiques membres
+      const allMembers = await db.select().from(members);
+      const membersProposed = allMembers.filter(m => m.status === 'proposed');
+      const membersActive = allMembers.filter(m => m.status === 'active');
+      const membersHighPotential = allMembers.filter(m => m.engagementScore >= 20);
+      const staleDate = new Date();
+      staleDate.setDate(staleDate.getDate() - 90); // 90 jours sans activité
+      const membersStale = allMembers.filter(m => 
+        m.lastActivityAt && new Date(m.lastActivityAt) < staleDate
+      );
+
+      // Statistiques mécènes
+      const allPatrons = await db.select().from(patrons);
+      const patronsProposed = allPatrons.filter(p => p.status === 'proposed');
+      const patronsActive = allPatrons.filter(p => p.status === 'active');
+      
+      // Mécènes à haut potentiel : proposés récemment (moins de 30 jours)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const patronsHighPotential = allPatrons.filter(p => {
+        if (p.status !== 'proposed') return false;
+        const createdAt = p.createdAt ? new Date(p.createdAt) : null;
+        return createdAt && createdAt >= thirtyDaysAgo;
+      });
+      
+      const patronsStale = allPatrons.filter(p => {
+        const lastUpdate = p.updatedAt;
+        return lastUpdate && new Date(lastUpdate) < staleDate;
+      });
+
+      // Activité récente (30 derniers jours) - réutiliser thirtyDaysAgo déjà défini
+      const recentMetrics = await db.select()
+        .from(trackingMetrics)
+        .where(sql`${trackingMetrics.recordedAt} >= ${thirtyDaysAgo}`)
+        .orderBy(desc(trackingMetrics.recordedAt))
+        .limit(20);
+
+      // Taux de conversion (proposed -> active)
+      // Calcul basé sur les membres/mécènes qui étaient "proposed" et sont maintenant "active"
+      // On considère qu'un membre/mécène a été converti s'il est actif et avait été proposé initialement
+      // Pour simplifier, on calcule : (actifs qui étaient proposés) / (total proposés + actifs qui étaient proposés)
+      const membersConverted = allMembers.filter(m => {
+        // Un membre converti est un membre actif qui a été proposé initialement
+        // On peut le détecter par la présence de métriques de conversion ou par firstSeenAt
+        return m.status === 'active' && m.firstSeenAt;
+      }).length;
+      
+      const membersConversionRate = (membersProposed.length + membersConverted) > 0 
+        ? (membersConverted / (membersProposed.length + membersConverted)) * 100 
+        : 0;
+
+      const patronsConverted = allPatrons.filter(p => {
+        // Un mécène converti est un mécène actif qui a été créé (initialement proposé)
+        return p.status === 'active' && p.createdAt;
+      }).length;
+      
+      const patronsConversionRate = (patronsProposed.length + patronsConverted) > 0 
+        ? (patronsConverted / (patronsProposed.length + patronsConverted)) * 100 
+        : 0;
+
+      // Tendances d'engagement (7 derniers jours)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const engagementTrends: { date: string; members: number; patrons: number }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayStart = new Date(dateStr);
+        const dayEnd = new Date(dateStr);
+        dayEnd.setHours(23, 59, 59, 999);
+        
+        const dayMetrics = await db.select()
+          .from(trackingMetrics)
+          .where(and(
+            sql`${trackingMetrics.recordedAt} >= ${dayStart}`,
+            sql`${trackingMetrics.recordedAt} <= ${dayEnd}`
+          ));
+        
+        const membersCount = dayMetrics.filter(m => m.entityType === 'member').length;
+        const patronsCount = dayMetrics.filter(m => m.entityType === 'patron').length;
+        
+        engagementTrends.push({
+          date: dateStr,
+          members: membersCount,
+          patrons: patronsCount,
+        });
+      }
+
+      return {
+        success: true,
+        data: {
+          members: {
+            total: allMembers.length,
+            proposed: membersProposed.length,
+            active: membersActive.length,
+            highPotential: membersHighPotential.length,
+            stale: membersStale.length,
+          },
+          patrons: {
+            total: allPatrons.length,
+            proposed: patronsProposed.length,
+            active: patronsActive.length,
+            highPotential: patronsHighPotential.length,
+            stale: patronsStale.length,
+          },
+          recentActivity: recentMetrics,
+          conversionRate: {
+            members: Math.round(membersConversionRate * 100) / 100,
+            patrons: Math.round(patronsConversionRate * 100) / 100,
+          },
+          engagementTrends,
+        },
+      };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération du dashboard: ${error}`) };
+    }
+  }
+
+  async createTrackingAlert(alert: { entityType: 'member' | 'patron'; entityId: string; entityEmail: string; alertType: 'stale' | 'high_potential' | 'needs_followup' | 'conversion_opportunity'; severity?: 'low' | 'medium' | 'high' | 'critical'; title: string; message: string; createdBy?: string; expiresAt?: Date }): Promise<Result<TrackingAlert>> {
+    try {
+      const [newAlert] = await db.insert(trackingAlerts).values({
+        entityType: alert.entityType,
+        entityId: alert.entityId,
+        entityEmail: alert.entityEmail,
+        alertType: alert.alertType,
+        severity: alert.severity || 'medium',
+        title: alert.title,
+        message: alert.message,
+        createdBy: alert.createdBy ?? null,
+        expiresAt: alert.expiresAt ?? null,
+        isRead: false,
+        isResolved: false,
+        createdAt: new Date(),
+      }).returning();
+      return { success: true, data: newAlert };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création de l'alerte: ${error}`) };
+    }
+  }
+
+  async getTrackingAlerts(options?: { entityType?: 'member' | 'patron'; entityId?: string; isRead?: boolean; isResolved?: boolean; severity?: string; limit?: number }): Promise<Result<TrackingAlert[]>> {
+    try {
+      const conditions: any[] = [];
+      
+      if (options?.entityType) {
+        conditions.push(eq(trackingAlerts.entityType, options.entityType) as any);
+      }
+      if (options?.entityId) {
+        conditions.push(eq(trackingAlerts.entityId, options.entityId) as any);
+      }
+      if (options?.isRead !== undefined) {
+        conditions.push(eq(trackingAlerts.isRead, options.isRead) as any);
+      }
+      if (options?.isResolved !== undefined) {
+        conditions.push(eq(trackingAlerts.isResolved, options.isResolved) as any);
+      }
+      if (options?.severity) {
+        conditions.push(eq(trackingAlerts.severity, options.severity) as any);
+      }
+      
+      let query = db.select().from(trackingAlerts);
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions)) as any;
+      }
+      
+      query = query.orderBy(desc(trackingAlerts.createdAt)) as any;
+      
+      if (options?.limit) {
+        query = query.limit(options.limit) as any;
+      }
+      
+      const results = await query;
+      return { success: true, data: results };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des alertes: ${error}`) };
+    }
+  }
+
+  async updateTrackingAlert(alertId: string, data: { isRead?: boolean; isResolved?: boolean; resolvedBy?: string }): Promise<Result<TrackingAlert>> {
+    try {
+      const updateData: any = {};
+      if (data.isRead !== undefined) updateData.isRead = data.isRead;
+      if (data.isResolved !== undefined) {
+        updateData.isResolved = data.isResolved;
+        if (data.isResolved && data.resolvedBy) {
+          updateData.resolvedBy = data.resolvedBy;
+          updateData.resolvedAt = new Date();
+        }
+      }
+      
+      const [updated] = await db.update(trackingAlerts)
+        .set(updateData)
+        .where(eq(trackingAlerts.id, alertId))
+        .returning();
+      
+      if (!updated) {
+        return { success: false, error: new NotFoundError('Alerte non trouvée') };
+      }
+      
+      return { success: true, data: updated };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de l'alerte: ${error}`) };
+    }
+  }
+
+  async generateTrackingAlerts(): Promise<Result<{ created: number; errors: number }>> {
+    try {
+      let created = 0;
+      let errors = 0;
+      
+      // Détecter les membres/mécènes "stale" (inactifs depuis 90 jours)
+      const staleDate = new Date();
+      staleDate.setDate(staleDate.getDate() - 90);
+      
+      const staleMembers = await db.select()
+        .from(members)
+        .where(and(
+          eq(members.status, 'active'),
+          sql`${members.lastActivityAt} < ${staleDate}`
+        ));
+      
+      for (const member of staleMembers) {
+        try {
+          // Vérifier si une alerte existe déjà
+          const existingAlerts = await db.select()
+            .from(trackingAlerts)
+            .where(and(
+              eq(trackingAlerts.entityType, 'member'),
+              eq(trackingAlerts.entityId, member.id),
+              eq(trackingAlerts.alertType, 'stale'),
+              eq(trackingAlerts.isResolved, false)
+            ));
+          
+          if (existingAlerts.length === 0) {
+            await db.insert(trackingAlerts).values({
+              entityType: 'member',
+              entityId: member.id,
+              entityEmail: member.email,
+              alertType: 'stale',
+              severity: 'medium',
+              title: `Membre inactif depuis 90 jours`,
+              message: `${member.firstName} ${member.lastName} n'a pas eu d'activité depuis 90 jours.`,
+              isRead: false,
+              isResolved: false,
+              createdAt: new Date(),
+            });
+            created++;
+          }
+        } catch (error) {
+          errors++;
+          logger.error('Error creating stale alert for member', { memberId: member.id, error });
+        }
+      }
+      
+      // Détecter les mécènes "stale"
+      const stalePatrons = await db.select()
+        .from(patrons)
+        .where(and(
+          eq(patrons.status, 'active'),
+          sql`${patrons.updatedAt} < ${staleDate}`
+        ));
+      
+      for (const patron of stalePatrons) {
+        try {
+          const existingAlerts = await db.select()
+            .from(trackingAlerts)
+            .where(and(
+              eq(trackingAlerts.entityType, 'patron'),
+              eq(trackingAlerts.entityId, patron.id),
+              eq(trackingAlerts.alertType, 'stale'),
+              eq(trackingAlerts.isResolved, false)
+            ));
+          
+          if (existingAlerts.length === 0) {
+            await db.insert(trackingAlerts).values({
+              entityType: 'patron',
+              entityId: patron.id,
+              entityEmail: patron.email,
+              alertType: 'stale',
+              severity: 'medium',
+              title: `Mécène inactif depuis 90 jours`,
+              message: `${patron.firstName} ${patron.lastName} n'a pas été contacté depuis 90 jours.`,
+              isRead: false,
+              isResolved: false,
+              createdAt: new Date(),
+            });
+            created++;
+          }
+        } catch (error) {
+          errors++;
+          logger.error('Error creating stale alert for patron', { patronId: patron.id, error });
+        }
+      }
+      
+      // Détecter les membres "high potential"
+      const highPotentialMembers = await db.select()
+        .from(members)
+        .where(and(
+          eq(members.status, 'proposed'),
+          sql`${members.engagementScore} >= 15`
+        ));
+      
+      for (const member of highPotentialMembers) {
+        try {
+          const existingAlerts = await db.select()
+            .from(trackingAlerts)
+            .where(and(
+              eq(trackingAlerts.entityType, 'member'),
+              eq(trackingAlerts.entityId, member.id),
+              eq(trackingAlerts.alertType, 'high_potential'),
+              eq(trackingAlerts.isResolved, false)
+            ));
+          
+          if (existingAlerts.length === 0) {
+            await db.insert(trackingAlerts).values({
+              entityType: 'member',
+              entityId: member.id,
+              entityEmail: member.email,
+              alertType: 'high_potential',
+              severity: 'high',
+              title: `Membre potentiel à fort engagement`,
+              message: `${member.firstName} ${member.lastName} a un score d'engagement élevé (${member.engagementScore}).`,
+              isRead: false,
+              isResolved: false,
+              createdAt: new Date(),
+            });
+            created++;
+          }
+        } catch (error) {
+          errors++;
+          logger.error('Error creating high potential alert for member', { memberId: member.id, error });
+        }
+      }
+      
+      // Détecter les mécènes "high potential" (proposés avec activité récente)
+      // Un mécène est considéré à haut potentiel s'il a été proposé récemment (moins de 30 jours)
+      // et n'a pas encore été converti
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const highPotentialPatrons = await db.select()
+        .from(patrons)
+        .where(and(
+          eq(patrons.status, 'proposed'),
+          sql`${patrons.createdAt} >= ${thirtyDaysAgo}`
+        ));
+      
+      for (const patron of highPotentialPatrons) {
+        try {
+          // Vérifier s'il y a des métriques récentes pour ce mécène
+          const recentMetrics = await db.select()
+            .from(trackingMetrics)
+            .where(and(
+              eq(trackingMetrics.entityType, 'patron'),
+              eq(trackingMetrics.entityId, patron.id),
+              sql`${trackingMetrics.recordedAt} >= ${thirtyDaysAgo}`
+            ))
+            .limit(1);
+          
+          // Si le mécène a des métriques récentes ou a été créé récemment, c'est un haut potentiel
+          if (recentMetrics.length > 0 || patron.createdAt >= thirtyDaysAgo) {
+            const existingAlerts = await db.select()
+              .from(trackingAlerts)
+              .where(and(
+                eq(trackingAlerts.entityType, 'patron'),
+                eq(trackingAlerts.entityId, patron.id),
+                eq(trackingAlerts.alertType, 'high_potential'),
+                eq(trackingAlerts.isResolved, false)
+              ));
+            
+            if (existingAlerts.length === 0) {
+              await db.insert(trackingAlerts).values({
+                entityType: 'patron',
+                entityId: patron.id,
+                entityEmail: patron.email,
+                alertType: 'high_potential',
+                severity: 'high',
+                title: `Mécène potentiel récent`,
+                message: `${patron.firstName} ${patron.lastName} a été proposé récemment et pourrait être un bon candidat pour conversion.`,
+                isRead: false,
+                isResolved: false,
+                createdAt: new Date(),
+              });
+              created++;
+            }
+          }
+        } catch (error) {
+          errors++;
+          logger.error('Error creating high potential alert for patron', { patronId: patron.id, error });
+        }
+      }
+      
+      return { success: true, data: { created, errors } };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la génération des alertes: ${error}`) };
     }
   }
 

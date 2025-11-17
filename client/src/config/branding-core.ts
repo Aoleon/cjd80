@@ -52,6 +52,12 @@ export const brandingCore = {
     chart3: "#ffa726",       // Couleur chart tertiaire
     chart4: "#26c6da",       // Couleur chart quaternaire
     chart5: "#ec407a",       // Couleur chart quinaire
+    
+    // Couleurs utilitaires
+    white: "#ffffff",        // Blanc
+    black: "#000000",        // Noir
+    chartBorder: "#cccccc", // Couleur de bordure pour les graphiques (gris clair)
+    chartGrid: "#cccccc",   // Couleur de grille pour les graphiques
   },
 
   // Typographie

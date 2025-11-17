@@ -216,7 +216,7 @@ export default function RichTextEditor({
       {/* Character count */}
       {maxLength && (
         <div className="px-3 py-1 text-xs text-right border-t border-gray-200 bg-gray-50">
-          <span className={isMaxLengthReached ? 'text-red-600 font-semibold' : 'text-gray-500'}>
+          <span className={isMaxLengthReached ? 'text-error font-semibold' : 'text-muted-foreground'}>
             {currentLength}/{maxLength} caractères
           </span>
         </div>

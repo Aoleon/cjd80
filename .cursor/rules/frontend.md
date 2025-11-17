@@ -81,19 +81,14 @@ const { data, isLoading, error } = useQuery({
 });
 
 // Mutation avec invalidation
-import { invalidateAndRefetch } from '@/lib/queryClient';
-
+const queryClient = useQueryClient();
 const mutation = useMutation({
   mutationFn: (data) => apiRequest('/api/offers', {
     method: 'POST',
     body: data
   }),
   onSuccess: () => {
-    // ⚠️ IMPORTANT: Utilisez invalidateAndRefetch au lieu de invalidateQueries
-    // pour garantir que les données se mettent à jour immédiatement,
-    // même avec un staleTime élevé (5 minutes par défaut)
-    invalidateAndRefetch(['/api/offers']);
-    invalidateAndRefetch(['/api/admin/offers']); // Si applicable
+    queryClient.invalidateQueries({ queryKey: ['offers'] });
   }
 });
 ```
@@ -364,6 +359,7 @@ import type { Offer } from '@shared/schema';
 - **Composants:** `[ComponentName].tsx` dans `components/`
 - **Hooks:** `use-[hook-name].ts` dans `hooks/`
 - **Types:** `[types].ts` dans `types/`
+
 
 
 

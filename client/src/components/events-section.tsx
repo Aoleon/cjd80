@@ -373,7 +373,7 @@ export default function EventsSection() {
                                 size="lg"
                                 className={`text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl ${
                                   isEventFull
-                                    ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+                                    ? 'bg-muted cursor-not-allowed text-muted-foreground'
                                     : 'bg-gradient-to-r from-cjd-green to-success-dark text-white hover:from-success-dark hover:to-success-dark transform hover:scale-105'
                                 }`}
                                 data-testid="button-register-event"

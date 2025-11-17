@@ -26,7 +26,7 @@ const PRIORITY_COLORS = {
 const STATUS_COLORS = {
   open: "bg-success-light text-success-dark",
   in_progress: "bg-info-light text-info-dark",
-  closed: "bg-gray-100 text-gray-800",
+  closed: "bg-muted text-muted-foreground",
   cancelled: "bg-error-light text-error-dark"
 } as const;
 

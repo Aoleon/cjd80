@@ -73,3 +73,63 @@ export async function deletePhoto(filename: string): Promise<void> {
   }
 }
 
+// Configuration pour l'upload de logo (dans attached_assets)
+const logoUploadsDir = join(process.cwd(), 'attached_assets');
+fs.mkdir(logoUploadsDir, { recursive: true }).catch(err => {
+  if (err.code !== 'EEXIST') {
+    logger.error('Error creating logo uploads directory', { error: err });
+  }
+});
+
+const logoStorage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    try {
+      await fs.mkdir(logoUploadsDir, { recursive: true });
+      cb(null, logoUploadsDir);
+    } catch (error) {
+      cb(error as Error, logoUploadsDir);
+    }
+  },
+  filename: (req, file, cb) => {
+    // Générer un nom unique : logo-timestamp-nanoid.extension
+    const ext = file.originalname.split('.').pop() || 'jpg';
+    const uniqueName = `logo-${Date.now()}-${nanoid(10)}.${ext}`;
+    cb(null, uniqueName);
+  }
+});
+
+// Configuration multer pour logo
+export const uploadLogo = multer({
+  storage: logoStorage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max
+  }
+});
+
+// Middleware pour uploader un logo
+export const singleLogoUpload = uploadLogo.single('logo');
+
+// Fonction utilitaire pour obtenir le nom du fichier logo depuis l'URL
+export function getLogoFilename(logoUrl: string): string | null {
+  // Format: /uploads/logos/logo-1234567890-abc123.jpg
+  // ou: @assets/logo-1234567890-abc123.jpg
+  const match = logoUrl.match(/(?:logo-[\d]+-[a-zA-Z0-9]+\.\w+)$/);
+  return match ? match[0] : null;
+}
+
+// Fonction pour supprimer un logo
+export async function deleteLogo(filename: string): Promise<void> {
+  try {
+    const filePath = join(logoUploadsDir, filename);
+    await fs.unlink(filePath);
+    logger.info('Logo deleted', { filename });
+  } catch (error: any) {
+    if (error.code !== 'ENOENT') {
+      logger.error('Error deleting logo', { filename, error });
+      throw error;
+    }
+    // Fichier déjà supprimé, pas d'erreur
+  }
+}
+

@@ -128,11 +128,11 @@ export default function IdeaDetailModal({ open, onOpenChange, idea }: IdeaDetail
       case IDEA_STATUS.UNDER_REVIEW:
         return { label: "En cours d'étude", class: "bg-info-light text-info-dark" };
       case IDEA_STATUS.POSTPONED:
-        return { label: "Reportée", class: "bg-gray-100 text-gray-800" };
+        return { label: "Reportée", class: "bg-muted text-muted-foreground" };
       case IDEA_STATUS.COMPLETED:
         return { label: "Réalisée", class: "bg-success-light text-success-dark" };
       default:
-        return { label: "Inconnu", class: "bg-gray-100 text-gray-800" };
+        return { label: "Inconnu", class: "bg-muted text-muted-foreground" };
     }
   };
 

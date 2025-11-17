@@ -1,0 +1,23 @@
+import {
+  require_jsx_runtime
+} from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-KBTYAULA.js?v=9b33f788";
+import {
+  require_react
+} from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-QCHXOAYK.js?v=9b33f788";
+import {
+  __toESM
+} from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-WOOG5QLI.js?v=9b33f788";
+
+// node_modules/@radix-ui/react-direction/dist/index.mjs
+var React = __toESM(require_react(), 1);
+var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
+var DirectionContext = React.createContext(void 0);
+function useDirection(localDir) {
+  const globalDir = React.useContext(DirectionContext);
+  return localDir || globalDir || "ltr";
+}
+
+export {
+  useDirection
+};
+//# sourceMappingURL=chunk-4RO2SXZU.js.map

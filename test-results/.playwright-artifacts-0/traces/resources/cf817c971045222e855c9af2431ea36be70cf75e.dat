@@ -1,0 +1,26 @@
+import {
+  useLayoutEffect2
+} from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-CIWSPAEX.js?v=9b33f788";
+import {
+  require_react
+} from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-QCHXOAYK.js?v=9b33f788";
+import {
+  __toESM
+} from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-WOOG5QLI.js?v=9b33f788";
+
+// node_modules/@radix-ui/react-id/dist/index.mjs
+var React = __toESM(require_react(), 1);
+var useReactId = React[" useId ".trim().toString()] || (() => void 0);
+var count = 0;
+function useId(deterministicId) {
+  const [id, setId] = React.useState(useReactId());
+  useLayoutEffect2(() => {
+    if (!deterministicId) setId((reactId) => reactId ?? String(count++));
+  }, [deterministicId]);
+  return deterministicId || (id ? `radix-${id}` : "");
+}
+
+export {
+  useId
+};
+//# sourceMappingURL=chunk-E6PNPDKY.js.map

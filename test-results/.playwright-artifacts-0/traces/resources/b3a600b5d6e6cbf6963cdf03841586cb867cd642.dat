@@ -1,0 +1,80 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/lib/protected-route.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=8973d617"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/thibault/Développements /CJD80/cjd80/client/src/lib/protected-route.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import { useAuth } from "/src/hooks/use-auth.tsx";
+import { Loader2 } from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/lucide-react.js?v=9fe1beea";
+import { Redirect, Route } from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/wouter.js?v=7d60b6b0";
+export function ProtectedRoute({
+  path,
+  component: Component
+}) {
+  _s();
+  const { user, isLoading } = useAuth();
+  if (isLoading) {
+    return /* @__PURE__ */ jsxDEV(Route, { path, children: /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-center min-h-screen", children: /* @__PURE__ */ jsxDEV(Loader2, { className: "h-8 w-8 animate-spin text-border" }, void 0, false, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/lib/protected-route.tsx",
+      lineNumber: 37,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/lib/protected-route.tsx",
+      lineNumber: 36,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/lib/protected-route.tsx",
+      lineNumber: 35,
+      columnNumber: 7
+    }, this);
+  }
+  if (!user) {
+    return /* @__PURE__ */ jsxDEV(Route, { path, children: /* @__PURE__ */ jsxDEV(Redirect, { to: "/auth" }, void 0, false, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/lib/protected-route.tsx",
+      lineNumber: 46,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/lib/protected-route.tsx",
+      lineNumber: 45,
+      columnNumber: 7
+    }, this);
+  }
+  return /* @__PURE__ */ jsxDEV(Component, {}, void 0, false, {
+    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/lib/protected-route.tsx",
+    lineNumber: 51,
+    columnNumber: 10
+  }, this);
+}
+_s(ProtectedRoute, "6lKHjqCqGIRsHh92bje8H78laow=", false, function() {
+  return [useAuth];
+});
+_c = ProtectedRoute;
+var _c;
+$RefreshReg$(_c, "ProtectedRoute");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/thibault/Développements /CJD80/cjd80/client/src/lib/protected-route.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/thibault/Développements /CJD80/cjd80/client/src/lib/protected-route.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBaUJVOzs7Ozs7Ozs7Ozs7Ozs7OztBQWpCVixTQUFTQSxlQUFlO0FBQ3hCLFNBQVNDLGVBQWU7QUFDeEIsU0FBU0MsVUFBVUMsYUFBYTtBQUV6QixnQkFBU0MsZUFBZTtBQUFBLEVBQzdCQztBQUFBQSxFQUNBQyxXQUFXQztBQUliLEdBQUc7QUFBQUMsS0FBQTtBQUNELFFBQU0sRUFBRUMsTUFBTUMsVUFBVSxJQUFJVixRQUFRO0FBRXBDLE1BQUlVLFdBQVc7QUFDYixXQUNFLHVCQUFDLFNBQU0sTUFDTCxpQ0FBQyxTQUFJLFdBQVUsaURBQ2IsaUNBQUMsV0FBUSxXQUFVLHNDQUFuQjtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBQXFELEtBRHZEO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FFQSxLQUhGO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FJQTtBQUFBLEVBRUo7QUFFQSxNQUFJLENBQUNELE1BQU07QUFDVCxXQUNFLHVCQUFDLFNBQU0sTUFDTCxpQ0FBQyxZQUFTLElBQUcsV0FBYjtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBQW9CLEtBRHRCO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FFQTtBQUFBLEVBRUo7QUFFQSxTQUFPLHVCQUFDLGVBQUQ7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQUFVO0FBQ25CO0FBQUNELEdBNUJlSixnQkFBYztBQUFBLFVBT0FKLE9BQU87QUFBQTtBQUFBVyxLQVByQlA7QUFBYyxJQUFBTztBQUFBQyxhQUFBRCxJQUFBIiwibmFtZXMiOlsidXNlQXV0aCIsIkxvYWRlcjIiLCJSZWRpcmVjdCIsIlJvdXRlIiwiUHJvdGVjdGVkUm91dGUiLCJwYXRoIiwiY29tcG9uZW50IiwiQ29tcG9uZW50IiwiX3MiLCJ1c2VyIiwiaXNMb2FkaW5nIiwiX2MiLCIkUmVmcmVzaFJlZyQiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsicHJvdGVjdGVkLXJvdXRlLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB1c2VBdXRoIH0gZnJvbSBcIkAvaG9va3MvdXNlLWF1dGhcIjtcbmltcG9ydCB7IExvYWRlcjIgfSBmcm9tIFwibHVjaWRlLXJlYWN0XCI7XG5pbXBvcnQgeyBSZWRpcmVjdCwgUm91dGUgfSBmcm9tIFwid291dGVyXCI7XG5cbmV4cG9ydCBmdW5jdGlvbiBQcm90ZWN0ZWRSb3V0ZSh7XG4gIHBhdGgsXG4gIGNvbXBvbmVudDogQ29tcG9uZW50LFxufToge1xuICBwYXRoOiBzdHJpbmc7XG4gIGNvbXBvbmVudDogKCkgPT4gUmVhY3QuSlNYLkVsZW1lbnQ7XG59KSB7XG4gIGNvbnN0IHsgdXNlciwgaXNMb2FkaW5nIH0gPSB1c2VBdXRoKCk7XG5cbiAgaWYgKGlzTG9hZGluZykge1xuICAgIHJldHVybiAoXG4gICAgICA8Um91dGUgcGF0aD17cGF0aH0+XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgbWluLWgtc2NyZWVuXCI+XG4gICAgICAgICAgPExvYWRlcjIgY2xhc3NOYW1lPVwiaC04IHctOCBhbmltYXRlLXNwaW4gdGV4dC1ib3JkZXJcIiAvPlxuICAgICAgICA8L2Rpdj5cbiAgICAgIDwvUm91dGU+XG4gICAgKTtcbiAgfVxuXG4gIGlmICghdXNlcikge1xuICAgIHJldHVybiAoXG4gICAgICA8Um91dGUgcGF0aD17cGF0aH0+XG4gICAgICAgIDxSZWRpcmVjdCB0bz1cIi9hdXRoXCIgLz5cbiAgICAgIDwvUm91dGU+XG4gICAgKTtcbiAgfVxuXG4gIHJldHVybiA8Q29tcG9uZW50IC8+O1xufVxuIl0sImZpbGUiOiIvVXNlcnMvdGhpYmF1bHQvRGXMgXZlbG9wcGVtZW50cyAvQ0pEODAvY2pkODAvY2xpZW50L3NyYy9saWIvcHJvdGVjdGVkLXJvdXRlLnRzeCJ9

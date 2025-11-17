@@ -410,7 +410,7 @@ export default function AdminSponsorshipsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-green-600" data-testid="text-stat-amount">
+                  <div className="text-3xl font-bold text-success" data-testid="text-stat-amount">
                     {formatEuros(stats.totalAmount)}
                   </div>
                 </CardContent>
@@ -563,7 +563,7 @@ export default function AdminSponsorshipsPage() {
                           </TableCell>
                           <TableCell data-testid={`text-visibility-${sponsorship.id}`}>
                             {sponsorship.isPubliclyVisible ? (
-                              <Eye className="w-4 h-4 text-green-600" />
+                              <Eye className="w-4 h-4 text-success" />
                             ) : (
                               <EyeOff className="w-4 h-4 text-gray-400" />
                             )}
@@ -584,7 +584,7 @@ export default function AdminSponsorshipsPage() {
                                 onClick={() => setDeleteSponsorshipId(sponsorship.id)}
                                 data-testid={`button-delete-${sponsorship.id}`}
                               >
-                                <Trash2 className="w-4 h-4 text-red-600" />
+                                <Trash2 className="w-4 h-4 text-error" />
                               </Button>
                             </div>
                           </TableCell>
@@ -625,7 +625,7 @@ export default function AdminSponsorshipsPage() {
                               onClick={() => setDeleteSponsorshipId(sponsorship.id)}
                               data-testid={`button-mobile-delete-${sponsorship.id}`}
                             >
-                              <Trash2 className="w-4 h-4 text-red-600" />
+                              <Trash2 className="w-4 h-4 text-error" />
                             </Button>
                           </div>
                         </div>
@@ -659,7 +659,7 @@ export default function AdminSponsorshipsPage() {
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-600 dark:text-gray-400">Visibilité</span>
                             {sponsorship.isPubliclyVisible ? (
-                              <Eye className="w-4 h-4 text-green-600" />
+                              <Eye className="w-4 h-4 text-success" />
                             ) : (
                               <EyeOff className="w-4 h-4 text-gray-400" />
                             )}
@@ -1074,7 +1074,7 @@ export default function AdminSponsorshipsPage() {
             <AlertDialogCancel data-testid="button-cancel-delete">Annuler</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteSponsorshipId && deleteSponsorshipMutation.mutate(deleteSponsorshipId)}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-error hover:bg-error-dark"
               data-testid="button-confirm-delete"
             >
               Supprimer

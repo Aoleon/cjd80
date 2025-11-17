@@ -65,6 +65,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { hasPermission, CJD_ROLES, CJD_ROLE_LABELS } from "@shared/schema";
 import type { Member, MemberActivity, MemberSubscription } from "@shared/schema";
+import { MemberTags } from "@/components/member-tags";
+import { MemberTasks } from "@/components/member-tasks";
+import { MemberRelations } from "@/components/member-relations";
+import { MemberChatbot } from "@/components/member-chatbot";
 import {
   Select,
   SelectContent,
@@ -680,7 +684,7 @@ export default function AdminMembersPage() {
                     </div>
                   ) : (
                     <Tabs defaultValue="info" className="w-full">
-                      <TabsList className="grid w-full grid-cols-4">
+                      <TabsList className="grid w-full grid-cols-8">
                         <TabsTrigger value="info" data-testid="tab-info">
                           Informations
                         </TabsTrigger>
@@ -692,6 +696,18 @@ export default function AdminMembersPage() {
                         </TabsTrigger>
                         <TabsTrigger value="stats" data-testid="tab-stats">
                           Statistiques
+                        </TabsTrigger>
+                        <TabsTrigger value="tags" data-testid="tab-tags">
+                          Tags
+                        </TabsTrigger>
+                        <TabsTrigger value="tasks" data-testid="tab-tasks">
+                          Tâches
+                        </TabsTrigger>
+                        <TabsTrigger value="relations" data-testid="tab-relations">
+                          Relations
+                        </TabsTrigger>
+                        <TabsTrigger value="chatbot" data-testid="tab-chatbot">
+                          Chatbot
                         </TabsTrigger>
                       </TabsList>
 
@@ -1211,6 +1227,22 @@ export default function AdminMembersPage() {
                             </div>
                           </CardContent>
                         </Card>
+                      </TabsContent>
+
+                      <TabsContent value="tags" className="space-y-4">
+                        <MemberTags memberEmail={selectedEmail} />
+                      </TabsContent>
+
+                      <TabsContent value="tasks" className="space-y-4">
+                        <MemberTasks memberEmail={selectedEmail} />
+                      </TabsContent>
+
+                      <TabsContent value="relations" className="space-y-4">
+                        <MemberRelations memberEmail={selectedEmail} />
+                      </TabsContent>
+
+                      <TabsContent value="chatbot" className="space-y-4">
+                        <MemberChatbot memberEmail={selectedEmail} />
                       </TabsContent>
                     </Tabs>
                   )}

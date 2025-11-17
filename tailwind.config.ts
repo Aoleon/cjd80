@@ -1,9 +1,12 @@
 import type { Config } from "tailwindcss";
 
 // Hardcoded values from branding config to avoid build-time import issues
-const CJD_GREEN = "#00a844";
-const CJD_GREEN_DARK = "#008835";
-const PRIMARY_FONT = "Lato";
+// NOTE: These values should match brandingCore.colors in client/src/config/branding-core.ts
+// We can't import brandingCore here because Tailwind config runs at build time and may have module resolution issues
+const CJD_GREEN = "#00a844";      // brandingCore.colors.primary
+const CJD_GREEN_DARK = "#008835"; // brandingCore.colors.primaryDark
+const CJD_GREEN_LIGHT = "#e8f5e8"; // Derived from brandingCore.colors.primaryLight or successLight
+const PRIMARY_FONT = "Lato";       // brandingCore.fonts.primary
 
 export default {
   darkMode: ["class"],
@@ -73,7 +76,7 @@ export default {
         'cjd-green': {
           DEFAULT: CJD_GREEN,
           dark: CJD_GREEN_DARK,
-          light: '#e8f5e8',
+          light: CJD_GREEN_LIGHT,
         },
         'success': {
           DEFAULT: "var(--success)",

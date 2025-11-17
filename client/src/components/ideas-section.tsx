@@ -9,7 +9,8 @@ import type { Idea } from "@shared/schema";
 import { IDEA_STATUS } from "@shared/schema";
 import { shareContent, isShareSupported } from "@/lib/share-utils";
 import { useToast } from "@/hooks/use-toast";
-import { branding, getShortAppName } from '@/config/branding';
+import { getShortAppName } from '@/config/branding';
+import { useBranding } from '@/contexts/BrandingContext';
 import { isNewIdea } from "@/lib/adminUtils";
 
 interface IdeaWithVotes extends Omit<Idea, "voteCount"> {
@@ -37,11 +38,11 @@ const getStatusColor = (status: string) => {
     case IDEA_STATUS.UNDER_REVIEW:
       return 'bg-info-light text-info-dark border-info ring-1 ring-info';
     case IDEA_STATUS.POSTPONED:
-      return 'bg-slate-50 text-slate-800 border-slate-300 ring-1 ring-slate-200';
+      return 'bg-muted text-muted-foreground border-border ring-1 ring-border';
     case IDEA_STATUS.COMPLETED:
       return 'bg-success-light text-success-dark border-success ring-1 ring-success';
     default:
-      return 'bg-gray-50 text-gray-800 border-gray-300 ring-1 ring-gray-200';
+      return 'bg-muted text-muted-foreground border-border ring-1 ring-border';
   }
 };
 
@@ -69,6 +70,7 @@ interface IdeasSectionProps {
 }
 
 export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps) {
+  const { branding } = useBranding();
   const [selectedIdea, setSelectedIdea] = useState<IdeaWithVotes | null>(null);
   const [voteModalOpen, setVoteModalOpen] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
@@ -140,7 +142,7 @@ export default function IdeasSection({ onNavigateToPropose }: IdeasSectionProps)
       {/* Welcome Message */}
       <div className="flex flex-col items-center text-center mb-6">
         <img 
-          src={branding.assets.boiteKiffImage} 
+          src={branding.assets?.boiteKiffImage || '/icon-192.jpg'} 
           alt="La Boîte à Kiffs" 
           className="h-36 sm:h-48 w-auto object-contain rounded-[60px] mb-4"
           style={{ transform: 'scale(1)' }}

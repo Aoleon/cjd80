@@ -36,9 +36,9 @@ export default function LoanItemMobileCard({
       [LOAN_STATUS.AVAILABLE]: "bg-success text-white",
       [LOAN_STATUS.BORROWED]: "bg-warning text-white",
       [LOAN_STATUS.UNAVAILABLE]: "bg-error text-white",
-      [LOAN_STATUS.PENDING]: "bg-gray-400 text-white",
+      [LOAN_STATUS.PENDING]: "bg-muted text-muted-foreground",
     };
-    return badges[status as keyof typeof badges] || "bg-gray-400 text-white";
+    return badges[status as keyof typeof badges] || "bg-muted text-muted-foreground";
   };
 
   const getStatusLabel = (status: string) => {

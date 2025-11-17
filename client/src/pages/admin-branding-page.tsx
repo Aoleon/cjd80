@@ -48,6 +48,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Palette, Loader2, Save, RotateCcw } from "lucide-react";
 import { useLocation } from "wouter";
 import type { BrandingCore } from "@/config/branding-core";
+import { brandingCore } from "@/config/branding-core";
 
 // Zod validation schema for branding configuration
 const brandingFormSchema = z.object({
@@ -174,42 +175,42 @@ export default function AdminBrandingPage() {
         email: "",
       },
       colors: {
-        primary: "#00a844",
-        primaryDark: "#008835",
-        primaryLight: "#00c94f",
-        secondary: "#1a1a1a",
-        background: "#f9fafb",
+        primary: brandingCore.colors.primary,
+        primaryDark: brandingCore.colors.primaryDark,
+        primaryLight: brandingCore.colors.primaryLight,
+        secondary: brandingCore.colors.secondary,
+        background: brandingCore.colors.background,
         
-        success: "#00c853",
-        successDark: "#00a844",
-        successLight: "#e8f5e9",
+        success: brandingCore.colors.success,
+        successDark: brandingCore.colors.successDark,
+        successLight: brandingCore.colors.successLight,
         
-        warning: "#ffa726",
-        warningDark: "#f57c00",
-        warningLight: "#fff3e0",
+        warning: brandingCore.colors.warning,
+        warningDark: brandingCore.colors.warningDark,
+        warningLight: brandingCore.colors.warningLight,
         
-        error: "#f44336",
-        errorDark: "#d32f2f",
-        errorLight: "#ffebee",
+        error: brandingCore.colors.error,
+        errorDark: brandingCore.colors.errorDark,
+        errorLight: brandingCore.colors.errorLight,
         
-        info: "#2196f3",
-        infoDark: "#1976d2",
-        infoLight: "#e3f2fd",
+        info: brandingCore.colors.info,
+        infoDark: brandingCore.colors.infoDark,
+        infoLight: brandingCore.colors.infoLight,
         
-        chart1: "#00a844",
-        chart2: "#00bfa5",
-        chart3: "#ffa726",
-        chart4: "#26c6da",
-        chart5: "#ec407a",
+        chart1: brandingCore.colors.chart1,
+        chart2: brandingCore.colors.chart2,
+        chart3: brandingCore.colors.chart3,
+        chart4: brandingCore.colors.chart4,
+        chart5: brandingCore.colors.chart5,
       },
       fonts: {
-        primary: "Lato",
-        googleFontsUrl: "",
-        weights: [300, 400, 700, 900],
+        primary: brandingCore.fonts.primary,
+        googleFontsUrl: brandingCore.fonts.googleFontsUrl,
+        weights: [...brandingCore.fonts.weights],
       },
       pwa: {
-        themeColor: "#00a844",
-        backgroundColor: "#f9fafb",
+        themeColor: brandingCore.pwa.themeColor,
+        backgroundColor: brandingCore.pwa.backgroundColor,
         display: "standalone",
         orientation: "portrait-primary",
         categories: ["business", "productivity", "social"],
@@ -557,7 +558,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-primary" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#00a844" data-testid="input-color-primary-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.primary} data-testid="input-color-primary-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -574,7 +575,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-primary-dark" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#008835" data-testid="input-color-primary-dark-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.primaryDark} data-testid="input-color-primary-dark-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -591,7 +592,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-primary-light" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#00c94f" data-testid="input-color-primary-light-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.primaryLight} data-testid="input-color-primary-light-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -608,7 +609,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-secondary" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#1a1a1a" data-testid="input-color-secondary-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.secondary} data-testid="input-color-secondary-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -625,7 +626,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-background" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#f9fafb" data-testid="input-color-background-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.background} data-testid="input-color-background-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -648,7 +649,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-success" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#00c853" data-testid="input-color-success-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.success} data-testid="input-color-success-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -665,7 +666,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-success-dark" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#00a844" data-testid="input-color-success-dark-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.successDark} data-testid="input-color-success-dark-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -682,7 +683,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-success-light" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#e8f5e9" data-testid="input-color-success-light-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.successLight} data-testid="input-color-success-light-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -699,7 +700,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-warning" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#ffa726" data-testid="input-color-warning-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.warning} data-testid="input-color-warning-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -716,7 +717,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-warning-dark" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#f57c00" data-testid="input-color-warning-dark-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.warningDark} data-testid="input-color-warning-dark-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -733,7 +734,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-warning-light" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#fff3e0" data-testid="input-color-warning-light-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.warningLight} data-testid="input-color-warning-light-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -750,7 +751,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-error" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#f44336" data-testid="input-color-error-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.error} data-testid="input-color-error-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -767,7 +768,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-error-dark" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#d32f2f" data-testid="input-color-error-dark-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.errorDark} data-testid="input-color-error-dark-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -784,7 +785,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-error-light" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#ffebee" data-testid="input-color-error-light-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.errorLight} data-testid="input-color-error-light-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -801,7 +802,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-info" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#2196f3" data-testid="input-color-info-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.info} data-testid="input-color-info-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -818,7 +819,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-info-dark" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#1976d2" data-testid="input-color-info-dark-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.infoDark} data-testid="input-color-info-dark-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -835,7 +836,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-info-light" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#e3f2fd" data-testid="input-color-info-light-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.infoLight} data-testid="input-color-info-light-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -858,7 +859,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-chart1" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#00a844" data-testid="input-color-chart1-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.chart1} data-testid="input-color-chart1-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -875,7 +876,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-chart2" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#00bfa5" data-testid="input-color-chart2-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.chart2} data-testid="input-color-chart2-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -892,7 +893,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-chart3" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#ffa726" data-testid="input-color-chart3-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.chart3} data-testid="input-color-chart3-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -909,7 +910,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-chart4" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#26c6da" data-testid="input-color-chart4-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.chart4} data-testid="input-color-chart4-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -926,7 +927,7 @@ export default function AdminBrandingPage() {
                                   <FormControl>
                                     <Input {...field} type="color" className="w-20 h-10" data-testid="input-color-chart5" />
                                   </FormControl>
-                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#ec407a" data-testid="input-color-chart5-text" />
+                                  <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.colors.chart5} data-testid="input-color-chart5-text" />
                                 </div>
                                 <FormMessage />
                               </FormItem>
@@ -989,7 +990,7 @@ export default function AdminBrandingPage() {
                                 <FormControl>
                                   <Input {...field} type="color" className="w-20 h-10" data-testid="input-pwa-theme-color" />
                                 </FormControl>
-                                <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#00a844" data-testid="input-pwa-theme-color-text" />
+                                <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.pwa.themeColor} data-testid="input-pwa-theme-color-text" />
                               </div>
                               <FormMessage />
                             </FormItem>
@@ -1006,7 +1007,7 @@ export default function AdminBrandingPage() {
                                 <FormControl>
                                   <Input {...field} type="color" className="w-20 h-10" data-testid="input-pwa-bg-color" />
                                 </FormControl>
-                                <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder="#f9fafb" data-testid="input-pwa-bg-color-text" />
+                                <Input value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={brandingCore.pwa.backgroundColor} data-testid="input-pwa-bg-color-text" />
                               </div>
                               <FormMessage />
                             </FormItem>

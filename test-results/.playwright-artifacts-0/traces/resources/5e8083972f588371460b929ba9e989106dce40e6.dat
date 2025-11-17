@@ -1,0 +1,52 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/events-page.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=8973d617"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/thibault/Développements /CJD80/cjd80/client/src/pages/events-page.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+import Layout from "/src/components/layout.tsx";
+import EventsSection from "/src/components/events-section.tsx";
+export default function EventsPage() {
+  return /* @__PURE__ */ jsxDEV(Layout, { children: /* @__PURE__ */ jsxDEV("div", { className: "container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8", children: /* @__PURE__ */ jsxDEV(EventsSection, {}, void 0, false, {
+    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/pages/events-page.tsx",
+    lineNumber: 27,
+    columnNumber: 9
+  }, this) }, void 0, false, {
+    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/pages/events-page.tsx",
+    lineNumber: 26,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/pages/events-page.tsx",
+    lineNumber: 25,
+    columnNumber: 5
+  }, this);
+}
+_c = EventsPage;
+var _c;
+$RefreshReg$(_c, "EventsPage");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/thibault/Développements /CJD80/cjd80/client/src/pages/events-page.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/thibault/Développements /CJD80/cjd80/client/src/pages/events-page.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBT1E7Ozs7Ozs7Ozs7Ozs7Ozs7QUFQUixPQUFPQSxZQUFZO0FBQ25CLE9BQU9DLG1CQUFtQjtBQUUxQix3QkFBd0JDLGFBQWE7QUFDbkMsU0FDRSx1QkFBQyxVQUNDLGlDQUFDLFNBQUksV0FBVSx1REFDYixpQ0FBQyxtQkFBRDtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBQWMsS0FEaEI7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQUVBLEtBSEY7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQUlBO0FBRUo7QUFBQ0MsS0FSdUJEO0FBQVUsSUFBQUM7QUFBQUMsYUFBQUQsSUFBQSIsIm5hbWVzIjpbIkxheW91dCIsIkV2ZW50c1NlY3Rpb24iLCJFdmVudHNQYWdlIiwiX2MiLCIkUmVmcmVzaFJlZyQiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiZXZlbnRzLXBhZ2UudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCBMYXlvdXQgZnJvbSBcIkAvY29tcG9uZW50cy9sYXlvdXRcIjtcbmltcG9ydCBFdmVudHNTZWN0aW9uIGZyb20gXCJAL2NvbXBvbmVudHMvZXZlbnRzLXNlY3Rpb25cIjtcblxuZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gRXZlbnRzUGFnZSgpIHtcbiAgcmV0dXJuIChcbiAgICA8TGF5b3V0PlxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJjb250YWluZXIgbXgtYXV0byBweC0zIHNtOnB4LTQgbGc6cHgtNiBweS02IHNtOnB5LThcIj5cbiAgICAgICAgPEV2ZW50c1NlY3Rpb24gLz5cbiAgICAgIDwvZGl2PlxuICAgIDwvTGF5b3V0PlxuICApO1xufVxuIl0sImZpbGUiOiIvVXNlcnMvdGhpYmF1bHQvRGXMgXZlbG9wcGVtZW50cyAvQ0pEODAvY2pkODAvY2xpZW50L3NyYy9wYWdlcy9ldmVudHMtcGFnZS50c3gifQ==

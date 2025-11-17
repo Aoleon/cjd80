@@ -73,7 +73,7 @@ export default function AdminDbMonitor() {
       case 'healthy': return 'bg-success';
       case 'degraded': return 'bg-warning';
       case 'unhealthy': return 'bg-error';
-      default: return 'bg-gray-500';
+      default: return 'bg-muted';
     }
   };
 

@@ -1,0 +1,78 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/admin/IdeaMobileCard.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=8973d617"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/IdeaMobileCard.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+import IdeaMobileCardItem from "/src/components/admin/IdeaMobileCardItem.tsx";
+export default function IdeaMobileCard({
+  ideas,
+  onViewDetail,
+  onStatusChange,
+  onManageVotes,
+  onToggleFeatured,
+  onEdit,
+  onDelete,
+  isUpdatingStatus,
+  isDeleting,
+  isTogglingFeatured
+}) {
+  return /* @__PURE__ */ jsxDEV("div", { className: "space-y-4", children: ideas.map(
+    (idea) => /* @__PURE__ */ jsxDEV(
+      IdeaMobileCardItem,
+      {
+        idea,
+        onViewDetail: () => onViewDetail(idea),
+        onStatusChange: (status) => onStatusChange(idea.id, status),
+        onManageVotes: () => onManageVotes(idea),
+        onToggleFeatured: () => onToggleFeatured(idea.id),
+        onEdit: () => onEdit(idea),
+        onDelete: () => onDelete(idea.id),
+        isUpdatingStatus,
+        isDeleting,
+        isTogglingFeatured
+      },
+      idea.id,
+      false,
+      {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/IdeaMobileCard.tsx",
+        lineNumber: 51,
+        columnNumber: 7
+      },
+      this
+    )
+  ) }, void 0, false, {
+    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/IdeaMobileCard.tsx",
+    lineNumber: 49,
+    columnNumber: 5
+  }, this);
+}
+_c = IdeaMobileCard;
+var _c;
+$RefreshReg$(_c, "IdeaMobileCard");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/IdeaMobileCard.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/thibault/Développements /CJD80/cjd80/client/src/components/admin/IdeaMobileCard.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBK0JROzs7Ozs7Ozs7Ozs7Ozs7O0FBL0JSLE9BQU9BLHdCQUF3QjtBQWdCL0Isd0JBQXdCQyxlQUFlO0FBQUEsRUFDckNDO0FBQUFBLEVBQ0FDO0FBQUFBLEVBQ0FDO0FBQUFBLEVBQ0FDO0FBQUFBLEVBQ0FDO0FBQUFBLEVBQ0FDO0FBQUFBLEVBQ0FDO0FBQUFBLEVBQ0FDO0FBQUFBLEVBQ0FDO0FBQUFBLEVBQ0FDO0FBQ21CLEdBQUc7QUFDdEIsU0FDRSx1QkFBQyxTQUFJLFdBQVUsYUFDWlQsZ0JBQU1VO0FBQUFBLElBQUksQ0FBQ0MsU0FDVjtBQUFBLE1BQUM7QUFBQTtBQUFBLFFBRUM7QUFBQSxRQUNBLGNBQWMsTUFBTVYsYUFBYVUsSUFBSTtBQUFBLFFBQ3JDLGdCQUFnQixDQUFDQyxXQUFXVixlQUFlUyxLQUFLRSxJQUFJRCxNQUFNO0FBQUEsUUFDMUQsZUFBZSxNQUFNVCxjQUFjUSxJQUFJO0FBQUEsUUFDdkMsa0JBQWtCLE1BQU1QLGlCQUFpQk8sS0FBS0UsRUFBRTtBQUFBLFFBQ2hELFFBQVEsTUFBTVIsT0FBT00sSUFBSTtBQUFBLFFBQ3pCLFVBQVUsTUFBTUwsU0FBU0ssS0FBS0UsRUFBRTtBQUFBLFFBQ2hDO0FBQUEsUUFDQTtBQUFBLFFBQ0E7QUFBQTtBQUFBLE1BVktGLEtBQUtFO0FBQUFBLE1BRFo7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxJQVd5QztBQUFBLEVBRTFDLEtBZkg7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQWdCQTtBQUVKO0FBQUNDLEtBL0J1QmY7QUFBYyxJQUFBZTtBQUFBQyxhQUFBRCxJQUFBIiwibmFtZXMiOlsiSWRlYU1vYmlsZUNhcmRJdGVtIiwiSWRlYU1vYmlsZUNhcmQiLCJpZGVhcyIsIm9uVmlld0RldGFpbCIsIm9uU3RhdHVzQ2hhbmdlIiwib25NYW5hZ2VWb3RlcyIsIm9uVG9nZ2xlRmVhdHVyZWQiLCJvbkVkaXQiLCJvbkRlbGV0ZSIsImlzVXBkYXRpbmdTdGF0dXMiLCJpc0RlbGV0aW5nIiwiaXNUb2dnbGluZ0ZlYXR1cmVkIiwibWFwIiwiaWRlYSIsInN0YXR1cyIsImlkIiwiX2MiLCIkUmVmcmVzaFJlZyQiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiSWRlYU1vYmlsZUNhcmQudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCBJZGVhTW9iaWxlQ2FyZEl0ZW0gZnJvbSBcIi4vSWRlYU1vYmlsZUNhcmRJdGVtXCI7XG5pbXBvcnQgdHlwZSB7IElkZWFXaXRoVm90ZXMgfSBmcm9tIFwiQC90eXBlcy9hZG1pblwiO1xuXG5pbnRlcmZhY2UgSWRlYU1vYmlsZUNhcmRQcm9wcyB7XG4gIGlkZWFzOiBJZGVhV2l0aFZvdGVzW107XG4gIG9uVmlld0RldGFpbDogKGlkZWE6IElkZWFXaXRoVm90ZXMpID0+IHZvaWQ7XG4gIG9uU3RhdHVzQ2hhbmdlOiAoaWQ6IHN0cmluZywgc3RhdHVzOiBzdHJpbmcpID0+IHZvaWQ7XG4gIG9uTWFuYWdlVm90ZXM6IChpZGVhOiBJZGVhV2l0aFZvdGVzKSA9PiB2b2lkO1xuICBvblRvZ2dsZUZlYXR1cmVkOiAoaWQ6IHN0cmluZykgPT4gdm9pZDtcbiAgb25FZGl0OiAoaWRlYTogSWRlYVdpdGhWb3RlcykgPT4gdm9pZDtcbiAgb25EZWxldGU6IChpZDogc3RyaW5nKSA9PiB2b2lkO1xuICBpc1VwZGF0aW5nU3RhdHVzOiBib29sZWFuO1xuICBpc0RlbGV0aW5nOiBib29sZWFuO1xuICBpc1RvZ2dsaW5nRmVhdHVyZWQ6IGJvb2xlYW47XG59XG5cbmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIElkZWFNb2JpbGVDYXJkKHtcbiAgaWRlYXMsXG4gIG9uVmlld0RldGFpbCxcbiAgb25TdGF0dXNDaGFuZ2UsXG4gIG9uTWFuYWdlVm90ZXMsXG4gIG9uVG9nZ2xlRmVhdHVyZWQsXG4gIG9uRWRpdCxcbiAgb25EZWxldGUsXG4gIGlzVXBkYXRpbmdTdGF0dXMsXG4gIGlzRGVsZXRpbmcsXG4gIGlzVG9nZ2xpbmdGZWF0dXJlZCxcbn06IElkZWFNb2JpbGVDYXJkUHJvcHMpIHtcbiAgcmV0dXJuIChcbiAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktNFwiPlxuICAgICAge2lkZWFzLm1hcCgoaWRlYSkgPT4gKFxuICAgICAgICA8SWRlYU1vYmlsZUNhcmRJdGVtXG4gICAgICAgICAga2V5PXtpZGVhLmlkfVxuICAgICAgICAgIGlkZWE9e2lkZWF9XG4gICAgICAgICAgb25WaWV3RGV0YWlsPXsoKSA9PiBvblZpZXdEZXRhaWwoaWRlYSl9XG4gICAgICAgICAgb25TdGF0dXNDaGFuZ2U9eyhzdGF0dXMpID0+IG9uU3RhdHVzQ2hhbmdlKGlkZWEuaWQsIHN0YXR1cyl9XG4gICAgICAgICAgb25NYW5hZ2VWb3Rlcz17KCkgPT4gb25NYW5hZ2VWb3RlcyhpZGVhKX1cbiAgICAgICAgICBvblRvZ2dsZUZlYXR1cmVkPXsoKSA9PiBvblRvZ2dsZUZlYXR1cmVkKGlkZWEuaWQpfVxuICAgICAgICAgIG9uRWRpdD17KCkgPT4gb25FZGl0KGlkZWEpfVxuICAgICAgICAgIG9uRGVsZXRlPXsoKSA9PiBvbkRlbGV0ZShpZGVhLmlkKX1cbiAgICAgICAgICBpc1VwZGF0aW5nU3RhdHVzPXtpc1VwZGF0aW5nU3RhdHVzfVxuICAgICAgICAgIGlzRGVsZXRpbmc9e2lzRGVsZXRpbmd9XG4gICAgICAgICAgaXNUb2dnbGluZ0ZlYXR1cmVkPXtpc1RvZ2dsaW5nRmVhdHVyZWR9XG4gICAgICAgIC8+XG4gICAgICApKX1cbiAgICA8L2Rpdj5cbiAgKTtcbn1cbiJdLCJmaWxlIjoiL1VzZXJzL3RoaWJhdWx0L0RlzIF2ZWxvcHBlbWVudHMgL0NKRDgwL2NqZDgwL2NsaWVudC9zcmMvY29tcG9uZW50cy9hZG1pbi9JZGVhTW9iaWxlQ2FyZC50c3gifQ==

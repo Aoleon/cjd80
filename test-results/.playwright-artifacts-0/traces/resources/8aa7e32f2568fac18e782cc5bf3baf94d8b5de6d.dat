@@ -1,0 +1,552 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/member-relations.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=8973d617"; const Fragment = __vite__cjsImport0_react_jsxDevRuntime["Fragment"]; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/react.js?v=8973d617"; const useState = __vite__cjsImport3_react["useState"];
+import { useQuery, useMutation } from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/@tanstack_react-query.js?v=27047fab";
+import { useForm } from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/react-hook-form.js?v=df739c30";
+import { zodResolver } from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/@hookform_resolvers_zod.js?v=03a768ad";
+import { z } from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/zod.js?v=ed4c3458";
+import { formatDistanceToNow } from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/date-fns.js?v=0f4619e6";
+import { fr } from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/date-fns_locale.js?v=af3bb2d4";
+import { apiRequest, queryClient } from "/src/lib/queryClient.ts";
+import { useToast } from "/src/hooks/use-toast.ts";
+import { useAuth } from "/src/hooks/use-auth.tsx";
+import {
+  Card,
+  CardContent
+} from "/src/components/ui/card.tsx";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from "/src/components/ui/form.tsx";
+import { Button } from "/src/components/ui/button.tsx";
+import { Textarea } from "/src/components/ui/textarea.tsx";
+import { Badge } from "/src/components/ui/badge.tsx";
+import { Skeleton } from "/src/components/ui/skeleton.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "/src/components/ui/dialog.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "/src/components/ui/select.tsx";
+import { Loader2, Plus, Users, X, UserCheck } from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/lucide-react.js?v=9fe1beea";
+import { useQuery as useMembersQuery } from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/@tanstack_react-query.js?v=27047fab";
+const createRelationSchema = z.object({
+  relatedMemberEmail: z.string().email("Email invalide"),
+  relationType: z.enum(["sponsor", "team", "custom"]),
+  description: z.string().max(500).optional()
+});
+const RELATION_TYPE_LABELS = {
+  sponsor: "Parrainage",
+  team: "Équipe",
+  custom: "Personnalisé"
+};
+export function MemberRelations({ memberEmail }) {
+  _s();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const { data: membersResponse } = useMembersQuery({
+    queryKey: ["/api/admin/members", 1, 100],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/members?page=1&limit=100");
+      if (!res.ok) throw new Error("Failed to fetch members");
+      return res.json();
+    }
+  });
+  const members = membersResponse?.data || [];
+  const { data: relations = [], isLoading: relationsLoading, refetch } = useQuery({
+    queryKey: ["/api/admin/members", memberEmail, "relations"],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/members/${encodeURIComponent(memberEmail)}/relations`);
+      if (!res.ok) throw new Error("Failed to fetch relations");
+      const data = await res.json();
+      return data.data || [];
+    }
+  });
+  const createRelationForm = useForm({
+    resolver: zodResolver(createRelationSchema),
+    defaultValues: {
+      relatedMemberEmail: "",
+      relationType: "sponsor",
+      description: ""
+    }
+  });
+  const createRelationMutation = useMutation({
+    mutationFn: async (data) => {
+      return apiRequest("POST", `/api/admin/members/${encodeURIComponent(memberEmail)}/relations`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/members", memberEmail, "relations"] });
+      toast({ title: "Relation créée avec succès" });
+      setShowCreateDialog(false);
+      createRelationForm.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de créer la relation",
+        variant: "destructive"
+      });
+    }
+  });
+  const deleteRelationMutation = useMutation({
+    mutationFn: async (relationId) => {
+      return apiRequest("DELETE", `/api/admin/member-relations/${relationId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/members", memberEmail, "relations"] });
+      toast({ title: "Relation supprimée" });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer la relation",
+        variant: "destructive"
+      });
+    }
+  });
+  const handleCreateRelation = createRelationForm.handleSubmit((data) => {
+    createRelationMutation.mutate(data);
+  });
+  const getRelatedMember = (email) => {
+    return members.find((m) => m.email === email);
+  };
+  return /* @__PURE__ */ jsxDEV("div", { className: "space-y-4", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between", children: [
+      /* @__PURE__ */ jsxDEV("h3", { className: "text-lg font-semibold", children: "Relations" }, void 0, false, {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+        lineNumber: 167,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV(Dialog, { open: showCreateDialog, onOpenChange: setShowCreateDialog, children: [
+        /* @__PURE__ */ jsxDEV(DialogTrigger, { asChild: true, children: /* @__PURE__ */ jsxDEV(Button, { size: "sm", children: [
+          /* @__PURE__ */ jsxDEV(Plus, { className: "h-4 w-4 mr-2" }, void 0, false, {
+            fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+            lineNumber: 171,
+            columnNumber: 15
+          }, this),
+          "Ajouter une relation"
+        ] }, void 0, true, {
+          fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+          lineNumber: 170,
+          columnNumber: 13
+        }, this) }, void 0, false, {
+          fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+          lineNumber: 169,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV(DialogContent, { children: [
+          /* @__PURE__ */ jsxDEV(DialogHeader, { children: [
+            /* @__PURE__ */ jsxDEV(DialogTitle, { children: "Créer une relation" }, void 0, false, {
+              fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+              lineNumber: 177,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV(DialogDescription, { children: "Lier ce membre à un autre membre (parrainage, équipe, etc.)" }, void 0, false, {
+              fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+              lineNumber: 178,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+            lineNumber: 176,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV(Form, { ...createRelationForm, children: /* @__PURE__ */ jsxDEV("form", { onSubmit: handleCreateRelation, className: "space-y-4", children: [
+            /* @__PURE__ */ jsxDEV(
+              FormField,
+              {
+                control: createRelationForm.control,
+                name: "relatedMemberEmail",
+                render: ({ field }) => /* @__PURE__ */ jsxDEV(FormItem, { children: [
+                  /* @__PURE__ */ jsxDEV(FormLabel, { children: "Membre lié" }, void 0, false, {
+                    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                    lineNumber: 189,
+                    columnNumber: 23
+                  }, this),
+                  /* @__PURE__ */ jsxDEV(Select, { onValueChange: field.onChange, value: field.value, children: [
+                    /* @__PURE__ */ jsxDEV(FormControl, { children: /* @__PURE__ */ jsxDEV(SelectTrigger, { children: /* @__PURE__ */ jsxDEV(SelectValue, { placeholder: "Sélectionner un membre..." }, void 0, false, {
+                      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                      lineNumber: 193,
+                      columnNumber: 29
+                    }, this) }, void 0, false, {
+                      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                      lineNumber: 192,
+                      columnNumber: 27
+                    }, this) }, void 0, false, {
+                      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                      lineNumber: 191,
+                      columnNumber: 25
+                    }, this),
+                    /* @__PURE__ */ jsxDEV(SelectContent, { children: members.filter((m) => m.email !== memberEmail).map(
+                      (member) => /* @__PURE__ */ jsxDEV(SelectItem, { value: member.email, children: [
+                        member.firstName,
+                        " ",
+                        member.lastName,
+                        " (",
+                        member.email,
+                        ")"
+                      ] }, member.email, true, {
+                        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                        lineNumber: 200,
+                        columnNumber: 25
+                      }, this)
+                    ) }, void 0, false, {
+                      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                      lineNumber: 196,
+                      columnNumber: 25
+                    }, this)
+                  ] }, void 0, true, {
+                    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                    lineNumber: 190,
+                    columnNumber: 23
+                  }, this),
+                  /* @__PURE__ */ jsxDEV(FormMessage, {}, void 0, false, {
+                    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                    lineNumber: 206,
+                    columnNumber: 23
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                  lineNumber: 188,
+                  columnNumber: 19
+                }, this)
+              },
+              void 0,
+              false,
+              {
+                fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                lineNumber: 184,
+                columnNumber: 17
+              },
+              this
+            ),
+            /* @__PURE__ */ jsxDEV(
+              FormField,
+              {
+                control: createRelationForm.control,
+                name: "relationType",
+                render: ({ field }) => /* @__PURE__ */ jsxDEV(FormItem, { children: [
+                  /* @__PURE__ */ jsxDEV(FormLabel, { children: "Type de relation" }, void 0, false, {
+                    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                    lineNumber: 215,
+                    columnNumber: 23
+                  }, this),
+                  /* @__PURE__ */ jsxDEV(Select, { onValueChange: field.onChange, value: field.value, children: [
+                    /* @__PURE__ */ jsxDEV(FormControl, { children: /* @__PURE__ */ jsxDEV(SelectTrigger, { children: /* @__PURE__ */ jsxDEV(SelectValue, {}, void 0, false, {
+                      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                      lineNumber: 219,
+                      columnNumber: 29
+                    }, this) }, void 0, false, {
+                      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                      lineNumber: 218,
+                      columnNumber: 27
+                    }, this) }, void 0, false, {
+                      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                      lineNumber: 217,
+                      columnNumber: 25
+                    }, this),
+                    /* @__PURE__ */ jsxDEV(SelectContent, { children: [
+                      /* @__PURE__ */ jsxDEV(SelectItem, { value: "sponsor", children: "Parrainage" }, void 0, false, {
+                        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                        lineNumber: 223,
+                        columnNumber: 27
+                      }, this),
+                      /* @__PURE__ */ jsxDEV(SelectItem, { value: "team", children: "Équipe" }, void 0, false, {
+                        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                        lineNumber: 224,
+                        columnNumber: 27
+                      }, this),
+                      /* @__PURE__ */ jsxDEV(SelectItem, { value: "custom", children: "Personnalisé" }, void 0, false, {
+                        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                        lineNumber: 225,
+                        columnNumber: 27
+                      }, this)
+                    ] }, void 0, true, {
+                      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                      lineNumber: 222,
+                      columnNumber: 25
+                    }, this)
+                  ] }, void 0, true, {
+                    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                    lineNumber: 216,
+                    columnNumber: 23
+                  }, this),
+                  /* @__PURE__ */ jsxDEV(FormMessage, {}, void 0, false, {
+                    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                    lineNumber: 228,
+                    columnNumber: 23
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                  lineNumber: 214,
+                  columnNumber: 19
+                }, this)
+              },
+              void 0,
+              false,
+              {
+                fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                lineNumber: 210,
+                columnNumber: 17
+              },
+              this
+            ),
+            /* @__PURE__ */ jsxDEV(
+              FormField,
+              {
+                control: createRelationForm.control,
+                name: "description",
+                render: ({ field }) => /* @__PURE__ */ jsxDEV(FormItem, { children: [
+                  /* @__PURE__ */ jsxDEV(FormLabel, { children: "Description (optionnelle)" }, void 0, false, {
+                    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                    lineNumber: 237,
+                    columnNumber: 23
+                  }, this),
+                  /* @__PURE__ */ jsxDEV(FormControl, { children: /* @__PURE__ */ jsxDEV(Textarea, { ...field, rows: 3, placeholder: "Détails de la relation..." }, void 0, false, {
+                    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                    lineNumber: 239,
+                    columnNumber: 25
+                  }, this) }, void 0, false, {
+                    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                    lineNumber: 238,
+                    columnNumber: 23
+                  }, this),
+                  /* @__PURE__ */ jsxDEV(FormMessage, {}, void 0, false, {
+                    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                    lineNumber: 241,
+                    columnNumber: 23
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                  lineNumber: 236,
+                  columnNumber: 19
+                }, this)
+              },
+              void 0,
+              false,
+              {
+                fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                lineNumber: 232,
+                columnNumber: 17
+              },
+              this
+            ),
+            /* @__PURE__ */ jsxDEV(
+              Button,
+              {
+                type: "submit",
+                disabled: createRelationMutation.isPending,
+                className: "w-full",
+                children: createRelationMutation.isPending ? /* @__PURE__ */ jsxDEV(Fragment, { children: [
+                  /* @__PURE__ */ jsxDEV(Loader2, { className: "h-4 w-4 mr-2 animate-spin" }, void 0, false, {
+                    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                    lineNumber: 252,
+                    columnNumber: 23
+                  }, this),
+                  "Création..."
+                ] }, void 0, true, {
+                  fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                  lineNumber: 251,
+                  columnNumber: 19
+                }, this) : "Créer la relation"
+              },
+              void 0,
+              false,
+              {
+                fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+                lineNumber: 245,
+                columnNumber: 17
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+            lineNumber: 183,
+            columnNumber: 15
+          }, this) }, void 0, false, {
+            fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+            lineNumber: 182,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+          lineNumber: 175,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+        lineNumber: 168,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+      lineNumber: 166,
+      columnNumber: 7
+    }, this),
+    relationsLoading ? /* @__PURE__ */ jsxDEV("div", { className: "space-y-2", children: [
+      /* @__PURE__ */ jsxDEV(Skeleton, { className: "h-20 w-full" }, void 0, false, {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+        lineNumber: 267,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV(Skeleton, { className: "h-20 w-full" }, void 0, false, {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+        lineNumber: 268,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+      lineNumber: 266,
+      columnNumber: 7
+    }, this) : relations.length === 0 ? /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-muted-foreground", children: "Aucune relation enregistrée" }, void 0, false, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+      lineNumber: 271,
+      columnNumber: 7
+    }, this) : /* @__PURE__ */ jsxDEV("div", { className: "space-y-3", children: relations.map((relation) => {
+      const relatedEmail = relation.memberEmail === memberEmail ? relation.relatedMemberEmail : relation.memberEmail;
+      const relatedMember = getRelatedMember(relatedEmail);
+      const isOutgoing = relation.memberEmail === memberEmail;
+      return /* @__PURE__ */ jsxDEV(Card, { children: /* @__PURE__ */ jsxDEV(CardContent, { className: "pt-6", children: /* @__PURE__ */ jsxDEV("div", { className: "flex items-start justify-between gap-4", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex-1 space-y-2", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-2", children: [
+            isOutgoing ? /* @__PURE__ */ jsxDEV(UserCheck, { className: "h-4 w-4" }, void 0, false, {
+              fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+              lineNumber: 287,
+              columnNumber: 39
+            }, this) : /* @__PURE__ */ jsxDEV(Users, { className: "h-4 w-4" }, void 0, false, {
+              fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+              lineNumber: 287,
+              columnNumber: 75
+            }, this),
+            /* @__PURE__ */ jsxDEV("h4", { className: "font-medium", children: relatedMember ? `${relatedMember.firstName} ${relatedMember.lastName}` : relatedEmail }, void 0, false, {
+              fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+              lineNumber: 288,
+              columnNumber: 25
+            }, this),
+            /* @__PURE__ */ jsxDEV(Badge, { variant: "secondary", children: RELATION_TYPE_LABELS[relation.relationType] }, void 0, false, {
+              fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+              lineNumber: 293,
+              columnNumber: 25
+            }, this)
+          ] }, void 0, true, {
+            fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+            lineNumber: 286,
+            columnNumber: 23
+          }, this),
+          relatedMember && /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-muted-foreground", children: relatedMember.email }, void 0, false, {
+            fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+            lineNumber: 298,
+            columnNumber: 21
+          }, this),
+          relation.description && /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-muted-foreground", children: relation.description }, void 0, false, {
+            fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+            lineNumber: 301,
+            columnNumber: 21
+          }, this),
+          /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-muted-foreground", children: formatDistanceToNow(new Date(relation.createdAt), { addSuffix: true, locale: fr }) }, void 0, false, {
+            fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+            lineNumber: 303,
+            columnNumber: 23
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+          lineNumber: 285,
+          columnNumber: 21
+        }, this),
+        /* @__PURE__ */ jsxDEV(
+          Button,
+          {
+            size: "sm",
+            variant: "ghost",
+            onClick: () => deleteRelationMutation.mutate(relation.id),
+            disabled: deleteRelationMutation.isPending,
+            children: /* @__PURE__ */ jsxDEV(X, { className: "h-4 w-4" }, void 0, false, {
+              fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+              lineNumber: 313,
+              columnNumber: 23
+            }, this)
+          },
+          void 0,
+          false,
+          {
+            fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+            lineNumber: 307,
+            columnNumber: 21
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+        lineNumber: 284,
+        columnNumber: 19
+      }, this) }, void 0, false, {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+        lineNumber: 283,
+        columnNumber: 17
+      }, this) }, relation.id, false, {
+        fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+        lineNumber: 282,
+        columnNumber: 13
+      }, this);
+    }) }, void 0, false, {
+      fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+      lineNumber: 273,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx",
+    lineNumber: 165,
+    columnNumber: 5
+  }, this);
+}
+_s(MemberRelations, "q1mzxQRpbkehmuakuKNWUPFoTrI=", false, function() {
+  return [useAuth, useToast, useMembersQuery, useQuery, useForm, useMutation, useMutation];
+});
+_c = MemberRelations;
+var _c;
+$RefreshReg$(_c, "MemberRelations");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/thibault/Développements /CJD80/cjd80/client/src/components/member-relations.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QUFJMkcsS0FBS0osU0FBU0ssU0FBUyxHQUFHLEVBQUVDLFdBQVcsTUFBTUMsUUFBUTdHLEdBQUcsQ0FBQyxLQURwRjtBQUFBO0FBQUE7QUFBQTtBQUFBLGlCQUVBO0FBQUEsYUFwQkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxlQXFCQTtBQUFBLFFBQ0E7QUFBQSxVQUFDO0FBQUE7QUFBQSxZQUNDLE1BQUs7QUFBQSxZQUNMLFNBQVE7QUFBQSxZQUNSLFNBQVMsTUFBTW1GLHVCQUF1QkksT0FBT2UsU0FBU1EsRUFBRTtBQUFBLFlBQ3hELFVBQVUzQix1QkFBdUJpQjtBQUFBQSxZQUVqQyxpQ0FBQyxLQUFFLFdBQVUsYUFBYjtBQUFBO0FBQUE7QUFBQTtBQUFBLG1CQUFzQjtBQUFBO0FBQUEsVUFOeEI7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLFFBT0E7QUFBQSxXQTlCRjtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBK0JBLEtBaENGO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFpQ0EsS0FsQ1NFLFNBQVNRLElBQXBCO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFtQ0E7QUFBQSxJQUVKLENBQUMsS0E5Q0g7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQStDQTtBQUFBLE9BM0pKO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0E2SkE7QUFFSjtBQUFDNUQsR0FoUGVGLGlCQUFlO0FBQUEsVUFDWjVDLFNBQ0NELFVBSWdCOEIsaUJBV3FDdkMsVUFVNUNFLFNBU0lELGFBbUJBQSxXQUFXO0FBQUE7QUFBQW9ILEtBdkQ1Qi9EO0FBQWUsSUFBQStEO0FBQUFDLGFBQUFELElBQUEiLCJuYW1lcyI6WyJ1c2VTdGF0ZSIsInVzZVF1ZXJ5IiwidXNlTXV0YXRpb24iLCJ1c2VGb3JtIiwiem9kUmVzb2x2ZXIiLCJ6IiwiZm9ybWF0RGlzdGFuY2VUb05vdyIsImZyIiwiYXBpUmVxdWVzdCIsInF1ZXJ5Q2xpZW50IiwidXNlVG9hc3QiLCJ1c2VBdXRoIiwiQ2FyZCIsIkNhcmRDb250ZW50IiwiRm9ybSIsIkZvcm1Db250cm9sIiwiRm9ybUZpZWxkIiwiRm9ybUl0ZW0iLCJGb3JtTGFiZWwiLCJGb3JtTWVzc2FnZSIsIkJ1dHRvbiIsIlRleHRhcmVhIiwiQmFkZ2UiLCJTa2VsZXRvbiIsIkRpYWxvZyIsIkRpYWxvZ0NvbnRlbnQiLCJEaWFsb2dEZXNjcmlwdGlvbiIsIkRpYWxvZ0hlYWRlciIsIkRpYWxvZ1RpdGxlIiwiRGlhbG9nVHJpZ2dlciIsIlNlbGVjdCIsIlNlbGVjdENvbnRlbnQiLCJTZWxlY3RJdGVtIiwiU2VsZWN0VHJpZ2dlciIsIlNlbGVjdFZhbHVlIiwiTG9hZGVyMiIsIlBsdXMiLCJVc2VycyIsIlgiLCJVc2VyQ2hlY2siLCJ1c2VNZW1iZXJzUXVlcnkiLCJjcmVhdGVSZWxhdGlvblNjaGVtYSIsIm9iamVjdCIsInJlbGF0ZWRNZW1iZXJFbWFpbCIsInN0cmluZyIsImVtYWlsIiwicmVsYXRpb25UeXBlIiwiZW51bSIsImRlc2NyaXB0aW9uIiwibWF4Iiwib3B0aW9uYWwiLCJSRUxBVElPTl9UWVBFX0xBQkVMUyIsInNwb25zb3IiLCJ0ZWFtIiwiY3VzdG9tIiwiTWVtYmVyUmVsYXRpb25zIiwibWVtYmVyRW1haWwiLCJfcyIsInVzZXIiLCJ0b2FzdCIsInNob3dDcmVhdGVEaWFsb2ciLCJzZXRTaG93Q3JlYXRlRGlhbG9nIiwiZGF0YSIsIm1lbWJlcnNSZXNwb25zZSIsInF1ZXJ5S2V5IiwicXVlcnlGbiIsInJlcyIsImZldGNoIiwib2siLCJFcnJvciIsImpzb24iLCJtZW1iZXJzIiwicmVsYXRpb25zIiwiaXNMb2FkaW5nIiwicmVsYXRpb25zTG9hZGluZyIsInJlZmV0Y2giLCJlbmNvZGVVUklDb21wb25lbnQiLCJjcmVhdGVSZWxhdGlvbkZvcm0iLCJyZXNvbHZlciIsImRlZmF1bHRWYWx1ZXMiLCJjcmVhdGVSZWxhdGlvbk11dGF0aW9uIiwibXV0YXRpb25GbiIsIm9uU3VjY2VzcyIsImludmFsaWRhdGVRdWVyaWVzIiwidGl0bGUiLCJyZXNldCIsIm9uRXJyb3IiLCJlcnJvciIsIm1lc3NhZ2UiLCJ2YXJpYW50IiwiZGVsZXRlUmVsYXRpb25NdXRhdGlvbiIsInJlbGF0aW9uSWQiLCJoYW5kbGVDcmVhdGVSZWxhdGlvbiIsImhhbmRsZVN1Ym1pdCIsIm11dGF0ZSIsImdldFJlbGF0ZWRNZW1iZXIiLCJmaW5kIiwibSIsImNvbnRyb2wiLCJmaWVsZCIsIm9uQ2hhbmdlIiwidmFsdWUiLCJmaWx0ZXIiLCJtYXAiLCJtZW1iZXIiLCJmaXJzdE5hbWUiLCJsYXN0TmFtZSIsImlzUGVuZGluZyIsImxlbmd0aCIsInJlbGF0aW9uIiwicmVsYXRlZEVtYWlsIiwicmVsYXRlZE1lbWJlciIsImlzT3V0Z29pbmciLCJEYXRlIiwiY3JlYXRlZEF0IiwiYWRkU3VmZml4IiwibG9jYWxlIiwiaWQiLCJfYyIsIiRSZWZyZXNoUmVnJCJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJtZW1iZXItcmVsYXRpb25zLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB1c2VTdGF0ZSB9IGZyb20gXCJyZWFjdFwiO1xuaW1wb3J0IHsgdXNlUXVlcnksIHVzZU11dGF0aW9uIH0gZnJvbSBcIkB0YW5zdGFjay9yZWFjdC1xdWVyeVwiO1xuaW1wb3J0IHsgdXNlRm9ybSB9IGZyb20gXCJyZWFjdC1ob29rLWZvcm1cIjtcbmltcG9ydCB7IHpvZFJlc29sdmVyIH0gZnJvbSBcIkBob29rZm9ybS9yZXNvbHZlcnMvem9kXCI7XG5pbXBvcnQgeyB6IH0gZnJvbSBcInpvZFwiO1xuaW1wb3J0IHsgZm9ybWF0RGlzdGFuY2VUb05vdyB9IGZyb20gXCJkYXRlLWZuc1wiO1xuaW1wb3J0IHsgZnIgfSBmcm9tIFwiZGF0ZS1mbnMvbG9jYWxlXCI7XG5pbXBvcnQgeyBhcGlSZXF1ZXN0LCBxdWVyeUNsaWVudCB9IGZyb20gXCJAL2xpYi9xdWVyeUNsaWVudFwiO1xuaW1wb3J0IHsgdXNlVG9hc3QgfSBmcm9tIFwiQC9ob29rcy91c2UtdG9hc3RcIjtcbmltcG9ydCB7IHVzZUF1dGggfSBmcm9tIFwiQC9ob29rcy91c2UtYXV0aFwiO1xuaW1wb3J0IHtcbiAgQ2FyZCxcbiAgQ2FyZENvbnRlbnQsXG59IGZyb20gXCJAL2NvbXBvbmVudHMvdWkvY2FyZFwiO1xuaW1wb3J0IHtcbiAgRm9ybSxcbiAgRm9ybUNvbnRyb2wsXG4gIEZvcm1GaWVsZCxcbiAgRm9ybUl0ZW0sXG4gIEZvcm1MYWJlbCxcbiAgRm9ybU1lc3NhZ2UsXG59IGZyb20gXCJAL2NvbXBvbmVudHMvdWkvZm9ybVwiO1xuaW1wb3J0IHsgQnV0dG9uIH0gZnJvbSBcIkAvY29tcG9uZW50cy91aS9idXR0b25cIjtcbmltcG9ydCB7IElucHV0IH0gZnJvbSBcIkAvY29tcG9uZW50cy91aS9pbnB1dFwiO1xuaW1wb3J0IHsgVGV4dGFyZWEgfSBmcm9tIFwiQC9jb21wb25lbnRzL3VpL3RleHRhcmVhXCI7XG5pbXBvcnQgeyBCYWRnZSB9IGZyb20gXCJAL2NvbXBvbmVudHMvdWkvYmFkZ2VcIjtcbmltcG9ydCB7IFNrZWxldG9uIH0gZnJvbSBcIkAvY29tcG9uZW50cy91aS9za2VsZXRvblwiO1xuaW1wb3J0IHtcbiAgRGlhbG9nLFxuICBEaWFsb2dDb250ZW50LFxuICBEaWFsb2dEZXNjcmlwdGlvbixcbiAgRGlhbG9nSGVhZGVyLFxuICBEaWFsb2dUaXRsZSxcbiAgRGlhbG9nVHJpZ2dlcixcbn0gZnJvbSBcIkAvY29tcG9uZW50cy91aS9kaWFsb2dcIjtcbmltcG9ydCB7XG4gIFNlbGVjdCxcbiAgU2VsZWN0Q29udGVudCxcbiAgU2VsZWN0SXRlbSxcbiAgU2VsZWN0VHJpZ2dlcixcbiAgU2VsZWN0VmFsdWUsXG59IGZyb20gXCJAL2NvbXBvbmVudHMvdWkvc2VsZWN0XCI7XG5pbXBvcnQgeyBMb2FkZXIyLCBQbHVzLCBVc2VycywgWCwgVXNlckNoZWNrIH0gZnJvbSBcImx1Y2lkZS1yZWFjdFwiO1xuaW1wb3J0IHsgdXNlUXVlcnkgYXMgdXNlTWVtYmVyc1F1ZXJ5IH0gZnJvbSBcIkB0YW5zdGFjay9yZWFjdC1xdWVyeVwiO1xuaW1wb3J0IHR5cGUgeyBNZW1iZXJSZWxhdGlvbiwgTWVtYmVyIH0gZnJvbSBcIkBzaGFyZWQvc2NoZW1hXCI7XG5cbmNvbnN0IGNyZWF0ZVJlbGF0aW9uU2NoZW1hID0gei5vYmplY3Qoe1xuICByZWxhdGVkTWVtYmVyRW1haWw6IHouc3RyaW5nKCkuZW1haWwoXCJFbWFpbCBpbnZhbGlkZVwiKSxcbiAgcmVsYXRpb25UeXBlOiB6LmVudW0oWydzcG9uc29yJywgJ3RlYW0nLCAnY3VzdG9tJ10pLFxuICBkZXNjcmlwdGlvbjogei5zdHJpbmcoKS5tYXgoNTAwKS5vcHRpb25hbCgpLFxufSk7XG5cbnR5cGUgQ3JlYXRlUmVsYXRpb25Gb3JtVmFsdWVzID0gei5pbmZlcjx0eXBlb2YgY3JlYXRlUmVsYXRpb25TY2hlbWE+O1xuXG5pbnRlcmZhY2UgTWVtYmVyUmVsYXRpb25zUHJvcHMge1xuICBtZW1iZXJFbWFpbDogc3RyaW5nO1xufVxuXG5jb25zdCBSRUxBVElPTl9UWVBFX0xBQkVMUyA9IHtcbiAgc3BvbnNvcjogXCJQYXJyYWluYWdlXCIsXG4gIHRlYW06IFwiw4lxdWlwZVwiLFxuICBjdXN0b206IFwiUGVyc29ubmFsaXPDqVwiLFxufTtcblxuZXhwb3J0IGZ1bmN0aW9uIE1lbWJlclJlbGF0aW9ucyh7IG1lbWJlckVtYWlsIH06IE1lbWJlclJlbGF0aW9uc1Byb3BzKSB7XG4gIGNvbnN0IHsgdXNlciB9ID0gdXNlQXV0aCgpO1xuICBjb25zdCB7IHRvYXN0IH0gPSB1c2VUb2FzdCgpO1xuICBjb25zdCBbc2hvd0NyZWF0ZURpYWxvZywgc2V0U2hvd0NyZWF0ZURpYWxvZ10gPSB1c2VTdGF0ZShmYWxzZSk7XG5cbiAgLy8gUsOpY3Vww6lyZXIgdG91cyBsZXMgbWVtYnJlcyBwb3VyIGxlIHNlbGVjdFxuICBjb25zdCB7IGRhdGE6IG1lbWJlcnNSZXNwb25zZSB9ID0gdXNlTWVtYmVyc1F1ZXJ5PHsgZGF0YTogTWVtYmVyW10gfT4oe1xuICAgIHF1ZXJ5S2V5OiBbXCIvYXBpL2FkbWluL21lbWJlcnNcIiwgMSwgMTAwXSxcbiAgICBxdWVyeUZuOiBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCByZXMgPSBhd2FpdCBmZXRjaChcIi9hcGkvYWRtaW4vbWVtYmVycz9wYWdlPTEmbGltaXQ9MTAwXCIpO1xuICAgICAgaWYgKCFyZXMub2spIHRocm93IG5ldyBFcnJvcihcIkZhaWxlZCB0byBmZXRjaCBtZW1iZXJzXCIpO1xuICAgICAgcmV0dXJuIHJlcy5qc29uKCk7XG4gICAgfSxcbiAgfSk7XG5cbiAgY29uc3QgbWVtYmVycyA9IG1lbWJlcnNSZXNwb25zZT8uZGF0YSB8fCBbXTtcblxuICBjb25zdCB7IGRhdGE6IHJlbGF0aW9ucyA9IFtdLCBpc0xvYWRpbmc6IHJlbGF0aW9uc0xvYWRpbmcsIHJlZmV0Y2ggfSA9IHVzZVF1ZXJ5PE1lbWJlclJlbGF0aW9uW10+KHtcbiAgICBxdWVyeUtleTogW1wiL2FwaS9hZG1pbi9tZW1iZXJzXCIsIG1lbWJlckVtYWlsLCBcInJlbGF0aW9uc1wiXSxcbiAgICBxdWVyeUZuOiBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCByZXMgPSBhd2FpdCBmZXRjaChgL2FwaS9hZG1pbi9tZW1iZXJzLyR7ZW5jb2RlVVJJQ29tcG9uZW50KG1lbWJlckVtYWlsKX0vcmVsYXRpb25zYCk7XG4gICAgICBpZiAoIXJlcy5vaykgdGhyb3cgbmV3IEVycm9yKFwiRmFpbGVkIHRvIGZldGNoIHJlbGF0aW9uc1wiKTtcbiAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCByZXMuanNvbigpO1xuICAgICAgcmV0dXJuIGRhdGEuZGF0YSB8fCBbXTtcbiAgICB9LFxuICB9KTtcblxuICBjb25zdCBjcmVhdGVSZWxhdGlvbkZvcm0gPSB1c2VGb3JtPENyZWF0ZVJlbGF0aW9uRm9ybVZhbHVlcz4oe1xuICAgIHJlc29sdmVyOiB6b2RSZXNvbHZlcihjcmVhdGVSZWxhdGlvblNjaGVtYSksXG4gICAgZGVmYXVsdFZhbHVlczoge1xuICAgICAgcmVsYXRlZE1lbWJlckVtYWlsOiBcIlwiLFxuICAgICAgcmVsYXRpb25UeXBlOiBcInNwb25zb3JcIixcbiAgICAgIGRlc2NyaXB0aW9uOiBcIlwiLFxuICAgIH0sXG4gIH0pO1xuXG4gIGNvbnN0IGNyZWF0ZVJlbGF0aW9uTXV0YXRpb24gPSB1c2VNdXRhdGlvbih7XG4gICAgbXV0YXRpb25GbjogYXN5bmMgKGRhdGE6IENyZWF0ZVJlbGF0aW9uRm9ybVZhbHVlcykgPT4ge1xuICAgICAgcmV0dXJuIGFwaVJlcXVlc3QoXCJQT1NUXCIsIGAvYXBpL2FkbWluL21lbWJlcnMvJHtlbmNvZGVVUklDb21wb25lbnQobWVtYmVyRW1haWwpfS9yZWxhdGlvbnNgLCBkYXRhKTtcbiAgICB9LFxuICAgIG9uU3VjY2VzczogKCkgPT4ge1xuICAgICAgcXVlcnlDbGllbnQuaW52YWxpZGF0ZVF1ZXJpZXMoeyBxdWVyeUtleTogW1wiL2FwaS9hZG1pbi9tZW1iZXJzXCIsIG1lbWJlckVtYWlsLCBcInJlbGF0aW9uc1wiXSB9KTtcbiAgICAgIHRvYXN0KHsgdGl0bGU6IFwiUmVsYXRpb24gY3LDqcOpZSBhdmVjIHN1Y2PDqHNcIiB9KTtcbiAgICAgIHNldFNob3dDcmVhdGVEaWFsb2coZmFsc2UpO1xuICAgICAgY3JlYXRlUmVsYXRpb25Gb3JtLnJlc2V0KCk7XG4gICAgfSxcbiAgICBvbkVycm9yOiAoZXJyb3I6IGFueSkgPT4ge1xuICAgICAgdG9hc3Qoe1xuICAgICAgICB0aXRsZTogXCJFcnJldXJcIixcbiAgICAgICAgZGVzY3JpcHRpb246IGVycm9yLm1lc3NhZ2UgfHwgXCJJbXBvc3NpYmxlIGRlIGNyw6llciBsYSByZWxhdGlvblwiLFxuICAgICAgICB2YXJpYW50OiBcImRlc3RydWN0aXZlXCIsXG4gICAgICB9KTtcbiAgICB9LFxuICB9KTtcblxuICBjb25zdCBkZWxldGVSZWxhdGlvbk11dGF0aW9uID0gdXNlTXV0YXRpb24oe1xuICAgIG11dGF0aW9uRm46IGFzeW5jIChyZWxhdGlvbklkOiBzdHJpbmcpID0+IHtcbiAgICAgIHJldHVybiBhcGlSZXF1ZXN0KFwiREVMRVRFXCIsIGAvYXBpL2FkbWluL21lbWJlci1yZWxhdGlvbnMvJHtyZWxhdGlvbklkfWApO1xuICAgIH0sXG4gICAgb25TdWNjZXNzOiAoKSA9PiB7XG4gICAgICBxdWVyeUNsaWVudC5pbnZhbGlkYXRlUXVlcmllcyh7IHF1ZXJ5S2V5OiBbXCIvYXBpL2FkbWluL21lbWJlcnNcIiwgbWVtYmVyRW1haWwsIFwicmVsYXRpb25zXCJdIH0pO1xuICAgICAgdG9hc3QoeyB0aXRsZTogXCJSZWxhdGlvbiBzdXBwcmltw6llXCIgfSk7XG4gICAgfSxcbiAgICBvbkVycm9yOiAoZXJyb3I6IGFueSkgPT4ge1xuICAgICAgdG9hc3Qoe1xuICAgICAgICB0aXRsZTogXCJFcnJldXJcIixcbiAgICAgICAgZGVzY3JpcHRpb246IGVycm9yLm1lc3NhZ2UgfHwgXCJJbXBvc3NpYmxlIGRlIHN1cHByaW1lciBsYSByZWxhdGlvblwiLFxuICAgICAgICB2YXJpYW50OiBcImRlc3RydWN0aXZlXCIsXG4gICAgICB9KTtcbiAgICB9LFxuICB9KTtcblxuICBjb25zdCBoYW5kbGVDcmVhdGVSZWxhdGlvbiA9IGNyZWF0ZVJlbGF0aW9uRm9ybS5oYW5kbGVTdWJtaXQoKGRhdGEpID0+IHtcbiAgICBjcmVhdGVSZWxhdGlvbk11dGF0aW9uLm11dGF0ZShkYXRhKTtcbiAgfSk7XG5cbiAgY29uc3QgZ2V0UmVsYXRlZE1lbWJlciA9IChlbWFpbDogc3RyaW5nKSA9PiB7XG4gICAgcmV0dXJuIG1lbWJlcnMuZmluZChtID0+IG0uZW1haWwgPT09IGVtYWlsKTtcbiAgfTtcblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlblwiPlxuICAgICAgICA8aDMgY2xhc3NOYW1lPVwidGV4dC1sZyBmb250LXNlbWlib2xkXCI+UmVsYXRpb25zPC9oMz5cbiAgICAgICAgPERpYWxvZyBvcGVuPXtzaG93Q3JlYXRlRGlhbG9nfSBvbk9wZW5DaGFuZ2U9e3NldFNob3dDcmVhdGVEaWFsb2d9PlxuICAgICAgICAgIDxEaWFsb2dUcmlnZ2VyIGFzQ2hpbGQ+XG4gICAgICAgICAgICA8QnV0dG9uIHNpemU9XCJzbVwiPlxuICAgICAgICAgICAgICA8UGx1cyBjbGFzc05hbWU9XCJoLTQgdy00IG1yLTJcIiAvPlxuICAgICAgICAgICAgICBBam91dGVyIHVuZSByZWxhdGlvblxuICAgICAgICAgICAgPC9CdXR0b24+XG4gICAgICAgICAgPC9EaWFsb2dUcmlnZ2VyPlxuICAgICAgICAgIDxEaWFsb2dDb250ZW50PlxuICAgICAgICAgICAgPERpYWxvZ0hlYWRlcj5cbiAgICAgICAgICAgICAgPERpYWxvZ1RpdGxlPkNyw6llciB1bmUgcmVsYXRpb248L0RpYWxvZ1RpdGxlPlxuICAgICAgICAgICAgICA8RGlhbG9nRGVzY3JpcHRpb24+XG4gICAgICAgICAgICAgICAgTGllciBjZSBtZW1icmUgw6AgdW4gYXV0cmUgbWVtYnJlIChwYXJyYWluYWdlLCDDqXF1aXBlLCBldGMuKVxuICAgICAgICAgICAgICA8L0RpYWxvZ0Rlc2NyaXB0aW9uPlxuICAgICAgICAgICAgPC9EaWFsb2dIZWFkZXI+XG4gICAgICAgICAgICA8Rm9ybSB7Li4uY3JlYXRlUmVsYXRpb25Gb3JtfT5cbiAgICAgICAgICAgICAgPGZvcm0gb25TdWJtaXQ9e2hhbmRsZUNyZWF0ZVJlbGF0aW9ufSBjbGFzc05hbWU9XCJzcGFjZS15LTRcIj5cbiAgICAgICAgICAgICAgICA8Rm9ybUZpZWxkXG4gICAgICAgICAgICAgICAgICBjb250cm9sPXtjcmVhdGVSZWxhdGlvbkZvcm0uY29udHJvbH1cbiAgICAgICAgICAgICAgICAgIG5hbWU9XCJyZWxhdGVkTWVtYmVyRW1haWxcIlxuICAgICAgICAgICAgICAgICAgcmVuZGVyPXsoeyBmaWVsZCB9KSA9PiAoXG4gICAgICAgICAgICAgICAgICAgIDxGb3JtSXRlbT5cbiAgICAgICAgICAgICAgICAgICAgICA8Rm9ybUxhYmVsPk1lbWJyZSBsacOpPC9Gb3JtTGFiZWw+XG4gICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdCBvblZhbHVlQ2hhbmdlPXtmaWVsZC5vbkNoYW5nZX0gdmFsdWU9e2ZpZWxkLnZhbHVlfT5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxGb3JtQ29udHJvbD5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdFRyaWdnZXI+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdFZhbHVlIHBsYWNlaG9sZGVyPVwiU8OpbGVjdGlvbm5lciB1biBtZW1icmUuLi5cIiAvPlxuICAgICAgICAgICAgICAgICAgICAgICAgICA8L1NlbGVjdFRyaWdnZXI+XG4gICAgICAgICAgICAgICAgICAgICAgICA8L0Zvcm1Db250cm9sPlxuICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdENvbnRlbnQ+XG4gICAgICAgICAgICAgICAgICAgICAgICAgIHttZW1iZXJzXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgLmZpbHRlcihtID0+IG0uZW1haWwgIT09IG1lbWJlckVtYWlsKVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIC5tYXAoKG1lbWJlcikgPT4gKFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdEl0ZW0ga2V5PXttZW1iZXIuZW1haWx9IHZhbHVlPXttZW1iZXIuZW1haWx9PlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7bWVtYmVyLmZpcnN0TmFtZX0ge21lbWJlci5sYXN0TmFtZX0gKHttZW1iZXIuZW1haWx9KVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPC9TZWxlY3RJdGVtPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICkpfVxuICAgICAgICAgICAgICAgICAgICAgICAgPC9TZWxlY3RDb250ZW50PlxuICAgICAgICAgICAgICAgICAgICAgIDwvU2VsZWN0PlxuICAgICAgICAgICAgICAgICAgICAgIDxGb3JtTWVzc2FnZSAvPlxuICAgICAgICAgICAgICAgICAgICA8L0Zvcm1JdGVtPlxuICAgICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgICAgIDxGb3JtRmllbGRcbiAgICAgICAgICAgICAgICAgIGNvbnRyb2w9e2NyZWF0ZVJlbGF0aW9uRm9ybS5jb250cm9sfVxuICAgICAgICAgICAgICAgICAgbmFtZT1cInJlbGF0aW9uVHlwZVwiXG4gICAgICAgICAgICAgICAgICByZW5kZXI9eyh7IGZpZWxkIH0pID0+IChcbiAgICAgICAgICAgICAgICAgICAgPEZvcm1JdGVtPlxuICAgICAgICAgICAgICAgICAgICAgIDxGb3JtTGFiZWw+VHlwZSBkZSByZWxhdGlvbjwvRm9ybUxhYmVsPlxuICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3Qgb25WYWx1ZUNoYW5nZT17ZmllbGQub25DaGFuZ2V9IHZhbHVlPXtmaWVsZC52YWx1ZX0+XG4gICAgICAgICAgICAgICAgICAgICAgICA8Rm9ybUNvbnRyb2w+XG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RUcmlnZ2VyPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RWYWx1ZSAvPlxuICAgICAgICAgICAgICAgICAgICAgICAgICA8L1NlbGVjdFRyaWdnZXI+XG4gICAgICAgICAgICAgICAgICAgICAgICA8L0Zvcm1Db250cm9sPlxuICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdENvbnRlbnQ+XG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RJdGVtIHZhbHVlPVwic3BvbnNvclwiPlBhcnJhaW5hZ2U8L1NlbGVjdEl0ZW0+XG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RJdGVtIHZhbHVlPVwidGVhbVwiPsOJcXVpcGU8L1NlbGVjdEl0ZW0+XG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RJdGVtIHZhbHVlPVwiY3VzdG9tXCI+UGVyc29ubmFsaXPDqTwvU2VsZWN0SXRlbT5cbiAgICAgICAgICAgICAgICAgICAgICAgIDwvU2VsZWN0Q29udGVudD5cbiAgICAgICAgICAgICAgICAgICAgICA8L1NlbGVjdD5cbiAgICAgICAgICAgICAgICAgICAgICA8Rm9ybU1lc3NhZ2UgLz5cbiAgICAgICAgICAgICAgICAgICAgPC9Gb3JtSXRlbT5cbiAgICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgICA8Rm9ybUZpZWxkXG4gICAgICAgICAgICAgICAgICBjb250cm9sPXtjcmVhdGVSZWxhdGlvbkZvcm0uY29udHJvbH1cbiAgICAgICAgICAgICAgICAgIG5hbWU9XCJkZXNjcmlwdGlvblwiXG4gICAgICAgICAgICAgICAgICByZW5kZXI9eyh7IGZpZWxkIH0pID0+IChcbiAgICAgICAgICAgICAgICAgICAgPEZvcm1JdGVtPlxuICAgICAgICAgICAgICAgICAgICAgIDxGb3JtTGFiZWw+RGVzY3JpcHRpb24gKG9wdGlvbm5lbGxlKTwvRm9ybUxhYmVsPlxuICAgICAgICAgICAgICAgICAgICAgIDxGb3JtQ29udHJvbD5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxUZXh0YXJlYSB7Li4uZmllbGR9IHJvd3M9ezN9IHBsYWNlaG9sZGVyPVwiRMOpdGFpbHMgZGUgbGEgcmVsYXRpb24uLi5cIiAvPlxuICAgICAgICAgICAgICAgICAgICAgIDwvRm9ybUNvbnRyb2w+XG4gICAgICAgICAgICAgICAgICAgICAgPEZvcm1NZXNzYWdlIC8+XG4gICAgICAgICAgICAgICAgICAgIDwvRm9ybUl0ZW0+XG4gICAgICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgICAgPEJ1dHRvblxuICAgICAgICAgICAgICAgICAgdHlwZT1cInN1Ym1pdFwiXG4gICAgICAgICAgICAgICAgICBkaXNhYmxlZD17Y3JlYXRlUmVsYXRpb25NdXRhdGlvbi5pc1BlbmRpbmd9XG4gICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGxcIlxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgIHtjcmVhdGVSZWxhdGlvbk11dGF0aW9uLmlzUGVuZGluZyA/IChcbiAgICAgICAgICAgICAgICAgICAgPD5cbiAgICAgICAgICAgICAgICAgICAgICA8TG9hZGVyMiBjbGFzc05hbWU9XCJoLTQgdy00IG1yLTIgYW5pbWF0ZS1zcGluXCIgLz5cbiAgICAgICAgICAgICAgICAgICAgICBDcsOpYXRpb24uLi5cbiAgICAgICAgICAgICAgICAgICAgPC8+XG4gICAgICAgICAgICAgICAgICApIDogKFxuICAgICAgICAgICAgICAgICAgICBcIkNyw6llciBsYSByZWxhdGlvblwiXG4gICAgICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICAgICA8L2Zvcm0+XG4gICAgICAgICAgICA8L0Zvcm0+XG4gICAgICAgICAgPC9EaWFsb2dDb250ZW50PlxuICAgICAgICA8L0RpYWxvZz5cbiAgICAgIDwvZGl2PlxuXG4gICAgICB7cmVsYXRpb25zTG9hZGluZyA/IChcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTJcIj5cbiAgICAgICAgICA8U2tlbGV0b24gY2xhc3NOYW1lPVwiaC0yMCB3LWZ1bGxcIiAvPlxuICAgICAgICAgIDxTa2VsZXRvbiBjbGFzc05hbWU9XCJoLTIwIHctZnVsbFwiIC8+XG4gICAgICAgIDwvZGl2PlxuICAgICAgKSA6IHJlbGF0aW9ucy5sZW5ndGggPT09IDAgPyAoXG4gICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtc20gdGV4dC1tdXRlZC1mb3JlZ3JvdW5kXCI+QXVjdW5lIHJlbGF0aW9uIGVucmVnaXN0csOpZTwvcD5cbiAgICAgICkgOiAoXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0zXCI+XG4gICAgICAgICAge3JlbGF0aW9ucy5tYXAoKHJlbGF0aW9uKSA9PiB7XG4gICAgICAgICAgICBjb25zdCByZWxhdGVkRW1haWwgPSByZWxhdGlvbi5tZW1iZXJFbWFpbCA9PT0gbWVtYmVyRW1haWwgXG4gICAgICAgICAgICAgID8gcmVsYXRpb24ucmVsYXRlZE1lbWJlckVtYWlsIFxuICAgICAgICAgICAgICA6IHJlbGF0aW9uLm1lbWJlckVtYWlsO1xuICAgICAgICAgICAgY29uc3QgcmVsYXRlZE1lbWJlciA9IGdldFJlbGF0ZWRNZW1iZXIocmVsYXRlZEVtYWlsKTtcbiAgICAgICAgICAgIGNvbnN0IGlzT3V0Z29pbmcgPSByZWxhdGlvbi5tZW1iZXJFbWFpbCA9PT0gbWVtYmVyRW1haWw7XG5cbiAgICAgICAgICAgIHJldHVybiAoXG4gICAgICAgICAgICAgIDxDYXJkIGtleT17cmVsYXRpb24uaWR9PlxuICAgICAgICAgICAgICAgIDxDYXJkQ29udGVudCBjbGFzc05hbWU9XCJwdC02XCI+XG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtc3RhcnQganVzdGlmeS1iZXR3ZWVuIGdhcC00XCI+XG4gICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xIHNwYWNlLXktMlwiPlxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgIHtpc091dGdvaW5nID8gPFVzZXJDaGVjayBjbGFzc05hbWU9XCJoLTQgdy00XCIgLz4gOiA8VXNlcnMgY2xhc3NOYW1lPVwiaC00IHctNFwiIC8+fVxuICAgICAgICAgICAgICAgICAgICAgICAgPGg0IGNsYXNzTmFtZT1cImZvbnQtbWVkaXVtXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICAgIHtyZWxhdGVkTWVtYmVyIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgID8gYCR7cmVsYXRlZE1lbWJlci5maXJzdE5hbWV9ICR7cmVsYXRlZE1lbWJlci5sYXN0TmFtZX1gXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgOiByZWxhdGVkRW1haWx9XG4gICAgICAgICAgICAgICAgICAgICAgICA8L2g0PlxuICAgICAgICAgICAgICAgICAgICAgICAgPEJhZGdlIHZhcmlhbnQ9XCJzZWNvbmRhcnlcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgICAge1JFTEFUSU9OX1RZUEVfTEFCRUxTW3JlbGF0aW9uLnJlbGF0aW9uVHlwZSBhcyBrZXlvZiB0eXBlb2YgUkVMQVRJT05fVFlQRV9MQUJFTFNdfVxuICAgICAgICAgICAgICAgICAgICAgICAgPC9CYWRnZT5cbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgICB7cmVsYXRlZE1lbWJlciAmJiAoXG4gICAgICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPntyZWxhdGVkTWVtYmVyLmVtYWlsfTwvcD5cbiAgICAgICAgICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICAgICAgICAgIHtyZWxhdGlvbi5kZXNjcmlwdGlvbiAmJiAoXG4gICAgICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPntyZWxhdGlvbi5kZXNjcmlwdGlvbn08L3A+XG4gICAgICAgICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxuICAgICAgICAgICAgICAgICAgICAgICAge2Zvcm1hdERpc3RhbmNlVG9Ob3cobmV3IERhdGUocmVsYXRpb24uY3JlYXRlZEF0KSwgeyBhZGRTdWZmaXg6IHRydWUsIGxvY2FsZTogZnIgfSl9XG4gICAgICAgICAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgPEJ1dHRvblxuICAgICAgICAgICAgICAgICAgICAgIHNpemU9XCJzbVwiXG4gICAgICAgICAgICAgICAgICAgICAgdmFyaWFudD1cImdob3N0XCJcbiAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBkZWxldGVSZWxhdGlvbk11dGF0aW9uLm11dGF0ZShyZWxhdGlvbi5pZCl9XG4gICAgICAgICAgICAgICAgICAgICAgZGlzYWJsZWQ9e2RlbGV0ZVJlbGF0aW9uTXV0YXRpb24uaXNQZW5kaW5nfVxuICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgPFggY2xhc3NOYW1lPVwiaC00IHctNFwiIC8+XG4gICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgPC9DYXJkQ29udGVudD5cbiAgICAgICAgICAgICAgPC9DYXJkPlxuICAgICAgICAgICAgKTtcbiAgICAgICAgICB9KX1cbiAgICAgICAgPC9kaXY+XG4gICAgICApfVxuICAgIDwvZGl2PlxuICApO1xufVxuXG4iXSwiZmlsZSI6Ii9Vc2Vycy90aGliYXVsdC9EZcyBdmVsb3BwZW1lbnRzIC9DSkQ4MC9jamQ4MC9jbGllbnQvc3JjL2NvbXBvbmVudHMvbWVtYmVyLXJlbGF0aW9ucy50c3gifQ==

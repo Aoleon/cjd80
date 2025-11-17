@@ -1,0 +1,52 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/loan-page.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=8973d617"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/thibault/Développements /CJD80/cjd80/client/src/pages/loan-page.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+import Layout from "/src/components/layout.tsx";
+import LoanItemsSection from "/src/components/loan-items-section.tsx";
+export default function LoanPage() {
+  return /* @__PURE__ */ jsxDEV(Layout, { children: /* @__PURE__ */ jsxDEV("div", { className: "container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8", children: /* @__PURE__ */ jsxDEV(LoanItemsSection, {}, void 0, false, {
+    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/pages/loan-page.tsx",
+    lineNumber: 27,
+    columnNumber: 9
+  }, this) }, void 0, false, {
+    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/pages/loan-page.tsx",
+    lineNumber: 26,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "/Users/thibault/Développements /CJD80/cjd80/client/src/pages/loan-page.tsx",
+    lineNumber: 25,
+    columnNumber: 5
+  }, this);
+}
+_c = LoanPage;
+var _c;
+$RefreshReg$(_c, "LoanPage");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/thibault/Développements /CJD80/cjd80/client/src/pages/loan-page.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/thibault/Développements /CJD80/cjd80/client/src/pages/loan-page.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBT1E7Ozs7Ozs7Ozs7Ozs7Ozs7QUFQUixPQUFPQSxZQUFZO0FBQ25CLE9BQU9DLHNCQUFzQjtBQUU3Qix3QkFBd0JDLFdBQVc7QUFDakMsU0FDRSx1QkFBQyxVQUNDLGlDQUFDLFNBQUksV0FBVSx1REFDYixpQ0FBQyxzQkFBRDtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBQWlCLEtBRG5CO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FFQSxLQUhGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FJQTtBQUVKO0FBQUNDLEtBUnVCRDtBQUFRLElBQUFDO0FBQUFDLGFBQUFELElBQUEiLCJuYW1lcyI6WyJMYXlvdXQiLCJMb2FuSXRlbXNTZWN0aW9uIiwiTG9hblBhZ2UiLCJfYyIsIiRSZWZyZXNoUmVnJCJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJsb2FuLXBhZ2UudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCBMYXlvdXQgZnJvbSBcIkAvY29tcG9uZW50cy9sYXlvdXRcIjtcbmltcG9ydCBMb2FuSXRlbXNTZWN0aW9uIGZyb20gXCJAL2NvbXBvbmVudHMvbG9hbi1pdGVtcy1zZWN0aW9uXCI7XG5cbmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIExvYW5QYWdlKCkge1xuICByZXR1cm4gKFxuICAgIDxMYXlvdXQ+XG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImNvbnRhaW5lciBteC1hdXRvIHB4LTMgc206cHgtNCBsZzpweC02IHB5LTYgc206cHktOFwiPlxuICAgICAgICA8TG9hbkl0ZW1zU2VjdGlvbiAvPlxuICAgICAgPC9kaXY+XG4gICAgPC9MYXlvdXQ+XG4gICk7XG59XG5cbiJdLCJmaWxlIjoiL1VzZXJzL3RoaWJhdWx0L0RlzIF2ZWxvcHBlbWVudHMgL0NKRDgwL2NqZDgwL2NsaWVudC9zcmMvcGFnZXMvbG9hbi1wYWdlLnRzeCJ9

@@ -1097,7 +1097,7 @@ export default function AdminPatronsPage() {
                                         {getSponsorshipStatusLabel(sponsorship.status)}
                                       </Badge>
                                       {sponsorship.isPubliclyVisible ? (
-                                        <Eye className="h-4 w-4 text-green-600" data-testid={`sponsorship-visible-${sponsorship.id}`} />
+                                        <Eye className="h-4 w-4 text-success" data-testid={`sponsorship-visible-${sponsorship.id}`} />
                                       ) : (
                                         <EyeOff className="h-4 w-4 text-gray-400" data-testid={`sponsorship-hidden-${sponsorship.id}`} />
                                       )}

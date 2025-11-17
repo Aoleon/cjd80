@@ -5,6 +5,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, log } from "./vite";
 import { startPoolMonitoring } from "./utils/db-health";
 import { startAutoSync } from "./utils/auto-sync";
+import { startTrackingAlertsGeneration } from "./utils/tracking-scheduler";
 import { nanoid } from "nanoid";
 import { logger } from "./lib/logger";
 import { ApiError } from "../shared/errors";
@@ -22,6 +23,23 @@ app.use('/uploads', express.static(path.join(__dirname, '../public/uploads'), {
   maxAge: '1y', // Cache long pour les images
   etag: true,
   lastModified: true
+}));
+
+// Servir les assets (logos uploadés) depuis attached_assets
+app.use('/assets', express.static(path.join(__dirname, '../attached_assets'), {
+  maxAge: '1y', // Cache long pour les images
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    // S'assurer que les logos sont servis avec le bon type MIME
+    if (filePath.match(/\.(jpg|jpeg)$/i)) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (filePath.match(/\.png$/i)) {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (filePath.match(/\.webp$/i)) {
+      res.setHeader('Content-Type', 'image/webp');
+    }
+  }
 }));
 
 process.on('uncaughtException', (error: Error) => {
@@ -204,5 +222,11 @@ app.use((req, res, next) => {
     
     // Démarrer la synchronisation automatique GitHub
     startAutoSync();
+    
+    // Démarrer la génération automatique des alertes de tracking
+    // Par défaut: toutes les 24h (1440 minutes)
+    // Peut être configuré via TRACKING_ALERTS_INTERVAL_MINUTES
+    const trackingInterval = parseInt(process.env.TRACKING_ALERTS_INTERVAL_MINUTES || '1440', 10);
+    startTrackingAlertsGeneration(trackingInterval);
   });
 })();

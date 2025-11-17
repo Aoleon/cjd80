@@ -1,0 +1,6 @@
+import {
+  require_react
+} from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-QCHXOAYK.js?v=9b33f788";
+import "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-WOOG5QLI.js?v=9b33f788";
+export default require_react();
+//# sourceMappingURL=react.js.map

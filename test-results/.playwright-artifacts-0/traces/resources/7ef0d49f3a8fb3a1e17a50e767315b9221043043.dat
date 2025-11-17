@@ -1,0 +1,29 @@
+"use client";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Content,
+  Root,
+  Trigger,
+  createCollapsibleScope
+} from "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-QI4HXOWK.js?v=9b33f788";
+import "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-E6PNPDKY.js?v=9b33f788";
+import "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-CVIRTCS4.js?v=9b33f788";
+import "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-3R3LPCWV.js?v=9b33f788";
+import "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-CIWSPAEX.js?v=9b33f788";
+import "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-JDYSANEB.js?v=9b33f788";
+import "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=9b33f788";
+import "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-KBTYAULA.js?v=9b33f788";
+import "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-QCHXOAYK.js?v=9b33f788";
+import "/@fs/Users/thibault/Développements /CJD80/cjd80/node_modules/.vite/deps/chunk-WOOG5QLI.js?v=9b33f788";
+export {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Content,
+  Root,
+  Trigger,
+  createCollapsibleScope
+};
+//# sourceMappingURL=@radix-ui_react-collapsible.js.map
