@@ -15,6 +15,8 @@ RUN npm ci
 COPY . .
 
 # Vérifications et build (frontend + backend)
+# Augmenter la limite de mémoire Node.js pour éviter les erreurs "heap out of memory"
+ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN npm run check && npm run build
 
 # ===================================
