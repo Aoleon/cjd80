@@ -177,10 +177,8 @@ main() {
     
     # Vérifier que le script existe
     print_info "Vérification du script de déploiement sur le VPS..."
-    if ! ssh_exec "test -f '$DEPLOY_DIR/scripts/vps-build-and-deploy.sh' && echo 'exists'" | grep -q "exists"; then
-        print_error "Le script vps-build-and-deploy.sh n'existe pas sur le VPS"
-        print_info "Vérifiez que le repository a été mis à jour correctement"
-        exit 1
+    if ! ssh_exec "test -f '$DEPLOY_DIR/scripts/vps-quick-deploy.sh' && echo 'exists'" | grep -q "exists"; then
+        print_warning "Le script vps-quick-deploy.sh n'existe pas encore, il sera créé au prochain git pull"
     fi
     
     # Exécuter le script de build et déploiement sur le VPS
@@ -188,13 +186,14 @@ main() {
     echo ""
     
     # Exécuter le script de build et déploiement
-    ssh_exec "cd $DEPLOY_DIR && bash scripts/vps-build-and-deploy.sh" || {
+    # Utiliser le script de déploiement rapide (sans boucles)
+    ssh_exec "cd $DEPLOY_DIR && bash scripts/vps-quick-deploy.sh" || {
         print_error "Échec du déploiement"
         echo ""
         print_info "Pour déboguer, connectez-vous au VPS:"
         echo "  ssh -p $VPS_PORT $VPS_USER@$VPS_HOST"
         echo "  cd $DEPLOY_DIR"
-        echo "  bash scripts/vps-build-and-deploy.sh"
+        echo "  bash scripts/vps-quick-deploy.sh"
         exit 1
     }
     
