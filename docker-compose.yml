@@ -1,10 +1,10 @@
 # Configuration Docker Compose pour production avec Traefik
-# L'image est fournie via la variable DOCKER_IMAGE depuis GitHub Actions
+# L'image est fournie via la variable DOCKER_IMAGE (locale ou depuis déploiement)
 
 services:
   cjd-app:
-    # Image depuis GHCR (fournie par GitHub Actions)
-    image: ${DOCKER_IMAGE:-ghcr.io/aoleon/cjd80:latest}
+    # Image locale buildée sur le VPS
+    image: ${DOCKER_IMAGE:-cjd80:latest}
     container_name: cjd-app
     restart: unless-stopped
     

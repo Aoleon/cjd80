@@ -2,20 +2,20 @@
 set -e
 
 # ============================================================================
-# Script de déploiement VPS pour CJD Amiens (cjd80.fr)
-# Ce script est exécuté sur le VPS
-# Compatible avec images locales (cjd80:latest) et GHCR (pour rétrocompatibilité)
+# Script de build et déploiement VPS pour CJD Amiens (cjd80.fr)
+# Ce script est exécuté sur le VPS et build l'image Docker localement
 # ============================================================================
 
 echo "=================================================="
-echo "🚀 Déploiement CJD Amiens - cjd80.fr"
+echo "🚀 Build et Déploiement CJD Amiens - cjd80.fr"
 echo "=================================================="
 
 # Variables
 DEPLOY_DIR="/docker/cjd80"
+IMAGE_NAME="cjd80"
+IMAGE_TAG="latest"
 BACKUP_TAG="backup-$(date +%Y%m%d-%H%M%S)"
-CURRENT_IMAGE=$(docker compose images -q cjd-app 2>/dev/null || echo "none")
-IMAGE_NAME="${IMAGE_NAME:-cjd80}"
+KEEP_BACKUPS=5
 
 cd "$DEPLOY_DIR"
 
@@ -24,93 +24,178 @@ cd "$DEPLOY_DIR"
 # ============================================================================
 echo "🔍 Vérification des fichiers nécessaires..."
 
-# Vérifier que docker-compose.yml existe et n'est pas vide
+# Vérifier que docker-compose.yml existe
 if [ ! -f "docker-compose.yml" ]; then
     echo "❌ ERREUR: Le fichier docker-compose.yml est manquant!"
-    echo "   Le repository n'a peut-être pas été synchronisé correctement."
     exit 1
 fi
 
 if [ ! -s "docker-compose.yml" ]; then
     echo "❌ ERREUR: Le fichier docker-compose.yml est vide!"
-    echo "   Le repository n'a peut-être pas été synchronisé correctement."
     exit 1
 fi
 
-echo "✅ Fichier docker-compose.yml présent et valide"
-
-# ============================================================================
-# 1. BACKUP de l'image actuelle (pour rollback)
-# ============================================================================
-if [ "$CURRENT_IMAGE" != "none" ] && [ -n "$CURRENT_IMAGE" ]; then
-    echo "📦 Sauvegarde de l'image actuelle pour rollback..."
-    
-    # Détecter si l'image est locale ou GHCR
-    if echo "$CURRENT_IMAGE" | grep -q "ghcr.io"; then
-        # Image GHCR (rétrocompatibilité)
-        docker tag "$CURRENT_IMAGE" "ghcr.io/aoleon/cjd80:${BACKUP_TAG}" || true
-        echo "✅ Backup créé: ghcr.io/aoleon/cjd80:${BACKUP_TAG}"
-    else
-        # Image locale
-        docker tag "$CURRENT_IMAGE" "${IMAGE_NAME}:${BACKUP_TAG}" || true
-        echo "✅ Backup créé: ${IMAGE_NAME}:${BACKUP_TAG}"
-    fi
+# Vérifier que Dockerfile existe
+if [ ! -f "Dockerfile" ]; then
+    echo "❌ ERREUR: Le fichier Dockerfile est manquant!"
+    exit 1
 fi
 
-# ============================================================================
-# 2. VÉRIFICATION DE L'IMAGE
-# ============================================================================
-echo "🔍 Vérification de l'image Docker..."
-
-# Si DOCKER_IMAGE n'est pas défini, utiliser l'image locale par défaut
-if [ -z "$DOCKER_IMAGE" ]; then
-    export DOCKER_IMAGE="${IMAGE_NAME}:latest"
-    echo "   Utilisation de l'image locale par défaut: $DOCKER_IMAGE"
-fi
-
-# Vérifier si l'image est locale ou GHCR
-if echo "$DOCKER_IMAGE" | grep -q "ghcr.io"; then
-    # Image GHCR - nécessite pull
-    echo "⬇️  Téléchargement de l'image depuis GHCR..."
-    docker pull "$DOCKER_IMAGE" || {
-        echo "❌ ERREUR: Impossible de télécharger l'image $DOCKER_IMAGE"
-        echo "   Vérifiez que l'image existe dans GHCR et que vous êtes authentifié"
-        exit 1
-    }
-    echo "✅ Image téléchargée avec succès"
-else
-    # Image locale - vérifier qu'elle existe
-    echo "   Vérification de l'image locale: $DOCKER_IMAGE"
-    if docker images "$DOCKER_IMAGE" --format "{{.Repository}}:{{.Tag}}" | grep -q "$DOCKER_IMAGE"; then
-        echo "✅ Image locale trouvée"
-    else
-        echo "❌ ERREUR: L'image locale $DOCKER_IMAGE n'existe pas"
-        echo "   Vous devez d'abord build l'image avec: docker build -t $DOCKER_IMAGE ."
-        exit 1
-    fi
-fi
-
-# ============================================================================
-# 3. MIGRATIONS de base de données
-# ============================================================================
-echo "🗄️  Exécution des migrations de base de données..."
-
-# Vérifier si .env existe
-if [ ! -f "$DEPLOY_DIR/.env" ]; then
-    echo "❌ ERREUR: Fichier .env manquant!"
+# Vérifier que .env existe
+if [ ! -f ".env" ]; then
+    echo "❌ ERREUR: Le fichier .env est manquant!"
     echo "   Créez le fichier .env à partir de .env.example"
     exit 1
 fi
 
-# Exécuter les migrations dans un conteneur temporaire avec la nouvelle image
-# Note: drizzle.config.ts, shared/schema.ts et drizzle-kit sont maintenant dans l'image Docker
+echo "✅ Fichiers nécessaires présents"
+
+# ============================================================================
+# 1. MISE À JOUR DU REPOSITORY
+# ============================================================================
+echo ""
+echo "🔄 Mise à jour du repository Git..."
+
+# Vérifier si le repository est initialisé
+if [ ! -d ".git" ]; then
+    echo "📦 Initialisation du repository Git..."
+    git init
+    git remote add origin https://github.com/Aoleon/cjd80.git || {
+        echo "⚠️  Remote origin existe déjà"
+    }
+fi
+
+# Récupérer les dernières modifications
+echo "   Récupération des dernières modifications..."
+git fetch origin main || {
+    echo "⚠️  Impossible de fetch origin/main, utilisation de la version locale"
+}
+
+# Mettre à jour vers origin/main
+echo "   Mise à jour vers origin/main..."
+git pull --ff-only origin main || {
+    echo "⚠️  Fast-forward impossible, tentative de merge..."
+    git pull origin main || {
+        echo "❌ ERREUR: Impossible de mettre à jour le repository"
+        exit 1
+    }
+}
+
+CURRENT_COMMIT=$(git rev-parse --short HEAD)
+echo "✅ Repository mis à jour (commit: $CURRENT_COMMIT)"
+
+# ============================================================================
+# 2. BACKUP de l'image actuelle (pour rollback)
+# ============================================================================
+echo ""
+echo "📦 Sauvegarde de l'image actuelle pour rollback..."
+
+# Récupérer l'image actuellement utilisée
+CURRENT_IMAGE=$(docker compose images -q cjd-app 2>/dev/null || echo "")
+
+if [ -n "$CURRENT_IMAGE" ] && [ "$CURRENT_IMAGE" != "none" ]; then
+    # Extraire le tag de l'image actuelle
+    CURRENT_IMAGE_TAG=$(docker inspect --format='{{.RepoTags}}' "$CURRENT_IMAGE" 2>/dev/null | grep -o "$IMAGE_NAME:[^ ]*" | head -1 || echo "")
+    
+    if [ -n "$CURRENT_IMAGE_TAG" ]; then
+        # Si l'image actuelle est latest, créer un backup
+        if echo "$CURRENT_IMAGE_TAG" | grep -q "latest"; then
+            echo "   Création d'un backup de l'image latest..."
+            docker tag "$IMAGE_NAME:$IMAGE_TAG" "$IMAGE_NAME:$BACKUP_TAG" 2>/dev/null || {
+                # Si latest n'existe pas encore, utiliser l'image actuelle
+                docker tag "$CURRENT_IMAGE" "$IMAGE_NAME:$BACKUP_TAG" || true
+            }
+            echo "✅ Backup créé: $IMAGE_NAME:$BACKUP_TAG"
+        else
+            echo "   Image actuelle n'est pas latest, pas de backup nécessaire"
+        fi
+    else
+        # Si on ne peut pas déterminer le tag, tagger l'image directement
+        docker tag "$CURRENT_IMAGE" "$IMAGE_NAME:$BACKUP_TAG" 2>/dev/null || true
+        echo "✅ Backup créé: $IMAGE_NAME:$BACKUP_TAG"
+    fi
+else
+    echo "⚠️  Aucune image actuelle trouvée (premier déploiement?)"
+fi
+
+# ============================================================================
+# 3. NETTOYAGE des anciennes images backup
+# ============================================================================
+echo ""
+echo "🧹 Nettoyage des anciennes images backup..."
+
+# Lister toutes les images backup, trier par date (plus récentes en premier)
+BACKUP_IMAGES=$(docker images "$IMAGE_NAME" --format "{{.Tag}}" | grep "^backup-" | sort -r || echo "")
+
+if [ -n "$BACKUP_IMAGES" ]; then
+    BACKUP_COUNT=$(echo "$BACKUP_IMAGES" | wc -l)
+    echo "   Images backup trouvées: $BACKUP_COUNT"
+    
+    if [ "$BACKUP_COUNT" -gt "$KEEP_BACKUPS" ]; then
+        # Garder les KEEP_BACKUPS plus récentes, supprimer les autres
+        IMAGES_TO_REMOVE=$(echo "$BACKUP_IMAGES" | tail -n +$((KEEP_BACKUPS + 1)))
+        
+        if [ -n "$IMAGES_TO_REMOVE" ]; then
+            REMOVE_COUNT=$(echo "$IMAGES_TO_REMOVE" | wc -l)
+            echo "   Suppression de $REMOVE_COUNT ancienne(s) image(s) backup..."
+            
+            while IFS= read -r tag; do
+                if [ -n "$tag" ]; then
+                    echo "     Suppression: $IMAGE_NAME:$tag"
+                    docker rmi "$IMAGE_NAME:$tag" 2>/dev/null || true
+                fi
+            done <<< "$IMAGES_TO_REMOVE"
+            
+            echo "✅ Nettoyage terminé"
+        fi
+    else
+        echo "   Pas de nettoyage nécessaire (moins de $KEEP_BACKUPS images backup)"
+    fi
+else
+    echo "   Aucune image backup à nettoyer"
+fi
+
+# ============================================================================
+# 4. BUILD de l'image Docker localement
+# ============================================================================
+echo ""
+echo "🏗️  Construction de l'image Docker localement..."
+
+# Vérifier que Dockerfile existe
+if [ ! -f "Dockerfile" ]; then
+    echo "❌ ERREUR: Dockerfile non trouvé!"
+    exit 1
+fi
+
+echo "   Build de l'image: $IMAGE_NAME:$IMAGE_TAG"
+echo "   Cela peut prendre plusieurs minutes..."
+
+# Build l'image
+docker build -t "$IMAGE_NAME:$IMAGE_TAG" . || {
+    echo "❌ ERREUR: Échec du build Docker"
+    echo "📋 Vérifiez les logs ci-dessus pour plus de détails"
+    exit 1
+}
+
+echo "✅ Image buildée avec succès: $IMAGE_NAME:$IMAGE_TAG"
+
+# Afficher la taille de l'image
+IMAGE_SIZE=$(docker images "$IMAGE_NAME:$IMAGE_TAG" --format "{{.Size}}")
+echo "   Taille de l'image: $IMAGE_SIZE"
+
+# ============================================================================
+# 5. MIGRATIONS de base de données
+# ============================================================================
+echo ""
+echo "🗄️  Exécution des migrations de base de données..."
+
 echo "   Exécution de drizzle-kit push..."
-# Utiliser root temporairement pour les migrations (nécessaire pour certaines opérations)
+# Exécuter les migrations dans un conteneur temporaire avec la nouvelle image
 docker run --rm \
     --env-file "$DEPLOY_DIR/.env" \
     --network proxy \
     --user root \
-    "$DOCKER_IMAGE" \
+    "$IMAGE_NAME:$IMAGE_TAG" \
     sh -c "cd /app && npx drizzle-kit push" || {
     echo "⚠️  Warning: Migration failed, continuing anyway (might be up to date)"
     echo "   Vérifiez les logs ci-dessus pour plus de détails"
@@ -119,9 +204,10 @@ docker run --rm \
 echo "✅ Migrations terminées"
 
 # ============================================================================
-# 4. DÉPLOIEMENT de la nouvelle version
+# 6. DÉPLOIEMENT de la nouvelle version
 # ============================================================================
-echo "🔄 Démarrage de la nouvelle version..."
+echo ""
+echo "🔄 Déploiement de la nouvelle version..."
 
 # Vérifier que le réseau Traefik existe
 if ! docker network ls | grep -q "proxy"; then
@@ -134,9 +220,14 @@ if ! docker network ls | grep -q "proxy"; then
 fi
 
 # Arrêter l'ancienne version (sans supprimer les volumes)
+echo "   Arrêt de l'ancienne version..."
 docker compose down --remove-orphans
 
+# Exporter l'image tag pour docker-compose
+export DOCKER_IMAGE="$IMAGE_NAME:$IMAGE_TAG"
+
 # Démarrer la nouvelle version
+echo "   Démarrage de la nouvelle version..."
 docker compose up -d
 
 # Attendre un peu pour que le conteneur démarre
@@ -174,12 +265,13 @@ fi
 echo "✅ Conteneur démarré"
 
 # ============================================================================
-# 5. HEALTH CHECK
+# 7. HEALTH CHECK
 # ============================================================================
 HEALTH_CHECK_MAX_ATTEMPTS=30
 HEALTH_CHECK_ATTEMPT=0
 HEALTH_CHECK_PASSED=false
 
+echo ""
 echo "🔍 Vérification de la santé de l'application..."
 
 while [ $HEALTH_CHECK_ATTEMPT -lt $HEALTH_CHECK_MAX_ATTEMPTS ]; do
@@ -209,7 +301,7 @@ while [ $HEALTH_CHECK_ATTEMPT -lt $HEALTH_CHECK_MAX_ATTEMPTS ]; do
         break
     fi
     
-    # Vérifier via curl depuis le VPS (si le port est exposé localement)
+    # Vérifier via curl depuis le VPS
     if curl -f -s -o /dev/null http://localhost:5000/api/health 2>/dev/null; then
         echo "✅ Health check réussi via curl!"
         HEALTH_CHECK_PASSED=true
@@ -221,7 +313,7 @@ while [ $HEALTH_CHECK_ATTEMPT -lt $HEALTH_CHECK_MAX_ATTEMPTS ]; do
 done
 
 # ============================================================================
-# 6. VÉRIFICATION TRAEFIK
+# 8. VÉRIFICATION TRAEFIK
 # ============================================================================
 if [ "$HEALTH_CHECK_PASSED" = true ]; then
     echo ""
@@ -234,13 +326,11 @@ if [ "$HEALTH_CHECK_PASSED" = true ]; then
         echo "⚠️  Le conteneur n'est pas visible sur le réseau Traefik"
         echo "   Tentative de reconnexion..."
         docker network connect proxy cjd-app 2>/dev/null || {
-            echo "   ⚠️  Reconnexion échouée, vérification des réseaux..."
-            docker network inspect proxy 2>/dev/null || echo "   Réseau proxy non trouvé"
-            docker network inspect cjd-network 2>/dev/null || echo "   Réseau cjd-network non trouvé"
+            echo "   ⚠️  Reconnexion échouée"
         }
     fi
     
-    # Vérifier les labels Traefik (meilleure méthode avec jq si disponible, sinon grep)
+    # Vérifier les labels Traefik
     if command -v jq &> /dev/null; then
         TRAEFIK_ENABLED=$(docker inspect cjd-app 2>/dev/null | jq -r '.[0].Config.Labels["traefik.enable"]' || echo "")
     else
@@ -253,58 +343,13 @@ if [ "$HEALTH_CHECK_PASSED" = true ]; then
         # Attendre quelques secondes pour que Traefik détecte le nouveau conteneur
         echo "🔄 Attente de la détection automatique par Traefik (10s)..."
         sleep 10
-        
-        # Vérifier si Traefik a détecté la route (via l'API Traefik si disponible)
-        TRAEFIK_ROUTE_DETECTED=false
-        if docker ps | grep -q "traefik"; then
-            # Vérifier via l'API Traefik (port 8080 par défaut)
-            if docker exec traefik wget -q -O- http://localhost:8080/api/http/routers 2>/dev/null | grep -q "cjd80"; then
-                TRAEFIK_ROUTE_DETECTED=true
-                echo "✅ Route cjd80 détectée dans Traefik"
-            else
-                echo "⚠️  Route cjd80 non détectée dans Traefik"
-                echo "   🔄 Redémarrage de Traefik pour forcer la détection..."
-                
-                # Redémarrer Traefik pour forcer la détection
-                docker restart traefik 2>/dev/null || {
-                    echo "   ⚠️  Impossible de redémarrer Traefik (peut-être géré par un autre système)"
-                    echo "   💡 Redémarrez Traefik manuellement: docker restart traefik"
-                }
-                
-                # Attendre que Traefik redémarre
-                echo "   ⏳ Attente du redémarrage de Traefik (15s)..."
-                sleep 15
-                
-                # Vérifier à nouveau
-                if docker exec traefik wget -q -O- http://localhost:8080/api/http/routers 2>/dev/null | grep -q "cjd80"; then
-                    TRAEFIK_ROUTE_DETECTED=true
-                    echo "   ✅ Route cjd80 maintenant détectée dans Traefik"
-                else
-                    echo "   ⚠️  Route toujours non détectée après redémarrage"
-                    echo "   💡 Vérifiez les logs Traefik: docker logs traefik"
-                fi
-            fi
-        else
-            echo "⚠️  Traefik n'est pas en cours d'exécution"
-            echo "   💡 Démarrez Traefik pour activer le routage"
-        fi
-        
-        # Vérifier que Traefik peut accéder au conteneur
-        if docker exec traefik wget --spider -q http://cjd-app:5000/api/health 2>/dev/null; then
-            echo "✅ Traefik peut accéder au conteneur"
-        else
-            echo "⚠️  Traefik ne peut pas accéder au conteneur directement"
-            echo "   Cela peut être normal si Traefik utilise le réseau proxy"
-        fi
     else
         echo "⚠️  Labels Traefik non trouvés dans le conteneur"
-        echo "   Affichage des labels actuels:"
-        docker inspect cjd-app 2>/dev/null | grep -A 20 "Labels" || echo "   Impossible de lire les labels"
     fi
 fi
 
 # ============================================================================
-# 7. ROLLBACK si nécessaire
+# 9. ROLLBACK si nécessaire
 # ============================================================================
 if [ "$HEALTH_CHECK_PASSED" = false ]; then
     echo ""
@@ -314,34 +359,19 @@ if [ "$HEALTH_CHECK_PASSED" = false ]; then
     echo ""
     echo "📊 Statut du conteneur:"
     docker compose ps
-    echo ""
-    echo "🌐 Réseaux Docker:"
-    docker network ls
-    echo ""
-    echo "🔍 Inspection du conteneur:"
-    docker inspect cjd-app 2>/dev/null | grep -A 10 "Health" || echo "   Pas d'information de santé disponible"
     
     # Rollback vers la dernière image backup
-    if [ -n "$BACKUP_TAG" ]; then
+    if [ -n "$BACKUP_TAG" ] && docker images "$IMAGE_NAME:$BACKUP_TAG" --format "{{.Tag}}" | grep -q "$BACKUP_TAG"; then
         echo ""
         echo "🔄 ROLLBACK vers la version précédente..."
         
-        # Détecter si l'image backup est locale ou GHCR
-        if docker images "${IMAGE_NAME}:${BACKUP_TAG}" --format "{{.Repository}}:{{.Tag}}" | grep -q "${IMAGE_NAME}:${BACKUP_TAG}"; then
-            # Image locale
-            export DOCKER_IMAGE="${IMAGE_NAME}:${BACKUP_TAG}"
-        elif docker images "ghcr.io/aoleon/cjd80:${BACKUP_TAG}" --format "{{.Repository}}:{{.Tag}}" | grep -q "ghcr.io/aoleon/cjd80:${BACKUP_TAG}"; then
-            # Image GHCR
-            export DOCKER_IMAGE="ghcr.io/aoleon/cjd80:${BACKUP_TAG}"
-        else
-            echo "⚠️  Image backup non trouvée: ${BACKUP_TAG}"
-            exit 1
-        fi
-        
+        # Restaurer l'ancienne version
+        docker tag "$IMAGE_NAME:$BACKUP_TAG" "$IMAGE_NAME:$IMAGE_TAG"
+        export DOCKER_IMAGE="$IMAGE_NAME:$IMAGE_TAG"
         docker compose down
         docker compose up -d
         
-        echo "✅ Rollback effectué vers ${BACKUP_TAG}"
+        echo "✅ Rollback effectué vers $BACKUP_TAG"
         echo "⚠️  Le déploiement a échoué et a été annulé"
         exit 1
     else
@@ -351,13 +381,14 @@ if [ "$HEALTH_CHECK_PASSED" = false ]; then
 fi
 
 # ============================================================================
-# 8. SUCCÈS - Nettoyage
+# 10. SUCCÈS - Résumé
 # ============================================================================
 echo ""
 echo "=================================================="
 echo "✅ Déploiement réussi!"
 echo "=================================================="
-echo "📦 Image: $DOCKER_IMAGE"
+echo "📦 Image: $IMAGE_NAME:$IMAGE_TAG"
+echo "📝 Commit: $CURRENT_COMMIT"
 echo "🔗 URL: https://cjd80.fr"
 echo "💚 Health check: https://cjd80.fr/api/health"
 echo ""
@@ -369,4 +400,9 @@ echo ""
 echo "📊 Statistiques du conteneur:"
 docker stats --no-stream cjd-app
 
+echo ""
+echo "📦 Images backup disponibles:"
+docker images "$IMAGE_NAME" --format "table {{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" | grep -E "backup-|TAG" | head -6
+
 exit 0
+
