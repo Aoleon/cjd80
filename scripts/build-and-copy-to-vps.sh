@@ -36,6 +36,7 @@ echo "✅ Archive créée: /tmp/cjd80-dist.tar.gz"
 echo "📤 Copie sur le VPS..."
 sshpass -p "$VPS_PASS" scp -o StrictHostKeyChecking=no -P "$VPS_PORT" \
     /tmp/cjd80-dist.tar.gz \
+    Dockerfile.production \
     "$VPS_USER@$VPS_HOST:/tmp/" || {
     echo "❌ ERREUR: Impossible de copier sur le VPS"
     exit 1
@@ -54,6 +55,12 @@ docker compose down --remove-orphans 2>/dev/null || true
 # Extraire les nouveaux fichiers
 tar -xzf /tmp/cjd80-dist.tar.gz -C . || {
     echo "❌ ERREUR: Impossible d'extraire l'archive"
+    exit 1
+}
+
+# Copier Dockerfile.production
+cp /tmp/Dockerfile.production . || {
+    echo "❌ ERREUR: Impossible de copier Dockerfile.production"
     exit 1
 }
 
