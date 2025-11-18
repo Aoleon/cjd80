@@ -21,10 +21,12 @@ export default function AuthPage() {
     confirmPassword: "" 
   });
 
+  // Calculer isAdmin après tous les hooks pour éviter les problèmes de réconciliation
+  const isAdmin = user ? hasPermission(user.role, 'admin.view') : false;
+
   // Redirect if already logged in (after hooks are called)
   if (!isLoading && user) {
     // Rediriger les admins vers la page d'administration
-    const isAdmin = hasPermission(user.role, 'admin.view');
     return <Redirect to={isAdmin ? "/admin" : "/"} />;
   }
 
