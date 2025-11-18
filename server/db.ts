@@ -62,7 +62,7 @@ if (dbProvider === 'neon') {
     allowExitOnIdle: false,
   });
   pool = neonPool;
-  dbResilience = new DatabaseResilience(neonPool, 'neon-database');
+  dbResilience = new DatabaseResilience(neonPool as any, 'neon-database');
 } else {
   // Pool PostgreSQL standard (Nhost ou autre)
   const pgPool = new PgPool({
@@ -74,7 +74,7 @@ if (dbProvider === 'neon') {
     application_name: 'cjd-amiens-app',
   });
   pool = pgPool;
-  dbResilience = new DatabaseResilience(pgPool, 'postgresql-database');
+  dbResilience = new DatabaseResilience(pgPool as any, 'postgresql-database');
 }
 
 export { pool };
@@ -96,28 +96,42 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-pool.on('error', (err: Error, client: any) => {
-  const stats = dbProvider === 'neon' 
-    ? {
-        totalCount: (pool as NeonPool).totalCount,
-        idleCount: (pool as NeonPool).idleCount,
-        waitingCount: (pool as NeonPool).waitingCount
-      }
-    : {
-        totalCount: (pool as PgPool).totalCount,
-        idleCount: (pool as PgPool).idleCount,
-        waitingCount: (pool as PgPool).waitingCount
-      };
-  
-  logger.error('CRITICAL: Database pool error', {
-    type: 'dbPoolError',
-    provider: dbProvider,
-    message: err.message,
-    stack: err.stack,
-    timestamp: new Date().toISOString(),
-    poolStats: stats
+// Gestion des erreurs du pool (compatible Neon et pg)
+if (dbProvider === 'neon') {
+  (pool as NeonPool).on('error', (err: Error, client: any) => {
+    const stats = {
+      totalCount: (pool as NeonPool).totalCount,
+      idleCount: (pool as NeonPool).idleCount,
+      waitingCount: (pool as NeonPool).waitingCount
+    };
+    
+    logger.error('CRITICAL: Database pool error', {
+      type: 'dbPoolError',
+      provider: dbProvider,
+      message: err.message,
+      stack: err.stack,
+      timestamp: new Date().toISOString(),
+      poolStats: stats
+    });
   });
-});
+} else {
+  (pool as PgPool).on('error', (err: Error, client: any) => {
+    const stats = {
+      totalCount: (pool as PgPool).totalCount,
+      idleCount: (pool as PgPool).idleCount,
+      waitingCount: (pool as PgPool).waitingCount
+    };
+    
+    logger.error('CRITICAL: Database pool error', {
+      type: 'dbPoolError',
+      provider: dbProvider,
+      message: err.message,
+      stack: err.stack,
+      timestamp: new Date().toISOString(),
+      poolStats: stats
+    });
+  });
+}
 
 // Configuration Drizzle avec optimisations
 export const db = dbProvider === 'neon'
