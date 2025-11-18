@@ -137,20 +137,41 @@ export default function AdminMembersPage() {
   const total = membersResponse?.total || 0;
   const totalPages = Math.ceil(total / limit);
 
-  const { data: selectedMember, isLoading: memberLoading } = useQuery<Member>({
+  const { data: selectedMemberResponse, isLoading: memberLoading } = useQuery<{ success: boolean; data: Member }>({
     queryKey: ["/api/admin/members", selectedEmail],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/members/${encodeURIComponent(selectedEmail!)}`);
+      if (!res.ok) throw new Error('Failed to fetch member');
+      return res.json();
+    },
     enabled: !!hasViewPermission && !!selectedEmail,
   });
 
-  const { data: activities = [], isLoading: activitiesLoading } = useQuery<MemberActivity[]>({
+  const selectedMember = selectedMemberResponse?.data;
+
+  const { data: activitiesResponse, isLoading: activitiesLoading } = useQuery<{ success: boolean; data: MemberActivity[] }>({
     queryKey: ["/api/admin/members", selectedEmail, "activities"],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/members/${encodeURIComponent(selectedEmail!)}/activities`);
+      if (!res.ok) throw new Error('Failed to fetch activities');
+      return res.json();
+    },
     enabled: !!hasViewPermission && !!selectedEmail,
   });
 
-  const { data: subscriptions = [], isLoading: subscriptionsLoading } = useQuery<MemberSubscription[]>({
+  const activities = activitiesResponse?.data || [];
+
+  const { data: subscriptionsResponse, isLoading: subscriptionsLoading } = useQuery<{ success: boolean; data: MemberSubscription[] }>({
     queryKey: ["/api/admin/members", selectedEmail, "subscriptions"],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/members/${encodeURIComponent(selectedEmail!)}/subscriptions`);
+      if (!res.ok) throw new Error('Failed to fetch subscriptions');
+      return res.json();
+    },
     enabled: !!hasViewPermission && !!selectedEmail,
   });
+
+  const subscriptions = subscriptionsResponse?.data || [];
 
   const filteredMembers = useMemo(() => {
     let result = members;

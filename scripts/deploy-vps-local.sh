@@ -10,10 +10,11 @@ set -e
 VPS_HOST="${VPS_HOST:-141.94.31.162}"
 VPS_USER="${VPS_USER:-thibault}"
 VPS_PORT="${VPS_PORT:-22}"
+VPS_PASS="${VPS_PASS:-@Tibo4713234}"
 DEPLOY_DIR="${DEPLOY_DIR:-/docker/cjd80}"
 
-# Clé SSH (utilise la clé par défaut ou celle spécifiée)
-SSH_KEY="${SSH_KEY:-~/.ssh/id_rsa}"
+# Clé SSH (optionnelle, utilise sshpass par défaut)
+SSH_KEY="${SSH_KEY:-}"
 
 # Couleurs
 RED='\033[0;31m'
@@ -37,12 +38,18 @@ print_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
 ssh_exec() {
     local ssh_opts="-o StrictHostKeyChecking=no -o ConnectTimeout=10"
     
-    # Utiliser la clé SSH si spécifiée
-    if [ -n "$SSH_KEY" ] && [ "$SSH_KEY" != "~/.ssh/id_rsa" ]; then
-        ssh_opts="$ssh_opts -i $SSH_KEY"
+    # Utiliser la clé SSH si spécifiée, sinon utiliser sshpass
+    if [ -n "$SSH_KEY" ]; then
+        ssh $ssh_opts -i "$SSH_KEY" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "$@"
+    else
+        # Utiliser sshpass avec mot de passe
+        if ! command -v sshpass &> /dev/null; then
+            print_error "sshpass n'est pas installé"
+            print_info "Installation: brew install hudochenkov/sshpass/sshpass (Mac) ou apt-get install sshpass (Linux)"
+            exit 1
+        fi
+        sshpass -p "$VPS_PASS" ssh $ssh_opts -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "$@"
     fi
-    
-    ssh $ssh_opts -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "$@"
 }
 
 # ============================================================================
@@ -88,12 +95,12 @@ check_vps_prerequisites() {
     fi
     
     print_info "Vérification du répertoire de déploiement..."
-    if ssh_exec "[ -d '$DEPLOY_DIR' ]"; then
+    if ssh_exec "test -d '$DEPLOY_DIR' && echo 'exists'" | grep -q "exists"; then
         print_success "Répertoire de déploiement existe: $DEPLOY_DIR"
     else
         print_warning "Le répertoire $DEPLOY_DIR n'existe pas"
         print_info "Création du répertoire..."
-        ssh_exec "sudo mkdir -p $DEPLOY_DIR && sudo chown -R $VPS_USER:$VPS_USER $DEPLOY_DIR" || {
+        ssh_exec "mkdir -p $DEPLOY_DIR 2>/dev/null || sudo mkdir -p $DEPLOY_DIR && sudo chown -R $VPS_USER:$VPS_USER $DEPLOY_DIR" || {
             print_error "Impossible de créer le répertoire"
             exit 1
         }
@@ -118,7 +125,11 @@ main() {
     print_info "Configuration:"
     echo "  - VPS: $VPS_USER@$VPS_HOST:$VPS_PORT"
     echo "  - Répertoire: $DEPLOY_DIR"
-    echo "  - Clé SSH: $SSH_KEY"
+    if [ -n "$SSH_KEY" ]; then
+        echo "  - Clé SSH: $SSH_KEY"
+    else
+        echo "  - Authentification: sshpass (mot de passe)"
+    fi
     echo ""
     
     # Vérifications
@@ -134,18 +145,43 @@ main() {
     echo "  - Branche: $CURRENT_BRANCH"
     echo ""
     
-    # Demander confirmation
-    read -p "Continuer le déploiement? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        print_info "Déploiement annulé"
-        exit 0
+    # Demander confirmation (sauf si --yes ou -y est passé)
+    if [[ "${1:-}" != "--yes" && "${1:-}" != "-y" ]]; then
+        read -p "Continuer le déploiement? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_info "Déploiement annulé"
+            exit 0
+        fi
+    else
+        print_info "Mode non-interactif activé, déploiement automatique..."
     fi
     
     print_header "🚀 Lancement du déploiement sur le VPS"
     
-    # Transférer le script de build et déploiement si nécessaire
+    # Mettre à jour le repository sur le VPS
+    print_info "Mise à jour du repository Git sur le VPS..."
+    GIT_OUTPUT=$(ssh_exec "cd $DEPLOY_DIR && git fetch origin main 2>&1 && git pull origin main 2>&1")
+    GIT_EXIT=$?
+    if [ $GIT_EXIT -ne 0 ]; then
+        print_warning "Problème lors de la mise à jour Git, vérification de l'état..."
+        echo "$GIT_OUTPUT"
+        # Essayer de forcer la mise à jour
+        ssh_exec "cd $DEPLOY_DIR && git reset --hard origin/main 2>&1" || {
+            print_error "Impossible de mettre à jour le repository"
+            exit 1
+        }
+    else
+        echo "$GIT_OUTPUT"
+    fi
+    
+    # Vérifier que le script existe
     print_info "Vérification du script de déploiement sur le VPS..."
+    if ! ssh_exec "test -f '$DEPLOY_DIR/scripts/vps-build-and-deploy.sh' && echo 'exists'" | grep -q "exists"; then
+        print_error "Le script vps-build-and-deploy.sh n'existe pas sur le VPS"
+        print_info "Vérifiez que le repository a été mis à jour correctement"
+        exit 1
+    fi
     
     # Exécuter le script de build et déploiement sur le VPS
     print_info "Exécution du build et déploiement sur le VPS..."
@@ -179,8 +215,9 @@ case "${1:-}" in
         echo "  VPS_HOST            Adresse du VPS (défaut: 141.94.31.162)"
         echo "  VPS_USER            Utilisateur SSH (défaut: thibault)"
         echo "  VPS_PORT            Port SSH (défaut: 22)"
+        echo "  VPS_PASS            Mot de passe SSH (défaut: @Tibo4713234)"
         echo "  DEPLOY_DIR          Répertoire de déploiement (défaut: /docker/cjd80)"
-        echo "  SSH_KEY             Chemin vers la clé SSH (défaut: ~/.ssh/id_rsa)"
+        echo "  SSH_KEY             Chemin vers la clé SSH (optionnel, utilise sshpass si non défini)"
         echo ""
         echo "Exemple:"
         echo "  VPS_HOST=192.168.1.100 $0"

@@ -71,13 +71,10 @@ const LoanItemCard = React.memo(({
 LoanItemCard.displayName = 'LoanItemCard';
 
 interface PaginatedLoanItemsResponse {
-  success: boolean;
-  data: {
-    data: LoanItem[];
-    total: number;
-    page: number;
-    limit: number;
-  };
+  data: LoanItem[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 interface LoanItemsSectionProps {
@@ -174,8 +171,9 @@ export default function LoanItemsSection({ onNavigateToPropose }: LoanItemsSecti
   });
 
   // Mémoriser les valeurs calculées pour éviter les recalculs
-  const loanItems = useMemo(() => response?.data?.data || [], [response?.data?.data]);
-  const total = useMemo(() => response?.data?.total || 0, [response?.data?.total]);
+  // L'API retourne directement { data: [...], total: ..., page: ..., limit: ... }
+  const loanItems = useMemo(() => response?.data || [], [response?.data]);
+  const total = useMemo(() => response?.total || 0, [response?.total]);
   const totalPages = useMemo(() => Math.ceil(total / limit), [total, limit]);
 
   const handleSearch = useCallback((e: React.FormEvent) => {

@@ -11,10 +11,6 @@ export default function AdminHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const baseMenuItems = [
-    { id: "home", label: "Accueil", icon: Home, path: "/" },
-    { id: "ideas", label: "Voter", icon: Lightbulb, path: "/" },
-    { id: "propose", label: "Proposer", icon: Plus, path: "/propose" },
-    { id: "events", label: "Événements", icon: Calendar, path: "/" },
     { id: "divider", label: "", icon: null as any, path: "" },
     { id: "admin", label: "Gestion", icon: Shield, path: "/admin" },
     { id: "members", label: "Membres", icon: UserCircle, path: "/admin/members" },
