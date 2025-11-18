@@ -75,6 +75,7 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64
           file: ./Dockerfile
+          no-cache: false
 
   deploy:
     name: Deploy to VPS
