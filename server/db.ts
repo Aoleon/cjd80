@@ -1,81 +1,144 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
+import { Pool as NeonPool, neonConfig } from '@neondatabase/serverless';
+import { Pool as PgPool } from 'pg';
+import { drizzle as drizzleNeon } from 'drizzle-orm/neon-serverless';
+import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres';
 import ws from "ws";
 import * as schema from "@shared/schema";
 import { logger } from "./lib/logger";
 import { DatabaseResilience } from "./lib/db-resilience";
 
-// Configuration optimisée pour Neon PostgreSQL
-neonConfig.webSocketConstructor = ws;
-neonConfig.poolQueryViaFetch = true; // Utilise fetch pour les requêtes courtes
-neonConfig.fetchEndpoint = (host) => `https://${host}/sql`; // Point de terminaison optimisé
+// ========================================
+// DÉTECTION AUTOMATIQUE DU PROVIDER
+// ========================================
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+/**
+ * Détecte le type de provider PostgreSQL basé sur DATABASE_URL
+ * - Neon: contient "neon.tech" (utilise neon-serverless)
+ * - Nhost/Standard PostgreSQL: format postgresql:// standard (utilise node-postgres)
+ */
+function detectDatabaseProvider(): 'neon' | 'standard' {
+  const databaseUrl = process.env.DATABASE_URL;
+  
+  if (!databaseUrl) {
+    throw new Error(
+      "DATABASE_URL must be set. Did you forget to provision a database?",
+    );
+  }
+
+  // Détection Neon (serverless avec WebSocket)
+  if (databaseUrl.includes('neon.tech')) {
+    return 'neon';
+  }
+
+  // Tout le reste est considéré comme PostgreSQL standard (Nhost ou autre)
+  return 'standard';
 }
 
-// Configuration optimisée du pool de connexions pour Neon
-const poolConfig = {
-  connectionString: process.env.DATABASE_URL,
-  // Configuration optimisée pour éviter les cold starts
-  max: 20, // Plus de connexions pour gérer les pics de charge
-  min: 2,  // Maintenir 2 connexions chaudes minimum
-  // Timeouts optimisés pour garder les connexions chaudes
-  idleTimeoutMillis: 60000, // 60s - garde les connexions chaudes plus longtemps
-  connectionTimeoutMillis: 3000, // 3s - timeout de connexion réduit pour fail-fast
-  // Gestion des erreurs de connexion
-  maxUses: 10000, // Recycle les connexions après 10000 utilisations
-  // Pool de requêtes pour éviter les blocages
-  allowExitOnIdle: false, // Garde le pool actif
-  // Configuration spécifique à l'environnement
-  application_name: 'cjd-amiens-app',
-  // Optimisations pour Neon serverless
-  statement_timeout: 30000, // 30s timeout pour les requêtes complexes
-  query_timeout: 10000, // 10s timeout par défaut
-};
+const dbProvider = detectDatabaseProvider();
 
-export const pool = new Pool(poolConfig);
+// Configuration Neon (seulement si provider est Neon)
+if (dbProvider === 'neon') {
+  neonConfig.webSocketConstructor = ws;
+  neonConfig.poolQueryViaFetch = true;
+  neonConfig.fetchEndpoint = (host) => `https://${host}/sql`;
+}
 
-// Couche de résilience avec circuit breaker et retry logic
-export const dbResilience = new DatabaseResilience(pool, 'neon-database');
+// ========================================
+// CONFIGURATION DU POOL DE CONNEXIONS
+// ========================================
+
+let pool: NeonPool | PgPool;
+let dbResilience: DatabaseResilience;
+
+if (dbProvider === 'neon') {
+  // Pool Neon (serverless avec WebSocket)
+  const neonPool = new NeonPool({
+    connectionString: process.env.DATABASE_URL!,
+    max: 20,
+    min: 2,
+    idleTimeoutMillis: 60000,
+    connectionTimeoutMillis: 3000,
+    maxUses: 10000,
+    allowExitOnIdle: false,
+  });
+  pool = neonPool;
+  dbResilience = new DatabaseResilience(neonPool, 'neon-database');
+} else {
+  // Pool PostgreSQL standard (Nhost ou autre)
+  const pgPool = new PgPool({
+    connectionString: process.env.DATABASE_URL!,
+    max: 20,
+    min: 2,
+    idleTimeoutMillis: 60000,
+    connectionTimeoutMillis: 3000,
+    application_name: 'cjd-amiens-app',
+  });
+  pool = pgPool;
+  dbResilience = new DatabaseResilience(pgPool, 'postgresql-database');
+}
+
+export { pool };
 
 // Gestionnaire d'événements pour le monitoring du pool (logs réduits)
 if (process.env.NODE_ENV === 'development') {
   pool.on('connect', (client) => {
-    console.log(`[DB] Nouvelle connexion établie (pool: ${pool.totalCount})`);
+    const stats = dbProvider === 'neon' 
+      ? { totalCount: (pool as NeonPool).totalCount }
+      : { totalCount: (pool as PgPool).totalCount };
+    console.log(`[DB] Nouvelle connexion établie (provider: ${dbProvider}, pool: ${stats.totalCount})`);
   });
   
   pool.on('remove', (client) => {
-    console.log(`[DB] Connexion fermée (pool: ${pool.totalCount})`);
+    const stats = dbProvider === 'neon' 
+      ? { totalCount: (pool as NeonPool).totalCount }
+      : { totalCount: (pool as PgPool).totalCount };
+    console.log(`[DB] Connexion fermée (provider: ${dbProvider}, pool: ${stats.totalCount})`);
   });
 }
 
 pool.on('error', (err: Error, client: any) => {
+  const stats = dbProvider === 'neon' 
+    ? {
+        totalCount: (pool as NeonPool).totalCount,
+        idleCount: (pool as NeonPool).idleCount,
+        waitingCount: (pool as NeonPool).waitingCount
+      }
+    : {
+        totalCount: (pool as PgPool).totalCount,
+        idleCount: (pool as PgPool).idleCount,
+        waitingCount: (pool as PgPool).waitingCount
+      };
+  
   logger.error('CRITICAL: Database pool error', {
     type: 'dbPoolError',
+    provider: dbProvider,
     message: err.message,
     stack: err.stack,
     timestamp: new Date().toISOString(),
-    poolStats: {
-      totalCount: pool.totalCount,
-      idleCount: pool.idleCount,
-      waitingCount: pool.waitingCount
-    }
+    poolStats: stats
   });
 });
 
 // Configuration Drizzle avec optimisations
-export const db = drizzle({ 
-  client: pool, 
-  schema,
-  logger: process.env.NODE_ENV === 'development' ? {
-    logQuery: (query, params) => {
-      console.log(`[DB Query] ${query.slice(0, 100)}...`);
-    }
-  } : false
-});
+export const db = dbProvider === 'neon'
+  ? drizzleNeon({ 
+      client: pool as NeonPool, 
+      schema,
+      logger: process.env.NODE_ENV === 'development' ? {
+        logQuery: (query, params) => {
+          console.log(`[DB Query] ${query.slice(0, 100)}...`);
+        }
+      } : false
+    })
+  : drizzlePg({ 
+      client: pool as PgPool, 
+      schema,
+      logger: process.env.NODE_ENV === 'development' ? {
+        logQuery: (query, params) => {
+          console.log(`[DB Query] ${query.slice(0, 100)}...`);
+        }
+      } : false
+    });
 
 // Profils de timeout pour différents types de requêtes
 export const QUERY_TIMEOUT_PROFILES = {
@@ -133,13 +196,26 @@ export async function runDbQuery<T>(
 }
 
 // Fonction utilitaire pour obtenir les statistiques du pool
-export const getPoolStats = () => ({
-  totalCount: pool.totalCount,
-  idleCount: pool.idleCount,
-  waitingCount: pool.waitingCount,
-  maxConnections: 20, // Configuration optimisée
-  minConnections: 2
-});
+export const getPoolStats = () => {
+  const stats = dbProvider === 'neon'
+    ? {
+        totalCount: (pool as NeonPool).totalCount,
+        idleCount: (pool as NeonPool).idleCount,
+        waitingCount: (pool as NeonPool).waitingCount,
+      }
+    : {
+        totalCount: (pool as PgPool).totalCount,
+        idleCount: (pool as PgPool).idleCount,
+        waitingCount: (pool as PgPool).waitingCount,
+      };
+  
+  return {
+    ...stats,
+    provider: dbProvider,
+    maxConnections: 20,
+    minConnections: 2
+  };
+};
 
 // Graceful shutdown du pool
 process.on('SIGTERM', async () => {

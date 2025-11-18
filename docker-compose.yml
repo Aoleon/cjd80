@@ -49,6 +49,7 @@ services:
     networks:
       - proxy        # Réseau externe Traefik pour exposition publique
       - cjd-network  # Réseau interne pour isolation
+      - nhost-network-prod  # Réseau Nhost pour accès à PostgreSQL
     
     # Limites de ressources
     deploy:
@@ -68,3 +69,7 @@ networks:
   # Réseau interne pour l'application
   cjd-network:
     driver: bridge
+  
+  # Réseau Nhost (doit exister - créé par docker-compose.yml de Nhost)
+  nhost-network-prod:
+    external: true

@@ -1,0 +1,128 @@
+#!/bin/bash
+set -e
+
+# ============================================================================
+# Script pour créer le fichier .env pour Nhost avec mots de passe générés
+# Usage: ./scripts/create-nhost-env.sh
+# ============================================================================
+
+echo "=================================================="
+echo "🔐 Création fichier .env pour Nhost"
+echo "=================================================="
+
+# Répertoire de travail
+NHOST_DIR="/docker/cjd80/nhost"
+ENV_FILE="${NHOST_DIR}/.env"
+
+# Créer le répertoire si nécessaire
+mkdir -p "$NHOST_DIR"
+
+# Générer des mots de passe forts
+POSTGRES_PASSWORD=$(openssl rand -base64 32 | tr -d '\n')
+HASURA_ADMIN_SECRET=$(openssl rand -base64 32 | tr -d '\n')
+MINIO_ACCESS_KEY=$(openssl rand -base64 24 | tr -d '\n')
+MINIO_SECRET_KEY=$(openssl rand -base64 24 | tr -d '\n')
+REDIS_PASSWORD=$(openssl rand -base64 32 | tr -d '\n')
+
+# Lire les variables existantes depuis .env de l'application si disponible
+APP_ENV="/docker/cjd80/.env"
+if [ -f "$APP_ENV" ]; then
+    AZURE_TENANT_ID=$(grep "^AZURE_TENANT_ID=" "$APP_ENV" | cut -d'=' -f2- | tr -d '"' || echo "")
+    AZURE_CLIENT_ID=$(grep "^AZURE_CLIENT_ID=" "$APP_ENV" | cut -d'=' -f2- | tr -d '"' || echo "")
+    AZURE_CLIENT_SECRET=$(grep "^AZURE_CLIENT_SECRET=" "$APP_ENV" | cut -d'=' -f2- | tr -d '"' || echo "")
+    SESSION_SECRET=$(grep "^SESSION_SECRET=" "$APP_ENV" | cut -d'=' -f2- | tr -d '"' || echo "")
+    CORS_ORIGIN=$(grep "^CORS_ORIGIN=" "$APP_ENV" | cut -d'=' -f2- | tr -d '"' || echo "https://cjd80.fr")
+else
+    AZURE_TENANT_ID=""
+    AZURE_CLIENT_ID=""
+    AZURE_CLIENT_SECRET=""
+    SESSION_SECRET=$(openssl rand -base64 32 | tr -d '\n')
+    CORS_ORIGIN="https://cjd80.fr"
+fi
+
+# Créer le fichier .env
+cat > "$ENV_FILE" <<EOF
+# ========================================
+# BASE DE DONNÉES - NHOST POSTGRESQL PRODUCTION
+# ========================================
+DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@nhost-postgres-prod:5432/nhost
+
+# ========================================
+# CONFIGURATION DOCKER NHOST PRODUCTION
+# ========================================
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+POSTGRES_DB=nhost
+
+# Hasura GraphQL
+HASURA_GRAPHQL_ADMIN_SECRET=${HASURA_ADMIN_SECRET}
+
+# Nhost Auth (désactivé car nous utilisons Microsoft OAuth)
+AUTH_HOST=cjd80.fr
+AUTH_SERVER_URL=https://cjd80.fr/auth
+
+# Nhost Storage (MinIO)
+S3_REGION=us-east-1
+S3_ENDPOINT=http://nhost-minio-prod:9000
+S3_BUCKET=nhost
+S3_ACCESS_KEY_ID=${MINIO_ACCESS_KEY}
+S3_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY}
+
+# ========================================
+# ENVIRONNEMENT APPLICATION
+# ========================================
+NODE_ENV=production
+PORT=4000
+
+# ========================================
+# AUTHENTIFICATION MICROSOFT (Conservée)
+# ========================================
+AZURE_TENANT_ID=${AZURE_TENANT_ID}
+AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+
+# ========================================
+# REDIS PRODUCTION
+# ========================================
+REDIS_URL=redis://:${REDIS_PASSWORD}@nhost-redis-prod:6379
+REDIS_PASSWORD=${REDIS_PASSWORD}
+
+# ========================================
+# SÉCURITÉ PRODUCTION
+# ========================================
+SESSION_SECRET=${SESSION_SECRET}
+CORS_ORIGIN=${CORS_ORIGIN}
+
+# ========================================
+# SERVICES EXTERNES
+# ========================================
+ONEDRIVE_SYNC_ENABLED=false
+BATIGEST_SIMULATED=true
+
+# ========================================
+# MONITORING ET LOGGING
+# ========================================
+LOG_LEVEL=info
+ENABLE_METRICS=true
+
+# ========================================
+# BACKUP CONFIGURATION
+# ========================================
+BACKUP_SCHEDULE=0 2 * * *
+BACKUP_RETENTION_DAYS=7
+EOF
+
+# Sécuriser le fichier .env
+chmod 600 "$ENV_FILE"
+
+echo "✅ Fichier .env créé: $ENV_FILE"
+echo ""
+echo "📋 Résumé de la configuration:"
+echo "   - PostgreSQL: postgres / [mot de passe généré]"
+echo "   - Hasura Admin Secret: [généré]"
+echo "   - MinIO Access Key: ${MINIO_ACCESS_KEY:0:10}..."
+echo "   - Redis Password: [généré]"
+echo ""
+echo "⚠️  IMPORTANT: Sauvegardez ces mots de passe en lieu sûr!"
+echo "   Le fichier .env est protégé (chmod 600)"
+
