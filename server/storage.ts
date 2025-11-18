@@ -346,8 +346,14 @@ export class DatabaseStorage implements IStorage {
 
   constructor() {
     // Configuration optimisée du store de sessions
+    // PostgresSessionStore nécessite un Pool PostgreSQL standard
+    // Si on utilise Neon, on ne peut pas utiliser ce store
+    const dbProvider = process.env.DATABASE_URL?.includes('neon.tech') ? 'neon' : 'standard';
+    if (dbProvider === 'neon') {
+      throw new Error('PostgresSessionStore ne supporte pas Neon. Utilisez un autre store de sessions.');
+    }
     this.sessionStore = new PostgresSessionStore({ 
-      pool, 
+      pool: pool as import('pg').Pool, 
       createTableIfMissing: true,
       // Optimisations pour les sessions
       tableName: 'user_sessions',

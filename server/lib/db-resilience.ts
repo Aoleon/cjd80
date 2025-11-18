@@ -121,7 +121,13 @@ export class DatabaseResilience {
         async () => {
           const client = await this.pool.connect();
           try {
-            await client.query('SELECT 1');
+            // Type-safe query pour Neon et PostgreSQL standard
+            if ('query' in client && typeof client.query === 'function') {
+              await client.query('SELECT 1');
+            } else {
+              // Fallback pour Neon
+              await (client as any).query('SELECT 1');
+            }
           } finally {
             client.release();
           }

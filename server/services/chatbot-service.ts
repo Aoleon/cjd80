@@ -231,7 +231,14 @@ Réponds UNIQUEMENT avec la requête SQL, rien d'autre.`;
       // Utiliser pool.query() directement pour exécuter la requête brute
       // Note: La validation de sécurité a déjà été faite dans validateSQL()
       const { pool } = await import("../db");
-      const result = await pool.query(sqlQuery);
+      // Type-safe query pour Neon et PostgreSQL standard
+      const dbProvider = process.env.DATABASE_URL?.includes('neon.tech') ? 'neon' : 'standard';
+      let result: { rows: any[] };
+      if (dbProvider === 'neon') {
+        result = await (pool as any).query(sqlQuery);
+      } else {
+        result = await (pool as import('pg').Pool).query(sqlQuery);
+      }
       return result.rows || [];
     } catch (error) {
       logger.error('Error executing SQL', { error, sqlQuery });

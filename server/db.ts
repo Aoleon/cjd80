@@ -81,19 +81,27 @@ export { pool, dbResilience };
 
 // Gestionnaire d'événements pour le monitoring du pool (logs réduits)
 if (process.env.NODE_ENV === 'development') {
-  pool.on('connect', (client) => {
-    const stats = dbProvider === 'neon' 
-      ? { totalCount: (pool as NeonPool).totalCount }
-      : { totalCount: (pool as PgPool).totalCount };
-    console.log(`[DB] Nouvelle connexion établie (provider: ${dbProvider}, pool: ${stats.totalCount})`);
-  });
-  
-  pool.on('remove', (client) => {
-    const stats = dbProvider === 'neon' 
-      ? { totalCount: (pool as NeonPool).totalCount }
-      : { totalCount: (pool as PgPool).totalCount };
-    console.log(`[DB] Connexion fermée (provider: ${dbProvider}, pool: ${stats.totalCount})`);
-  });
+  if (dbProvider === 'neon') {
+    (pool as NeonPool).on('connect', () => {
+      const stats = { totalCount: (pool as NeonPool).totalCount };
+      console.log(`[DB] Nouvelle connexion établie (provider: ${dbProvider}, pool: ${stats.totalCount})`);
+    });
+    
+    (pool as NeonPool).on('remove', () => {
+      const stats = { totalCount: (pool as NeonPool).totalCount };
+      console.log(`[DB] Connexion fermée (provider: ${dbProvider}, pool: ${stats.totalCount})`);
+    });
+  } else {
+    (pool as PgPool).on('connect', () => {
+      const stats = { totalCount: (pool as PgPool).totalCount };
+      console.log(`[DB] Nouvelle connexion établie (provider: ${dbProvider}, pool: ${stats.totalCount})`);
+    });
+    
+    (pool as PgPool).on('remove', () => {
+      const stats = { totalCount: (pool as PgPool).totalCount };
+      console.log(`[DB] Connexion fermée (provider: ${dbProvider}, pool: ${stats.totalCount})`);
+    });
+  }
 }
 
 // Gestion des erreurs du pool (compatible Neon et pg)
