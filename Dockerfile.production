@@ -1,0 +1,48 @@
+# ===================================
+# Dockerfile pour production avec dist/ pré-buildé
+# Utilise dist/ copié depuis l'extérieur (build local)
+# ===================================
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Installer wget pour les health checks
+RUN apk add --no-cache wget
+
+# Créer un utilisateur non-root pour la sécurité
+RUN addgroup -S cjd && adduser -S cjduser -G cjd
+
+# Copier package.json pour référence
+COPY package*.json ./
+
+# Installer les production dependencies + drizzle-kit pour les migrations
+RUN npm ci --omit=dev && \
+    npm install drizzle-kit --save-dev --no-audit --no-fund || true
+
+# Copier les fichiers nécessaires pour les migrations (drizzle-kit)
+COPY drizzle.config.ts ./
+COPY shared ./shared
+
+# Copier les fichiers buildés (dist/ doit exister dans le contexte)
+COPY dist ./dist
+
+# Créer le dossier logs avec les bonnes permissions
+RUN mkdir -p /app/logs && chown -R cjduser:cjd /app
+
+# Utiliser l'utilisateur non-root
+USER cjduser
+
+# Exposer le port
+EXPOSE 5000
+
+# Variables d'environnement par défaut
+ENV NODE_ENV=production
+ENV PORT=5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:5000/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); });"
+
+# Commande de démarrage
+CMD ["node", "dist/index.js"]
+

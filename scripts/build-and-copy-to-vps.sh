@@ -57,8 +57,12 @@ tar -xzf /tmp/cjd80-dist.tar.gz -C . || {
     exit 1
 }
 
-# Rebuild seulement l'image runner (sans rebuild du code)
-docker build --target runner -t cjd80:latest . || {
+# Copier les fichiers nécessaires pour le build
+cp package*.json drizzle.config.ts . 2>/dev/null || true
+cp -r shared . 2>/dev/null || true
+
+# Build avec Dockerfile.production (qui utilise dist/ existant)
+docker build -f Dockerfile.production -t cjd80:latest . || {
     echo "❌ ERREUR: Build runner échoué"
     exit 1
 }
