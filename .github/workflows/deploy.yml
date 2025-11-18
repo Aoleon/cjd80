@@ -95,13 +95,51 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
           set -e
-          for v in VPS_SSH_KEY VPS_HOST VPS_PORT VPS_USER; do
-            if [ -z "${!v}" ]; then 
-              echo "::error::Missing secret: $v"
-              exit 1
-            fi
-          done
-          echo "✅ Tous les secrets requis sont configurés"
+          echo "🔍 Vérification des secrets..."
+          
+          # Vérifier chaque secret avec message détaillé
+          if [ -z "$VPS_SSH_KEY" ]; then 
+            echo "::error::❌ Secret manquant: VPS_SSH_KEY"
+            echo "   → Allez dans Settings → Secrets and variables → Actions"
+            echo "   → Ajoutez ou mettez à jour le secret VPS_SSH_KEY avec votre clé privée SSH"
+            exit 1
+          fi
+          
+          if [ -z "$VPS_HOST" ]; then 
+            echo "::error::❌ Secret manquant: VPS_HOST"
+            echo "   → Valeur attendue: 141.94.31.162"
+            exit 1
+          fi
+          
+          if [ -z "$VPS_PORT" ]; then 
+            echo "::error::❌ Secret manquant: VPS_PORT"
+            echo "   → Valeur attendue: 22"
+            exit 1
+          fi
+          
+          if [ -z "$VPS_USER" ]; then 
+            echo "::error::❌ Secret manquant ou vide: VPS_USER"
+            echo "   → Valeur attendue: thibault"
+            echo "   → Allez dans Settings → Secrets and variables → Actions"
+            echo "   → Cliquez sur VPS_USER et mettez à jour avec: thibault"
+            exit 1
+          fi
+          
+          # Vérifier que VPS_USER n'est pas vide (peut être défini mais vide)
+          if [ "$VPS_USER" = "" ]; then
+            echo "::error::❌ Secret VPS_USER est vide (pas juste manquant)"
+            echo "   → Allez dans Settings → Secrets and variables → Actions"
+            echo "   → Cliquez sur VPS_USER et entrez: thibault"
+            exit 1
+          fi
+          
+          # Afficher les valeurs (masquées pour sécurité)
+          echo "✅ VPS_HOST: $VPS_HOST"
+          echo "✅ VPS_PORT: $VPS_PORT"
+          echo "✅ VPS_USER: $VPS_USER"
+          echo "✅ VPS_SSH_KEY: [configuré - ${#VPS_SSH_KEY} caractères]"
+          echo ""
+          echo "✅ Tous les secrets requis sont configurés correctement"
       
       - name: Checkout deployment scripts
         uses: actions/checkout@v4
