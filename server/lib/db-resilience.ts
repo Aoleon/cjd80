@@ -206,9 +206,9 @@ export class DatabaseResilience {
   async poolHealthCheck(): Promise<StatusCheck> {
     try {
       const stats = {
-        totalCount: this.pool.totalCount,
-        idleCount: this.pool.idleCount,
-        waitingCount: this.pool.waitingCount,
+        totalCount: (this.pool as NeonPool | PgPool).totalCount,
+        idleCount: (this.pool as NeonPool | PgPool).idleCount,
+        waitingCount: (this.pool as NeonPool | PgPool).waitingCount,
       };
 
       const utilization = (stats.totalCount - stats.idleCount) / 20 * 100; // max 20 connexions

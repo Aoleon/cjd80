@@ -77,7 +77,7 @@ if (dbProvider === 'neon') {
   dbResilience = new DatabaseResilience(pgPool as any, 'postgresql-database');
 }
 
-export { pool };
+export { pool, dbResilience };
 
 // Gestionnaire d'événements pour le monitoring du pool (logs réduits)
 if (process.env.NODE_ENV === 'development') {
