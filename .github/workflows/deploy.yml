@@ -118,14 +118,17 @@ jobs:
           echo "🔐 Authentification du VPS à GHCR..."
           ssh -p ${{ secrets.VPS_PORT }} \
             -o StrictHostKeyChecking=no \
+            -i ~/.ssh/id_rsa \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
             "echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u ${{ github.actor }} --password-stdin" || {
-            echo "⚠️  Authentification échouée, mais on continue..."
-          }
+              echo "⚠️  Authentification échouée, mais on continue..."
+            }
       
       - name: Prepare VPS directories and repository
         run: |
           ssh -p ${{ secrets.VPS_PORT }} \
+            -i ~/.ssh/id_rsa \
+            -o StrictHostKeyChecking=no \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
             'bash -s' << 'ENDSSH'
           set -e
