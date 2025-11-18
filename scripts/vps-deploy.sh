@@ -50,11 +50,19 @@ fi
 # 2. LOGIN au GitHub Container Registry
 # ============================================================================
 echo "🔐 Connexion au GitHub Container Registry..."
-if [ -f "$HOME/.docker/config.json" ]; then
-    echo "✅ Déjà authentifié à GHCR"
+
+# Vérifier si déjà authentifié
+if docker info 2>/dev/null | grep -q "Username:" || [ -f "$HOME/.docker/config.json" ]; then
+    # Tester l'authentification en essayant de pull une image publique
+    if docker pull ghcr.io/aoleon/cjd80:latest >/dev/null 2>&1; then
+        echo "✅ Déjà authentifié à GHCR"
+    else
+        echo "⚠️  Authentification expirée ou invalide"
+        echo "   Le workflow GitHub Actions devrait ré-authentifier automatiquement"
+    fi
 else
-    echo "⚠️  Configuration Docker manquante - assurez-vous d'être connecté à GHCR"
-    echo "    Exécutez: docker login ghcr.io -u USERNAME -p TOKEN"
+    echo "⚠️  Configuration Docker manquante"
+    echo "   Le workflow GitHub Actions devrait authentifier automatiquement"
 fi
 
 # ============================================================================

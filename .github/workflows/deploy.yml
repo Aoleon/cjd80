@@ -112,6 +112,16 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p ${{ secrets.VPS_PORT }} -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
       
+      - name: Authenticate VPS to GHCR
+        run: |
+          echo "🔐 Authentification du VPS à GHCR..."
+          ssh -p ${{ secrets.VPS_PORT }} \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u ${{ github.actor }} --password-stdin" || {
+            echo "⚠️  Authentification échouée, mais on continue..."
+          }
+      
       - name: Prepare VPS directories and repository
         run: |
           ssh -p ${{ secrets.VPS_PORT }} \
