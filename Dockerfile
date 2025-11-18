@@ -18,8 +18,10 @@ COPY . .
 # Augmenter la limite de mémoire Node.js pour éviter les erreurs "heap out of memory"
 # Désactiver source maps en production pour économiser la mémoire
 ENV NODE_ENV=production
-ENV NODE_OPTIONS=--max-old-space-size=4096
-RUN npm run check && npm run build
+ENV NODE_OPTIONS=--max-old-space-size=3072
+# Séparer check et build pour éviter les problèmes de mémoire
+RUN npm run check
+RUN npm run build
 
 # ===================================
 # Stage 2: Runner - Image de production
