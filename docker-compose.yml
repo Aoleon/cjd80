@@ -22,6 +22,7 @@ services:
     # Labels Traefik pour le routage et SSL
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
       # Routeur HTTP -> HTTPS redirect (géré par Traefik globalement)
       - "traefik.http.routers.cjd80.rule=Host(`cjd80.fr`)"
       - "traefik.http.routers.cjd80.entrypoints=websecure"
