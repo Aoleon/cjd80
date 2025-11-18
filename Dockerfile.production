@@ -16,6 +16,7 @@ RUN addgroup -S cjd && adduser -S cjduser -G cjd
 COPY package*.json ./
 
 # Installer les production dependencies + drizzle-kit pour les migrations
+# Note: drizzle-orm est dans dependencies, donc sera installé avec --omit=dev
 RUN npm ci --omit=dev && \
     npm install drizzle-kit --save-dev --no-audit --no-fund || true
 
