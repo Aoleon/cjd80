@@ -239,11 +239,7 @@ export function createRouter(storageInstance: IStorage): any {
       
       const responseTime = Date.now() - startTime;
       
-      const poolStats = {
-        totalCount: pool.totalCount,
-        idleCount: pool.idleCount,
-        waitingCount: pool.waitingCount
-      };
+      const poolStats = getPoolStats();
       
       res.status(200).json({
         status: 'healthy',

@@ -1,4 +1,5 @@
-import { Pool } from '@neondatabase/serverless';
+import { Pool as NeonPool } from '@neondatabase/serverless';
+import { Pool as PgPool } from 'pg';
 import { CircuitBreaker } from './circuit-breaker';
 import { logger } from './logger';
 import type { StatusCheck } from '@shared/schema';
@@ -34,7 +35,7 @@ export class DatabaseResilience {
     backoffMultiplier: 2
   };
 
-  constructor(private pool: Pool, name: string = 'database') {
+  constructor(private pool: NeonPool | PgPool, name: string = 'database') {
     this.circuitBreaker = new CircuitBreaker({
       name,
       failureThreshold: 5,      // 5 échecs consécutifs
