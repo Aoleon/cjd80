@@ -804,14 +804,17 @@ export default function AdminMembersPage() {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>Rôle CJD</FormLabel>
-                                  <Select onValueChange={field.onChange} value={field.value}>
+                                  <Select 
+                                    onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} 
+                                    value={field.value || "none"}
+                                  >
                                     <FormControl>
                                       <SelectTrigger data-testid="select-cjd-role">
                                         <SelectValue placeholder="Sélectionner un rôle..." />
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                      <SelectItem value="">Aucun rôle</SelectItem>
+                                      <SelectItem value="none">Aucun rôle</SelectItem>
                                       {Object.entries(CJD_ROLE_LABELS).map(([key, label]) => (
                                         <SelectItem key={key} value={CJD_ROLES[key as keyof typeof CJD_ROLES]}>
                                           {label}
