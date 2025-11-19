@@ -20,3 +20,11 @@ tests/reports/
 .env
 .env.local
 .env.*.local
+
+# Fichiers Cursor
+.cursor/
+.cursor-config/
+.cursor-version
+.cursorrules
+.cursorrules.backup.*
+.cursor.backup.*

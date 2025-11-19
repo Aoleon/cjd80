@@ -493,6 +493,28 @@ export SESSION_SECRET=your-production-secret
 npm start
 ```
 
+### Déploiement optimisé pour VPS (Build local)
+
+Pour les VPS avec RAM limitée, un système de **build local** a été mis en place :
+
+**Dockerfile.production** : Utilise un build pré-compilé (`dist/`) pour éviter les problèmes de mémoire lors du build Docker sur le VPS.
+
+**Script de déploiement** : `scripts/build-and-copy-to-vps.sh`
+- Build local de l'application
+- Création d'une archive `dist/`
+- Copie sur le VPS via SSH
+- Build Docker optimisé avec `Dockerfile.production`
+
+```bash
+# Déploiement avec build local
+./scripts/build-and-copy-to-vps.sh
+```
+
+**Avantages :**
+- ✅ Évite les erreurs "heap out of memory" sur VPS limités
+- ✅ Build plus rapide (utilise le build local)
+- ✅ Déploiement fiable même avec peu de RAM
+
 ### Checklist de déploiement
 
 - [ ] Variables d'environnement configurées
@@ -501,6 +523,35 @@ npm start
 - [ ] Compte administrateur créé/sécurisé
 - [ ] HTTPS activé
 - [ ] Monitoring activé
+
+## 🆕 Derniers développements
+
+### Optimisations de déploiement (Novembre 2024)
+
+**Dockerfile.production** : Nouveau Dockerfile optimisé pour production
+- Utilise un build pré-compilé (`dist/`) pour éviter les problèmes de mémoire
+- Installation optimisée des dépendances
+- Health checks intégrés
+- Utilisateur non-root pour la sécurité
+
+**Scripts de déploiement améliorés** :
+- `build-and-copy-to-vps.sh` : Build local + copie sur VPS (recommandé)
+- Optimisations pour VPS avec RAM limitée
+- Détection automatique des changements
+
+**Corrections récentes** :
+- ✅ Affichage des membres dans l'interface admin
+- ✅ Affichage des matériels dans la section prêt
+- ✅ Navigation admin optimisée
+- ✅ Source maps activées en production pour meilleur débogage
+- ✅ Corrections des erreurs React Hooks
+
+**Documentation** :
+- Documentation réorganisée dans `docs/`
+- Guides de déploiement mis à jour
+- Rapports d'analyse et corrections documentés
+
+📖 **Voir** : [docs/CORRECTIONS_RESUME.md](./docs/CORRECTIONS_RESUME.md) pour le détail des corrections
 
 ## 🤝 Contribution
 
