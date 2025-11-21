@@ -243,13 +243,14 @@ jobs:
             DEPLOY_DIR="/docker/cjd80"  # Par défaut
           fi
           
-          # Sauvegarder les valeurs pour les étapes suivantes
+          # Sauvegarder les valeurs pour les étapes suivantes (sans les secrets)
           echo "host=$SERVER_HOST" >> $GITHUB_OUTPUT
           echo "port=${SERVER_PORT:-22}" >> $GITHUB_OUTPUT
           echo "user=$SERVER_USER" >> $GITHUB_OUTPUT
-          echo "ssh_key=$SERVER_SSH_KEY" >> $GITHUB_OUTPUT
           echo "deploy_dir=$DEPLOY_DIR" >> $GITHUB_OUTPUT
           echo "display_name=$SERVER_DISPLAY_NAME" >> $GITHUB_OUTPUT
+          
+          # Les secrets seront utilisés directement via les variables d'environnement dans les étapes suivantes
       
       - name: 📥 Checkout code
         if: steps.server-check.outputs.skip != 'true'
@@ -258,11 +259,39 @@ jobs:
       - name: 🔐 Setup SSH
         if: steps.server-check.outputs.skip != 'true'
         env:
-          SERVER_SSH_KEY: ${{ steps.secrets-check.outputs.ssh_key }}
+          SERVER_NAME: ${{ matrix.server_name }}
+          # Secrets pour server1
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          # Secrets pour server2
+          SERVER2_HOST: ${{ secrets.SERVER2_HOST }}
+          SERVER2_PORT: ${{ secrets.SERVER2_PORT }}
+          SERVER2_USER: ${{ secrets.SERVER2_USER }}
+          SERVER2_SSH_KEY: ${{ secrets.SERVER2_SSH_KEY }}
+          # Secrets pour server3
+          SERVER3_HOST: ${{ secrets.SERVER3_HOST }}
+          SERVER3_PORT: ${{ secrets.SERVER3_PORT }}
+          SERVER3_USER: ${{ secrets.SERVER3_USER }}
+          SERVER3_SSH_KEY: ${{ secrets.SERVER3_SSH_KEY }}
+          # Outputs de l'étape précédente
           SERVER_HOST: ${{ steps.secrets-check.outputs.host }}
           SERVER_PORT: ${{ steps.secrets-check.outputs.port }}
           SERVER_USER: ${{ steps.secrets-check.outputs.user }}
         run: |
+          # Déterminer les secrets selon le serveur
+          if [ "$SERVER_NAME" = "server1" ]; then
+            SERVER_SSH_KEY="$VPS_SSH_KEY"
+          elif [ "$SERVER_NAME" = "server2" ]; then
+            SERVER_SSH_KEY="$SERVER2_SSH_KEY"
+          elif [ "$SERVER_NAME" = "server3" ]; then
+            SERVER_SSH_KEY="$SERVER3_SSH_KEY"
+          else
+            echo "::error::❌ Serveur inconnu: ${SERVER_NAME}"
+            exit 1
+          fi
+          
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           echo "$SERVER_SSH_KEY" > ~/.ssh/id_rsa
