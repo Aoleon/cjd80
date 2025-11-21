@@ -544,6 +544,17 @@ export const brandingConfig = pgTable("branding_config", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Feature configuration table - For enabling/disabling features
+export const featureConfig = pgTable("feature_config", {
+  id: serial("id").primaryKey(),
+  featureKey: text("feature_key").notNull().unique(),
+  enabled: boolean("enabled").default(true).notNull(),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  featureKeyIdx: index("feature_config_key_idx").on(table.featureKey),
+}));
+
 // Email configuration table - For SMTP settings
 export const emailConfig = pgTable("email_config", {
   id: serial("id").primaryKey(),
@@ -1707,6 +1718,161 @@ export const insertMemberSubscriptionSchema = createInsertSchema(memberSubscript
 export type InsertMemberSubscription = z.infer<typeof insertMemberSubscriptionSchema>;
 export type MemberSubscription = typeof memberSubscriptions.$inferSelect;
 
+// Financial planning constants
+export const FINANCIAL_PERIOD = {
+  MONTH: "month",
+  QUARTER: "quarter",
+  YEAR: "year"
+} as const;
+
+export type FinancialPeriod = typeof FINANCIAL_PERIOD[keyof typeof FINANCIAL_PERIOD];
+
+export const FINANCIAL_CATEGORY_TYPE = {
+  INCOME: "income",
+  EXPENSE: "expense"
+} as const;
+
+export type FinancialCategoryType = typeof FINANCIAL_CATEGORY_TYPE[keyof typeof FINANCIAL_CATEGORY_TYPE];
+
+export const FORECAST_CONFIDENCE = {
+  HIGH: "high",
+  MEDIUM: "medium",
+  LOW: "low"
+} as const;
+
+export type ForecastConfidence = typeof FORECAST_CONFIDENCE[keyof typeof FORECAST_CONFIDENCE];
+
+export const FORECAST_BASED_ON = {
+  HISTORICAL: "historical",
+  ESTIMATE: "estimate"
+} as const;
+
+export type ForecastBasedOn = typeof FORECAST_BASED_ON[keyof typeof FORECAST_BASED_ON];
+
+// Financial categories table - Catégories budgétaires
+export const financialCategories = pgTable("financial_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // income or expense
+  parentId: varchar("parent_id"), // Catégorie parente (hiérarchie) - référence ajoutée via relation
+  description: text("description"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  typeIdx: index("financial_categories_type_idx").on(table.type),
+  parentIdIdx: index("financial_categories_parent_id_idx").on(table.parentId),
+  nameIdx: index("financial_categories_name_idx").on(table.name),
+}));
+
+// Financial budgets table - Budgets prévisionnels
+export const financialBudgets = pgTable("financial_budgets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  category: varchar("category").references(() => financialCategories.id, { onDelete: "restrict" }).notNull(),
+  period: text("period").notNull(), // month, quarter, year
+  year: integer("year").notNull(),
+  month: integer("month"), // 1-12 si period = month
+  quarter: integer("quarter"), // 1-4 si period = quarter
+  amountInCents: integer("amount_in_cents").notNull(), // Montant en centimes
+  description: text("description"),
+  createdBy: text("created_by").notNull(), // Email admin
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  categoryIdx: index("financial_budgets_category_idx").on(table.category),
+  periodIdx: index("financial_budgets_period_idx").on(table.period),
+  yearIdx: index("financial_budgets_year_idx").on(table.year),
+  periodYearIdx: index("financial_budgets_period_year_idx").on(table.period, table.year),
+}));
+
+// Financial expenses table - Dépenses réelles
+export const financialExpenses = pgTable("financial_expenses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  category: varchar("category").references(() => financialCategories.id, { onDelete: "restrict" }).notNull(),
+  description: text("description").notNull(),
+  amountInCents: integer("amount_in_cents").notNull(), // Montant en centimes
+  expenseDate: date("expense_date").notNull(), // Date de la dépense (format YYYY-MM-DD)
+  paymentMethod: text("payment_method"), // cash, card, transfer, check, etc.
+  vendor: text("vendor"), // Fournisseur/prestataire
+  budgetId: varchar("budget_id").references(() => financialBudgets.id, { onDelete: "set null" }), // Budget associé (optionnel)
+  receiptUrl: text("receipt_url"), // URL du justificatif (upload)
+  createdBy: text("created_by").notNull(), // Email admin
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  categoryIdx: index("financial_expenses_category_idx").on(table.category),
+  expenseDateIdx: index("financial_expenses_expense_date_idx").on(table.expenseDate.desc()),
+  budgetIdIdx: index("financial_expenses_budget_id_idx").on(table.budgetId),
+  createdByIdx: index("financial_expenses_created_by_idx").on(table.createdBy),
+}));
+
+// Financial forecasts table - Prévisions de revenus
+export const financialForecasts = pgTable("financial_forecasts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  category: varchar("category").references(() => financialCategories.id, { onDelete: "restrict" }).notNull(),
+  period: text("period").notNull(), // month, quarter, year
+  year: integer("year").notNull(),
+  month: integer("month"), // 1-12 si period = month
+  quarter: integer("quarter"), // 1-4 si period = quarter
+  forecastedAmountInCents: integer("forecasted_amount_in_cents").notNull(), // Montant prévu en centimes
+  confidence: text("confidence").default(FORECAST_CONFIDENCE.MEDIUM).notNull(), // high, medium, low
+  basedOn: text("based_on").default(FORECAST_BASED_ON.HISTORICAL).notNull(), // historical, estimate
+  notes: text("notes"), // Notes sur la prévision
+  createdBy: text("created_by").notNull(), // Email admin
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  categoryIdx: index("financial_forecasts_category_idx").on(table.category),
+  periodIdx: index("financial_forecasts_period_idx").on(table.period),
+  yearIdx: index("financial_forecasts_year_idx").on(table.year),
+  periodYearIdx: index("financial_forecasts_period_year_idx").on(table.period, table.year),
+}));
+
+// Financial categories relations
+export const financialCategoriesRelations = relations(financialCategories, ({ one, many }) => ({
+  parent: one(financialCategories, {
+    fields: [financialCategories.parentId],
+    references: [financialCategories.id],
+    relationName: "categoryParent",
+  }),
+  children: many(financialCategories, {
+    relationName: "categoryParent",
+  }),
+  budgets: many(financialBudgets),
+  expenses: many(financialExpenses),
+  forecasts: many(financialForecasts),
+}));
+
+// Financial budgets relations
+export const financialBudgetsRelations = relations(financialBudgets, ({ one, many }) => ({
+  category: one(financialCategories, {
+    fields: [financialBudgets.category],
+    references: [financialCategories.id],
+  }),
+  expenses: many(financialExpenses),
+}));
+
+// Financial expenses relations
+export const financialExpensesRelations = relations(financialExpenses, ({ one }) => ({
+  category: one(financialCategories, {
+    fields: [financialExpenses.category],
+    references: [financialCategories.id],
+  }),
+  budget: one(financialBudgets, {
+    fields: [financialExpenses.budgetId],
+    references: [financialBudgets.id],
+  }),
+}));
+
+// Financial forecasts relations
+export const financialForecastsRelations = relations(financialForecasts, ({ one }) => ({
+  category: one(financialCategories, {
+    fields: [financialForecasts.category],
+    references: [financialCategories.id],
+  }),
+}));
+
 // Branding configuration schemas
 export const insertBrandingConfigSchema = createInsertSchema(brandingConfig, {
   config: z.string().refine((val) => {
@@ -1734,6 +1900,85 @@ export const insertEmailConfigSchema = createInsertSchema(emailConfig, {
 
 export type InsertEmailConfig = z.infer<typeof insertEmailConfigSchema>;
 export type EmailConfig = typeof emailConfig.$inferSelect;
+
+// Feature configuration schemas
+export const insertFeatureConfigSchema = createInsertSchema(featureConfig, {
+  featureKey: z.string().min(1).max(50),
+}).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertFeatureConfig = z.infer<typeof insertFeatureConfigSchema>;
+export type FeatureConfig = typeof featureConfig.$inferSelect;
+
+// Financial categories schemas
+export const insertFinancialCategorySchema = createInsertSchema(financialCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateFinancialCategorySchema = createInsertSchema(financialCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type InsertFinancialCategory = z.infer<typeof insertFinancialCategorySchema>;
+export type UpdateFinancialCategory = z.infer<typeof updateFinancialCategorySchema>;
+export type FinancialCategory = typeof financialCategories.$inferSelect;
+
+// Financial budgets schemas
+export const insertFinancialBudgetSchema = createInsertSchema(financialBudgets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateFinancialBudgetSchema = createInsertSchema(financialBudgets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type InsertFinancialBudget = z.infer<typeof insertFinancialBudgetSchema>;
+export type UpdateFinancialBudget = z.infer<typeof updateFinancialBudgetSchema>;
+export type FinancialBudget = typeof financialBudgets.$inferSelect;
+
+// Financial expenses schemas
+export const insertFinancialExpenseSchema = createInsertSchema(financialExpenses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateFinancialExpenseSchema = createInsertSchema(financialExpenses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type InsertFinancialExpense = z.infer<typeof insertFinancialExpenseSchema>;
+export type UpdateFinancialExpense = z.infer<typeof updateFinancialExpenseSchema>;
+export type FinancialExpense = typeof financialExpenses.$inferSelect;
+
+// Financial forecasts schemas
+export const insertFinancialForecastSchema = createInsertSchema(financialForecasts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateFinancialForecastSchema = createInsertSchema(financialForecasts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type InsertFinancialForecast = z.infer<typeof insertFinancialForecastSchema>;
+export type UpdateFinancialForecast = z.infer<typeof updateFinancialForecastSchema>;
+export type FinancialForecast = typeof financialForecasts.$inferSelect;
 
 // Legacy compatibility
 export type AdminUser = Admin;
@@ -1773,6 +2018,7 @@ export const statusResponseSchema = z.object({
     memory: statusCheckSchema.optional(),
     email: statusCheckSchema.optional(),
     pushNotifications: statusCheckSchema.optional(),
+    minio: statusCheckSchema.optional(),
   }),
 });
 
