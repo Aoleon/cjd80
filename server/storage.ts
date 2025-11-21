@@ -20,9 +20,14 @@ import {
   memberRelations,
   brandingConfig,
   emailConfig,
+  featureConfig,
   loanItems,
   trackingMetrics,
   trackingAlerts,
+  financialCategories,
+  financialBudgets,
+  financialExpenses,
+  financialForecasts,
   type Admin, 
   type InsertAdmin,
   type User,
@@ -66,12 +71,33 @@ import {
   type BrandingConfig,
   type EmailConfig,
   type InsertEmailConfig,
+  type FeatureConfig,
   type LoanItem,
   type InsertLoanItem,
   type TrackingMetric,
   type InsertTrackingMetric,
   type TrackingAlert,
   type InsertTrackingAlert,
+  type FinancialCategory,
+  type FinancialBudget,
+  type FinancialExpense,
+  type FinancialForecast,
+  type InsertFinancialCategory,
+  type UpdateFinancialCategory,
+  type InsertFinancialBudget,
+  type UpdateFinancialBudget,
+  type InsertFinancialExpense,
+  type UpdateFinancialExpense,
+  type InsertFinancialForecast,
+  type UpdateFinancialForecast,
+  insertFinancialCategorySchema,
+  updateFinancialCategorySchema,
+  insertFinancialBudgetSchema,
+  updateFinancialBudgetSchema,
+  insertFinancialExpenseSchema,
+  updateFinancialExpenseSchema,
+  insertFinancialForecastSchema,
+  updateFinancialForecastSchema,
   type Result,
   ValidationError,
   DuplicateError,
@@ -87,7 +113,7 @@ import {
 } from "../shared/schema";
 import { z } from "zod";
 import { db, runDbQuery } from "./db";
-import { eq, desc, and, count, sql, or, asc, ne } from "drizzle-orm";
+import { eq, desc, and, count, sql, or, asc, ne, like, ilike } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -196,6 +222,43 @@ export interface IStorage {
     ideas: { total: number; pending: number; approved: number };
     events: { total: number; upcoming: number };
   }>>;
+  getFinancialKPIs(): Promise<Result<{
+    subscriptions: {
+      totalRevenue: number;
+      activeSubscriptions: number;
+      totalSubscriptions: number;
+      averageAmount: number;
+      monthlyRevenue: number;
+    };
+    sponsorships: {
+      totalRevenue: number;
+      activeSponsorships: number;
+      totalSponsorships: number;
+      averageAmount: number;
+      byLevel: { level: string; count: number; totalAmount: number }[];
+    };
+    totalRevenue: number;
+  }>>;
+  getEngagementKPIs(): Promise<Result<{
+    members: {
+      total: number;
+      active: number;
+      averageScore: number;
+      conversionRate: number;
+      retentionRate: number;
+      churnRate: number;
+    };
+    patrons: {
+      total: number;
+      active: number;
+      conversionRate: number;
+    };
+    activities: {
+      total: number;
+      averagePerMember: number;
+      byType: { type: string; count: number }[];
+    };
+  }>>;
 
   // Development requests
   getDevelopmentRequests(): Promise<Result<DevelopmentRequest[]>>;
@@ -208,7 +271,12 @@ export interface IStorage {
   // Gestion des mécènes
   createPatron(patron: InsertPatron): Promise<Result<Patron>>;
   proposePatron(data: InsertPatron): Promise<Result<Patron>>;
-  getPatrons(options?: { page?: number; limit?: number }): Promise<Result<{
+  getPatrons(options?: { 
+    page?: number; 
+    limit?: number;
+    status?: string;
+    search?: string;
+  }): Promise<Result<{
     data: Patron[];
     total: number;
     page: number;
@@ -257,11 +325,23 @@ export interface IStorage {
   // Gestion des membres
   createOrUpdateMember(memberData: Partial<InsertMember> & { email: string }): Promise<Result<Member>>;
   proposeMember(memberData: Partial<InsertMember> & { email: string; firstName: string; lastName: string; proposedBy: string }): Promise<Result<Member>>;
-  getMembers(options?: { page?: number; limit?: number }): Promise<Result<{
+  getMembers(options?: { 
+    page?: number; 
+    limit?: number;
+    status?: string;
+    search?: string;
+    score?: 'high' | 'medium' | 'low';
+    activity?: 'recent' | 'inactive';
+  }): Promise<Result<{
     data: Member[];
     total: number;
     page: number;
     limit: number;
+  }>>;
+  getMemberDetails(email: string): Promise<Result<{
+    member: Member;
+    activities: MemberActivity[];
+    subscriptions: MemberSubscription[];
   }>>;
   getMemberByEmail(email: string): Promise<Result<Member | null>>;
   getMemberByCjdRole(cjdRole: string): Promise<Result<Member | null>>;
@@ -325,6 +405,12 @@ export interface IStorage {
   getEmailConfig(): Promise<Result<EmailConfig | null>>;
   updateEmailConfig(config: InsertEmailConfig, updatedBy: string): Promise<Result<EmailConfig>>;
   
+  // Feature configuration
+  getFeatureConfig(): Promise<Result<FeatureConfig[]>>;
+  getFeatureConfigByKey(featureKey: string): Promise<Result<FeatureConfig | null>>;
+  isFeatureEnabled(featureKey: string): Promise<Result<boolean>>;
+  updateFeatureConfig(featureKey: string, enabled: boolean, updatedBy: string): Promise<Result<FeatureConfig>>;
+  
   // Tracking transversal - Suivi des membres potentiels et mécènes
   createTrackingMetric(metric: { entityType: 'member' | 'patron'; entityId: string; entityEmail: string; metricType: 'status_change' | 'engagement' | 'contact' | 'conversion' | 'activity'; metricValue?: number; metricData?: string; description?: string; recordedBy?: string }): Promise<Result<any>>;
   getTrackingMetrics(options?: { entityType?: 'member' | 'patron'; entityId?: string; entityEmail?: string; metricType?: string; startDate?: Date; endDate?: Date; limit?: number }): Promise<Result<any[]>>;
@@ -339,6 +425,96 @@ export interface IStorage {
   getTrackingAlerts(options?: { entityType?: 'member' | 'patron'; entityId?: string; isRead?: boolean; isResolved?: boolean; severity?: string; limit?: number }): Promise<Result<any[]>>;
   updateTrackingAlert(alertId: string, data: { isRead?: boolean; isResolved?: boolean; resolvedBy?: string }): Promise<Result<any>>;
   generateTrackingAlerts(): Promise<Result<{ created: number; errors: number }>>;
+
+  // Financial budgets
+  createBudget(budget: z.infer<typeof insertFinancialBudgetSchema>): Promise<Result<FinancialBudget>>;
+  getBudgets(options?: { period?: string; year?: number; category?: string }): Promise<Result<FinancialBudget[]>>;
+  getBudgetById(id: string): Promise<Result<FinancialBudget | null>>;
+  updateBudget(id: string, data: z.infer<typeof updateFinancialBudgetSchema>): Promise<Result<FinancialBudget>>;
+  deleteBudget(id: string): Promise<Result<void>>;
+  getBudgetStats(period?: string, year?: number): Promise<Result<{
+    totalBudgets: number;
+    totalAmount: number;
+    byCategory: { category: string; count: number; totalAmount: number }[];
+    byPeriod: { period: string; count: number; totalAmount: number }[];
+  }>>;
+
+  // Financial expenses
+  createExpense(expense: z.infer<typeof insertFinancialExpenseSchema>): Promise<Result<FinancialExpense>>;
+  getExpenses(options?: { period?: string; year?: number; category?: string; budgetId?: string; startDate?: string; endDate?: string }): Promise<Result<FinancialExpense[]>>;
+  getExpenseById(id: string): Promise<Result<FinancialExpense | null>>;
+  updateExpense(id: string, data: z.infer<typeof updateFinancialExpenseSchema>): Promise<Result<FinancialExpense>>;
+  deleteExpense(id: string): Promise<Result<void>>;
+  getExpenseStats(period?: string, year?: number): Promise<Result<{
+    totalExpenses: number;
+    totalAmount: number;
+    byCategory: { category: string; count: number; totalAmount: number }[];
+    byPeriod: { period: string; count: number; totalAmount: number }[];
+  }>>;
+
+  // Financial categories
+  getFinancialCategories(type?: string): Promise<Result<FinancialCategory[]>>;
+  createCategory(category: z.infer<typeof insertFinancialCategorySchema>): Promise<Result<FinancialCategory>>;
+  updateCategory(id: string, data: z.infer<typeof updateFinancialCategorySchema>): Promise<Result<FinancialCategory>>;
+
+  // Financial forecasts
+  createForecast(forecast: z.infer<typeof insertFinancialForecastSchema>): Promise<Result<FinancialForecast>>;
+  getForecasts(options?: { period?: string; year?: number; category?: string }): Promise<Result<FinancialForecast[]>>;
+  updateForecast(id: string, data: z.infer<typeof updateFinancialForecastSchema>): Promise<Result<FinancialForecast>>;
+  generateForecasts(period: string, year: number): Promise<Result<FinancialForecast[]>>;
+
+  // Extended KPIs and Reports
+  getFinancialKPIsExtended(period?: string, year?: number): Promise<Result<{
+    revenues: {
+      actual: number;
+      forecasted: number;
+      variance: number;
+      variancePercent: number;
+    };
+    expenses: {
+      actual: number;
+      budgeted: number;
+      variance: number;
+      variancePercent: number;
+    };
+    balance: {
+      actual: number;
+      forecasted: number;
+      variance: number;
+    };
+    realizationRate: number;
+  }>>;
+  getFinancialComparison(period1: { period: string; year: number }, period2: { period: string; year: number }): Promise<Result<{
+    revenues: { period1: number; period2: number; change: number; changePercent: number };
+    expenses: { period1: number; period2: number; change: number; changePercent: number };
+    balance: { period1: number; period2: number; change: number; changePercent: number };
+  }>>;
+  getFinancialReport(type: 'monthly' | 'quarterly' | 'yearly', period: number, year: number): Promise<Result<{
+    period: string;
+    revenues: {
+      subscriptions: number;
+      sponsorships: number;
+      other: number;
+      total: number;
+    };
+    expenses: {
+      byCategory: { category: string; amount: number }[];
+      total: number;
+    };
+    budgets: {
+      byCategory: { category: string; amount: number }[];
+      total: number;
+    };
+    variances: {
+      revenues: number;
+      expenses: number;
+      balance: number;
+    };
+    forecasts: {
+      nextPeriod: number;
+      confidence: string;
+    };
+  }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1847,7 +2023,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPatrons(options?: { page?: number; limit?: number }): Promise<Result<{
+  async getPatrons(options?: { 
+    page?: number; 
+    limit?: number;
+    status?: string;
+    search?: string;
+  }): Promise<Result<{
     data: (Patron & { referrer?: { id: string; firstName: string; lastName: string; email: string; company: string | null } | null })[];
     total: number;
     page: number;
@@ -1858,15 +2039,43 @@ export class DatabaseStorage implements IStorage {
       const limit = Math.min(100, Math.max(1, options?.limit || 20));
       const offset = (page - 1) * limit;
 
-      // Count total
-      const [countResult] = await db
+      // Construire les conditions WHERE
+      const conditions: any[] = [];
+
+      // Filtre par statut
+      if (options?.status && options.status !== 'all') {
+        conditions.push(eq(patrons.status, options.status));
+      }
+
+      // Filtre de recherche textuelle
+      if (options?.search && options.search.trim()) {
+        const searchTerm = `%${options.search.toLowerCase()}%`;
+        conditions.push(
+          or(
+            ilike(patrons.firstName, searchTerm),
+            ilike(patrons.lastName, searchTerm),
+            ilike(patrons.email, searchTerm),
+            ilike(patrons.company, searchTerm)
+          )!
+        );
+      }
+
+      // Construire la clause WHERE
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+      // Count total avec filtres
+      const countQuery = db
         .select({ count: sql<number>`count(*)::int` })
         .from(patrons);
+      
+      const [countResult] = whereClause 
+        ? await countQuery.where(whereClause)
+        : await countQuery;
 
-      logger.debug('Patrons retrieved', { limit, offset, page });
+      logger.debug('Patrons retrieved', { limit, offset, page, filters: { status: options?.status, search: options?.search } });
       
       // Get paginated results with referrer info
-      const patronsList = await db
+      const patronsQuery = db
         .select({
           id: patrons.id,
           firstName: patrons.firstName,
@@ -1894,6 +2103,10 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(patrons.createdAt))
         .limit(limit)
         .offset(offset);
+
+      const patronsList = whereClause
+        ? await patronsQuery.where(whereClause)
+        : await patronsQuery;
       
       return { 
         success: true, 
@@ -2616,7 +2829,14 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getMembers(options?: { page?: number; limit?: number }): Promise<Result<{
+  async getMembers(options?: { 
+    page?: number; 
+    limit?: number;
+    status?: string;
+    search?: string;
+    score?: 'high' | 'medium' | 'low';
+    activity?: 'recent' | 'inactive';
+  }): Promise<Result<{
     data: Member[];
     total: number;
     page: number;
@@ -2627,18 +2847,78 @@ export class DatabaseStorage implements IStorage {
       const limit = Math.min(100, Math.max(1, options?.limit || 20));
       const offset = (page - 1) * limit;
 
-      // Count total
-      const [countResult] = await db
+      // Construire les conditions WHERE
+      const conditions: any[] = [];
+
+      // Filtre par statut
+      if (options?.status && options.status !== 'all') {
+        conditions.push(eq(members.status, options.status));
+      }
+
+      // Filtre de recherche textuelle
+      if (options?.search && options.search.trim()) {
+        const searchTerm = `%${options.search.toLowerCase()}%`;
+        conditions.push(
+          or(
+            ilike(members.firstName, searchTerm),
+            ilike(members.lastName, searchTerm),
+            ilike(members.email, searchTerm),
+            ilike(members.company, searchTerm)
+          )!
+        );
+      }
+
+      // Filtre par score d'engagement
+      if (options?.score) {
+        if (options.score === 'high') {
+          conditions.push(sql`${members.engagementScore} >= 50`);
+        } else if (options.score === 'medium') {
+          conditions.push(sql`${members.engagementScore} >= 10 AND ${members.engagementScore} < 50`);
+        } else if (options.score === 'low') {
+          conditions.push(sql`${members.engagementScore} < 10`);
+        }
+      }
+
+      // Filtre par activité récente
+      if (options?.activity) {
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        
+        if (options.activity === 'recent') {
+          conditions.push(sql`${members.lastActivityAt} >= ${thirtyDaysAgo.toISOString()}`);
+        } else if (options.activity === 'inactive') {
+          conditions.push(
+            or(
+              sql`${members.lastActivityAt} < ${thirtyDaysAgo.toISOString()}`,
+              sql`${members.lastActivityAt} IS NULL`
+            )!
+          );
+        }
+      }
+
+      // Construire la clause WHERE
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+      // Count total avec filtres
+      const countQuery = db
         .select({ count: sql<number>`count(*)::int` })
         .from(members);
+      
+      const [countResult] = whereClause 
+        ? await countQuery.where(whereClause)
+        : await countQuery;
 
-      // Get paginated results
-      const membersList = await db
+      // Get paginated results avec filtres
+      const membersQuery = db
         .select()
         .from(members)
         .orderBy(desc(members.lastActivityAt))
         .limit(limit)
         .offset(offset);
+
+      const membersList = whereClause
+        ? await membersQuery.where(whereClause)
+        : await membersQuery;
 
       return { 
         success: true, 
@@ -2681,6 +2961,40 @@ export class DatabaseStorage implements IStorage {
       return { success: true, data: member || null };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération du membre par rôle CJD: ${error}`) };
+    }
+  }
+
+  async getMemberDetails(email: string): Promise<Result<{
+    member: Member;
+    activities: MemberActivity[];
+    subscriptions: MemberSubscription[];
+  }>> {
+    try {
+      // Récupérer le membre
+      const memberResult = await this.getMemberByEmail(email);
+      if (!memberResult.success || !memberResult.data) {
+        return { success: false, error: new NotFoundError("Membre introuvable") };
+      }
+
+      // Récupérer les activités
+      const activitiesResult = await this.getMemberActivities(email);
+      if (!activitiesResult.success) {
+        return { success: false, error: activitiesResult.error };
+      }
+
+      // Récupérer les souscriptions
+      const subscriptions = await this.getSubscriptionsByMember(email);
+
+      return {
+        success: true,
+        data: {
+          member: memberResult.data,
+          activities: activitiesResult.data,
+          subscriptions,
+        }
+      };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des détails du membre: ${error}`) };
     }
   }
 
@@ -3144,6 +3458,83 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // ==================== FEATURE CONFIGURATION ====================
+
+  async getFeatureConfig(): Promise<Result<FeatureConfig[]>> {
+    try {
+      const configs = await runDbQuery(
+        async () => db.select().from(featureConfig).orderBy(featureConfig.featureKey),
+        'quick'
+      );
+      return { success: true, data: configs };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération de la configuration des fonctionnalités: ${error}`) };
+    }
+  }
+
+  async getFeatureConfigByKey(featureKey: string): Promise<Result<FeatureConfig | null>> {
+    try {
+      const [config] = await runDbQuery(
+        async () => db.select().from(featureConfig).where(eq(featureConfig.featureKey, featureKey)).limit(1),
+        'quick'
+      );
+      return { success: true, data: config || null };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération de la configuration: ${error}`) };
+    }
+  }
+
+  async isFeatureEnabled(featureKey: string): Promise<Result<boolean>> {
+    try {
+      const result = await this.getFeatureConfigByKey(featureKey);
+      if (!result.success) {
+        return { success: false, error: result.error };
+      }
+      // Si la config n'existe pas, la fonctionnalité est activée par défaut
+      return { success: true, data: result.data?.enabled ?? true };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la vérification de la fonctionnalité: ${error}`) };
+    }
+  }
+
+  async updateFeatureConfig(featureKey: string, enabled: boolean, updatedBy: string): Promise<Result<FeatureConfig>> {
+    try {
+      const result = await db.transaction(async (tx) => {
+        // Check if config exists
+        const [existing] = await tx.select().from(featureConfig).where(eq(featureConfig.featureKey, featureKey)).limit(1);
+        
+        if (existing) {
+          // Update existing config
+          const [updated] = await tx
+            .update(featureConfig)
+            .set({
+              enabled,
+              updatedBy,
+              updatedAt: sql`NOW()`
+            })
+            .where(eq(featureConfig.featureKey, featureKey))
+            .returning();
+          return updated;
+        } else {
+          // Insert new config
+          const [inserted] = await tx
+            .insert(featureConfig)
+            .values({
+              featureKey,
+              enabled,
+              updatedBy
+            })
+            .returning();
+          return inserted;
+        }
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la configuration: ${error}`) };
+    }
+  }
+
   // ==================== LOAN ITEMS ====================
   
   async getLoanItems(options?: { page?: number; limit?: number; search?: string; status?: string }): Promise<Result<{
@@ -3160,7 +3551,7 @@ export class DatabaseStorage implements IStorage {
       const status = options?.status;
 
       // Construire les conditions
-      const conditions = [];
+      const conditions: any[] = [];
       
       // Si un statut spécifique est demandé, l'utiliser
       // Sinon, exclure les items en pending (afficher tous les items validés)
@@ -3992,6 +4383,196 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getFinancialKPIs(): Promise<Result<{
+    subscriptions: {
+      totalRevenue: number; // en centimes
+      activeSubscriptions: number;
+      totalSubscriptions: number;
+      averageAmount: number; // en centimes
+      monthlyRevenue: number; // en centimes (30 derniers jours)
+    };
+    sponsorships: {
+      totalRevenue: number; // en centimes
+      activeSponsorships: number;
+      totalSponsorships: number;
+      averageAmount: number; // en centimes
+      byLevel: { level: string; count: number; totalAmount: number }[];
+    };
+    totalRevenue: number; // en centimes (souscriptions + sponsorings)
+  }>> {
+    try {
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      // Souscriptions
+      const allSubscriptions = await db.select().from(memberSubscriptions);
+      const activeSubscriptions = allSubscriptions.filter(sub => {
+        const start = new Date(sub.startDate);
+        const end = new Date(sub.endDate);
+        return start <= now && end >= now;
+      });
+      const monthlySubscriptions = allSubscriptions.filter(sub => {
+        const created = new Date(sub.createdAt);
+        return created >= thirtyDaysAgo;
+      });
+
+      const subscriptionsTotal = allSubscriptions.reduce((sum, sub) => sum + sub.amountInCents, 0);
+      const monthlyRevenue = monthlySubscriptions.reduce((sum, sub) => sum + sub.amountInCents, 0);
+      const averageSubscription = allSubscriptions.length > 0 
+        ? Math.round(subscriptionsTotal / allSubscriptions.length) 
+        : 0;
+
+      // Sponsorings
+      const allSponsorships = await db.select().from(eventSponsorships);
+      const activeSponsorships = allSponsorships.filter(s => 
+        s.status === 'confirmed' || s.status === 'completed'
+      );
+      const sponsorshipsTotal = allSponsorships.reduce((sum, s) => sum + s.amount, 0);
+      const averageSponsorship = allSponsorships.length > 0 
+        ? Math.round(sponsorshipsTotal / allSponsorships.length) 
+        : 0;
+
+      // Sponsorings par niveau
+      const sponsorshipsByLevel = allSponsorships.reduce((acc, s) => {
+        const level = s.level;
+        const existing = acc.find(item => item.level === level);
+        if (existing) {
+          existing.count++;
+          existing.totalAmount += s.amount;
+        } else {
+          acc.push({ level, count: 1, totalAmount: s.amount });
+        }
+        return acc;
+      }, [] as { level: string; count: number; totalAmount: number }[]);
+
+      return {
+        success: true,
+        data: {
+          subscriptions: {
+            totalRevenue: subscriptionsTotal,
+            activeSubscriptions: activeSubscriptions.length,
+            totalSubscriptions: allSubscriptions.length,
+            averageAmount: averageSubscription,
+            monthlyRevenue,
+          },
+          sponsorships: {
+            totalRevenue: sponsorshipsTotal,
+            activeSponsorships: activeSponsorships.length,
+            totalSponsorships: allSponsorships.length,
+            averageAmount: averageSponsorship,
+            byLevel: sponsorshipsByLevel,
+          },
+          totalRevenue: subscriptionsTotal + sponsorshipsTotal,
+        },
+      };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors du calcul des KPIs financiers: ${error}`) };
+    }
+  }
+
+  async getEngagementKPIs(): Promise<Result<{
+    members: {
+      total: number;
+      active: number;
+      averageScore: number;
+      conversionRate: number; // proposed -> active
+      retentionRate: number; // actifs sur 30j / total actifs
+      churnRate: number; // inactifs > 90j / total actifs
+    };
+    patrons: {
+      total: number;
+      active: number;
+      conversionRate: number;
+    };
+    activities: {
+      total: number;
+      averagePerMember: number;
+      byType: { type: string; count: number }[];
+    };
+  }>> {
+    try {
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+      // Membres
+      const allMembers = await db.select().from(members);
+      const activeMembers = allMembers.filter(m => m.status === 'active');
+      const proposedMembers = allMembers.filter(m => m.status === 'proposed');
+      const recentActiveMembers = activeMembers.filter(m => {
+        const lastActivity = new Date(m.lastActivityAt);
+        return lastActivity >= thirtyDaysAgo;
+      });
+      const staleMembers = activeMembers.filter(m => {
+        const lastActivity = new Date(m.lastActivityAt);
+        return lastActivity < ninetyDaysAgo;
+      });
+
+      const totalScore = allMembers.reduce((sum, m) => sum + m.engagementScore, 0);
+      const averageScore = allMembers.length > 0 ? Math.round(totalScore / allMembers.length) : 0;
+      const conversionRate = (proposedMembers.length + activeMembers.length) > 0
+        ? Math.round((activeMembers.length / (proposedMembers.length + activeMembers.length)) * 100)
+        : 0;
+      const retentionRate = activeMembers.length > 0
+        ? Math.round((recentActiveMembers.length / activeMembers.length) * 100)
+        : 0;
+      const churnRate = activeMembers.length > 0
+        ? Math.round((staleMembers.length / activeMembers.length) * 100)
+        : 0;
+
+      // Mécènes
+      const allPatrons = await db.select().from(patrons);
+      const activePatrons = allPatrons.filter(p => p.status === 'active');
+      const proposedPatrons = allPatrons.filter(p => p.status === 'proposed');
+      const patronConversionRate = (proposedPatrons.length + activePatrons.length) > 0
+        ? Math.round((activePatrons.length / (proposedPatrons.length + activePatrons.length)) * 100)
+        : 0;
+
+      // Activités
+      const allActivities = await db.select().from(memberActivities);
+      const activitiesByType = allActivities.reduce((acc, a) => {
+        const type = a.activityType;
+        const existing = acc.find(item => item.type === type);
+        if (existing) {
+          existing.count++;
+        } else {
+          acc.push({ type, count: 1 });
+        }
+        return acc;
+      }, [] as { type: string; count: number }[]);
+
+      const averageActivitiesPerMember = activeMembers.length > 0
+        ? Math.round((allActivities.length / activeMembers.length) * 10) / 10
+        : 0;
+
+      return {
+        success: true,
+        data: {
+          members: {
+            total: allMembers.length,
+            active: activeMembers.length,
+            averageScore,
+            conversionRate,
+            retentionRate,
+            churnRate,
+          },
+          patrons: {
+            total: allPatrons.length,
+            active: activePatrons.length,
+            conversionRate: patronConversionRate,
+          },
+          activities: {
+            total: allActivities.length,
+            averagePerMember: averageActivitiesPerMember,
+            byType: activitiesByType,
+          },
+        },
+      };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors du calcul des KPIs d'engagement: ${error}`) };
+    }
+  }
+
   async getAdminStats(): Promise<Result<{
     members: { total: number; active: number; proposed: number; recentActivity: number };
     patrons: { total: number; active: number; proposed: number };
@@ -4059,6 +4640,944 @@ export class DatabaseStorage implements IStorage {
       };
     } catch (error) {
       return { success: false, error: new DatabaseError(`Erreur lors de la récupération des statistiques admin: ${error}`) };
+    }
+  }
+
+  // Financial budgets implementation
+  async createBudget(budget: z.infer<typeof insertFinancialBudgetSchema>): Promise<Result<FinancialBudget>> {
+    try {
+      const [newBudget] = await db.insert(financialBudgets).values({
+        ...budget,
+        updatedAt: new Date(),
+      }).returning();
+      return { success: true, data: newBudget };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création du budget: ${error}`) };
+    }
+  }
+
+  async getBudgets(options?: { period?: string; year?: number; category?: string }): Promise<Result<FinancialBudget[]>> {
+    try {
+      const allBudgets = await db.select().from(financialBudgets);
+      
+      let filtered = allBudgets;
+      if (options?.period) {
+        filtered = filtered.filter(b => b.period === options.period);
+      }
+      if (options?.year) {
+        filtered = filtered.filter(b => b.year === options.year);
+      }
+      if (options?.category) {
+        filtered = filtered.filter(b => b.category === options.category);
+      }
+      
+      filtered.sort((a, b) => {
+        if (b.year !== a.year) return b.year - a.year;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      
+      return { success: true, data: filtered };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des budgets: ${error}`) };
+    }
+  }
+
+  async getBudgetById(id: string): Promise<Result<FinancialBudget | null>> {
+    try {
+      const budgets = await db.select().from(financialBudgets);
+      const budget = budgets.find(b => b.id === id);
+      return { success: true, data: budget || null };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération du budget: ${error}`) };
+    }
+  }
+
+  async updateBudget(id: string, data: z.infer<typeof updateFinancialBudgetSchema>): Promise<Result<FinancialBudget>> {
+    try {
+      const budgets = await db.select().from(financialBudgets);
+      const budget = budgets.find(b => b.id === id);
+      
+      if (!budget) {
+        return { success: false, error: new NotFoundError("Budget non trouvé") };
+      }
+      
+      const [updated] = await db.update(financialBudgets)
+        .set({ ...data, updatedAt: new Date() })
+        .where(sql`${financialBudgets.id} = ${id}`)
+        .returning();
+      
+      if (!updated) {
+        return { success: false, error: new NotFoundError("Budget non trouvé") };
+      }
+      
+      return { success: true, data: updated };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour du budget: ${error}`) };
+    }
+  }
+
+  async deleteBudget(id: string): Promise<Result<void>> {
+    try {
+      await db.delete(financialBudgets).where(sql`${financialBudgets.id} = ${id}`);
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression du budget: ${error}`) };
+    }
+  }
+
+  async getBudgetStats(period?: string, year?: number): Promise<Result<{
+    totalBudgets: number;
+    totalAmount: number;
+    byCategory: { category: string; count: number; totalAmount: number }[];
+    byPeriod: { period: string; count: number; totalAmount: number }[];
+  }>> {
+    try {
+      const allBudgets = await db.select().from(financialBudgets);
+      
+      let budgets = allBudgets;
+      if (period) {
+        budgets = budgets.filter(b => b.period === period);
+      }
+      if (year) {
+        budgets = budgets.filter(b => b.year === year);
+      }
+      
+      const totalBudgets = budgets.length;
+      const totalAmount = budgets.reduce((sum, b) => sum + b.amountInCents, 0);
+      
+      const byCategoryMap = new Map<string, { count: number; totalAmount: number }>();
+      const byPeriodMap = new Map<string, { count: number; totalAmount: number }>();
+      
+      for (const budget of budgets) {
+        // Par catégorie
+        const catKey = budget.category;
+        const catData = byCategoryMap.get(catKey) || { count: 0, totalAmount: 0 };
+        catData.count++;
+        catData.totalAmount += budget.amountInCents;
+        byCategoryMap.set(catKey, catData);
+        
+        // Par période
+        const periodKey = `${budget.period}-${budget.year}`;
+        const periodData = byPeriodMap.get(periodKey) || { count: 0, totalAmount: 0 };
+        periodData.count++;
+        periodData.totalAmount += budget.amountInCents;
+        byPeriodMap.set(periodKey, periodData);
+      }
+      
+      const byCategory = Array.from(byCategoryMap.entries()).map(([category, data]) => ({
+        category,
+        count: data.count,
+        totalAmount: data.totalAmount,
+      }));
+      
+      const byPeriod = Array.from(byPeriodMap.entries()).map(([period, data]) => ({
+        period,
+        count: data.count,
+        totalAmount: data.totalAmount,
+      }));
+      
+      return {
+        success: true,
+        data: {
+          totalBudgets,
+          totalAmount,
+          byCategory,
+          byPeriod,
+        },
+      };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors du calcul des statistiques de budgets: ${error}`) };
+    }
+  }
+
+  // Financial expenses implementation
+  async createExpense(expense: z.infer<typeof insertFinancialExpenseSchema>): Promise<Result<FinancialExpense>> {
+    try {
+      const [newExpense] = await db.insert(financialExpenses).values({
+        ...expense,
+        updatedAt: new Date(),
+      }).returning();
+      return { success: true, data: newExpense };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création de la dépense: ${error}`) };
+    }
+  }
+
+  async getExpenses(options?: { period?: string; year?: number; category?: string; budgetId?: string; startDate?: string; endDate?: string }): Promise<Result<FinancialExpense[]>> {
+    try {
+      const allExpenses = await db.select().from(financialExpenses);
+      
+      let filtered = allExpenses;
+      
+      if (options?.startDate) {
+        filtered = filtered.filter(e => e.expenseDate >= options.startDate!);
+      }
+      if (options?.endDate) {
+        filtered = filtered.filter(e => e.expenseDate <= options.endDate!);
+      }
+      if (options?.category) {
+        filtered = filtered.filter(e => e.category === options.category);
+      }
+      if (options?.budgetId) {
+        filtered = filtered.filter(e => e.budgetId === options.budgetId);
+      }
+      
+      // Filtrage par période et année si spécifié
+      if (options?.period || options?.year) {
+        filtered = filtered.filter(e => {
+          const expenseDate = new Date(e.expenseDate);
+          const expenseYear = expenseDate.getFullYear();
+          
+          if (options.year && expenseYear !== options.year) {
+            return false;
+          }
+          
+          if (options.period === 'month') {
+            // Pour month, on peut filtrer par mois si nécessaire
+            return true;
+          } else if (options.period === 'quarter') {
+            // Pour quarter, on peut filtrer par trimestre si nécessaire
+            return true;
+          }
+          
+          return true;
+        });
+      }
+      
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.expenseDate).getTime();
+        const dateB = new Date(b.expenseDate).getTime();
+        return dateB - dateA; // Plus récent en premier
+      });
+      
+      return { success: true, data: filtered };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des dépenses: ${error}`) };
+    }
+  }
+
+  async getExpenseById(id: string): Promise<Result<FinancialExpense | null>> {
+    try {
+      const expenses = await db.select().from(financialExpenses);
+      const expense = expenses.find(e => e.id === id);
+      return { success: true, data: expense || null };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération de la dépense: ${error}`) };
+    }
+  }
+
+  async updateExpense(id: string, data: z.infer<typeof updateFinancialExpenseSchema>): Promise<Result<FinancialExpense>> {
+    try {
+      const expenses = await db.select().from(financialExpenses);
+      const expense = expenses.find(e => e.id === id);
+      
+      if (!expense) {
+        return { success: false, error: new NotFoundError("Dépense non trouvée") };
+      }
+      
+      const [updated] = await db.update(financialExpenses)
+        .set({ ...data, updatedAt: new Date() })
+        .where(sql`${financialExpenses.id} = ${id}`)
+        .returning();
+      
+      if (!updated) {
+        return { success: false, error: new NotFoundError("Dépense non trouvée") };
+      }
+      
+      return { success: true, data: updated };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la dépense: ${error}`) };
+    }
+  }
+
+  async deleteExpense(id: string): Promise<Result<void>> {
+    try {
+      await db.delete(financialExpenses).where(sql`${financialExpenses.id} = ${id}`);
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la suppression de la dépense: ${error}`) };
+    }
+  }
+
+  async getExpenseStats(period?: string, year?: number): Promise<Result<{
+    totalExpenses: number;
+    totalAmount: number;
+    byCategory: { category: string; count: number; totalAmount: number }[];
+    byPeriod: { period: string; count: number; totalAmount: number }[];
+  }>> {
+    try {
+      const allExpenses = await db.select().from(financialExpenses);
+      
+      let expenses = allExpenses;
+      
+      // Filtrage par période et année
+      if (year) {
+        expenses = expenses.filter(e => {
+          const expenseDate = new Date(e.expenseDate);
+          return expenseDate.getFullYear() === year;
+        });
+      }
+      
+      const totalExpenses = expenses.length;
+      const totalAmount = expenses.reduce((sum, e) => sum + e.amountInCents, 0);
+      
+      const byCategoryMap = new Map<string, { count: number; totalAmount: number }>();
+      const byPeriodMap = new Map<string, { count: number; totalAmount: number }>();
+      
+      for (const expense of expenses) {
+        // Par catégorie
+        const catKey = expense.category;
+        const catData = byCategoryMap.get(catKey) || { count: 0, totalAmount: 0 };
+        catData.count++;
+        catData.totalAmount += expense.amountInCents;
+        byCategoryMap.set(catKey, catData);
+        
+        // Par période (mois)
+        const expenseDate = new Date(expense.expenseDate);
+        const periodKey = `${expenseDate.getFullYear()}-${String(expenseDate.getMonth() + 1).padStart(2, '0')}`;
+        const periodData = byPeriodMap.get(periodKey) || { count: 0, totalAmount: 0 };
+        periodData.count++;
+        periodData.totalAmount += expense.amountInCents;
+        byPeriodMap.set(periodKey, periodData);
+      }
+      
+      const byCategory = Array.from(byCategoryMap.entries()).map(([category, data]) => ({
+        category,
+        count: data.count,
+        totalAmount: data.totalAmount,
+      }));
+      
+      const byPeriod = Array.from(byPeriodMap.entries()).map(([period, data]) => ({
+        period,
+        count: data.count,
+        totalAmount: data.totalAmount,
+      }));
+      
+      return {
+        success: true,
+        data: {
+          totalExpenses,
+          totalAmount,
+          byCategory,
+          byPeriod,
+        },
+      };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors du calcul des statistiques de dépenses: ${error}`) };
+    }
+  }
+
+  // Financial categories implementation
+  async getFinancialCategories(type?: string): Promise<Result<FinancialCategory[]>> {
+    try {
+      const allCategories = await db.select().from(financialCategories);
+      
+      let filtered = allCategories;
+      if (type) {
+        filtered = filtered.filter(c => c.type === type);
+      }
+      
+      filtered.sort((a, b) => {
+        if (a.type !== b.type) {
+          return a.type.localeCompare(b.type);
+        }
+        return a.name.localeCompare(b.name);
+      });
+      
+      return { success: true, data: filtered };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des catégories: ${error}`) };
+    }
+  }
+
+  async createCategory(category: z.infer<typeof insertFinancialCategorySchema>): Promise<Result<FinancialCategory>> {
+    try {
+      const [newCategory] = await db.insert(financialCategories).values({
+        ...category,
+        updatedAt: new Date(),
+      }).returning();
+      return { success: true, data: newCategory };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création de la catégorie: ${error}`) };
+    }
+  }
+
+  async updateCategory(id: string, data: z.infer<typeof updateFinancialCategorySchema>): Promise<Result<FinancialCategory>> {
+    try {
+      const categories = await db.select().from(financialCategories);
+      const category = categories.find(c => c.id === id);
+      
+      if (!category) {
+        return { success: false, error: new NotFoundError("Catégorie non trouvée") };
+      }
+      
+      const [updated] = await db.update(financialCategories)
+        .set({ ...data, updatedAt: new Date() })
+        .where(sql`${financialCategories.id} = ${id}`)
+        .returning();
+      
+      if (!updated) {
+        return { success: false, error: new NotFoundError("Catégorie non trouvée") };
+      }
+      
+      return { success: true, data: updated };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la catégorie: ${error}`) };
+    }
+  }
+
+  // Financial forecasts implementation
+  async createForecast(forecast: z.infer<typeof insertFinancialForecastSchema>): Promise<Result<FinancialForecast>> {
+    try {
+      const [newForecast] = await db.insert(financialForecasts).values({
+        ...forecast,
+        updatedAt: new Date(),
+      }).returning();
+      return { success: true, data: newForecast };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la création de la prévision: ${error}`) };
+    }
+  }
+
+  async getForecasts(options?: { period?: string; year?: number; category?: string }): Promise<Result<FinancialForecast[]>> {
+    try {
+      const allForecasts = await db.select().from(financialForecasts);
+      
+      let filtered = allForecasts;
+      if (options?.period) {
+        filtered = filtered.filter(f => f.period === options.period);
+      }
+      if (options?.year) {
+        filtered = filtered.filter(f => f.year === options.year);
+      }
+      if (options?.category) {
+        filtered = filtered.filter(f => f.category === options.category);
+      }
+      
+      filtered.sort((a, b) => {
+        if (b.year !== a.year) return b.year - a.year;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      
+      return { success: true, data: filtered };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la récupération des prévisions: ${error}`) };
+    }
+  }
+
+  async updateForecast(id: string, data: z.infer<typeof updateFinancialForecastSchema>): Promise<Result<FinancialForecast>> {
+    try {
+      const forecasts = await db.select().from(financialForecasts);
+      const forecast = forecasts.find(f => f.id === id);
+      
+      if (!forecast) {
+        return { success: false, error: new NotFoundError("Prévision non trouvée") };
+      }
+      
+      const [updated] = await db.update(financialForecasts)
+        .set({ ...data, updatedAt: new Date() })
+        .where(sql`${financialForecasts.id} = ${id}`)
+        .returning();
+      
+      if (!updated) {
+        return { success: false, error: new NotFoundError("Prévision non trouvée") };
+      }
+      
+      return { success: true, data: updated };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la mise à jour de la prévision: ${error}`) };
+    }
+  }
+
+  async generateForecasts(period: string, year: number): Promise<Result<FinancialForecast[]>> {
+    try {
+      // Récupérer les revenus historiques (souscriptions et sponsorings)
+      const subscriptions = await db.select().from(memberSubscriptions);
+      const sponsorships = await db.select().from(eventSponsorships)
+        .where(sql`${eventSponsorships.status} IN ('confirmed', 'completed')`);
+      
+      // Calculer les moyennes historiques par catégorie
+      const incomeCategories = await db.select().from(financialCategories)
+        .where(sql`${financialCategories.type} = 'income'`);
+      
+      const generatedForecasts: FinancialForecast[] = [];
+      
+      for (const category of incomeCategories) {
+        let historicalAmount = 0;
+        let historicalCount = 0;
+        
+        // Calculer moyenne historique pour cette catégorie
+        if (category.name.includes('Souscriptions') || category.name.includes('souscriptions')) {
+          // Moyenne des souscriptions
+          const relevantSubs = subscriptions.filter(s => {
+            const subDate = new Date(s.createdAt);
+            return subDate.getFullYear() < year; // Données historiques
+          });
+          
+          if (relevantSubs.length > 0) {
+            historicalAmount = relevantSubs.reduce((sum, s) => sum + s.amountInCents, 0);
+            historicalCount = relevantSubs.length;
+          }
+        } else if (category.name.includes('Sponsoring') || category.name.includes('sponsoring')) {
+          // Moyenne des sponsorings
+          const relevantSponsorships = sponsorships.filter(s => {
+            const spDate = new Date(s.createdAt);
+            return spDate.getFullYear() < year; // Données historiques
+          });
+          
+          if (relevantSponsorships.length > 0) {
+            historicalAmount = relevantSponsorships.reduce((sum, s) => sum + s.amount, 0);
+            historicalCount = relevantSponsorships.length;
+          }
+        }
+        
+        // Calculer la prévision (moyenne historique ajustée)
+        const averageAmount = historicalCount > 0 ? Math.round(historicalAmount / historicalCount) : 0;
+        const forecastedAmount = averageAmount; // Peut être ajusté avec facteur de croissance
+        
+        // Déterminer le niveau de confiance
+        let confidence: 'high' | 'medium' | 'low' = 'medium';
+        if (historicalCount >= 12) {
+          confidence = 'high';
+        } else if (historicalCount < 3) {
+          confidence = 'low';
+        }
+        
+        // Créer la prévision
+        const forecast: z.infer<typeof insertFinancialForecastSchema> = {
+          category: category.id,
+          period,
+          year,
+          month: period === 'month' ? 1 : undefined,
+          quarter: period === 'quarter' ? 1 : undefined,
+          forecastedAmountInCents: forecastedAmount,
+          confidence,
+          basedOn: 'historical',
+          notes: `Généré automatiquement basé sur ${historicalCount} données historiques`,
+          createdBy: 'system',
+        };
+        
+        const [newForecast] = await db.insert(financialForecasts).values({
+          ...forecast,
+          updatedAt: new Date(),
+        }).returning();
+        
+        generatedForecasts.push(newForecast);
+      }
+      
+      return { success: true, data: generatedForecasts };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la génération des prévisions: ${error}`) };
+    }
+  }
+
+  // Extended KPIs and Reports
+  async getFinancialKPIsExtended(period?: string, year?: number): Promise<Result<{
+    revenues: {
+      actual: number;
+      forecasted: number;
+      variance: number;
+      variancePercent: number;
+    };
+    expenses: {
+      actual: number;
+      budgeted: number;
+      variance: number;
+      variancePercent: number;
+    };
+    balance: {
+      actual: number;
+      forecasted: number;
+      variance: number;
+    };
+    realizationRate: number; // (actual / forecasted) * 100
+  }>> {
+    try {
+      const currentYear = year || new Date().getFullYear();
+      
+      // Revenus réels (souscriptions + sponsorings)
+      const subscriptions = await db.select().from(memberSubscriptions);
+      const sponsorships = await db.select().from(eventSponsorships)
+        .where(sql`${eventSponsorships.status} IN ('confirmed', 'completed')`);
+      
+      let actualRevenues = subscriptions.reduce((sum, s) => sum + s.amountInCents, 0) +
+        sponsorships.reduce((sum, s) => sum + s.amount, 0);
+      
+      // Filtrer par année si nécessaire
+      if (year) {
+        const filteredSubs = subscriptions.filter(s => {
+          const subDate = new Date(s.createdAt);
+          return subDate.getFullYear() === year;
+        });
+        const filteredSponsorships = sponsorships.filter(s => {
+          const spDate = new Date(s.createdAt);
+          return spDate.getFullYear() === year;
+        });
+        actualRevenues = filteredSubs.reduce((sum, s) => sum + s.amountInCents, 0) +
+          filteredSponsorships.reduce((sum, s) => sum + s.amount, 0);
+      }
+      
+      // Revenus prévus (prévisions)
+      const forecasts = await db.select().from(financialForecasts);
+      let forecastedRevenues = forecasts
+        .filter(f => f.year === currentYear)
+        .reduce((sum, f) => sum + f.forecastedAmountInCents, 0);
+      
+      // Dépenses réelles
+      const expenses = await db.select().from(financialExpenses);
+      let actualExpenses = expenses.reduce((sum, e) => sum + e.amountInCents, 0);
+      
+      if (year) {
+        const filteredExpenses = expenses.filter(e => {
+          const expDate = new Date(e.expenseDate);
+          return expDate.getFullYear() === year;
+        });
+        actualExpenses = filteredExpenses.reduce((sum, e) => sum + e.amountInCents, 0);
+      }
+      
+      // Dépenses budgétées
+      const budgets = await db.select().from(financialBudgets);
+      let budgetedExpenses = budgets
+        .filter(b => b.year === currentYear)
+        .reduce((sum, b) => sum + b.amountInCents, 0);
+      
+      // Calculs
+      const revenueVariance = actualRevenues - forecastedRevenues;
+      const revenueVariancePercent = forecastedRevenues > 0 
+        ? (revenueVariance / forecastedRevenues) * 100 
+        : 0;
+      
+      const expenseVariance = actualExpenses - budgetedExpenses;
+      const expenseVariancePercent = budgetedExpenses > 0 
+        ? (expenseVariance / budgetedExpenses) * 100 
+        : 0;
+      
+      const actualBalance = actualRevenues - actualExpenses;
+      const forecastedBalance = forecastedRevenues - budgetedExpenses;
+      const balanceVariance = actualBalance - forecastedBalance;
+      
+      const realizationRate = forecastedRevenues > 0 
+        ? (actualRevenues / forecastedRevenues) * 100 
+        : 0;
+      
+      return {
+        success: true,
+        data: {
+          revenues: {
+            actual: actualRevenues,
+            forecasted: forecastedRevenues,
+            variance: revenueVariance,
+            variancePercent: Math.round(revenueVariancePercent * 100) / 100,
+          },
+          expenses: {
+            actual: actualExpenses,
+            budgeted: budgetedExpenses,
+            variance: expenseVariance,
+            variancePercent: Math.round(expenseVariancePercent * 100) / 100,
+          },
+          balance: {
+            actual: actualBalance,
+            forecasted: forecastedBalance,
+            variance: balanceVariance,
+          },
+          realizationRate: Math.round(realizationRate * 100) / 100,
+        },
+      };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors du calcul des KPIs financiers étendus: ${error}`) };
+    }
+  }
+
+  async getFinancialComparison(period1: { period: string; year: number }, period2: { period: string; year: number }): Promise<Result<{
+    revenues: { period1: number; period2: number; change: number; changePercent: number };
+    expenses: { period1: number; period2: number; change: number; changePercent: number };
+    balance: { period1: number; period2: number; change: number; changePercent: number };
+  }>> {
+    try {
+      // Calculer les revenus et dépenses pour chaque période
+      const calculatePeriodData = async (period: string, year: number) => {
+        const subscriptions = await db.select().from(memberSubscriptions);
+        const sponsorships = await db.select().from(eventSponsorships)
+          .where(sql`${eventSponsorships.status} IN ('confirmed', 'completed')`);
+        const expenses = await db.select().from(financialExpenses);
+        
+        // Filtrer par année
+        const filteredSubs = subscriptions.filter(s => {
+          const subDate = new Date(s.createdAt);
+          return subDate.getFullYear() === year;
+        });
+        const filteredSponsorships = sponsorships.filter(s => {
+          const spDate = new Date(s.createdAt);
+          return spDate.getFullYear() === year;
+        });
+        const filteredExpenses = expenses.filter(e => {
+          const expDate = new Date(e.expenseDate);
+          return expDate.getFullYear() === year;
+        });
+        
+        const revenues = filteredSubs.reduce((sum, s) => sum + s.amountInCents, 0) +
+          filteredSponsorships.reduce((sum, s) => sum + s.amount, 0);
+        const expensesAmount = filteredExpenses.reduce((sum, e) => sum + e.amountInCents, 0);
+        const balance = revenues - expensesAmount;
+        
+        return { revenues, expenses: expensesAmount, balance };
+      };
+      
+      const data1 = await calculatePeriodData(period1.period, period1.year);
+      const data2 = await calculatePeriodData(period2.period, period2.year);
+      
+      const revenueChange = data2.revenues - data1.revenues;
+      const revenueChangePercent = data1.revenues > 0 
+        ? (revenueChange / data1.revenues) * 100 
+        : 0;
+      
+      const expenseChange = data2.expenses - data1.expenses;
+      const expenseChangePercent = data1.expenses > 0 
+        ? (expenseChange / data1.expenses) * 100 
+        : 0;
+      
+      const balanceChange = data2.balance - data1.balance;
+      const balanceChangePercent = data1.balance !== 0 
+        ? (balanceChange / Math.abs(data1.balance)) * 100 
+        : 0;
+      
+      return {
+        success: true,
+        data: {
+          revenues: {
+            period1: data1.revenues,
+            period2: data2.revenues,
+            change: revenueChange,
+            changePercent: Math.round(revenueChangePercent * 100) / 100,
+          },
+          expenses: {
+            period1: data1.expenses,
+            period2: data2.expenses,
+            change: expenseChange,
+            changePercent: Math.round(expenseChangePercent * 100) / 100,
+          },
+          balance: {
+            period1: data1.balance,
+            period2: data2.balance,
+            change: balanceChange,
+            changePercent: Math.round(balanceChangePercent * 100) / 100,
+          },
+        },
+      };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la comparaison financière: ${error}`) };
+    }
+  }
+
+  async getFinancialReport(type: 'monthly' | 'quarterly' | 'yearly', period: number, year: number): Promise<Result<{
+    period: string;
+    revenues: {
+      subscriptions: number;
+      sponsorships: number;
+      other: number;
+      total: number;
+    };
+    expenses: {
+      byCategory: { category: string; amount: number }[];
+      total: number;
+    };
+    budgets: {
+      byCategory: { category: string; amount: number }[];
+      total: number;
+    };
+    variances: {
+      revenues: number;
+      expenses: number;
+      balance: number;
+    };
+    forecasts: {
+      nextPeriod: number;
+      confidence: string;
+    };
+  }>> {
+    try {
+      // Calculer les revenus
+      const subscriptions = await db.select().from(memberSubscriptions);
+      const sponsorships = await db.select().from(eventSponsorships)
+        .where(sql`${eventSponsorships.status} IN ('confirmed', 'completed')`);
+      
+      let periodSubscriptions = 0;
+      let periodSponsorships = 0;
+      
+      if (type === 'monthly') {
+        const filteredSubs = subscriptions.filter(s => {
+          const subDate = new Date(s.createdAt);
+          return subDate.getFullYear() === year && subDate.getMonth() + 1 === period;
+        });
+        const filteredSponsorships = sponsorships.filter(s => {
+          const spDate = new Date(s.createdAt);
+          return spDate.getFullYear() === year && spDate.getMonth() + 1 === period;
+        });
+        periodSubscriptions = filteredSubs.reduce((sum, s) => sum + s.amountInCents, 0);
+        periodSponsorships = filteredSponsorships.reduce((sum, s) => sum + s.amount, 0);
+      } else if (type === 'quarterly') {
+        const startMonth = (period - 1) * 3 + 1;
+        const endMonth = period * 3;
+        const filteredSubs = subscriptions.filter(s => {
+          const subDate = new Date(s.createdAt);
+          const month = subDate.getMonth() + 1;
+          return subDate.getFullYear() === year && month >= startMonth && month <= endMonth;
+        });
+        const filteredSponsorships = sponsorships.filter(s => {
+          const spDate = new Date(s.createdAt);
+          const month = spDate.getMonth() + 1;
+          return spDate.getFullYear() === year && month >= startMonth && month <= endMonth;
+        });
+        periodSubscriptions = filteredSubs.reduce((sum, s) => sum + s.amountInCents, 0);
+        periodSponsorships = filteredSponsorships.reduce((sum, s) => sum + s.amount, 0);
+      } else {
+        const filteredSubs = subscriptions.filter(s => {
+          const subDate = new Date(s.createdAt);
+          return subDate.getFullYear() === year;
+        });
+        const filteredSponsorships = sponsorships.filter(s => {
+          const spDate = new Date(s.createdAt);
+          return spDate.getFullYear() === year;
+        });
+        periodSubscriptions = filteredSubs.reduce((sum, s) => sum + s.amountInCents, 0);
+        periodSponsorships = filteredSponsorships.reduce((sum, s) => sum + s.amount, 0);
+      }
+      
+      const totalRevenues = periodSubscriptions + periodSponsorships;
+      
+      // Calculer les dépenses par catégorie
+      const expenses = await db.select().from(financialExpenses);
+      const categories = await db.select().from(financialCategories);
+      
+      let periodExpenses = expenses;
+      if (type === 'monthly') {
+        periodExpenses = expenses.filter(e => {
+          const expDate = new Date(e.expenseDate);
+          return expDate.getFullYear() === year && expDate.getMonth() + 1 === period;
+        });
+      } else if (type === 'quarterly') {
+        const startMonth = (period - 1) * 3 + 1;
+        const endMonth = period * 3;
+        periodExpenses = expenses.filter(e => {
+          const expDate = new Date(e.expenseDate);
+          const month = expDate.getMonth() + 1;
+          return expDate.getFullYear() === year && month >= startMonth && month <= endMonth;
+        });
+      } else {
+        periodExpenses = expenses.filter(e => {
+          const expDate = new Date(e.expenseDate);
+          return expDate.getFullYear() === year;
+        });
+      }
+      
+      const expensesByCategoryMap = new Map<string, number>();
+      for (const expense of periodExpenses) {
+        const category = categories.find(c => c.id === expense.category);
+        const categoryName = category?.name || 'Autre';
+        const current = expensesByCategoryMap.get(categoryName) || 0;
+        expensesByCategoryMap.set(categoryName, current + expense.amountInCents);
+      }
+      
+      const expensesByCategory = Array.from(expensesByCategoryMap.entries()).map(([category, amount]) => ({
+        category,
+        amount,
+      }));
+      
+      const totalExpenses = periodExpenses.reduce((sum, e) => sum + e.amountInCents, 0);
+      
+      // Calculer les budgets par catégorie
+      const budgets = await db.select().from(financialBudgets);
+      let periodBudgets = budgets.filter(b => b.year === year);
+      
+      if (type === 'monthly' && periodBudgets[0]?.month) {
+        periodBudgets = periodBudgets.filter(b => b.month === period);
+      } else if (type === 'quarterly' && periodBudgets[0]?.quarter) {
+        periodBudgets = periodBudgets.filter(b => b.quarter === period);
+      }
+      
+      const budgetsByCategoryMap = new Map<string, number>();
+      for (const budget of periodBudgets) {
+        const category = categories.find(c => c.id === budget.category);
+        const categoryName = category?.name || 'Autre';
+        const current = budgetsByCategoryMap.get(categoryName) || 0;
+        budgetsByCategoryMap.set(categoryName, current + budget.amountInCents);
+      }
+      
+      const budgetsByCategory = Array.from(budgetsByCategoryMap.entries()).map(([category, amount]) => ({
+        category,
+        amount,
+      }));
+      
+      const totalBudgets = periodBudgets.reduce((sum, b) => sum + b.amountInCents, 0);
+      
+      // Récupérer les prévisions
+      const forecasts = await db.select().from(financialForecasts);
+      
+      // Calculer les écarts
+      const revenueForecast = forecasts
+        .filter(f => f.year === year)
+        .reduce((sum, f) => sum + f.forecastedAmountInCents, 0);
+      const revenueVariance = totalRevenues - revenueForecast;
+      const expenseVariance = totalExpenses - totalBudgets;
+      const balanceVariance = (totalRevenues - totalExpenses) - (revenueForecast - totalBudgets);
+      
+      // Prévisions période suivante
+      const nextPeriodForecasts = forecasts.filter(f => {
+        if (type === 'monthly') {
+          return f.year === year && f.month === (period === 12 ? 1 : period + 1);
+        } else if (type === 'quarterly') {
+          return f.year === year && f.quarter === (period === 4 ? 1 : period + 1);
+        } else {
+          return f.year === year + 1;
+        }
+      });
+      
+      const nextPeriodAmount = nextPeriodForecasts.reduce((sum, f) => sum + f.forecastedAmountInCents, 0);
+      const avgConfidence = nextPeriodForecasts.length > 0
+        ? nextPeriodForecasts.reduce((sum, f) => {
+            const confValue = f.confidence === 'high' ? 3 : f.confidence === 'medium' ? 2 : 1;
+            return sum + confValue;
+          }, 0) / nextPeriodForecasts.length
+        : 0;
+      const confidence = avgConfidence >= 2.5 ? 'high' : avgConfidence >= 1.5 ? 'medium' : 'low';
+      
+      const periodLabel = type === 'monthly' 
+        ? `${year}-${String(period).padStart(2, '0')}`
+        : type === 'quarterly'
+        ? `T${period} ${year}`
+        : `${year}`;
+      
+      return {
+        success: true,
+        data: {
+          period: periodLabel,
+          revenues: {
+            subscriptions: periodSubscriptions,
+            sponsorships: periodSponsorships,
+            other: 0, // À implémenter si d'autres sources de revenus
+            total: totalRevenues,
+          },
+          expenses: {
+            byCategory: expensesByCategory,
+            total: totalExpenses,
+          },
+          budgets: {
+            byCategory: budgetsByCategory,
+            total: totalBudgets,
+          },
+          variances: {
+            revenues: revenueVariance,
+            expenses: expenseVariance,
+            balance: balanceVariance,
+          },
+          forecasts: {
+            nextPeriod: nextPeriodAmount,
+            confidence,
+          },
+        },
+      };
+    } catch (error) {
+      return { success: false, error: new DatabaseError(`Erreur lors de la génération du rapport financier: ${error}`) };
     }
   }
 }
