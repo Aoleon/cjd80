@@ -48,6 +48,10 @@ RUN npm ci --omit=dev && \
 COPY --from=builder /app/drizzle.config.ts ./
 COPY --from=builder /app/shared ./shared
 
+# Créer vite.config.js (nécessaire pour les imports dynamiques, même si non utilisé en production)
+# En production, setupVite n'est pas appelé, mais le module peut être importé
+RUN echo 'export default {};' > vite.config.js
+
 # Copier les fichiers buildés depuis le stage builder
 COPY --from=builder /app/dist ./dist
 
@@ -60,9 +64,13 @@ USER cjduser
 # Exposer le port
 EXPOSE 5000
 
+# Build arg pour le tag Git
+ARG GIT_TAG=main-unknown
+
 # Variables d'environnement par défaut
 ENV NODE_ENV=production
 ENV PORT=5000
+ENV GIT_TAG=${GIT_TAG}
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

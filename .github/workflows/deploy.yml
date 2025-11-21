@@ -88,6 +88,7 @@ jobs:
             LATEST_TAG="${{ env.REGISTRY }}/${REPO_LOWER}:latest"
             echo "tag=${TAG}" >> $GITHUB_OUTPUT
             echo "tag_with_v=${TAG_WITH_V}" >> $GITHUB_OUTPUT
+            echo "git_tag=${GIT_TAG}" >> $GITHUB_OUTPUT
             echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
             echo "🏷️ Git tag détecté: ${GIT_TAG}"
             echo "🏷️ Image tag: ${TAG}"
@@ -100,6 +101,7 @@ jobs:
             LATEST_TAG="${{ env.REGISTRY }}/${REPO_LOWER}:latest"
             echo "tag=${TAG}" >> $GITHUB_OUTPUT
             echo "tag_with_v=${TAG}" >> $GITHUB_OUTPUT
+            echo "git_tag=main-${SHORT_SHA}" >> $GITHUB_OUTPUT
             echo "latest=${LATEST_TAG}" >> $GITHUB_OUTPUT
             echo "🏷️ Push sur branche détecté (SHA: ${SHORT_SHA})"
             echo "🏷️ Image tag: ${TAG}"
@@ -122,6 +124,8 @@ jobs:
           platforms: linux/amd64
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+            GIT_TAG=${{ steps.image-tag.outputs.git_tag }}
+            GIT_TAG=${{ steps.image-tag.outputs.git_tag }}
 
   # ============================================================================
   # Job 2: Deploy to Multiple Servers (Matrix Strategy)

@@ -51,6 +51,14 @@ import {
   insertTrackingMetricSchema,
   insertTrackingAlertSchema,
   updateTrackingAlertSchema,
+  insertFinancialBudgetSchema,
+  updateFinancialBudgetSchema,
+  insertFinancialExpenseSchema,
+  updateFinancialExpenseSchema,
+  insertFinancialCategorySchema,
+  updateFinancialCategorySchema,
+  insertFinancialForecastSchema,
+  updateFinancialForecastSchema,
   LOAN_STATUS,
   hasPermission,
   ADMIN_ROLES,
@@ -66,8 +74,9 @@ import { promises as fs } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import multer from "multer";
-import { singlePhotoUpload, getPhotoUrl, deletePhoto, singleLogoUpload, deleteLogo } from "./utils/file-upload";
+import { singlePhotoUpload, getPhotoUrl, deletePhoto, singleLogoUpload, deleteLogo, uploadPhotoToMinIO, uploadLogoToMinIO } from "./utils/file-upload";
 import { getChatbotService } from "./services/chatbot-service";
+import { getMinIOService } from "./services/minio-service";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -275,6 +284,20 @@ export function createRouter(storageInstance: IStorage): any {
       
       const poolStats = getPoolStats();
       
+      // Health check MinIO
+      let minioHealth;
+      try {
+        const minioService = getMinIOService();
+        minioHealth = await minioService.healthCheck();
+      } catch (error) {
+        minioHealth = {
+          status: 'unhealthy' as const,
+          connected: false,
+          buckets: [],
+          error: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
+      
       const healthCheck = {
         status: 'healthy',
         timestamp: new Date().toISOString(),
@@ -291,6 +314,7 @@ export function createRouter(storageInstance: IStorage): any {
             maxConnections: poolStats.maxConnections
           }
         },
+        minio: minioHealth,
         memory: {
           heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
           heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`,
@@ -347,7 +371,28 @@ export function createRouter(storageInstance: IStorage): any {
     });
   });
 
-  // 6. GET /api/status/all - Centralisation de tous les checks (accessible sans auth)
+  // 6. GET /api/version - Version de l'application
+  router.get("/api/version", (req, res) => {
+    try {
+      // Récupérer la version depuis les variables d'environnement
+      // GIT_TAG est défini lors du build dans le workflow GitHub Actions
+      const version = process.env.GIT_TAG || process.env.APP_VERSION || '1.0.0';
+      
+      res.status(200).json({
+        version,
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
+      });
+    } catch (error) {
+      logger.error('Error getting version', { error });
+      res.status(500).json({
+        version: '1.0.0',
+        error: 'Failed to get version'
+      });
+    }
+  });
+
+  // 7. GET /api/status/all - Centralisation de tous les checks (accessible sans auth)
   router.get("/api/status/all", async (req, res) => {
     try {
       const results: StatusResponse = {
@@ -372,7 +417,32 @@ export function createRouter(storageInstance: IStorage): any {
       // 3. Database pool (utilise résilience)
       results.checks.databasePool = await dbResilience.poolHealthCheck();
 
-      // 4. Memory usage
+      // 4. MinIO storage
+      try {
+        const minioService = getMinIOService();
+        const minioHealth = await minioService.healthCheck();
+        results.checks.minio = {
+          name: 'MinIO Storage',
+          status: minioHealth.status,
+          message: minioHealth.connected 
+            ? `Connected, ${minioHealth.buckets.length} bucket(s) available`
+            : `Not connected: ${minioHealth.error || 'Unknown error'}`,
+          responseTime: 0,
+          details: {
+            connected: minioHealth.connected,
+            buckets: minioHealth.buckets
+          }
+        };
+      } catch (error) {
+        results.checks.minio = {
+          name: 'MinIO Storage',
+          status: 'unknown',
+          message: `Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          responseTime: 0
+        };
+      }
+
+      // 5. Memory usage
       try {
         const memoryUsage = process.memoryUsage();
         const heapUsedMB = Math.round(memoryUsage.heapUsed / 1024 / 1024);
@@ -1964,16 +2034,18 @@ export function createRouter(storageInstance: IStorage): any {
   });
 
   // Upload logo for onboarding (public endpoint during setup)
-  router.post("/api/setup/upload-logo", singleLogoUpload, async (req, res) => {
+  router.post("/api/setup/upload-logo", singleLogoUpload, uploadLogoToMinIO, async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ success: false, error: "Aucun fichier fourni" });
       }
 
-      // Le fichier est déjà sauvegardé dans attached_assets par multer
+      // Le fichier est déjà uploadé vers MinIO par uploadLogoToMinIO
       // Le nom du fichier est dans req.file.filename
-      // L'URL sera accessible via @assets/ dans le frontend
-      const logoUrl = `@assets/${req.file.filename}`;
+      // L'URL MinIO est dans req.file.path
+      const minioService = await import("./services/minio-service").then(m => m.getMinIOService());
+      await minioService.initialize();
+      const logoUrl = minioService.getAssetUrl(req.file.filename);
       
       // Mettre à jour le branding avec le nouveau logo
       const brandingResult = await storageInstance.getBrandingConfig();
@@ -2138,6 +2210,81 @@ export function createRouter(storageInstance: IStorage): any {
     }
   });
 
+  // ==================== CONFIGURATION DES FONCTIONNALITÉS ====================
+  
+  // Get all feature configurations (public pour tous les admins)
+  router.get("/api/admin/features", async (req, res) => {
+    try {
+      const result = await storageInstance.getFeatureConfig();
+      
+      if (!result.success) {
+        return res.status(500).json({ success: false, error: result.error.message });
+      }
+      
+      // Si aucune config n'existe, retourner les valeurs par défaut (toutes activées)
+      const defaultFeatures = [
+        { featureKey: 'ideas', enabled: true },
+        { featureKey: 'events', enabled: true },
+        { featureKey: 'loan', enabled: true },
+      ];
+      
+      const featuresMap = new Map(result.data.map(f => [f.featureKey, f.enabled]));
+      const features = defaultFeatures.map(f => ({
+        featureKey: f.featureKey,
+        enabled: featuresMap.get(f.featureKey) ?? f.enabled,
+      }));
+      
+      res.json({ success: true, data: features });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get feature status by key (public)
+  router.get("/api/admin/features/:featureKey", async (req, res) => {
+    try {
+      const { featureKey } = req.params;
+      const result = await storageInstance.isFeatureEnabled(featureKey);
+      
+      if (!result.success) {
+        return res.status(500).json({ success: false, error: result.error.message });
+      }
+      
+      res.json({ success: true, data: { featureKey, enabled: result.data } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Update feature configuration (super admin uniquement)
+  router.put("/api/admin/features/:featureKey", requirePermission('admin.manage'), async (req, res) => {
+    try {
+      const { featureKey } = req.params;
+      const { enabled } = req.body;
+      
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ success: false, error: "Le paramètre 'enabled' doit être un booléen" });
+      }
+      
+      // Valider que la featureKey est valide
+      const validFeatures = ['ideas', 'events', 'loan'];
+      if (!validFeatures.includes(featureKey)) {
+        return res.status(400).json({ success: false, error: `Fonctionnalité invalide. Valeurs autorisées: ${validFeatures.join(', ')}` });
+      }
+      
+      const user = req.user as { email: string };
+      const result = await storageInstance.updateFeatureConfig(featureKey, enabled, user.email);
+      
+      if (!result.success) {
+        return res.status(400).json({ success: false, error: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Update email configuration (super admin uniquement)
   router.put("/api/admin/email-config", requirePermission('admin.manage'), async (req, res) => {
     try {
@@ -2222,8 +2369,15 @@ export function createRouter(storageInstance: IStorage): any {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
+      const status = req.query.status as string | undefined;
+      const search = req.query.search as string | undefined;
       
-      const result = await storageInstance.getPatrons({ page, limit });
+      const result = await storageInstance.getPatrons({ 
+        page, 
+        limit,
+        ...(status && status !== 'all' ? { status } : {}),
+        ...(search && search.trim() ? { search } : {}),
+      });
       
       if (!result.success) {
         return res.status(400).json({ message: result.error.message });
@@ -2826,8 +2980,19 @@ export function createRouter(storageInstance: IStorage): any {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
+      const status = req.query.status as string | undefined;
+      const search = req.query.search as string | undefined;
+      const score = req.query.score as 'high' | 'medium' | 'low' | undefined;
+      const activity = req.query.activity as 'recent' | 'inactive' | undefined;
       
-      const result = await storageInstance.getMembers({ page, limit });
+      const result = await storageInstance.getMembers({ 
+        page, 
+        limit,
+        ...(status && status !== 'all' ? { status } : {}),
+        ...(search && search.trim() ? { search } : {}),
+        ...(score ? { score } : {}),
+        ...(activity ? { activity } : {}),
+      });
       
       if (!result.success) {
         return res.status(500).json({ message: result.error.message });
@@ -2865,6 +3030,21 @@ export function createRouter(storageInstance: IStorage): any {
       
       if (!result.success) {
         return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Récupérer les détails complets d'un membre (membre + activités + souscriptions)
+  router.get("/api/admin/members/:email/details", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getMemberDetails(req.params.email);
+      
+      if (!result.success) {
+        return res.status(404).json({ message: result.error.message });
       }
       
       res.json({ success: true, data: result.data });
@@ -3639,35 +3819,504 @@ export function createRouter(storageInstance: IStorage): any {
         return res.status(400).json({ message: 'Aucun fichier fourni' });
       }
 
-      try {
-        // Récupérer l'item pour supprimer l'ancienne photo si elle existe
-        const itemResult = await storageInstance.getLoanItem(req.params.id);
-        if (itemResult.success && itemResult.data?.photoUrl) {
-          const oldFilename = itemResult.data.photoUrl.split('/').pop();
-          if (oldFilename) {
-            await deletePhoto(oldFilename).catch(err => {
-              logger.warn('Failed to delete old photo', { filename: oldFilename, error: err });
-            });
+      // Uploader vers MinIO
+      await uploadPhotoToMinIO(req, res, async (uploadErr: Error | null) => {
+        if (uploadErr) {
+          return res.status(500).json({ message: 'Erreur lors de l\'upload vers MinIO' });
+        }
+
+        if (!req.file) {
+          return res.status(400).json({ message: 'Aucun fichier après upload' });
+        }
+
+        const uploadedFile = req.file; // Garder une référence pour éviter les erreurs TypeScript
+
+        try {
+          // Récupérer l'item pour supprimer l'ancienne photo si elle existe
+          const itemResult = await storageInstance.getLoanItem(req.params.id);
+          if (itemResult.success && itemResult.data?.photoUrl) {
+            // Extraire le nom du fichier depuis l'URL MinIO
+            const oldUrl = itemResult.data.photoUrl;
+            const oldFilename = oldUrl.includes('/') ? oldUrl.split('/').pop() : oldUrl;
+            if (oldFilename) {
+              await deletePhoto(oldFilename).catch(err => {
+                logger.warn('Failed to delete old photo', { filename: oldFilename, error: err });
+              });
+            }
           }
+
+          // Mettre à jour l'item avec la nouvelle URL de photo (MinIO)
+          const photoUrl = getPhotoUrl(uploadedFile.filename);
+          const updateResult = await storageInstance.updateLoanItem(req.params.id, { photoUrl });
+
+          if (!updateResult.success) {
+            // Supprimer le fichier uploadé si la mise à jour échoue
+            await deletePhoto(uploadedFile.filename).catch(() => {});
+            return res.status(400).json({ message: updateResult.error.message });
+          }
+
+          res.json({ success: true, photoUrl, data: updateResult.data });
+        } catch (error) {
+          // Supprimer le fichier uploadé en cas d'erreur
+          await deletePhoto(uploadedFile.filename).catch(() => {});
+          next(error);
         }
-
-        // Mettre à jour l'item avec la nouvelle URL de photo
-        const photoUrl = getPhotoUrl(req.file.filename);
-        const updateResult = await storageInstance.updateLoanItem(req.params.id, { photoUrl });
-
-        if (!updateResult.success) {
-          // Supprimer le fichier uploadé si la mise à jour échoue
-          await deletePhoto(req.file.filename).catch(() => {});
-          return res.status(400).json({ message: updateResult.error.message });
-        }
-
-        res.json({ success: true, photoUrl, data: updateResult.data });
-      } catch (error) {
-        // Supprimer le fichier uploadé en cas d'erreur
-        await deletePhoto(req.file.filename).catch(() => {});
-        next(error);
-      }
+      });
     });
+  });
+
+  // ==================== KPIs AVANCÉS ====================
+
+  // GET /api/admin/kpis/financial - KPIs financiers
+  router.get("/api/admin/kpis/financial", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getFinancialKPIs();
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /api/admin/kpis/engagement - KPIs d'engagement
+  router.get("/api/admin/kpis/engagement", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getEngagementKPIs();
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== FINANCIAL PLANNING & STEERING ====================
+
+  // GET /api/admin/finance/budgets - Liste des budgets
+  router.get("/api/admin/finance/budgets", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const options: any = {};
+      if (req.query.period) options.period = req.query.period as string;
+      if (req.query.year) options.year = parseInt(req.query.year as string);
+      if (req.query.category) options.category = req.query.category as string;
+      
+      const result = await storageInstance.getBudgets(options);
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /api/admin/finance/budgets/:id - Détail d'un budget
+  router.get("/api/admin/finance/budgets/:id", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getBudgetById(req.params.id);
+      
+      if (!result.success) {
+        return res.status(404).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // POST /api/admin/finance/budgets - Créer un budget
+  router.post("/api/admin/finance/budgets", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validated = insertFinancialBudgetSchema.parse(req.body);
+      const result = await storageInstance.createBudget(validated);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // PUT /api/admin/finance/budgets/:id - Modifier un budget
+  router.put("/api/admin/finance/budgets/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validated = updateFinancialBudgetSchema.parse(req.body);
+      const result = await storageInstance.updateBudget(req.params.id, validated);
+      
+      if (!result.success) {
+        return res.status(404).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // DELETE /api/admin/finance/budgets/:id - Supprimer un budget
+  router.delete("/api/admin/finance/budgets/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.deleteBudget(req.params.id);
+      
+      if (!result.success) {
+        return res.status(404).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /api/admin/finance/budgets/stats - Statistiques des budgets
+  router.get("/api/admin/finance/budgets/stats", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const period = req.query.period as string | undefined;
+      const year = req.query.year ? parseInt(req.query.year as string) : undefined;
+      
+      const result = await storageInstance.getBudgetStats(period, year);
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /api/admin/finance/expenses - Liste des dépenses
+  router.get("/api/admin/finance/expenses", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const options: any = {};
+      if (req.query.period) options.period = req.query.period as string;
+      if (req.query.year) options.year = parseInt(req.query.year as string);
+      if (req.query.category) options.category = req.query.category as string;
+      if (req.query.budgetId) options.budgetId = req.query.budgetId as string;
+      if (req.query.startDate) options.startDate = req.query.startDate as string;
+      if (req.query.endDate) options.endDate = req.query.endDate as string;
+      
+      const result = await storageInstance.getExpenses(options);
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /api/admin/finance/expenses/:id - Détail d'une dépense
+  router.get("/api/admin/finance/expenses/:id", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.getExpenseById(req.params.id);
+      
+      if (!result.success) {
+        return res.status(404).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // POST /api/admin/finance/expenses - Créer une dépense
+  router.post("/api/admin/finance/expenses", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validated = insertFinancialExpenseSchema.parse(req.body);
+      const result = await storageInstance.createExpense(validated);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // PUT /api/admin/finance/expenses/:id - Modifier une dépense
+  router.put("/api/admin/finance/expenses/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validated = updateFinancialExpenseSchema.parse(req.body);
+      const result = await storageInstance.updateExpense(req.params.id, validated);
+      
+      if (!result.success) {
+        return res.status(404).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // DELETE /api/admin/finance/expenses/:id - Supprimer une dépense
+  router.delete("/api/admin/finance/expenses/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const result = await storageInstance.deleteExpense(req.params.id);
+      
+      if (!result.success) {
+        return res.status(404).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /api/admin/finance/expenses/stats - Statistiques des dépenses
+  router.get("/api/admin/finance/expenses/stats", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const period = req.query.period as string | undefined;
+      const year = req.query.year ? parseInt(req.query.year as string) : undefined;
+      
+      const result = await storageInstance.getExpenseStats(period, year);
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /api/admin/finance/categories - Liste des catégories
+  router.get("/api/admin/finance/categories", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const type = req.query.type as string | undefined;
+      const result = await storageInstance.getFinancialCategories(type);
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // POST /api/admin/finance/categories - Créer une catégorie
+  router.post("/api/admin/finance/categories", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validated = insertFinancialCategorySchema.parse(req.body);
+      const result = await storageInstance.createCategory(validated);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // PUT /api/admin/finance/categories/:id - Modifier une catégorie
+  router.put("/api/admin/finance/categories/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validated = updateFinancialCategorySchema.parse(req.body);
+      const result = await storageInstance.updateCategory(req.params.id, validated);
+      
+      if (!result.success) {
+        return res.status(404).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // GET /api/admin/finance/forecasts - Liste des prévisions
+  router.get("/api/admin/finance/forecasts", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const options: any = {};
+      if (req.query.period) options.period = req.query.period as string;
+      if (req.query.year) options.year = parseInt(req.query.year as string);
+      if (req.query.category) options.category = req.query.category as string;
+      
+      const result = await storageInstance.getForecasts(options);
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // POST /api/admin/finance/forecasts - Créer une prévision
+  router.post("/api/admin/finance/forecasts", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validated = insertFinancialForecastSchema.parse(req.body);
+      const result = await storageInstance.createForecast(validated);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.message });
+      }
+      
+      res.status(201).json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // PUT /api/admin/finance/forecasts/:id - Modifier une prévision
+  router.put("/api/admin/finance/forecasts/:id", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const validated = updateFinancialForecastSchema.parse(req.body);
+      const result = await storageInstance.updateForecast(req.params.id, validated);
+      
+      if (!result.success) {
+        return res.status(404).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).toString() });
+      }
+      next(error);
+    }
+  });
+
+  // POST /api/admin/finance/forecasts/generate - Générer automatiquement les prévisions
+  router.post("/api/admin/finance/forecasts/generate", requirePermission('admin.manage'), async (req, res, next) => {
+    try {
+      const { period, year } = req.body;
+      
+      if (!period || !year) {
+        return res.status(400).json({ message: 'period et year sont requis' });
+      }
+      
+      const result = await storageInstance.generateForecasts(period, year);
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /api/admin/finance/kpis/extended - KPIs financiers étendus (réel vs prévu)
+  router.get("/api/admin/finance/kpis/extended", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const period = req.query.period as string | undefined;
+      const year = req.query.year ? parseInt(req.query.year as string) : undefined;
+      
+      const result = await storageInstance.getFinancialKPIsExtended(period, year);
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /api/admin/finance/comparison - Comparaison période vs période
+  router.get("/api/admin/finance/comparison", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const { period1, year1, period2, year2 } = req.query;
+      
+      if (!period1 || !year1 || !period2 || !year2) {
+        return res.status(400).json({ message: 'period1, year1, period2, year2 sont requis' });
+      }
+      
+      const result = await storageInstance.getFinancialComparison(
+        { period: period1 as string, year: parseInt(year1 as string) },
+        { period: period2 as string, year: parseInt(year2 as string) }
+      );
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /api/admin/finance/reports/:type - Rapports financiers
+  router.get("/api/admin/finance/reports/:type", requirePermission('admin.view'), async (req, res, next) => {
+    try {
+      const { type } = req.params;
+      const { period, year } = req.query;
+      
+      if (!['monthly', 'quarterly', 'yearly'].includes(type)) {
+        return res.status(400).json({ message: 'type doit être monthly, quarterly ou yearly' });
+      }
+      
+      if (!period || !year) {
+        return res.status(400).json({ message: 'period et year sont requis' });
+      }
+      
+      const result = await storageInstance.getFinancialReport(
+        type as 'monthly' | 'quarterly' | 'yearly',
+        parseInt(period as string),
+        parseInt(year as string)
+      );
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      
+      res.json({ success: true, data: result.data });
+    } catch (error) {
+      next(error);
+    }
   });
 
   // ==================== TRACKING TRANSVERSAL ====================
