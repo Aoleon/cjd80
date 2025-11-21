@@ -141,10 +141,8 @@ jobs:
     
     # Filtrer les serveurs si un serveur spécifique est demandé
     # Déclencher sur push main, tags, ou workflow_dispatch
-    if: |
-      github.event.inputs.server == 'all' || 
-      github.event.inputs.server == matrix.server_name || 
-      (github.event.inputs.server == '' && github.event_name == 'push')
+    # Note: La condition if avec matrix n'est pas supportée directement, on filtre dans le job
+    if: github.event.inputs.server == 'all' || github.event.inputs.server == '' || github.event_name == 'workflow_dispatch'
     
     # Utiliser l'environnement GitHub pour chaque serveur
     environment:
@@ -254,9 +252,11 @@ jobs:
           echo "display_name=$SERVER_DISPLAY_NAME" >> $GITHUB_OUTPUT
       
       - name: 📥 Checkout code
+        if: steps.server-check.outputs.skip != 'true'
         uses: actions/checkout@v4
       
       - name: 🔐 Setup SSH
+        if: steps.server-check.outputs.skip != 'true'
         env:
           SERVER_SSH_KEY: ${{ steps.secrets-check.outputs.ssh_key }}
           SERVER_HOST: ${{ steps.secrets-check.outputs.host }}
