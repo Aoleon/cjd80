@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Installer les dépendances (toutes, y compris devDependencies pour le build)
-RUN npm ci
+RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
 # Copier le code source
 COPY . .
@@ -41,7 +41,7 @@ COPY --from=builder /app/package*.json ./
 
 # Installer les production dependencies + drizzle-kit pour les migrations
 # drizzle-kit est nécessaire pour exécuter les migrations en production
-RUN npm ci --omit=dev && \
+RUN (npm ci --omit=dev --legacy-peer-deps || npm install --omit=dev --legacy-peer-deps) && \
     npm install drizzle-kit --save-dev --no-audit --no-fund || true
 
 # Copier les fichiers nécessaires pour les migrations (drizzle-kit)
