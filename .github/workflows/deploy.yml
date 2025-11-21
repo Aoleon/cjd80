@@ -141,7 +141,10 @@ jobs:
     
     # Filtrer les serveurs si un serveur spécifique est demandé
     # Déclencher sur push main, tags, ou workflow_dispatch
-    if: github.event.inputs.server == 'all' || github.event.inputs.server == '${{ matrix.server_name }}' || (github.event.inputs.server == '' && github.event_name == 'push')
+    if: |
+      github.event.inputs.server == 'all' || 
+      github.event.inputs.server == matrix.server_name || 
+      (github.event.inputs.server == '' && github.event_name == 'push')
     
     # Utiliser l'environnement GitHub pour chaque serveur
     environment:
