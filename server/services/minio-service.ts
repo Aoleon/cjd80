@@ -226,11 +226,11 @@ export class MinIOService {
 
       // Vérifier la connexion en listant les buckets
       const buckets = await this.client.listBuckets();
-      const bucketNames = buckets.map(b => b.name);
+      const bucketNames = buckets.map((b: { name: string }) => b.name);
       
       // Vérifier que les buckets requis existent
       const requiredBuckets = [this.bucketLoanItems, this.bucketAssets];
-      const missingBuckets = requiredBuckets.filter(b => !bucketNames.includes(b));
+      const missingBuckets = requiredBuckets.filter((b: string) => !bucketNames.includes(b));
       
       if (missingBuckets.length > 0) {
         // Créer les buckets manquants
