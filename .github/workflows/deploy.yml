@@ -356,6 +356,89 @@ jobs:
             echo "   L'image peut déjà être en cache ou accessible publiquement"
           fi
       
+      - name: 🧹 Cleanup server (free disk space)
+        env:
+          SERVER_HOST: ${{ steps.secrets-check.outputs.host }}
+          SERVER_PORT: ${{ steps.secrets-check.outputs.port }}
+          SERVER_USER: ${{ steps.secrets-check.outputs.user }}
+        run: |
+          echo "🧹 Nettoyage du serveur pour libérer de l'espace disque..."
+          ssh -p "$SERVER_PORT" \
+            -i ~/.ssh/id_rsa \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o ConnectTimeout=10 \
+            "$SERVER_USER@$SERVER_HOST" \
+            'bash -s' << 'ENDSSH'
+          set -e
+          
+          echo "📊 Espace disque avant nettoyage:"
+          df -h / | tail -1
+          
+          echo ""
+          echo "🐳 Nettoyage des images Docker non utilisées..."
+          docker image prune -a -f --filter "until=168h" || true
+          
+          echo ""
+          echo "📦 Nettoyage des conteneurs arrêtés..."
+          docker container prune -f || true
+          
+          echo ""
+          echo "💾 Nettoyage des volumes non utilisés..."
+          docker volume prune -f || true
+          
+          echo ""
+          echo "🌐 Nettoyage des réseaux non utilisés..."
+          docker network prune -f || true
+          
+          echo ""
+          echo "🧼 Nettoyage complet du système Docker..."
+          docker system prune -a -f --volumes --filter "until=168h" || true
+          
+          echo ""
+          echo "🗑️  Nettoyage des anciennes images de l'application (garder les 3 dernières)..."
+          if [ -d "/docker/cjd80" ]; then
+            cd /docker/cjd80
+            docker images ghcr.io/aoleon/cjd80 --format "{{.Tag}}" | grep -v "latest" | sort -V | head -n -2 | while read tag; do
+              echo "  Suppression de l'image: ghcr.io/aoleon/cjd80:$tag"
+              docker rmi "ghcr.io/aoleon/cjd80:$tag" || true
+            done
+          fi
+          
+          echo ""
+          echo "📝 Nettoyage des logs Docker..."
+          if [ -d "/var/lib/docker/containers" ]; then
+            find /var/lib/docker/containers -name "*.log" -type f -size +100M -delete || true
+          fi
+          
+          echo ""
+          echo "📋 Nettoyage des logs système..."
+          journalctl --vacuum-time=7d || true
+          
+          echo ""
+          echo "🗂️  Nettoyage des fichiers temporaires..."
+          rm -rf /tmp/* 2>/dev/null || true
+          rm -rf /var/tmp/* 2>/dev/null || true
+          
+          if command -v apt-get &> /dev/null; then
+            echo ""
+            echo "📦 Nettoyage des packages APT..."
+            apt-get clean || true
+            apt-get autoremove -y || true
+          fi
+          
+          echo ""
+          echo "📊 Espace disque après nettoyage:"
+          df -h / | tail -1
+          
+          echo ""
+          echo "🐳 Espace utilisé par Docker:"
+          docker system df
+          
+          echo ""
+          echo "✅ Nettoyage terminé!"
+          ENDSSH
+      
       - name: 📦 Prepare server directories
         env:
           SERVER_HOST: ${{ steps.secrets-check.outputs.host }}
