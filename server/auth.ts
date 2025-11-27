@@ -1,31 +1,17 @@
 import passport from "passport";
-import { Strategy as LocalStrategy } from "passport-local";
+// @ts-ignore - passport-oauth2 types may not be available until npm install
+import { Strategy as OAuth2Strategy } from "passport-oauth2";
 import { Express } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
 import { storage } from "./storage";
 import { Admin } from "../shared/schema";
+import { logger } from "./lib/logger";
+import { UserSyncService } from "./services/user-sync-service";
 
 declare global {
   namespace Express {
     interface User extends Admin {}
   }
-}
-
-const scryptAsync = promisify(scrypt);
-
-export async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
-
-export async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
 export function setupAuth(app: Express) {
@@ -47,20 +33,117 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Configuration OAuth2 pour Authentik
+  const authentikBaseUrl = process.env.AUTHENTIK_BASE_URL || "http://localhost:9002";
+  const clientID = process.env.AUTHENTIK_CLIENT_ID || "";
+  const clientSecret = process.env.AUTHENTIK_CLIENT_SECRET || "";
+  const issuer = process.env.AUTHENTIK_ISSUER || `${authentikBaseUrl}/application/o/cjd80/`;
+  const redirectURI = process.env.AUTHENTIK_REDIRECT_URI || "http://localhost:5000/api/auth/authentik/callback";
+
+  if (!clientID || !clientSecret) {
+    logger.warn("[Auth] AUTHENTIK_CLIENT_ID ou AUTHENTIK_CLIENT_SECRET non configuré. L'authentification OAuth2 ne fonctionnera pas.");
+  }
+
+  // Configuration de la stratégie OAuth2
   passport.use(
-    new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
-      try {
-        const userResult = await storage.getUserByEmail(email);
-        if (!userResult.success || !userResult.data || !(await comparePasswords(password, userResult.data.password))) {
-          return done(null, false);
-        } else {
-          return done(null, userResult.data);
+    "authentik",
+    new OAuth2Strategy(
+      {
+        authorizationURL: `${authentikBaseUrl}/application/o/authorize/`,
+        tokenURL: `${authentikBaseUrl}/application/o/token/`,
+        clientID,
+        clientSecret,
+        callbackURL: redirectURI,
+        scope: ["openid", "profile", "email"],
+      },
+      async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+        try {
+          logger.info("[Auth] Callback OAuth2 reçu", { hasAccessToken: !!accessToken });
+
+          // Récupérer les informations utilisateur depuis l'API Authentik avec l'accessToken
+          // passport-oauth2 ne fournit pas automatiquement le profil, il faut le récupérer via l'API
+          let userProfile: any = {};
+          
+          try {
+            // Récupérer les informations utilisateur
+            const userInfoResponse = await fetch(`${authentikBaseUrl}/api/v3/core/users/me/`, {
+              headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+            });
+
+            if (userInfoResponse.ok) {
+              userProfile = await userInfoResponse.json();
+              logger.info("[Auth] Profil utilisateur récupéré depuis Authentik", { email: userProfile.email });
+              
+              // Récupérer les groupes de l'utilisateur
+              if (userProfile.pk) {
+                try {
+                  const groupsResponse = await fetch(`${authentikBaseUrl}/api/v3/core/users/${userProfile.pk}/groups/`, {
+                    headers: {
+                      "Authorization": `Bearer ${accessToken}`,
+                      "Content-Type": "application/json",
+                    },
+                  });
+
+                  if (groupsResponse.ok) {
+                    const groupsData = await groupsResponse.json();
+                    userProfile.groups = groupsData.results?.map((g: any) => g.name) || [];
+                    logger.info("[Auth] Groupes utilisateur récupérés", { groups: userProfile.groups });
+                  }
+                } catch (groupsError) {
+                  logger.warn("[Auth] Impossible de récupérer les groupes", { error: groupsError });
+                }
+              }
+            } else {
+              logger.warn("[Auth] Impossible de récupérer le profil utilisateur depuis Authentik", {
+                status: userInfoResponse.status,
+              });
+              // Fallback: utiliser les informations du profil OAuth2 si disponibles
+              userProfile = profile || {};
+            }
+          } catch (error) {
+            logger.error("[Auth] Erreur lors de la récupération du profil depuis Authentik", { error });
+            // Fallback: utiliser les informations du profil OAuth2 si disponibles
+            userProfile = profile || {};
+          }
+
+          // Le profil OAuth2 contient les informations utilisateur
+          // Authentik envoie les informations dans le profil
+          const userSyncService = new UserSyncService(storage);
+          const syncResult = await userSyncService.getOrCreateUserFromOAuth2(userProfile);
+
+          if (!syncResult.success || !syncResult.user) {
+            logger.error("[Auth] Erreur lors de la synchronisation de l'utilisateur", {
+              error: syncResult.error,
+              profile: profile?.email || profile?.preferred_username,
+            });
+            return done(syncResult.error || new Error("Erreur lors de la synchronisation de l'utilisateur"), null);
+          }
+
+          const user = syncResult.user;
+
+          // Vérifier si le compte est en attente de validation
+          if (user.status === "pending") {
+            logger.warn("[Auth] Tentative de connexion avec un compte en attente", { email: user.email });
+            return done(null, false, { message: "Votre compte est en attente de validation par un administrateur" });
+          }
+
+          // Vérifier si le compte est inactif
+          if (user.status === "inactive") {
+            logger.warn("[Auth] Tentative de connexion avec un compte inactif", { email: user.email });
+            return done(null, false, { message: "Votre compte a été désactivé" });
+          }
+
+          logger.info("[Auth] Utilisateur authentifié avec succès", { email: user.email, role: user.role });
+          return done(null, user);
+        } catch (error) {
+          logger.error("[Auth] Erreur dans la stratégie OAuth2", { error });
+          return done(error, null);
         }
-      } catch (error) {
-        console.error('[Auth] Erreur dans LocalStrategy:', error);
-        return done(error);
       }
-    }),
+    )
   );
 
   // Cache en mémoire pour éviter les requêtes DB répétées
@@ -68,13 +151,13 @@ export function setupAuth(app: Express) {
   const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   passport.serializeUser((user, done) => done(null, user.email));
-  
+
   passport.deserializeUser(async (email: string, done) => {
     try {
       // Vérifier le cache d'abord
       const cached = userCache.get(email);
       const now = Date.now();
-      
+
       if (cached && (now - cached.timestamp) < CACHE_TTL) {
         return done(null, cached.user);
       }
@@ -91,7 +174,7 @@ export function setupAuth(app: Express) {
         done(null, null);
       }
     } catch (error) {
-      console.error('[Auth] Erreur lors de la désérialisation:', error);
+      logger.error("[Auth] Erreur lors de la désérialisation", { error });
       userCache.delete(email); // Nettoyer le cache en cas d'erreur
       done(error);
     }
@@ -107,79 +190,67 @@ export function setupAuth(app: Express) {
     });
   }, CACHE_TTL);
 
-  app.post("/api/register", async (req, res, next) => {
-    try {
-      const existingUserResult = await storage.getUserByEmail(req.body.email);
-      if (existingUserResult.success && existingUserResult.data) {
-        return res.status(400).send("Email already exists");
-      }
-
-      const userResult = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(req.body.password),
-        status: "pending", // Les nouvelles inscriptions sont en attente
-      });
-
-      if (!userResult.success) {
-        return res.status(400).json({ message: userResult.error.message });
-      }
-
-      req.login(userResult.data, (err) => {
-        if (err) return next(err);
-        const { password, ...userWithoutPassword } = userResult.data;
-        res.status(201).json(userWithoutPassword);
-      });
-    } catch (error) {
-      next(error);
-    }
+  // Route pour initier le flow OAuth2
+  app.get("/api/auth/authentik", (req, res, next) => {
+    passport.authenticate("authentik", {
+      scope: ["openid", "profile", "email"],
+    })(req, res, next);
   });
 
-  app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: any, info: any) => {
+  // Route callback OAuth2
+  app.get("/api/auth/authentik/callback", (req, res, next) => {
+    passport.authenticate("authentik", (err: any, user: any, info: any) => {
       if (err) {
-        console.error('[Auth] Erreur lors de la connexion:', err);
-        return res.status(500).json({ message: "Erreur serveur lors de la connexion" });
+        logger.error("[Auth] Erreur lors du callback OAuth2", { error: err });
+        return res.redirect("/auth?error=authentication_failed");
       }
-      
+
       if (!user) {
-        return res.status(401).json({ message: "Email ou mot de passe incorrect" });
+        logger.warn("[Auth] Authentification échouée", { info });
+        const errorMessage = info?.message || "Authentification échouée";
+        return res.redirect(`/auth?error=${encodeURIComponent(errorMessage)}`);
       }
-      
-      // Vérifier si le compte est en attente de validation
-      if (user.status === "pending") {
-        return res.status(403).json({ 
-          message: "Votre compte est en attente de validation par un administrateur",
-          status: "pending"
-        });
-      }
-      
-      // Vérifier si le compte est inactif
-      if (user.status === "inactive") {
-        return res.status(403).json({ 
-          message: "Votre compte a été désactivé",
-          status: "inactive"
-        });
-      }
-      
-      req.login(user, (loginErr) => {
+
+      req.logIn(user, (loginErr) => {
         if (loginErr) {
-          console.error('[Auth] Erreur lors de l\'établissement de session:', loginErr);
-          return res.status(500).json({ message: "Erreur lors de l'établissement de la session" });
+          logger.error("[Auth] Erreur lors de l'établissement de session", { error: loginErr });
+          return res.redirect("/auth?error=session_failed");
         }
-        
-        const { password, ...userWithoutPassword } = user;
-        res.status(200).json(userWithoutPassword);
+
+      // Rediriger vers la page d'administration ou la page d'accueil
+      const redirectTo = (req.session as any)?.returnTo || "/admin";
+      delete (req.session as any)?.returnTo;
+      return res.redirect(redirectTo);
       });
     })(req, res, next);
   });
 
+  // Route login - redirige vers Authentik
+  app.post("/api/login", (req, res) => {
+    // Sauvegarder l'URL de retour si fournie
+    if (req.body.returnTo) {
+      (req.session as any).returnTo = req.body.returnTo;
+    }
+    // Rediriger vers le flow OAuth2
+    res.redirect("/api/auth/authentik");
+  });
+
+  // Route logout - détruit la session
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
-      res.sendStatus(200);
+      req.session?.destroy((destroyErr) => {
+        if (destroyErr) {
+          logger.error("[Auth] Erreur lors de la destruction de session", { error: destroyErr });
+          return next(destroyErr);
+        }
+        res.clearCookie("connect.sid");
+        res.sendStatus(200);
+      });
     });
   });
 
+  // Route pour obtenir l'utilisateur actuel
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { password, ...userWithoutPassword } = req.user;

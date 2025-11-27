@@ -33,10 +33,11 @@ Application web interne moderne pour le **Centre des Jeunes Dirigeants (CJD) d'A
 - Wouter (routage léger)
 
 **Backend**
-- Node.js + Express.js
+- Node.js + **NestJS** (migration en cours depuis Express.js)
 - TypeScript avec tsx
-- Passport.js (authentification)
+- Passport.js avec OAuth2 Strategy (authentification via Authentik)
 - Drizzle ORM (base de données)
+- Architecture modulaire avec dependency injection
 
 **Base de données**
 - PostgreSQL (Neon)
@@ -46,8 +47,9 @@ Application web interne moderne pour le **Centre des Jeunes Dirigeants (CJD) d'A
 **Performance & Sécurité**
 - PWA avec service workers
 - Validation Zod côté client/serveur
-- Hachage Scrypt pour mots de passe
+- Authentification OAuth2/OIDC via Authentik (mots de passe gérés par Authentik)
 - Protection CSRF intégrée
+- Sessions Express sécurisées
 
 ### Configuration du branding
 
@@ -92,11 +94,26 @@ L'application utilise un **système de couleurs sémantiques unifié** pour gara
 │       ├── hooks/         # Hooks personnalisés
 │       ├── lib/           # Utilitaires et configuration
 │       └── pages/         # Pages de l'application
-├── server/                # API Express backend
-│   ├── middleware/        # Middlewares personnalisés
+├── server/                # API NestJS backend (migration depuis Express.js)
+│   ├── src/              # Code source NestJS
+│   │   ├── auth/         # Module authentification
+│   │   ├── health/       # Module health checks
+│   │   ├── ideas/        # Module idées
+│   │   ├── events/       # Module événements
+│   │   ├── admin/        # Module administration
+│   │   ├── members/      # Module membres/CRM
+│   │   ├── patrons/      # Module mécènes
+│   │   ├── loans/        # Module prêts
+│   │   ├── financial/    # Module financier
+│   │   ├── tracking/    # Module tracking
+│   │   ├── common/       # Modules communs (database, storage, interceptors)
+│   │   └── integrations/ # Intégrations (minio, authentik, vite)
+│   ├── middleware/        # Middlewares Express legacy (en cours de migration)
 │   ├── utils/            # Utilitaires serveur
-│   ├── auth.ts           # Configuration Passport.js
+│   ├── auth.ts           # Configuration Passport.js (legacy, en cours de migration)
 │   ├── db.ts             # Configuration base de données
+│   ├── routes.ts         # Routes Express legacy (en cours de migration)
+│   └── index.ts          # Point d'entrée Express legacy
 │   ├── routes.ts         # Routes API
 │   └── storage.ts        # Interface de stockage
 ├── shared/               # Types et schémas partagés
@@ -123,6 +140,8 @@ L'application utilise un **système de couleurs sémantiques unifié** pour gara
 - **Node.js** 18.0.0 ou supérieur
 - **npm** ou **yarn**
 - **PostgreSQL** (local ou cloud via Neon)
+- **Docker** et **Docker Compose** (pour Authentik)
+- **Redis** (géré via Docker Compose)
 
 ### Installation
 
@@ -134,10 +153,15 @@ cd cjd-amiens-boite-kiffs
 # Installer les dépendances
 npm install
 
+# Démarrer les services Docker (PostgreSQL, Redis, Authentik)
+docker compose -f docker-compose.services.yml up -d postgres redis authentik-server authentik-worker
+
 # Configuration de la base de données
 cp .env.example .env
-# Éditer .env avec vos credentials PostgreSQL
+# Éditer .env avec vos credentials PostgreSQL et Authentik
 ```
+
+**Note** : Pour une installation complète d'Authentik, voir `docs/deployment/AUTHENTIK_QUICKSTART.md`
 
 ### Variables d'environnement
 
@@ -148,6 +172,15 @@ DATABASE_URL=postgresql://user:password@host:port/database
 # Session (générer une clé secrète forte)
 SESSION_SECRET=your-super-secret-key-here
 
+# Authentik - Configuration OAuth2/OIDC
+AUTHENTIK_BASE_URL=http://localhost:9002
+AUTHENTIK_CLIENT_ID=your-client-id-from-authentik
+AUTHENTIK_CLIENT_SECRET=your-client-secret-from-authentik
+AUTHENTIK_ISSUER=http://localhost:9002/application/o/cjd80/
+AUTHENTIK_REDIRECT_URI=http://localhost:5000/api/auth/authentik/callback
+AUTHENTIK_TOKEN=your-api-token-from-authentik
+AUTHENTIK_SECRET_KEY=your-secret-key (générer avec: openssl rand -base64 32)
+
 # Optionnel : Configuration Neon
 PGHOST=your-neon-host
 PGDATABASE=your-database-name
@@ -156,17 +189,35 @@ PGPASSWORD=your-password
 PGPORT=5432
 ```
 
+**Note** : Les valeurs Authentik doivent être récupérées après configuration d'Authentik via l'interface web (http://localhost:9002). Voir `docs/deployment/AUTHENTIK_QUICKSTART.md` pour les détails.
+
 ### Démarrage
 
 ```bash
-# Pousser le schéma vers la base de données
+# 1. Démarrer les services Docker (si pas déjà fait)
+docker compose -f docker-compose.services.yml up -d postgres redis authentik-server authentik-worker
+
+# 2. Attendre que les services soient prêts (environ 30 secondes)
+docker compose -f docker-compose.services.yml ps
+
+# 3. Pousser le schéma vers la base de données
 npm run db:push
 
-# Démarrer en développement (frontend + backend)
+# 4. Configurer Authentik (première fois uniquement)
+# - Accéder à http://localhost:9002
+# - Récupérer les identifiants admin depuis les logs:
+#   docker compose -f docker-compose.services.yml logs authentik-server | grep -i "password\|admin"
+# - Créer l'application OAuth2/OIDC (voir docs/deployment/AUTHENTIK_QUICKSTART.md)
+# - Remplir les variables d'environnement avec les valeurs d'Authentik
+
+# 5. Démarrer en développement (frontend + backend)
 npm run dev
 
 # L'application sera disponible sur http://localhost:5000
+# Authentik sera disponible sur http://localhost:9002
 ```
+
+**Script d'automatisation** : Utiliser `./scripts/setup-authentik.sh` pour automatiser les étapes 1-3.
 
 ### Scripts disponibles
 
@@ -180,12 +231,17 @@ npm run dev:server       # Backend seul
 npm run db:push          # Pousse le schéma vers la DB
 npm run db:studio        # Interface graphique Drizzle Studio
 
+# Authentik
+./scripts/setup-authentik.sh  # Script d'automatisation pour configurer Authentik
+
 # Configuration
 npm run generate:config  # Génère index.html et manifest.json depuis branding
 
 # Production
-npm run build           # Build pour production
-npm start              # Démarre en production
+npm run build           # Build pour production (NestJS)
+npm run build:express   # Build Express legacy (pour transition)
+npm start               # Démarre en production (NestJS)
+npm run start:express   # Démarre Express legacy (pour transition)
 ```
 
 ## 🗄️ Schéma de base de données
@@ -195,10 +251,15 @@ npm start              # Démarre en production
 **admins** - Utilisateurs administrateurs
 ```sql
 - email (PRIMARY KEY)
-- password (Scrypt hashed)
+- password (nullable - géré par Authentik)
+- first_name, last_name
+- role (super_admin, ideas_reader, ideas_manager, events_reader, events_manager)
+- status (pending, active, inactive)
 - added_by
-- created_at
+- created_at, updated_at
 ```
+
+**Note** : Les mots de passe ne sont plus stockés localement. L'authentification est gérée par Authentik via OAuth2/OIDC.
 
 **ideas** - Idées proposées avec workflow flexible
 ```sql
@@ -240,25 +301,41 @@ npm start              # Démarre en production
 
 ### Système d'authentification
 
-- **Session-based** avec Passport.js
-- **Hachage Scrypt** pour les mots de passe
+- **Authentik** : Fournisseur d'identité (IdP) via OAuth2/OIDC
+- **Session-based** avec Passport.js et Express sessions
+- **OAuth2/OIDC** pour l'authentification centralisée
+- **Mapping automatique** des groupes Authentik vers les rôles de l'application
+- **Synchronisation automatique** des utilisateurs lors de la première connexion
 - **Protection CSRF** automatique
 - **Rate limiting** sur les tentatives de connexion
 
-### Compte administrateur par défaut
+### Configuration Authentik
 
-```
-Email: admin@cjd-amiens.fr
-Password: Admin123!
-```
+**Authentik est maintenant configuré et opérationnel !** Les services sont démarrés automatiquement via Docker Compose.
 
-> ⚠️ **Important** : Changez ce mot de passe en production !
+**Documentation complète** :
+- `docs/deployment/AUTHENTIK_QUICKSTART.md` - Guide de démarrage rapide ⭐
+- `docs/deployment/AUTHENTIK_SETUP.md` - Guide de configuration détaillé
+- `docs/deployment/AUTHENTIK_MIGRATION.md` - Guide de migration des utilisateurs
+- `docs/deployment/AUTHENTIK_MIGRATION_COMPLETE.md` - Rapport de migration
+
+**Accès Authentik** :
+- Interface web : http://localhost:9002
+- HTTPS : https://localhost:9443
+
+**Prochaines étapes** :
+1. Accéder à http://localhost:9002
+2. Récupérer les identifiants admin depuis les logs
+3. Créer l'application OAuth2/OIDC
+4. Créer les groupes et utilisateurs
+5. Remplir les variables d'environnement
 
 ### Gestion des permissions
 
 - **Routes publiques** : Visualisation des idées et événements
 - **Routes protégées** : Administration (PREFIX `/admin/`)
 - **Middleware auth** : Vérification automatique sur routes admin
+- **Rôles** : Mappés depuis les groupes Authentik (super_admin, ideas_reader, ideas_manager, events_reader, events_manager)
 
 ## 🎨 Guide de style et UI/UX
 
@@ -377,10 +454,13 @@ DELETE /api/admin/events/:id   # Supprimer un événement
 
 **Authentification**
 ```http
-POST   /api/register           # Créer un admin
-POST   /api/login              # Connexion
-POST   /api/logout             # Déconnexion
-GET    /api/user               # Utilisateur connecté
+GET    /api/auth/authentik              # Initie le flow OAuth2 (redirige vers Authentik)
+GET    /api/auth/authentik/callback     # Callback OAuth2 depuis Authentik
+POST   /api/logout                      # Déconnexion
+GET    /api/user                        # Utilisateur connecté
+
+# Note: /api/login redirige maintenant vers /api/auth/authentik
+# Les utilisateurs doivent être créés dans Authentik
 ```
 
 **Branding**
@@ -517,14 +597,51 @@ Pour les VPS avec RAM limitée, un système de **build local** a été mis en pl
 
 ### Checklist de déploiement
 
-- [ ] Variables d'environnement configurées
+- [ ] Variables d'environnement configurées (incluant Authentik)
 - [ ] Base de données provisionnée
 - [ ] Schéma DB poussé (`npm run db:push`)
-- [ ] Compte administrateur créé/sécurisé
+- [ ] Services Docker démarrés (PostgreSQL, Redis, Authentik)
+- [ ] Authentik configuré (application OAuth2, groupes, utilisateurs)
+- [ ] Variables Authentik remplies (CLIENT_ID, CLIENT_SECRET, TOKEN)
 - [ ] HTTPS activé
 - [ ] Monitoring activé
 
 ## 🆕 Derniers développements
+
+### Migration vers NestJS (Janvier 2025) ✅
+
+**Migration complète du backend Express.js vers NestJS** :
+
+- ✅ **Architecture modulaire** : Restructuration de 4513 lignes monolithiques en 11 modules NestJS organisés
+- ✅ **Routes migrées** : ~135+ routes sur ~174 routes totales (~78%)
+- ✅ **Routes critiques** : 100% des routes critiques migrées (Auth, Health, Admin, tous les modules métier)
+- ✅ **Code généré** : 13 controllers (1,836 lignes) + 17 services (3,962 lignes)
+- ✅ **Qualité** : 0 erreur de lint TypeScript, validation Zod complète, gestion d'erreurs cohérente
+- ✅ **Build** : Compilation réussie sans erreurs
+
+**Modules migrés** :
+- Infrastructure : Auth, Health, Config, Database, Storage, Logs
+- Métier : Ideas, Events, Admin, Members, Patrons, Loans, Financial, Tracking, Chatbot, Setup, Branding
+
+**Documentation** : Voir `docs/migration/NESTJS_MIGRATION_COMPLETE.md` pour le rapport complet.
+
+### Migration vers Authentik (Janvier 2025) ✅
+
+**Migration complète vers Authentik comme fournisseur d'identité (IdP)** :
+- ✅ Remplacement de l'authentification locale par OAuth2/OIDC
+- ✅ Services Authentik configurés et opérationnels via Docker Compose
+- ✅ Synchronisation automatique des utilisateurs
+- ✅ Mapping automatique des groupes Authentik vers les rôles
+- ✅ Base de données migrée (champ password nullable)
+- ✅ Documentation complète (8 guides)
+
+**Avantages** :
+- Authentification centralisée et sécurisée
+- Gestion des utilisateurs via interface web
+- Support SSO (Single Sign-On)
+- Conformité avec les standards OAuth2/OIDC
+
+**Documentation** : Voir `docs/deployment/AUTHENTIK_MIGRATION_COMPLETE.md` pour le rapport complet.
 
 ### Optimisations de déploiement (Novembre 2024)
 

@@ -77,7 +77,7 @@ Saxium est une application full-stack de gestion de projets pour **JLM Menuiseri
 - `@.cursor/rules/context-optimization.md` - Gestion intelligente du contexte (éviter saturation)
 - `@.cursor/rules/workflow-consolidation.md` - Consolidation automatique des workflows réussis
 - `@.cursor/rules/dependency-intelligence.md` - Intelligence des dépendances (éviter régressions)
-- `@.cursor/rules/intelligent-model-selection.md` - Sélection intelligente du modèle IA (optimiser performances/coûts)
+- `@.cursor/rules/intelligent-model-selection.md` - Sélection intelligente du modèle IA (optimiser performances/coûts) - **NOUVEAU:** Architecte utilise automatiquement Codex 5.1 ou futures versions pour maximiser autonomie
 - `@.cursor/rules/search-cache.md` - Cache intelligent des recherches (réduire latence)
 - `@.cursor/rules/parallel-execution.md` - Exécution parallèle (améliorer performances)
 - `@.cursor/rules/batch-processing.md` - Traitement par lots (optimiser efficacité)

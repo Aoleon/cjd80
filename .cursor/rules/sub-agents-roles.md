@@ -30,7 +30,8 @@ Dependencies: core.md, quality-principles.md, multi-agent-coordination.md, task-
 **Référence:** `@.cursor/rules/multi-agent-coordination.md` - Coordination multi-agents  
 **Référence:** `@.cursor/rules/meta-cognition.md` - Méta-cognition avancée  
 **Référence:** `@.cursor/rules/holistic-analysis.md` - Analyse holistique  
-**Référence:** `@docs/AGENT_ROLES_CONFIG.json` - Configuration JSON des rôles
+**Référence:** `@docs/AGENT_ROLES_CONFIG.json` - Configuration JSON des rôles  
+**Référence:** `@docs/AGENT_MCP_TOOLS.md` - Cartographie des outils MCP par rôle
 
 ## 🧠 Capacités Avancées Communes (NOUVEAU v2.0)
 
@@ -418,4 +419,3 @@ Chaque rôle a été enrichi avec les règles Cursor pertinentes organisées par
 
 **Référence:** `@docs/AGENT_ROLES_CONFIG.json` - Configuration complète avec règles attribuées  
 **Référence:** `@docs/SUB_AGENTS_RULES_ENRICHMENT.md` - Documentation complète de l'enrichissement
-

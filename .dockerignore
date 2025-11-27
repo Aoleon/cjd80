@@ -1,47 +1,231 @@
-# Git
-.git
+# ============================================================================
+# Git et Version Control
+# ============================================================================
+.git/
 .gitignore
-.github
+.gitattributes
+.github/
+.git/
 
-# Node
-node_modules
-npm-debug.log
-yarn-error.log
-
-# Environment
+# ============================================================================
+# Secrets et Fichiers Sensibles
+# ============================================================================
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+*.env
+*.env.local
+*.env.production
+*.env.development
+*.env.test
+*.env.staging
 
-# Development
+# Clés SSH et certificats
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+*.pub
+ssh_key
+ssh_key.pub
+github-actions-*.key
+github-actions-*.pub
+*_deploy_key
+*_deploy_key.pub
+
+# Secrets et tokens
+secrets/
+*.secret
+*.token
+*.password
+*secret*
+*token*
+*password*
+credentials.json
+service-account*.json
+
+# ============================================================================
+# Node.js et Dépendances
+# ============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+.yarn/
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# ============================================================================
+# Build Artifacts (seront générés dans le container)
+# ============================================================================
+dist/
+build/
+.next/
+.nuxt/
+.output/
+.cache/
+.parcel-cache/
+.vite/
+.turbo/
+*.tsbuildinfo
+
+# ============================================================================
+# Logs et Rapports
+# ============================================================================
+logs/
+*.log
+test-results/
+playwright-report/
+coverage/
+.nyc_output/
+*.log.*
+
+# ============================================================================
+# Tests
+# ============================================================================
+tests/
+test-results/
+playwright-report/
+coverage/
+.nyc_output/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+vitest.config.ts
+playwright.config.ts
+
+# ============================================================================
+# Documentation (non nécessaire pour le build)
+# ============================================================================
+docs/
 *.md
 !README.md
-.vscode
-.idea
-*.log
+!CHANGELOG.md
 
-# Testing
-coverage
-.nyc_output
-playwright-report
-test-results
+# ============================================================================
+# IDE et Éditeurs
+# ============================================================================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+.project
+.classpath
+.settings/
 
-# Build artifacts (seront générés dans le container)
-dist
+# Fichiers Cursor
+.cursor/
+.cursor-config/
+.cursor-version
+.cursorrules
+.cursorrules.backup.*
+.cursor.backup.*
 
-# OS
+# ============================================================================
+# OS et Fichiers Système
+# ============================================================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
-
-# Replit
-.replit
-replit.nix
-.cache
-.upm
-
-# Misc
+desktop.ini
 *.swp
 *.swo
 *~
-.tmp
-temp
+
+# ============================================================================
+# Configuration Locale
+# ============================================================================
+# Replit
+replit.md
+.replit
+replit.nix
+.cache/
+.upm/
+
+# Docker
+docker-compose.override.yml
+docker-compose.local.yml
+.dockerignore
+
+# ============================================================================
+# Assets et Uploads (non nécessaires pour le build)
+# ============================================================================
+# Exclure attached_assets sauf les fichiers nécessaires au build
+attached_assets/*
+!attached_assets/logo-cjd-social_1756108273665.jpg
+!attached_assets/boite-kiff_1756106212980.jpeg
+public/uploads/*
+!public/uploads/.gitkeep
+assets/archive/
+*.jpeg
+*.jpg
+*.png
+*.gif
+*.webp
+!attached_assets/*.jpg
+!attached_assets/*.jpeg
+!assets/screenshots/
+
+# ============================================================================
+# Fichiers Temporaires
+# ============================================================================
+.tmp/
+temp/
+tmp/
+*.tmp
+*.temp
+.cache/
+.temp/
+
+# ============================================================================
+# Dumps et Backups
+# ============================================================================
+*.sql
+*.dump
+*.backup
+*.bak
+dump_*.sql
+backup_*.sql
+*.sql.gz
+*.dump.gz
+
+# ============================================================================
+# Scripts de Développement (non nécessaires en production)
+# ============================================================================
+# Note: scripts/vps-deploy.sh est nécessaire pour le déploiement
+scripts/
+!scripts/vps-deploy.sh
+
+# ============================================================================
+# Fichiers de Configuration Locaux
+# ============================================================================
+.vercel/
+.netlify/
+.railway/
+vite.config.ts.*
+*.local.sh
+local-*.sh
+
+# ============================================================================
+# Fichiers de Build Locaux
+# ============================================================================
+.eslintcache
+.stylelintcache
+.turbo/

@@ -1,0 +1,56 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-29T00:00:00Z",
+  "state": {
+    "currentTask": null,
+    "currentTaskId": null,
+    "currentProject": null,
+    "activeRoles": [],
+    "queues": {
+      "architect": [],
+      "developer": [],
+      "tester": [],
+      "analyst": [],
+      "coordinator": []
+    },
+    "results": {},
+    "dependencies": {},
+    "conflicts": [],
+    "status": "idle"
+  },
+  "autonomy": {
+    "level": "full",
+    "currentPhase": null,
+    "phases": ["discover", "plan", "build", "test", "deploy", "retro"],
+    "maxParallelSubAgents": 3,
+    "lastValidated": null,
+    "entryChecklist": [
+      "Contexte chargé",
+      "Historique analysé",
+      "Todos initialisés"
+    ],
+    "exitChecklist": [
+      "Todos complétés",
+      "Tests verts",
+      "Déploiement vérifié",
+      "Rétro documentée"
+    ]
+  },
+  "historyIntelligence": {
+    "lastSync": null,
+    "syncedConversations": 0,
+    "improvementNotes": [],
+    "mcpTools": [
+      "cursor-chat-history",
+      "cursor-chat-history-custom"
+    ]
+  },
+  "metadata": {
+    "sessionId": null,
+    "startTime": null,
+    "lastActivity": null,
+    "totalTasks": 0,
+    "completedTasks": 0,
+    "failedTasks": 0
+  }
+}

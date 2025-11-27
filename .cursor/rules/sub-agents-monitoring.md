@@ -26,6 +26,15 @@ Dependencies: core.md, sub-agents-orchestration.md, sub-agents-communication.md
 **Référence:** `@.cursor/rules/sub-agents-orchestration.md` - Orchestration principale  
 **Référence:** `@docs/AGENT_METRICS.json` - Métriques
 
+## ⚙️ Automatisation : commandes obligatoires
+
+- ✅ `npx tsx scripts/autonomous-run.ts --action start|phase|complete` doit être utilisé pour toutes les sessions autonomes (remplit `AGENT_COORDINATION_STATE.json` et `AGENT_EVENTS.json`).
+- ✅ `npx tsx scripts/update-agent-metrics.ts` doit être exécuté après chaque run (ou `--action complete` avec `autonomous-run` le déclenche automatiquement) pour mettre à jour `AGENT_METRICS.json`.
+- ✅ `npx tsx scripts/sync-central-cursor-config.ts` réplique la configuration et les scripts d’autonomie vers tous les projets.
+- ✅ `npx tsx scripts/audit-autonomous-config.ts [--fix]` audite chaque projet et garantit que la configuration reste alignée avec la source centrale.
+- ✅ `npx tsx scripts/manage-agent-tasks.ts --action add|list|complete` sert de vérité unique pour la file des tâches sub-agents (`AGENT_TASKS_QUEUE.json`).
+- ✅ Les métriques doivent être consultables dans `docs/AGENT_METRICS.json` et exploitées par l’orchestrateur pour adapter les modèles (`@docs/AGENT_MODELS_MATRIX.md`).
+
 ## 📋 Collecte Automatique des Métriques
 
 ### 1. Métriques par Rôle
@@ -334,4 +343,3 @@ async function detectProblems(
 
 **Version:** 1.0.0  
 **Dernière mise à jour:** 2025-01-29
-

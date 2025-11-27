@@ -1,11 +1,18 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAdminQuery } from "@/hooks/use-admin-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import AdminHeader from "@/components/admin-header";
+import AdminSearchBar from "@/components/admin/AdminSearchBar";
+import { AdminFilters } from "@/components/admin/AdminFilters";
+import { useDebounce } from "@/hooks/use-debounce";
+import { getStatusConfig } from "@/lib/admin-status-mapping";
+import { EngagementKPIsWidget } from "@/components/admin/AdminKPIsWidgets";
+import { exportToCSV, validateExportData, formatDateForExport } from "@/lib/reports";
 import {
   Card,
   CardContent,
@@ -50,7 +57,12 @@ import {
   TrendingUp,
   Activity as ActivityIcon,
   Euro,
-  Trash2
+  Trash2,
+  LayoutGrid,
+  List,
+  Kanban,
+  Table as TableIcon,
+  Download
 } from "lucide-react";
 import {
   Dialog,
@@ -113,6 +125,7 @@ export default function AdminMembersPage() {
   
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [showAddSubscriptionDialog, setShowAddSubscriptionDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'proposed'>('all');
@@ -120,113 +133,78 @@ export default function AdminMembersPage() {
   const [activityFilter, setActivityFilter] = useState<'all' | 'recent' | 'inactive'>('all');
   const [page, setPage] = useState(1);
   const limit = 20;
+  
+  // Vue dynamique : pipeline/tableau pour prospects, liste/cartes pour membres
+  const [prospectViewMode, setProspectViewMode] = useState<'pipeline' | 'table'>('pipeline');
+  const [memberViewMode, setMemberViewMode] = useState<'list' | 'cards'>('list');
 
   const hasViewPermission = user && hasPermission(user.role, 'admin.view');
 
-  const { data: membersResponse, isLoading: membersLoading } = useQuery<PaginatedMembersResponse>({
-    queryKey: ["/api/admin/members", page, limit],
-    queryFn: async () => {
-      const res = await fetch(`/api/admin/members?page=${page}&limit=${limit}`);
+  const { data: membersResponse, isLoading: membersLoading } = useAdminQuery<PaginatedMembersResponse>(
+    ["/api/admin/members", page.toString(), limit.toString(), debouncedSearchQuery, statusFilter, scoreFilter, activityFilter],
+    async () => {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
+      if (statusFilter !== 'all') params.append('status', statusFilter);
+      if (scoreFilter !== 'all') params.append('score', scoreFilter);
+      if (activityFilter !== 'all') params.append('activity', activityFilter);
+      
+      const res = await fetch(`/api/admin/members?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch members');
       return res.json();
     },
-    enabled: !!hasViewPermission,
-  });
+    {
+      staleTime: 2 * 60 * 1000, // 2 minutes pour les listes filtrées
+    }
+  );
 
   const members = membersResponse?.data || [];
   const total = membersResponse?.total || 0;
   const totalPages = Math.ceil(total / limit);
 
-  const { data: selectedMemberResponse, isLoading: memberLoading } = useQuery<{ success: boolean; data: Member }>({
-    queryKey: ["/api/admin/members", selectedEmail],
-    queryFn: async () => {
-      const res = await fetch(`/api/admin/members/${encodeURIComponent(selectedEmail!)}`);
-      if (!res.ok) throw new Error('Failed to fetch member');
+  // Utiliser l'endpoint consolidé pour les détails du membre
+  const { data: memberDetailsResponse, isLoading: memberLoading } = useAdminQuery<{ 
+    success: boolean; 
+    data: {
+      member: Member;
+      activities: MemberActivity[];
+      subscriptions: MemberSubscription[];
+    }
+  }>(
+    ["/api/admin/members", selectedEmail || "", "details"],
+    async () => {
+      const res = await fetch(`/api/admin/members/${encodeURIComponent(selectedEmail!)}/details`);
+      if (!res.ok) throw new Error('Failed to fetch member details');
       return res.json();
     },
-    enabled: !!hasViewPermission && !!selectedEmail,
-  });
-
-  const selectedMember = selectedMemberResponse?.data;
-
-  const { data: activitiesResponse, isLoading: activitiesLoading } = useQuery<{ success: boolean; data: MemberActivity[] }>({
-    queryKey: ["/api/admin/members", selectedEmail, "activities"],
-    queryFn: async () => {
-      const res = await fetch(`/api/admin/members/${encodeURIComponent(selectedEmail!)}/activities`);
-      if (!res.ok) throw new Error('Failed to fetch activities');
-      return res.json();
-    },
-    enabled: !!hasViewPermission && !!selectedEmail,
-  });
-
-  const activities = activitiesResponse?.data || [];
-
-  const { data: subscriptionsResponse, isLoading: subscriptionsLoading } = useQuery<{ success: boolean; data: MemberSubscription[] }>({
-    queryKey: ["/api/admin/members", selectedEmail, "subscriptions"],
-    queryFn: async () => {
-      const res = await fetch(`/api/admin/members/${encodeURIComponent(selectedEmail!)}/subscriptions`);
-      if (!res.ok) throw new Error('Failed to fetch subscriptions');
-      return res.json();
-    },
-    enabled: !!hasViewPermission && !!selectedEmail,
-  });
-
-  const subscriptions = subscriptionsResponse?.data || [];
-
-  const filteredMembers = useMemo(() => {
-    let result = members;
-
-    // Filtre de recherche textuelle
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (member) =>
-          member.firstName.toLowerCase().includes(query) ||
-          member.lastName.toLowerCase().includes(query) ||
-          member.email.toLowerCase().includes(query) ||
-          member.company?.toLowerCase().includes(query)
-      );
+    {
+      enabled: !!selectedEmail,
+      staleTime: 1 * 60 * 1000, // 1 minute pour les détails
     }
+  );
 
-    // Filtre par statut
-    if (statusFilter !== 'all') {
-      result = result.filter((member) => member.status === statusFilter);
-    }
+  const selectedMember = memberDetailsResponse?.data?.member;
+  const activities = memberDetailsResponse?.data?.activities || [];
+  const subscriptions = memberDetailsResponse?.data?.subscriptions || [];
+  const activitiesLoading = false; // Pas de chargement séparé
+  const subscriptionsLoading = false; // Pas de chargement séparé
 
-    // Filtre par score d'engagement
-    if (scoreFilter !== 'all') {
-      result = result.filter((member) => {
-        if (scoreFilter === 'high') return member.engagementScore >= 50;
-        if (scoreFilter === 'medium') return member.engagementScore >= 10 && member.engagementScore < 50;
-        if (scoreFilter === 'low') return member.engagementScore < 10;
-        return true;
-      });
-    }
-
-    // Filtre par activité récente
-    if (activityFilter !== 'all') {
-      const now = new Date();
-      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      
-      result = result.filter((member) => {
-        if (!member.lastActivityAt) return activityFilter === 'inactive';
-        const lastActivity = new Date(member.lastActivityAt);
-        
-        if (activityFilter === 'recent') {
-          return lastActivity >= thirtyDaysAgo;
-        } else if (activityFilter === 'inactive') {
-          return lastActivity < thirtyDaysAgo;
-        }
-        return true;
-      });
-    }
-
-    return result;
-  }, [members, searchQuery, statusFilter, scoreFilter, activityFilter]);
-
+  // Les membres sont déjà filtrés côté serveur, plus besoin de filtrage côté client
   const sortedMembers = useMemo(() => {
-    return [...filteredMembers].sort((a, b) => b.engagementScore - a.engagementScore);
-  }, [filteredMembers]);
+    return [...members].sort((a, b) => b.engagementScore - a.engagementScore);
+  }, [members]);
+
+  // Séparer les prospects et les membres actifs
+  const prospects = useMemo(() => sortedMembers.filter(m => m.status === 'proposed'), [sortedMembers]);
+  const activeMembers = useMemo(() => sortedMembers.filter(m => m.status === 'active'), [sortedMembers]);
+  
+  // Déterminer quelle vue utiliser selon le filtre
+  const isShowingProspects = statusFilter === 'proposed' || (statusFilter === 'all' && prospects.length > 0 && activeMembers.length === 0);
+  // Utiliser les membres filtrés pour l'affichage
+  const displayMembers = isShowingProspects ? prospects : activeMembers;
 
   const memberForm = useForm<UpdateMemberFormValues>({
     resolver: zodResolver(updateMemberFormSchema),
@@ -473,190 +451,304 @@ export default function AdminMembersPage() {
           <div className="lg:w-2/5">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Membres ({sortedMembers.length})
-                </CardTitle>
-                <CardDescription>Liste des membres de la communauté</CardDescription>
-                <div className="relative mt-4">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Rechercher par nom, email ou société..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                    data-testid="input-search-members"
-                  />
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      Membres ({sortedMembers.length})
+                    </CardTitle>
+                    <CardDescription>Liste des membres de la communauté</CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const validation = validateExportData(sortedMembers);
+                      if (!validation.valid) {
+                        toast({ title: "Erreur", description: validation.error, variant: "destructive" });
+                        return;
+                      }
+                      exportToCSV(
+                        sortedMembers,
+                        ["Prénom", "Nom", "Email", "Société", "Téléphone", "Rôle", "Statut", "Score d'engagement", "Activités", "Dernière activité"],
+                        "export-membres",
+                        (member) => [
+                          member.firstName || "",
+                          member.lastName || "",
+                          member.email || "",
+                          member.company || "",
+                          member.phone || "",
+                          member.role || "",
+                          member.status === "active" ? "Actif" : "Proposé",
+                          member.engagementScore?.toString() || "0",
+                          member.activityCount?.toString() || "0",
+                          member.lastActivityAt ? formatDateForExport(member.lastActivityAt) : "",
+                        ]
+                      );
+                      toast({ title: "Export réussi", description: "Les données ont été exportées en CSV" });
+                    }}
+                    className="ml-4"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Exporter CSV
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                {/* Section des filtres */}
-                <div className="flex flex-wrap gap-3 mb-4">
-                  {/* Filtre Statut */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Statut:</span>
-                    <div className="flex gap-1">
-                      <Button
-                        variant={statusFilter === 'all' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setStatusFilter('all')}
-                        data-testid="filter-status-all"
-                      >
-                        Tous
-                      </Button>
-                      <Button
-                        variant={statusFilter === 'active' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setStatusFilter('active')}
-                        data-testid="filter-status-active"
-                      >
-                        Actifs
-                      </Button>
-                      <Button
-                        variant={statusFilter === 'proposed' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setStatusFilter('proposed')}
-                        data-testid="filter-status-proposed"
-                      >
-                        Propositions
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Separator orientation="vertical" className="h-8" />
-
-                  {/* Filtre Score d'engagement */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Score:</span>
-                    <div className="flex gap-1">
-                      <Button
-                        variant={scoreFilter === 'all' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setScoreFilter('all')}
-                        data-testid="filter-score-all"
-                      >
-                        Tous
-                      </Button>
-                      <Button
-                        variant={scoreFilter === 'high' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setScoreFilter('high')}
-                        data-testid="filter-score-high"
-                      >
-                        Élevé (≥50)
-                      </Button>
-                      <Button
-                        variant={scoreFilter === 'medium' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setScoreFilter('medium')}
-                        data-testid="filter-score-medium"
-                      >
-                        Moyen (10-49)
-                      </Button>
-                      <Button
-                        variant={scoreFilter === 'low' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setScoreFilter('low')}
-                        data-testid="filter-score-low"
-                      >
-                        {"Faible (<10)"}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Separator orientation="vertical" className="h-8" />
-
-                  {/* Filtre Activité */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Activité:</span>
-                    <div className="flex gap-1">
-                      <Button
-                        variant={activityFilter === 'all' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setActivityFilter('all')}
-                        data-testid="filter-activity-all"
-                      >
-                        Tous
-                      </Button>
-                      <Button
-                        variant={activityFilter === 'recent' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setActivityFilter('recent')}
-                        data-testid="filter-activity-recent"
-                      >
-                        Actifs (30j)
-                      </Button>
-                      <Button
-                        variant={activityFilter === 'inactive' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setActivityFilter('inactive')}
-                        data-testid="filter-activity-inactive"
-                      >
-                        Inactifs
-                      </Button>
-                    </div>
-                  </div>
+                <div className="mb-6">
+                  <EngagementKPIsWidget userRole={user?.role} />
                 </div>
-
-                {/* Compteur de résultats */}
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  {sortedMembers.length} membre{sortedMembers.length > 1 ? 's' : ''} affiché{sortedMembers.length > 1 ? 's' : ''}
-                  {(statusFilter !== 'all' || scoreFilter !== 'all' || activityFilter !== 'all' || searchQuery) && 
-                    ` sur ${members.length} au total`}
+                
+                <AdminSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Rechercher par nom, email ou société..."
+                  className="mb-4"
+                />
+                
+                {/* Section des filtres */}
+                <AdminFilters
+                  filters={[
+                    {
+                      label: "Statut",
+                      value: statusFilter,
+                      onChange: (value) => setStatusFilter(value as 'all' | 'active' | 'proposed'),
+                      options: [
+                        { value: "all", label: "Tous" },
+                        { value: "active", label: "Actifs" },
+                        { value: "proposed", label: "Proposés" },
+                      ],
+                    },
+                    {
+                      label: "Score d'engagement",
+                      value: scoreFilter,
+                      onChange: (value) => setScoreFilter(value as 'all' | 'high' | 'medium' | 'low'),
+                      options: [
+                        { value: "all", label: "Tous" },
+                        { value: "high", label: "Élevé (≥50)" },
+                        { value: "medium", label: "Moyen (10-49)" },
+                        { value: "low", label: "Faible (<10)" },
+                      ],
+                    },
+                    {
+                      label: "Activité",
+                      value: activityFilter,
+                      onChange: (value) => setActivityFilter(value as 'all' | 'recent' | 'inactive'),
+                      options: [
+                        { value: "all", label: "Tous" },
+                        { value: "recent", label: "Récente (30j)" },
+                        { value: "inactive", label: "Inactifs" },
+                      ],
+                    },
+                  ]}
+                  className="mb-4"
+                />
+                
+                {/* Sélecteur de vue et compteur */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {sortedMembers.length} {isShowingProspects ? 'prospect' : 'membre'}{sortedMembers.length > 1 ? 's' : ''} affiché{sortedMembers.length > 1 ? 's' : ''}
+                    {(statusFilter !== 'all' || scoreFilter !== 'all' || activityFilter !== 'all' || debouncedSearchQuery) && 
+                      ` sur ${total} au total`}
+                  </div>
+                  {/* Sélecteur de vue dynamique */}
+                  {isShowingProspects ? (
+                    <div className="flex gap-1 border rounded-md p-1">
+                      <Button
+                        variant={prospectViewMode === 'pipeline' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setProspectViewMode('pipeline')}
+                        className="h-7 px-2"
+                      >
+                        <Kanban className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant={prospectViewMode === 'table' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setProspectViewMode('table')}
+                        className="h-7 px-2"
+                      >
+                        <TableIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1 border rounded-md p-1">
+                      <Button
+                        variant={memberViewMode === 'list' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setMemberViewMode('list')}
+                        className="h-7 px-2"
+                      >
+                        <List className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant={memberViewMode === 'cards' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setMemberViewMode('cards')}
+                        className="h-7 px-2"
+                      >
+                        <LayoutGrid className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <ScrollArea className="h-[600px]">
-                  {sortedMembers.length === 0 ? (
+                  {displayMembers.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       {searchQuery ? "Aucun membre trouvé" : "Aucun membre enregistré"}
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      {sortedMembers.map((member) => (
-                        <div
-                          key={member.email}
-                          onClick={() => handleMemberSelect(member.email)}
-                          className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                            selectedEmail === member.email
-                              ? "bg-accent border-cjd-green dark:bg-accent dark:border-cjd-green"
-                              : "hover:bg-gray-50 dark:hover:bg-gray-900"
-                          }`}
-                          data-testid={`card-member-${member.email}`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium truncate">
-                                {member.firstName} {member.lastName}
-                              </div>
-                              <div className="text-sm text-muted-foreground truncate">
-                                {member.email}
-                              </div>
-                              {member.company && (
-                                <div className="text-xs text-muted-foreground mt-1 truncate">
-                                  {member.company}
+                    <>
+                      {/* Vue Pipeline pour prospects */}
+                      {isShowingProspects && prospectViewMode === 'pipeline' && (
+                        <div className="grid grid-cols-3 gap-3">
+                          {['proposed', 'contacted', 'converted'].map((stage) => {
+                            const stageMembers = prospects.filter(m => {
+                              // Pour l'instant, tous les prospects sont 'proposed', mais on peut étendre
+                              return stage === 'proposed' || m.status === stage;
+                            });
+                            return (
+                              <div key={stage} className="space-y-2">
+                                <div className="font-semibold text-sm mb-2 capitalize">
+                                  {stage === 'proposed' ? 'Proposé' : stage === 'contacted' ? 'Contacté' : 'Converti'} ({stageMembers.length})
                                 </div>
-                              )}
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <Badge 
-                                variant={member.status === 'active' ? 'default' : 'secondary'}
-                                className={member.status === 'active' ? 'bg-success-light text-success-dark dark:bg-success-dark dark:text-success-light' : 'bg-warning-light text-warning-dark dark:bg-warning-dark dark:text-warning-light'}
-                                data-testid={`badge-status-${member.email}`}
-                              >
-                                {member.status === 'active' ? 'Actif' : 'Proposition'}
-                              </Badge>
-                              <Badge className={getScoreBadgeColor(member.engagementScore)} data-testid={`badge-engagement-${member.email}`}>
-                                {member.engagementScore}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                            <span>{member.activityCount} activité{member.activityCount > 1 ? 's' : ''}</span>
-                            <span>{formatDate(member.lastActivityAt)}</span>
-                          </div>
+                                {stageMembers.map((member) => (
+                                  <div
+                                    key={member.email}
+                                    onClick={() => handleMemberSelect(member.email)}
+                                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                                      selectedEmail === member.email
+                                        ? "bg-accent border-cjd-green"
+                                        : "hover:bg-gray-50 dark:hover:bg-gray-900"
+                                    }`}
+                                  >
+                                    <div className="font-medium text-sm">{member.firstName} {member.lastName}</div>
+                                    <div className="text-xs text-muted-foreground truncate">{member.email}</div>
+                                    {member.company && (
+                                      <div className="text-xs text-muted-foreground mt-1">{member.company}</div>
+                                    )}
+                                    {member.proposedBy && (
+                                      <div className="text-xs text-muted-foreground mt-1">Par: {member.proposedBy}</div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })}
                         </div>
-                      ))}
-                    </div>
+                      )}
+                      
+                      {/* Vue Tableau pour prospects */}
+                      {isShowingProspects && prospectViewMode === 'table' && (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead className="border-b">
+                              <tr>
+                                <th className="text-left p-2">Nom</th>
+                                <th className="text-left p-2">Email</th>
+                                <th className="text-left p-2">Société</th>
+                                <th className="text-left p-2">Proposé par</th>
+                                <th className="text-left p-2">Score</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {prospects.map((member) => (
+                                <tr
+                                  key={member.email}
+                                  onClick={() => handleMemberSelect(member.email)}
+                                  className={`border-b cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 ${
+                                    selectedEmail === member.email ? 'bg-accent' : ''
+                                  }`}
+                                >
+                                  <td className="p-2 font-medium">{member.firstName} {member.lastName}</td>
+                                  <td className="p-2 text-muted-foreground">{member.email}</td>
+                                  <td className="p-2 text-muted-foreground">{member.company || '-'}</td>
+                                  <td className="p-2 text-muted-foreground">{member.proposedBy || '-'}</td>
+                                  <td className="p-2">
+                                    <Badge className={getScoreBadgeColor(member.engagementScore)}>
+                                      {member.engagementScore}
+                                    </Badge>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                      
+                      {/* Vue Liste pour membres actifs */}
+                      {!isShowingProspects && memberViewMode === 'list' && (
+                        <div className="space-y-2">
+                          {activeMembers.map((member) => (
+                            <div
+                              key={member.email}
+                              onClick={() => handleMemberSelect(member.email)}
+                              className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                                selectedEmail === member.email
+                                  ? "bg-accent border-cjd-green dark:bg-accent dark:border-cjd-green"
+                                  : "hover:bg-gray-50 dark:hover:bg-gray-900"
+                              }`}
+                              data-testid={`card-member-${member.email}`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium truncate">
+                                    {member.firstName} {member.lastName}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground truncate">
+                                    {member.email}
+                                  </div>
+                                  {member.company && (
+                                    <div className="text-xs text-muted-foreground mt-1 truncate">
+                                      {member.company}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex flex-col items-end gap-1">
+                                  <Badge className={getScoreBadgeColor(member.engagementScore)} data-testid={`badge-engagement-${member.email}`}>
+                                    {member.engagementScore}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                                <span>{member.activityCount} activité{member.activityCount > 1 ? 's' : ''}</span>
+                                <span>{formatDate(member.lastActivityAt)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Vue Cartes pour membres actifs */}
+                      {!isShowingProspects && memberViewMode === 'cards' && (
+                        <div className="grid grid-cols-2 gap-3">
+                          {activeMembers.map((member) => (
+                            <div
+                              key={member.email}
+                              onClick={() => handleMemberSelect(member.email)}
+                              className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                                selectedEmail === member.email
+                                  ? "bg-accent border-cjd-green"
+                                  : "hover:bg-gray-50 dark:hover:bg-gray-900"
+                              }`}
+                            >
+                              <div className="font-medium text-sm mb-1">{member.firstName} {member.lastName}</div>
+                              <div className="text-xs text-muted-foreground truncate mb-2">{member.email}</div>
+                              {member.company && (
+                                <div className="text-xs text-muted-foreground mb-2">{member.company}</div>
+                              )}
+                              <div className="flex items-center justify-between mt-2">
+                                <Badge className={getScoreBadgeColor(member.engagementScore)} variant="secondary">
+                                  {member.engagementScore}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">{member.activityCount} activités</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </ScrollArea>
                 
@@ -704,35 +796,23 @@ export default function AdminMembersPage() {
                       <Skeleton className="h-10 w-full" />
                     </div>
                   ) : (
-                    <Tabs defaultValue="info" className="w-full">
-                      <TabsList className="grid w-full grid-cols-8">
-                        <TabsTrigger value="info" data-testid="tab-info">
-                          Informations
+                    <Tabs defaultValue="profile" className="w-full">
+                      <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="profile" data-testid="tab-profile">
+                          Profil
                         </TabsTrigger>
                         <TabsTrigger value="activity" data-testid="tab-activity">
                           Activité ({activities.length})
                         </TabsTrigger>
-                        <TabsTrigger value="subscriptions" data-testid="tab-subscriptions">
-                          Souscriptions
-                        </TabsTrigger>
-                        <TabsTrigger value="stats" data-testid="tab-stats">
-                          Statistiques
-                        </TabsTrigger>
-                        <TabsTrigger value="tags" data-testid="tab-tags">
-                          Tags
-                        </TabsTrigger>
-                        <TabsTrigger value="tasks" data-testid="tab-tasks">
-                          Tâches
-                        </TabsTrigger>
-                        <TabsTrigger value="relations" data-testid="tab-relations">
-                          Relations
+                        <TabsTrigger value="management" data-testid="tab-management">
+                          Gestion
                         </TabsTrigger>
                         <TabsTrigger value="chatbot" data-testid="tab-chatbot">
                           Chatbot
                         </TabsTrigger>
                       </TabsList>
 
-                      <TabsContent value="info" className="space-y-4">
+                      <TabsContent value="profile" className="space-y-4">
                         {selectedMember.status === 'proposed' && selectedMember.proposedBy && (
                           <div className="mb-4 p-3 bg-warning-light dark:bg-warning-dark rounded-lg border-l-4 border-warning">
                             <p className="text-sm text-warning-dark dark:text-warning-light">
@@ -946,6 +1026,79 @@ export default function AdminMembersPage() {
                             </div>
                           </DialogContent>
                         </Dialog>
+                        
+                        {/* Statistiques intégrées dans le profil */}
+                        <Separator />
+                        <div className="grid grid-cols-2 gap-4">
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardDescription>Score total</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="text-3xl font-bold text-cjd-green" data-testid="stat-total-score">
+                                {selectedMember.engagementScore}
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardDescription>Activités</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="text-3xl font-bold" data-testid="stat-total-activities">
+                                {selectedMember.activityCount}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-base">Détail des activités</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Lightbulb className="h-4 w-4 text-info" />
+                                <span className="text-sm">Idées proposées</span>
+                              </div>
+                              <Badge variant="secondary" data-testid="stat-ideas-proposed">
+                                {activityStats.ideasProposed}
+                              </Badge>
+                            </div>
+                            <Separator />
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <ThumbsUp className="h-4 w-4 text-info" />
+                                <span className="text-sm">Votes effectués</span>
+                              </div>
+                              <Badge variant="secondary" data-testid="stat-votes-cast">
+                                {activityStats.votesCast}
+                              </Badge>
+                            </div>
+                            <Separator />
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-success" />
+                                <span className="text-sm">Événements inscrits</span>
+                              </div>
+                              <Badge variant="secondary" data-testid="stat-events-registered">
+                                {activityStats.eventsRegistered}
+                              </Badge>
+                            </div>
+                            <Separator />
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Heart className="h-4 w-4 text-info" />
+                                <span className="text-sm">Mécènes suggérés</span>
+                              </div>
+                              <Badge variant="secondary" data-testid="stat-patrons-suggested">
+                                {activityStats.patronsSuggested}
+                              </Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
                       </TabsContent>
 
                       <TabsContent value="activity" className="space-y-4">
@@ -999,11 +1152,12 @@ export default function AdminMembersPage() {
                             </div>
                           </ScrollArea>
                         )}
-                      </TabsContent>
-
-                      <TabsContent value="subscriptions" className="space-y-4">
+                        
+                        <Separator />
+                        
+                        {/* Souscriptions intégrées dans l'activité */}
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold">Historique des souscriptions</h3>
+                          <h3 className="text-lg font-semibold">Souscriptions</h3>
                           <Dialog open={showAddSubscriptionDialog} onOpenChange={setShowAddSubscriptionDialog}>
                             <DialogTrigger asChild>
                               <Button data-testid="button-add-subscription">
@@ -1103,7 +1257,7 @@ export default function AdminMembersPage() {
                             Aucune souscription enregistrée
                           </div>
                         ) : (
-                          <ScrollArea className="h-[500px]">
+                          <ScrollArea className="h-[300px]">
                             <div className="space-y-3">
                               {subscriptions.map((subscription, index) => (
                                 <Card key={subscription.id} data-testid={`card-subscription-${index}`}>
@@ -1151,118 +1305,21 @@ export default function AdminMembersPage() {
                         )}
                       </TabsContent>
 
-                      <TabsContent value="stats" className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <Card>
-                            <CardHeader className="pb-2">
-                              <CardDescription>Score total</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="text-3xl font-bold text-cjd-green" data-testid="stat-total-score">
-                                {selectedMember.engagementScore}
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          <Card>
-                            <CardHeader className="pb-2">
-                              <CardDescription>Activités</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="text-3xl font-bold" data-testid="stat-total-activities">
-                                {selectedMember.activityCount}
-                              </div>
-                            </CardContent>
-                          </Card>
+                      <TabsContent value="management" className="space-y-6">
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4">Tags</h3>
+                          <MemberTags memberEmail={selectedEmail} />
                         </div>
-
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-base">Détail des activités</CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Lightbulb className="h-4 w-4 text-info" />
-                                <span className="text-sm">Idées proposées</span>
-                              </div>
-                              <Badge variant="secondary" data-testid="stat-ideas-proposed">
-                                {activityStats.ideasProposed}
-                              </Badge>
-                            </div>
-                            <Separator />
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <ThumbsUp className="h-4 w-4 text-info" />
-                                <span className="text-sm">Votes effectués</span>
-                              </div>
-                              <Badge variant="secondary" data-testid="stat-votes-cast">
-                                {activityStats.votesCast}
-                              </Badge>
-                            </div>
-                            <Separator />
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-success" />
-                                <span className="text-sm">Événements inscrits</span>
-                              </div>
-                              <Badge variant="secondary" data-testid="stat-events-registered">
-                                {activityStats.eventsRegistered}
-                              </Badge>
-                            </div>
-                            <Separator />
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Heart className="h-4 w-4 text-info" />
-                                <span className="text-sm">Mécènes suggérés</span>
-                              </div>
-                              <Badge variant="secondary" data-testid="stat-patrons-suggested">
-                                {activityStats.patronsSuggested}
-                              </Badge>
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-base">Performance</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between text-sm">
-                                <span>Score moyen par activité</span>
-                                <span className="font-medium">
-                                  {selectedMember.activityCount > 0
-                                    ? (selectedMember.engagementScore / selectedMember.activityCount).toFixed(1)
-                                    : "0"}
-                                </span>
-                              </div>
-                              <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
-                                <div
-                                  className="bg-cjd-green h-2 rounded-full transition-all"
-                                  style={{
-                                    width: `${Math.min((selectedMember.engagementScore / 100) * 100, 100)}%`,
-                                  }}
-                                />
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                Objectif: 100 points
-                              </p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-
-                      <TabsContent value="tags" className="space-y-4">
-                        <MemberTags memberEmail={selectedEmail} />
-                      </TabsContent>
-
-                      <TabsContent value="tasks" className="space-y-4">
-                        <MemberTasks memberEmail={selectedEmail} />
-                      </TabsContent>
-
-                      <TabsContent value="relations" className="space-y-4">
-                        <MemberRelations memberEmail={selectedEmail} />
+                        <Separator />
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4">Tâches</h3>
+                          <MemberTasks memberEmail={selectedEmail} />
+                        </div>
+                        <Separator />
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4">Relations</h3>
+                          <MemberRelations memberEmail={selectedEmail} />
+                        </div>
                       </TabsContent>
 
                       <TabsContent value="chatbot" className="space-y-4">

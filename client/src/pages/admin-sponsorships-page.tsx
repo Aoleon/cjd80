@@ -1,11 +1,17 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAdminQuery } from "@/hooks/use-admin-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import AdminHeader from "@/components/admin-header";
+import { AdminFilters } from "@/components/admin/AdminFilters";
+import AdminDataTable from "@/components/admin/AdminDataTable";
+import { getStatusConfig } from "@/lib/admin-status-mapping";
+import { FinancialKPIsWidget } from "@/components/admin/AdminKPIsWidgets";
+import { exportToCSV, validateExportData, formatDateForExport } from "@/lib/reports";
 import {
   Card,
   CardContent,
@@ -61,7 +67,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Loader2, Plus, Edit, Trash2, Eye, EyeOff, Euro, Award, TrendingUp, Calendar, User } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Eye, EyeOff, Euro, Award, TrendingUp, Calendar, User, Download } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -197,36 +203,63 @@ export default function AdminSponsorshipsPage() {
   const isSuperAdmin = user?.role === "super_admin";
 
   // Queries
-  const { data: sponsorshipsResponse, isLoading: sponsorshipsLoading } = useQuery<{ success: boolean; data: EventSponsorship[] }>({
-    queryKey: ["/api/sponsorships"],
-    enabled: isSuperAdmin,
-  });
+  const { data: sponsorshipsResponse, isLoading: sponsorshipsLoading } = useAdminQuery<{ success: boolean; data: EventSponsorship[] }>(
+    ["/api/sponsorships"],
+    async () => {
+      const res = await fetch("/api/sponsorships");
+      if (!res.ok) throw new Error('Failed to fetch sponsorships');
+      return res.json();
+    },
+    {
+      enabled: isSuperAdmin,
+      staleTime: 2 * 60 * 1000, // 2 minutes
+    }
+  );
 
   const sponsorships = sponsorshipsResponse?.data || [];
 
-  const { data: statsResponse, isLoading: statsLoading } = useQuery<{ success: boolean; data: SponsorshipStats }>({
-    queryKey: ["/api/sponsorships/stats"],
-    enabled: isSuperAdmin,
-  });
+  const { data: statsResponse, isLoading: statsLoading } = useAdminQuery<{ success: boolean; data: SponsorshipStats }>(
+    ["/api/sponsorships/stats"],
+    async () => {
+      const res = await fetch("/api/sponsorships/stats");
+      if (!res.ok) throw new Error('Failed to fetch sponsorship stats');
+      return res.json();
+    },
+    {
+      enabled: isSuperAdmin,
+      staleTime: 5 * 60 * 1000, // 5 minutes pour les stats
+    }
+  );
 
   const stats = statsResponse?.data;
 
-  const { data: eventsResponse } = useQuery<{ data: Event[] }>({
-    queryKey: ["/api/events"],
-    enabled: isSuperAdmin,
-  });
+  const { data: eventsResponse } = useAdminQuery<{ data: Event[] }>(
+    ["/api/events"],
+    async () => {
+      const res = await fetch("/api/events");
+      if (!res.ok) throw new Error('Failed to fetch events');
+      return res.json();
+    },
+    {
+      enabled: isSuperAdmin,
+      staleTime: 5 * 60 * 1000, // 5 minutes pour les événements
+    }
+  );
 
   const events = eventsResponse?.data || [];
 
-  const { data: patronsResponse } = useQuery<{ data: Patron[]; total: number }>({
-    queryKey: ["/api/patrons", 1, 1000],
-    queryFn: async () => {
+  const { data: patronsResponse } = useAdminQuery<{ data: Patron[]; total: number }>(
+    ["/api/patrons", "1", "1000"],
+    async () => {
       const res = await fetch("/api/patrons?page=1&limit=1000");
       if (!res.ok) throw new Error('Failed to fetch patrons');
       return res.json();
     },
-    enabled: isSuperAdmin,
-  });
+    {
+      enabled: isSuperAdmin,
+      staleTime: 5 * 60 * 1000, // 5 minutes pour la liste complète
+    }
+  );
 
   const patrons = patronsResponse?.data || [];
 
@@ -385,6 +418,11 @@ export default function AdminSponsorshipsPage() {
             </Button>
           </div>
 
+          {/* Financial KPIs Widget */}
+          <div className="mb-6">
+            <FinancialKPIsWidget userRole={user?.role} />
+          </div>
+
           {/* KPI Cards */}
           {statsLoading ? (
             <div className="flex justify-center items-center h-32">
@@ -424,14 +462,17 @@ export default function AdminSponsorshipsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {Object.entries(stats.byLevel).map(([level, count]) => (
-                      <div key={level} className="flex items-center justify-between">
-                        <Badge className={getSponsorshipLevelBadgeClass(level)} data-testid={`badge-level-${level}`}>
-                          {getSponsorshipLevelLabel(level)}
-                        </Badge>
-                        <span className="text-sm font-medium" data-testid={`text-level-count-${level}`}>{count}</span>
-                      </div>
-                    ))}
+                    {Object.entries(stats.byLevel).map(([level, count]) => {
+                      const levelConfig = getStatusConfig(level, "sponsorship-level");
+                      return (
+                        <div key={level} className="flex items-center justify-between">
+                          <Badge variant={levelConfig.variant} className={levelConfig.className} data-testid={`badge-level-${level}`}>
+                            {levelConfig.label}
+                          </Badge>
+                          <span className="text-sm font-medium" data-testid={`text-level-count-${level}`}>{count}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -446,9 +487,14 @@ export default function AdminSponsorshipsPage() {
                   <div className="space-y-2">
                     {Object.entries(stats.byStatus).map(([status, count]) => (
                       <div key={status} className="flex items-center justify-between">
-                        <Badge variant={getSponsorshipStatusBadgeVariant(status)} data-testid={`badge-status-${status}`}>
-                          {getSponsorshipStatusLabel(status)}
-                        </Badge>
+                        {(() => {
+                          const statusConfig = getStatusConfig(status, "sponsorship");
+                          return (
+                            <Badge variant={statusConfig.variant} className={statusConfig.className} data-testid={`badge-status-${status}`}>
+                              {statusConfig.label}
+                            </Badge>
+                          );
+                        })()}
                         <span className="text-sm font-medium" data-testid={`text-status-count-${status}`}>{count}</span>
                       </div>
                     ))}
@@ -460,51 +506,82 @@ export default function AdminSponsorshipsPage() {
         </div>
 
         {/* Filtres */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Filtrer par statut</label>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger data-testid="select-filter-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les statuts</SelectItem>
-                    <SelectItem value="proposed">Proposé</SelectItem>
-                    <SelectItem value="confirmed">Confirmé</SelectItem>
-                    <SelectItem value="completed">Réalisé</SelectItem>
-                    <SelectItem value="cancelled">Annulé</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Filtrer par niveau</label>
-                <Select value={filterLevel} onValueChange={setFilterLevel}>
-                  <SelectTrigger data-testid="select-filter-level">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les niveaux</SelectItem>
-                    <SelectItem value="platinum">Platine</SelectItem>
-                    <SelectItem value="gold">Or</SelectItem>
-                    <SelectItem value="silver">Argent</SelectItem>
-                    <SelectItem value="bronze">Bronze</SelectItem>
-                    <SelectItem value="partner">Partenaire</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminFilters
+          filters={[
+            {
+              label: "Statut",
+              value: filterStatus,
+              onChange: setFilterStatus,
+              options: [
+                { value: "all", label: "Tous les statuts" },
+                { value: "proposed", label: "Proposé" },
+                { value: "confirmed", label: "Confirmé" },
+                { value: "completed", label: "Réalisé" },
+                { value: "cancelled", label: "Annulé" },
+              ],
+            },
+            {
+              label: "Niveau",
+              value: filterLevel,
+              onChange: setFilterLevel,
+              options: [
+                { value: "all", label: "Tous les niveaux" },
+                { value: "platinum", label: "Platine" },
+                { value: "gold", label: "Or" },
+                { value: "silver", label: "Argent" },
+                { value: "bronze", label: "Bronze" },
+                { value: "partner", label: "Partenaire" },
+              ],
+            },
+          ]}
+          className="mb-6"
+        />
 
         {/* Tableau des sponsorings */}
         <Card>
           <CardHeader>
-            <CardTitle>Liste des sponsorings</CardTitle>
-            <CardDescription>
-              {filteredSponsorships.length} sponsoring{filteredSponsorships.length > 1 ? "s" : ""}
-            </CardDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle>Liste des sponsorings</CardTitle>
+                <CardDescription>
+                  {filteredSponsorships.length} sponsoring{filteredSponsorships.length > 1 ? "s" : ""}
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const validation = validateExportData(filteredSponsorships);
+                  if (!validation.valid) {
+                    toast({ title: "Erreur", description: validation.error, variant: "destructive" });
+                    return;
+                  }
+                  exportToCSV(
+                    filteredSponsorships,
+                    ["Événement", "Mécène", "Niveau", "Montant", "Statut", "Visibilité publique", "Date de création"],
+                    "export-sponsorings",
+                    (sponsorship) => {
+                      const levelConfig = getStatusConfig(sponsorship.level, "sponsorship-level");
+                      const statusConfig = getStatusConfig(sponsorship.status, "sponsorship");
+                      return [
+                        sponsorship.event?.title || "",
+                        sponsorship.patron ? `${sponsorship.patron.firstName} ${sponsorship.patron.lastName}` : "",
+                        levelConfig.label,
+                        formatEuros(sponsorship.amount),
+                        statusConfig.label,
+                        sponsorship.isPubliclyVisible ? "Oui" : "Non",
+                        sponsorship.createdAt ? formatDateForExport(sponsorship.createdAt) : "",
+                      ];
+                    }
+                  );
+                  toast({ title: "Export réussi", description: "Les données ont été exportées en CSV" });
+                }}
+                className="ml-4"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exporter CSV
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {sponsorshipsLoading ? (
@@ -543,23 +620,31 @@ export default function AdminSponsorshipsPage() {
                               : "—"}
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              className={getSponsorshipLevelBadgeClass(sponsorship.level)}
-                              data-testid={`badge-level-${sponsorship.id}`}
-                            >
-                              {getSponsorshipLevelLabel(sponsorship.level)}
-                            </Badge>
+                            {(() => {
+                              const levelConfig = getStatusConfig(sponsorship.level, "sponsorship-level");
+                              return (
+                                <Badge
+                                  variant={levelConfig.variant}
+                                  className={levelConfig.className}
+                                  data-testid={`badge-level-${sponsorship.id}`}
+                                >
+                                  {levelConfig.label}
+                                </Badge>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell data-testid={`text-amount-${sponsorship.id}`}>
                             {formatEuros(sponsorship.amount)}
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant={getSponsorshipStatusBadgeVariant(sponsorship.status)}
-                              data-testid={`badge-status-${sponsorship.id}`}
-                            >
-                              {getSponsorshipStatusLabel(sponsorship.status)}
-                            </Badge>
+                            {(() => {
+                              const statusConfig = getStatusConfig(sponsorship.status, "sponsorship");
+                              return (
+                                <Badge variant={statusConfig.variant} className={statusConfig.className} data-testid={`badge-status-${sponsorship.id}`}>
+                                  {statusConfig.label}
+                                </Badge>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell data-testid={`text-visibility-${sponsorship.id}`}>
                             {sponsorship.isPubliclyVisible ? (
@@ -634,12 +719,18 @@ export default function AdminSponsorshipsPage() {
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-600 dark:text-gray-400">Niveau</span>
-                            <Badge
-                              className={getSponsorshipLevelBadgeClass(sponsorship.level)}
-                              data-testid={`badge-mobile-level-${sponsorship.id}`}
-                            >
-                              {getSponsorshipLevelLabel(sponsorship.level)}
-                            </Badge>
+                            {(() => {
+                              const levelConfig = getStatusConfig(sponsorship.level, "sponsorship-level");
+                              return (
+                                <Badge
+                                  variant={levelConfig.variant}
+                                  className={levelConfig.className}
+                                  data-testid={`badge-mobile-level-${sponsorship.id}`}
+                                >
+                                  {levelConfig.label}
+                                </Badge>
+                              );
+                            })()}
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-600 dark:text-gray-400">Montant</span>

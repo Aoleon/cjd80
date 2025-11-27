@@ -1,0 +1,90 @@
+{
+  "version": "2.0.0",
+  "lastUpdated": "2025-11-20T13:53:49.194Z",
+  "summary": {
+    "sessionId": "session-1763646829195",
+    "status": "idle",
+    "startTime": "2025-11-20T13:53:49.195Z",
+    "lastActivity": "2025-11-20T13:53:49.195Z",
+    "runDurationMs": 0,
+    "runDurationHuman": "0s",
+    "syncedConversations": 0,
+    "queues": {
+      "totalTasks": 0,
+      "pendingTasks": 0,
+      "inProgressTasks": 0,
+      "completedTasks": 0,
+      "failedTasks": 0,
+      "priority": {
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      }
+    }
+  },
+  "metrics": {
+    "phases": {
+      "discover": {
+        "durationMs": 0,
+        "durationHuman": "0s"
+      }
+    },
+    "byRole": {
+      "architect": {
+        "events": 0,
+        "completed": 1,
+        "failed": 0,
+        "totalDurationMs": 0,
+        "averageLatencyMs": 0,
+        "successRate": 100
+      },
+      "developer": {
+        "events": 0,
+        "completed": 0,
+        "failed": 0,
+        "totalDurationMs": 0,
+        "averageLatencyMs": 0,
+        "successRate": 0
+      },
+      "tester": {
+        "events": 0,
+        "completed": 0,
+        "failed": 0,
+        "totalDurationMs": 0,
+        "averageLatencyMs": 0,
+        "successRate": 0
+      },
+      "analyst": {
+        "events": 0,
+        "completed": 0,
+        "failed": 0,
+        "totalDurationMs": 0,
+        "averageLatencyMs": 0,
+        "successRate": 0
+      },
+      "coordinator": {
+        "events": 0,
+        "completed": 0,
+        "failed": 0,
+        "totalDurationMs": 0,
+        "averageLatencyMs": 0,
+        "successRate": 0
+      }
+    },
+    "events": {
+      "total": 0,
+      "byType": {}
+    },
+    "historyIntelligence": {
+      "lastSync": null,
+      "totalSynced": 0
+    }
+  },
+  "history": {
+    "totalRuns": 1,
+    "successRuns": 0,
+    "failedRuns": 1,
+    "successRate": 0,
+    "lastSessionId": "session-1763646829195"
+  }
+}

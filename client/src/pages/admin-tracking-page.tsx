@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAdminQuery } from "@/hooks/use-admin-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminHeader from "@/components/admin-header";
@@ -42,6 +43,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { hasPermission } from "@shared/schema";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useDebounce } from "@/hooks/use-debounce";
+import AdminSearchBar from "@/components/admin/AdminSearchBar";
+import { AdminFilters } from "@/components/admin/AdminFilters";
+import { getStatusConfig } from "@/lib/admin-status-mapping";
 
 interface TrackingDashboard {
   members: {
@@ -107,32 +112,33 @@ export default function AdminTrackingPage() {
     isRead?: boolean;
   }>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const hasViewPermission = user && hasPermission(user.role, 'admin.view');
   const hasManagePermission = user && hasPermission(user.role, 'admin.manage');
 
   // Dashboard data
-  const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchDashboard, error: dashboardError } = useQuery<TrackingDashboard>({
-    queryKey: ["/api/tracking/dashboard"],
-    queryFn: async () => {
+  const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchDashboard, error: dashboardError } = useAdminQuery<TrackingDashboard>(
+    ["/api/tracking/dashboard"],
+    async () => {
       const res = await fetch("/api/tracking/dashboard");
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || `Erreur ${res.status}: Impossible de charger le dashboard`);
+        throw new Error(errorData.message || `Erreur ${res.status}: Impossible de charger le dashboard tracking`);
       }
       const json = await res.json();
       if (!json.success) {
-        throw new Error(json.message || 'Erreur lors du chargement du dashboard');
+        throw new Error(json.message || 'Erreur lors du chargement du dashboard tracking');
       }
       return json.data;
     },
-    enabled: !!hasViewPermission,
-    refetchInterval: 60000, // Refetch every minute
-    retry: 3, // Retry 3 times on failure
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    refetchOnReconnect: true, // Refetch when network reconnects
-  });
+    {
+      refetchInterval: 60000, // Refetch every minute
+      staleTime: 30 * 1000, // 30 secondes pour le dashboard
+      retry: 3, // Retry 3 times on failure
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    }
+  );
 
   // Alerts data with filters
   const alertsQueryParams = new URLSearchParams();
@@ -142,9 +148,9 @@ export default function AdminTrackingPage() {
   if (alertFilters.entityType) alertsQueryParams.append('entityType', alertFilters.entityType);
   if (alertFilters.isRead !== undefined) alertsQueryParams.append('isRead', alertFilters.isRead.toString());
   
-  const { data: alertsData, isLoading: alertsLoading, refetch: refetchAlerts, error: alertsError } = useQuery<{ data: TrackingAlert[] }>({
-    queryKey: ["/api/tracking/alerts", alertFilters],
-    queryFn: async () => {
+  const { data: alertsData, isLoading: alertsLoading, refetch: refetchAlerts, error: alertsError } = useAdminQuery<{ data: TrackingAlert[] }>(
+    ["/api/tracking/alerts", alertFilters.severity || "", alertFilters.entityType || "", alertFilters.isRead?.toString() || "", debouncedSearchQuery],
+    async () => {
       const res = await fetch(`/api/tracking/alerts?${alertsQueryParams.toString()}`);
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -156,13 +162,14 @@ export default function AdminTrackingPage() {
       }
       return json;
     },
-    enabled: !!hasViewPermission,
-    refetchInterval: 30000, // Refetch every 30 seconds
-    retry: 3, // Retry 3 times on failure
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    refetchOnReconnect: true, // Refetch when network reconnects
-  });
+    {
+      enabled: !!hasViewPermission,
+      staleTime: 1 * 60 * 1000, // 1 minute pour les alertes
+      refetchInterval: 30000, // Refetch every 30 seconds
+      retry: 3, // Retry 3 times on failure
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    }
+  );
 
   const alerts = alertsData?.data || [];
 
@@ -917,83 +924,56 @@ export default function AdminTrackingPage() {
             )}
             
             {/* Filtres et recherche */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Rechercher dans les alertes... (Échap pour réinitialiser)"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-8 pr-8 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        aria-label="Rechercher dans les alertes"
-                      />
-                      {searchQuery && (
-                        <button
-                          onClick={() => setSearchQuery('')}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                          aria-label="Effacer la recherche"
-                          type="button"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <select
-                    value={alertFilters.severity || ''}
-                    onChange={(e) => setAlertFilters({ ...alertFilters, severity: e.target.value || undefined })}
-                    className="border rounded px-3 py-2 text-sm"
-                  >
-                    <option value="">Toutes les sévérités</option>
-                    <option value="low">Faible</option>
-                    <option value="medium">Moyenne</option>
-                    <option value="high">Élevée</option>
-                    <option value="critical">Critique</option>
-                  </select>
-                  <select
-                    value={alertFilters.entityType || ''}
-                    onChange={(e) => setAlertFilters({ ...alertFilters, entityType: e.target.value || undefined })}
-                    className="border rounded px-3 py-2 text-sm"
-                  >
-                    <option value="">Tous les types</option>
-                    <option value="member">Membres</option>
-                    <option value="patron">Mécènes</option>
-                  </select>
-                  <select
-                    value={alertFilters.isRead === undefined ? '' : alertFilters.isRead ? 'read' : 'unread'}
-                    onChange={(e) => {
-                      const value = e.target.value;
+            <div className="space-y-4">
+              <AdminSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Rechercher dans les alertes..."
+                className="w-full"
+              />
+              
+              <AdminFilters
+                filters={[
+                  {
+                    label: "Sévérité",
+                    value: alertFilters.severity || 'all',
+                    onChange: (value: string) => setAlertFilters({ ...alertFilters, severity: value === 'all' ? undefined : value }),
+                    options: [
+                      { value: "all", label: "Toutes les sévérités" },
+                      { value: "low", label: "Faible" },
+                      { value: "medium", label: "Moyenne" },
+                      { value: "high", label: "Élevée" },
+                      { value: "critical", label: "Critique" },
+                    ],
+                  },
+                  {
+                    label: "Type d'entité",
+                    value: alertFilters.entityType || 'all',
+                    onChange: (value: string) => setAlertFilters({ ...alertFilters, entityType: value === 'all' ? undefined : value }),
+                    options: [
+                      { value: "all", label: "Tous les types" },
+                      { value: "member", label: "Membres" },
+                      { value: "patron", label: "Mécènes" },
+                    ],
+                  },
+                  {
+                    label: "Statut",
+                    value: alertFilters.isRead === undefined ? 'all' : alertFilters.isRead ? 'read' : 'unread',
+                    onChange: (value: string) => {
                       setAlertFilters({
                         ...alertFilters,
-                        isRead: value === '' ? undefined : value === 'read',
+                        isRead: value === 'all' ? undefined : value === 'read',
                       });
-                    }}
-                    className="border rounded px-3 py-2 text-sm"
-                  >
-                    <option value="">Tous les statuts</option>
-                    <option value="read">Lues</option>
-                    <option value="unread">Non lues</option>
-                  </select>
-                  {(alertFilters.severity || alertFilters.entityType || alertFilters.isRead !== undefined || searchQuery) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setAlertFilters({});
-                        setSearchQuery('');
-                      }}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Réinitialiser
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    },
+                    options: [
+                      { value: "all", label: "Tous les statuts" },
+                      { value: "read", label: "Lues" },
+                      { value: "unread", label: "Non lues" },
+                    ],
+                  },
+                ]}
+              />
+            </div>
 
             {alertsError && (
               <Card className="border-red-200 bg-red-50">
@@ -1053,9 +1033,14 @@ export default function AdminTrackingPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <div className={`h-3 w-3 rounded-full ${getSeverityColor(alert.severity)}`} />
-                            <Badge variant={getSeverityBadge(alert.severity)}>
-                              {alert.severity}
-                            </Badge>
+                            {(() => {
+                              const statusConfig = getStatusConfig(alert.severity, "alert-severity");
+                              return (
+                                <Badge variant={statusConfig.variant} className={statusConfig.className}>
+                                  {statusConfig.label}
+                                </Badge>
+                              );
+                            })()}
                             <Badge variant="outline">
                               {alert.entityType === 'member' ? 'Membre' : 'Mécène'}
                             </Badge>

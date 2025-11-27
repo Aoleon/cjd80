@@ -27,7 +27,7 @@ export const admins = pgTable("admins", {
   email: text("email").primaryKey(),
   firstName: text("first_name").default("Admin").notNull(),
   lastName: text("last_name").default("User").notNull(),
-  password: text("password").notNull(),
+  password: text("password"), // Nullable car géré par Authentik pour les nouveaux utilisateurs
   addedBy: text("added_by"),
   role: text("role").default(ADMIN_ROLES.IDEAS_READER).notNull(), // Rôle par défaut : consultation des idées
   status: text("status").default(ADMIN_STATUS.PENDING).notNull(), // Statut par défaut : en attente
@@ -705,7 +705,9 @@ export const insertAdminSchema = createInsertSchema(admins).pick({
   password: z.string()
     .min(8, "Le mot de passe doit contenir au moins 8 caractères")
     .max(128, "Le mot de passe ne peut pas dépasser 128 caractères")
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Le mot de passe doit contenir au moins : 1 majuscule (A-Z), 1 minuscule (a-z) et 1 chiffre (0-9)"),
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Le mot de passe doit contenir au moins : 1 majuscule (A-Z), 1 minuscule (a-z) et 1 chiffre (0-9)")
+    .optional()
+    .nullable(), // Optionnel car géré par Authentik
   addedBy: z.string().email().optional().transform(val => val ? sanitizeText(val) : undefined),
   role: z.enum([
     ADMIN_ROLES.SUPER_ADMIN,

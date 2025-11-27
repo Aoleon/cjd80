@@ -4,7 +4,7 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
+import { User as SelectUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,14 +12,8 @@ type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
+  loginMutation: UseMutationResult<void, Error, void>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
-};
-
-type LoginData = {
-  email: string;
-  password: string;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -36,47 +30,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      if (!res.ok) {
-        throw new Error("Identifiants incorrects");
-      }
-      const result = await res.json();
-      return result;
-    },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      toast({
-        title: "Connexion réussie",
-        description: "Vous êtes maintenant connecté à l'administration",
-      });
+    mutationFn: async () => {
+      // Rediriger vers le flow OAuth2 Authentik
+      // Le backend redirigera vers Authentik qui gérera l'authentification
+      window.location.href = "/api/auth/authentik";
     },
     onError: (error: Error) => {
       toast({
         title: "Erreur de connexion",
-        description: error.message || "Identifiants incorrects",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const registerMutation = useMutation({
-    mutationFn: async (credentials: InsertUser) => {
-      const res = await apiRequest("POST", "/api/register", credentials);
-      return await res.json();
-    },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-      toast({
-        title: "Compte créé",
-        description: "Votre compte administrateur a été créé avec succès",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erreur de création",
-        description: error.message,
+        description: error.message || "Erreur lors de la redirection vers Authentik",
         variant: "destructive",
       });
     },
@@ -88,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Déconnexion",
         description: "Vous avez été déconnecté avec succès",
@@ -110,7 +73,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error,
         loginMutation,
         logoutMutation,
-        registerMutation,
       }}
     >
       {children}

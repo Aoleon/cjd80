@@ -14,7 +14,7 @@ import { DatabaseResilience } from "./lib/db-resilience";
 /**
  * Détecte le type de provider PostgreSQL basé sur DATABASE_URL
  * - Neon: contient "neon.tech" (utilise neon-serverless)
- * - Nhost/Standard PostgreSQL: format postgresql:// standard (utilise node-postgres)
+ * - Supabase/Standard PostgreSQL: format postgresql:// standard (utilise node-postgres)
  */
 function detectDatabaseProvider(): 'neon' | 'standard' {
   const databaseUrl = process.env.DATABASE_URL;
@@ -30,7 +30,7 @@ function detectDatabaseProvider(): 'neon' | 'standard' {
     return 'neon';
   }
 
-  // Tout le reste est considéré comme PostgreSQL standard (Nhost ou autre)
+  // Tout le reste est considéré comme PostgreSQL standard (Supabase ou autre)
   return 'standard';
 }
 
@@ -64,7 +64,7 @@ if (dbProvider === 'neon') {
   pool = neonPool;
   dbResilience = new DatabaseResilience(neonPool as any, 'neon-database');
 } else {
-  // Pool PostgreSQL standard (Nhost ou autre)
+  // Pool PostgreSQL standard (Supabase ou autre)
   const pgPool = new PgPool({
     connectionString: process.env.DATABASE_URL!,
     max: 20,

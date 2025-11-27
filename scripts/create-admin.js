@@ -1,44 +1,46 @@
-// Script pour créer/modifier les administrateurs avec hash Scrypt
-import { scrypt, randomBytes } from 'crypto';
-import { promisify } from 'util';
+// Script pour créer/modifier les administrateurs
+// NOTE: Avec Authentik, les mots de passe ne sont plus stockés localement
+// Ce script crée uniquement les entrées dans la base de données locale
+// Les utilisateurs doivent être créés dans Authentik séparément
 import { db } from './server/db.js';
 import { admins } from './shared/schema.js';
 import { eq } from 'drizzle-orm';
 
-const scryptAsync = promisify(scrypt);
-
-async function hashPassword(password) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64));
-  return `${buf.toString("hex")}.${salt}`;
-}
-
 async function createAdmins() {
   try {
-    // Supprimer les anciens admins
-    await db.delete(admins);
+    console.log('⚠️  ATTENTION: Avec Authentik, les utilisateurs doivent être créés dans Authentik.');
+    console.log('Ce script crée uniquement les entrées dans la base de données locale.\n');
     
     // Créer Thibault comme admin principal
-    const thibaultPassword = await hashPassword('CjdAdmin2025!');
     await db.insert(admins).values({
       email: 'thibault@youcom.io',
-      password: thibaultPassword,
+      password: undefined, // Password géré par Authentik
+      firstName: 'Thibault',
+      lastName: 'Admin',
+      role: 'super_admin',
+      status: 'active',
       addedBy: 'system'
     });
-    console.log('✅ Admin Thibault créé avec succès');
+    console.log('✅ Admin Thibault créé dans la base de données');
+    console.log('   → Créez cet utilisateur dans Authentik avec le même email\n');
     
     // Créer Maxence comme second admin
-    const maxencePassword = await hashPassword('MaxAdmin2025!');
     await db.insert(admins).values({
       email: 'maxencebonduelle@gmail.com',
-      password: maxencePassword,
+      password: undefined, // Password géré par Authentik
+      firstName: 'Maxence',
+      lastName: 'Admin',
+      role: 'super_admin',
+      status: 'active',
       addedBy: 'thibault@youcom.io'
     });
-    console.log('✅ Admin Maxence créé avec succès');
+    console.log('✅ Admin Maxence créé dans la base de données');
+    console.log('   → Créez cet utilisateur dans Authentik avec le même email\n');
     
-    console.log('\n🔐 Identifiants de connexion:');
-    console.log('Thibault: thibault@youcom.io / CjdAdmin2025!');
-    console.log('Maxence: maxencebonduelle@gmail.com / MaxAdmin2025!');
+    console.log('📋 Prochaines étapes:');
+    console.log('1. Créez les utilisateurs dans Authentik (Directory > Users)');
+    console.log('2. Assignez les groupes correspondants aux rôles');
+    console.log('3. Les utilisateurs pourront se connecter via Authentik');
     
   } catch (error) {
     console.error('❌ Erreur:', error);

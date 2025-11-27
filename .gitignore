@@ -1,25 +1,98 @@
-node_modules
-dist
-.DS_Store
-server/public
-vite.config.ts.*
-*.tar.gz
+# ============================================================================
+# Dépendances et Build
+# ============================================================================
+node_modules/
+dist/
+build/
+*.tsbuildinfo
 
-# Configuration et données locales Replit
-replit.md
-.replit
-replit.nix
-attached_assets/
+# ============================================================================
+# Fichiers d'environnement et Secrets
+# ============================================================================
+.env
+.env.*
+!.env.example
+*.env
+*.env.local
+*.env.production
+*.env.development
+*.env.test
+*.env.staging
 
+# Clés SSH et certificats
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+*.pub
+ssh_key
+ssh_key.pub
+github-actions-*.key
+github-actions-*.pub
+*_deploy_key
+*_deploy_key.pub
+
+# Secrets et tokens
+secrets/
+*.secret
+*.token
+*.password
+*secret*
+*token*
+*password*
+credentials.json
+service-account*.json
+
+# ============================================================================
 # Logs et rapports
+# ============================================================================
 logs/
 *.log
-tests/reports/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+test-results/
+playwright-report/
+coverage/
+.nyc_output/
+*.log.*
 
-# Fichiers d'environnement
-.env
-.env.local
-.env.*.local
+# ============================================================================
+# Fichiers système et OS
+# ============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.tmp/
+temp/
+
+# ============================================================================
+# IDE et éditeurs
+# ============================================================================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+.project
+.classpath
+.settings/
 
 # Fichiers Cursor
 .cursor/
@@ -28,3 +101,94 @@ tests/reports/
 .cursorrules
 .cursorrules.backup.*
 .cursor.backup.*
+.cursor/**/*
+.cursor-config/**/*
+!.cursor-config/migrations/
+
+# ============================================================================
+# Configuration et données locales
+# ============================================================================
+# Replit
+replit.md
+.replit
+replit.nix
+.cache/
+.upm/
+
+# ============================================================================
+# Fichiers de développement et tests
+# ============================================================================
+server/public/
+vite.config.ts.*
+*.tar.gz
+*.zip
+*.gz
+
+# Dumps et backups (tous les fichiers SQL, dumps, backups)
+*.sql
+*.dump
+*.backup
+*.bak
+dump_*.sql
+backup_*.sql
+*.sql.gz
+*.dump.gz
+**/*.sql
+**/*.dump
+**/dump_*
+**/backup_*
+!.cursor-config/migrations/*.sql
+!scripts/migrations/*.sql
+!scripts/create-loan-items-table.sql
+
+# Fichiers temporaires
+*.tmp
+*.temp
+.cache/
+.temp/
+tmp/
+temp/
+
+# ============================================================================
+# Assets et uploads
+# ============================================================================
+attached_assets/
+attached_assets/**/*
+public/uploads/*
+!public/uploads/.gitkeep
+*.jpeg
+*.jpg
+*.png
+*.gif
+*.webp
+!assets/screenshots/
+!assets/archive/
+
+# ============================================================================
+# Fichiers de configuration locaux
+# ============================================================================
+docker-compose.override.yml
+docker-compose.local.yml
+.vercel/
+.netlify/
+.railway/
+
+# ============================================================================
+# Fichiers de build et artefacts
+# ============================================================================
+.next/
+.nuxt/
+.output/
+.cache/
+.parcel-cache/
+.vite/
+.turbo/
+.eslintcache
+.stylelintcache
+
+# ============================================================================
+# Fichiers de déploiement locaux
+# ============================================================================
+deploy.sh.local
+*.local.sh
+local-*.sh

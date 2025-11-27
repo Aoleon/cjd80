@@ -1,28 +1,23 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Users, Lightbulb, Calendar, Shield } from "lucide-react";
+import { Loader2, Shield, AlertCircle } from "lucide-react";
 import { hasPermission } from "@shared/schema";
 import { branding, getShortAppName } from '@/config/branding';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function AuthPage() {
-  const { user, isLoading, loginMutation, registerMutation } = useAuth();
-  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
-  const [registerForm, setRegisterForm] = useState({ 
-    email: "", 
-    firstName: "", 
-    lastName: "", 
-    password: "", 
-    confirmPassword: "" 
-  });
+  const { user, isLoading, loginMutation } = useAuth();
+  const [location, setLocation] = useLocation();
 
   // Calculer isAdmin après tous les hooks pour éviter les problèmes de réconciliation
   const isAdmin = user ? hasPermission(user.role, 'admin.view') : false;
+
+  // Vérifier les paramètres d'erreur dans l'URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const error = urlParams.get('error');
 
   // Redirect if already logged in (after hooks are called)
   if (!isLoading && user) {
@@ -38,29 +33,13 @@ export default function AuthPage() {
     );
   }
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    loginMutation.mutate(loginForm);
-  };
-
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (registerForm.password !== registerForm.confirmPassword) {
-      alert("Les mots de passe ne correspondent pas");
-      return;
-    }
-    registerMutation.mutate({
-      email: registerForm.email,
-      firstName: registerForm.firstName,
-      lastName: registerForm.lastName,
-      password: registerForm.password,
-      role: "ideas_reader" as const,
-    });
+  const handleLogin = () => {
+    loginMutation.mutate();
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Left side - Auth forms */}
+      {/* Left side - Auth form */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
@@ -71,143 +50,50 @@ export default function AuthPage() {
             <p className="text-gray-600">Connectez-vous pour accéder au back-office</p>
           </div>
 
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Connexion</TabsTrigger>
-              <TabsTrigger value="register">Créer un compte</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Connexion</CardTitle>
-                  <CardDescription>
-                    Entrez vos identifiants pour accéder à l'administration
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div>
-                      <Label htmlFor="login-email">Email</Label>
-                      <Input
-                        id="login-email"
-                        type="email"
-                        value={loginForm.email}
-                        onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
-                        required
-                        className="focus:ring-cjd-green focus:border-cjd-green"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="login-password">Mot de passe</Label>
-                      <Input
-                        id="login-password"
-                        type="password"
-                        value={loginForm.password}
-                        onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
-                        required
-                        className="focus:ring-cjd-green focus:border-cjd-green"
-                      />
-                    </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-cjd-green hover:bg-cjd-green-dark"
-                      disabled={loginMutation.isPending}
-                    >
-                      {loginMutation.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Shield className="mr-2 h-4 w-4" />
-                      )}
-                      Se connecter
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="register">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Créer un compte</CardTitle>
-                  <CardDescription>
-                    Créez un compte administrateur pour gérer l'application
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleRegister} className="space-y-4">
-                    <div>
-                      <Label htmlFor="register-email">Email</Label>
-                      <Input
-                        id="register-email"
-                        type="email"
-                        value={registerForm.email}
-                        onChange={(e) => setRegisterForm(prev => ({ ...prev, email: e.target.value }))}
-                        required
-                        className="focus:ring-cjd-green focus:border-cjd-green"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="register-firstName">Prénom</Label>
-                      <Input
-                        id="register-firstName"
-                        type="text"
-                        value={registerForm.firstName}
-                        onChange={(e) => setRegisterForm(prev => ({ ...prev, firstName: e.target.value }))}
-                        required
-                        className="focus:ring-cjd-green focus:border-cjd-green"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="register-lastName">Nom</Label>
-                      <Input
-                        id="register-lastName"
-                        type="text"
-                        value={registerForm.lastName}
-                        onChange={(e) => setRegisterForm(prev => ({ ...prev, lastName: e.target.value }))}
-                        required
-                        className="focus:ring-cjd-green focus:border-cjd-green"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="register-password">Mot de passe</Label>
-                      <Input
-                        id="register-password"
-                        type="password"
-                        value={registerForm.password}
-                        onChange={(e) => setRegisterForm(prev => ({ ...prev, password: e.target.value }))}
-                        required
-                        className="focus:ring-cjd-green focus:border-cjd-green"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="register-confirm">Confirmer le mot de passe</Label>
-                      <Input
-                        id="register-confirm"
-                        type="password"
-                        value={registerForm.confirmPassword}
-                        onChange={(e) => setRegisterForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                        required
-                        className="focus:ring-cjd-green focus:border-cjd-green"
-                      />
-                    </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-cjd-green hover:bg-cjd-green-dark"
-                      disabled={registerMutation.isPending}
-                    >
-                      {registerMutation.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Shield className="mr-2 h-4 w-4" />
-                      )}
-                      Créer le compte
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          <Card>
+            <CardHeader>
+              <CardTitle>Connexion</CardTitle>
+              <CardDescription>
+                Utilisez Authentik pour vous connecter à l'administration
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Erreur d'authentification</AlertTitle>
+                  <AlertDescription>
+                    {error === "authentication_failed" && "L'authentification a échoué. Veuillez réessayer."}
+                    {error === "session_failed" && "Erreur lors de l'établissement de la session. Veuillez réessayer."}
+                    {error !== "authentication_failed" && error !== "session_failed" && decodeURIComponent(error)}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Button 
+                onClick={handleLogin}
+                className="w-full bg-cjd-green hover:bg-cjd-green-dark"
+                disabled={loginMutation.isPending}
+                size="lg"
+              >
+                {loginMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Redirection en cours...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="mr-2 h-4 w-4" />
+                    Se connecter avec Authentik
+                  </>
+                )}
+              </Button>
+
+              <p className="text-sm text-gray-500 text-center mt-4">
+                Vous serez redirigé vers Authentik pour vous authentifier
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -223,31 +109,11 @@ export default function AuthPage() {
           <div className="space-y-6 max-w-sm">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <Lightbulb className="w-6 h-6" />
+                <Shield className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-semibold">Partagez vos idées</h3>
-                <p className="text-sm opacity-90">Proposez et votez pour les meilleures initiatives</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <Calendar className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Gérez les événements</h3>
-                <p className="text-sm opacity-90">Organisez et suivez les activités de la section</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <Users className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Fédérez la communauté</h3>
-                <p className="text-sm opacity-90">Renforcez les liens entre dirigeants</p>
+                <h3 className="font-semibold">Authentification sécurisée</h3>
+                <p className="text-sm opacity-90">Connexion via Authentik pour une sécurité renforcée</p>
               </div>
             </div>
           </div>

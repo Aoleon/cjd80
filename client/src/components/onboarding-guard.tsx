@@ -12,9 +12,7 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
   
   // Ignorer la vérification sur certaines routes
   const skipRoutes = ['/onboarding', '/auth', '/test-error'];
-  if (skipRoutes.some(route => location.startsWith(route))) {
-    return <>{children}</>;
-  }
+  const shouldSkipCheck = skipRoutes.some(route => location.startsWith(route));
 
   const { data: setupStatus, isLoading } = useQuery({
     queryKey: ["/api/setup/status"],
@@ -23,9 +21,14 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
       if (!res.ok) throw new Error('Failed to load setup status');
       return res.json();
     },
+    enabled: !shouldSkipCheck,
     retry: 1,
     staleTime: 30000, // Cache pendant 30 secondes
   });
+
+  if (shouldSkipCheck) {
+    return <>{children}</>;
+  }
 
   if (isLoading) {
     return (
@@ -42,4 +45,3 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
-

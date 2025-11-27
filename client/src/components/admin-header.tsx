@@ -1,36 +1,114 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useFeatureConfig } from "@/contexts/FeatureConfigContext";
 import { Button } from "@/components/ui/button";
-import { Shield, Home, Lightbulb, Plus, Calendar, UserCircle, Users, LogOut, Menu, X, Palette, Mail, Award, Activity } from "lucide-react";
+import {
+  Shield,
+  UserCircle,
+  Users,
+  Award,
+  Activity,
+  Palette,
+  Mail,
+  LogOut,
+  Menu,
+  X,
+  TrendingUp,
+  Lightbulb,
+  Calendar,
+  Package,
+  ChevronDown,
+  Settings,
+  BarChart3,
+  Wallet,
+  Receipt,
+  TrendingDown,
+  FileText,
+} from "lucide-react";
 import { getShortAppName } from '@/config/branding';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
+interface MenuItem {
+  id: string;
+  label: string;
+  icon: any;
+  path: string;
+  module?: string;
+  feature?: string;
+}
 
 export default function AdminHeader() {
   const { user, logoutMutation } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
-  const baseMenuItems = [
-    { id: "divider", label: "", icon: null as any, path: "" },
-    { id: "admin", label: "Gestion", icon: Shield, path: "/admin" },
-    { id: "members", label: "Membres", icon: UserCircle, path: "/admin/members" },
+  // Modules de navigation
+  const crmModule: MenuItem[] = [
+    { id: "members", label: "Membres", icon: UserCircle, path: "/admin/crm/members", module: "crm" },
+    { id: "patrons", label: "Mécènes", icon: Users, path: "/admin/crm/patrons", module: "crm" },
   ];
 
-  const superAdminItems = user?.role === "super_admin" 
+  const { isFeatureEnabled } = useFeatureConfig();
+  
+  const contentModule: MenuItem[] = [
+    { id: "ideas", label: "Idées", icon: Lightbulb, path: "/admin/content/ideas", module: "content", feature: "ideas" },
+    { id: "events", label: "Événements", icon: Calendar, path: "/admin/content/events", module: "content", feature: "events" },
+    { id: "loans", label: "Prêt", icon: Package, path: "/admin/content/loans", module: "content", feature: "loan" },
+  ].filter(item => !item.feature || isFeatureEnabled(item.feature));
+
+  const financeModule: MenuItem[] = [
+    { id: "dashboard-finance", label: "Tableau de bord", icon: BarChart3, path: "/admin/finance/dashboard", module: "finance" },
+    { id: "sponsorships", label: "Sponsorings", icon: Award, path: "/admin/finance/sponsorships", module: "finance" },
+    { id: "budgets", label: "Budgets", icon: Wallet, path: "/admin/finance/budgets", module: "finance" },
+    { id: "expenses", label: "Dépenses", icon: Receipt, path: "/admin/finance/expenses", module: "finance" },
+    { id: "forecasts", label: "Prévisions", icon: TrendingDown, path: "/admin/finance/forecasts", module: "finance" },
+    { id: "reports", label: "Rapports", icon: FileText, path: "/admin/finance/reports", module: "finance" },
+  ];
+
+  const settingsModule: MenuItem[] = [
+    { id: "branding", label: "Branding", icon: Palette, path: "/admin/settings/branding", module: "settings" },
+    { id: "email-config", label: "Email SMTP", icon: Mail, path: "/admin/settings/email-config", module: "settings" },
+    { id: "features", label: "Fonctionnalités", icon: Settings, path: "/admin/settings/features", module: "settings" },
+  ];
+
+  // Menu de base (toujours visible)
+  const baseMenuItems: MenuItem[] = [
+    { id: "dashboard", label: "Tableau de bord", icon: TrendingUp, path: "/admin/dashboard" },
+    { id: "tracking", label: "Suivi", icon: Activity, path: "/admin/tracking" },
+  ];
+
+  // Menu legacy (compatibilité)
+  const legacyMenuItems: MenuItem[] = user?.role === "super_admin"
     ? [
-        { id: "patrons", label: "Mécènes", icon: Users, path: "/admin/patrons" },
-        { id: "sponsorships", label: "Sponsorings", icon: Award, path: "/admin/sponsorships" },
-        { id: "tracking", label: "Suivi", icon: Activity, path: "/admin/tracking" },
-        { id: "branding", label: "Branding", icon: Palette, path: "/admin/branding" },
-        { id: "email-config", label: "Email SMTP", icon: Mail, path: "/admin/email-config" }
+        { id: "admin-legacy", label: "Gestion", icon: Shield, path: "/admin" },
       ]
     : [];
 
-  const menuItems = [...baseMenuItems, ...superAdminItems];
+  // Déterminer le module actif
+  const activeModule = useMemo(() => {
+    if (location.startsWith("/admin/crm")) return "crm";
+    if (location.startsWith("/admin/content")) return "content";
+    if (location.startsWith("/admin/finance")) return "finance";
+    if (location.startsWith("/admin/settings")) return "settings";
+    return null;
+  }, [location]);
 
   const handleNavigation = (path: string) => {
     setLocation(path);
     setMobileMenuOpen(false);
+    setOpenDropdown(null);
+  };
+
+  const isActive = (path: string) => {
+    return location === path || location.startsWith(path + "/");
   };
 
   return (
@@ -40,31 +118,160 @@ export default function AdminHeader() {
           <div className="flex items-center space-x-4">
             <Shield className="w-8 h-8 text-cjd-green" data-testid="icon-admin-shield" />
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold" data-testid="text-admin-title">{getShortAppName()} - Administration</h1>
+              <h1 className="text-xl sm:text-2xl font-bold" data-testid="text-admin-title">
+                {getShortAppName()} - Administration
+              </h1>
               <p className="text-gray-300 text-sm" data-testid="text-admin-subtitle">Espace de gestion</p>
             </div>
           </div>
-          
+
           {/* Navigation Desktop */}
-          <nav className="hidden lg:flex space-x-4 items-center">
-            {menuItems.map((item) => {
-              if (item.id === "divider") {
-                return <div key="divider" className="h-6 w-px bg-gray-600" data-testid="divider-nav" />;
-              }
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavigation(item.path)}
-                  className="hover:text-cjd-green transition-colors duration-200 font-medium text-sm whitespace-nowrap flex items-center gap-2"
-                  data-testid={`link-${item.id}`}
+          <nav className="hidden lg:flex space-x-2 items-center">
+            {/* Dashboard */}
+            <Button
+              variant={isActive("/admin/dashboard") ? "default" : "ghost"}
+              size="sm"
+              onClick={() => handleNavigation("/admin/dashboard")}
+              className="text-white hover:text-cjd-green hover:bg-gray-700"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Dashboard
+            </Button>
+
+            {/* Module CRM */}
+            <DropdownMenu open={openDropdown === "crm"} onOpenChange={(open) => setOpenDropdown(open ? "crm" : null)}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant={activeModule === "crm" ? "default" : "ghost"}
+                  size="sm"
+                  className="text-white hover:text-cjd-green hover:bg-gray-700"
                 >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
-                </button>
-              );
-            })}
+                  CRM
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                {crmModule.map((item) => (
+                  <DropdownMenuItem
+                    key={item.id}
+                    onClick={() => handleNavigation(item.path)}
+                    className={isActive(item.path) ? "bg-gray-100 dark:bg-gray-800" : ""}
+                  >
+                    <item.icon className="w-4 h-4 mr-2" />
+                    {item.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Module Contenu */}
+            <DropdownMenu open={openDropdown === "content"} onOpenChange={(open) => setOpenDropdown(open ? "content" : null)}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant={activeModule === "content" ? "default" : "ghost"}
+                  size="sm"
+                  className="text-white hover:text-cjd-green hover:bg-gray-700"
+                >
+                  Contenu
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                {contentModule.map((item) => (
+                  <DropdownMenuItem
+                    key={item.id}
+                    onClick={() => handleNavigation(item.path)}
+                    className={isActive(item.path) ? "bg-gray-100 dark:bg-gray-800" : ""}
+                  >
+                    <item.icon className="w-4 h-4 mr-2" />
+                    {item.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Module Finances */}
+            {user?.role === "super_admin" && (
+              <DropdownMenu open={openDropdown === "finance"} onOpenChange={(open) => setOpenDropdown(open ? "finance" : null)}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={activeModule === "finance" ? "default" : "ghost"}
+                    size="sm"
+                    className="text-white hover:text-cjd-green hover:bg-gray-700"
+                  >
+                    Finances
+                    <ChevronDown className="w-4 h-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  {financeModule.map((item) => (
+                    <DropdownMenuItem
+                      key={item.id}
+                      onClick={() => handleNavigation(item.path)}
+                      className={isActive(item.path) ? "bg-gray-100 dark:bg-gray-800" : ""}
+                    >
+                      <item.icon className="w-4 h-4 mr-2" />
+                      {item.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Tracking */}
+            <Button
+              variant={isActive("/admin/tracking") ? "default" : "ghost"}
+              size="sm"
+              onClick={() => handleNavigation("/admin/tracking")}
+              className="text-white hover:text-cjd-green hover:bg-gray-700"
+            >
+              <Activity className="w-4 h-4 mr-2" />
+              Suivi
+            </Button>
+
+            {/* Module Settings */}
+            {user?.role === "super_admin" && (
+              <DropdownMenu open={openDropdown === "settings"} onOpenChange={(open) => setOpenDropdown(open ? "settings" : null)}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={activeModule === "settings" ? "default" : "ghost"}
+                    size="sm"
+                    className="text-white hover:text-cjd-green hover:bg-gray-700"
+                  >
+                    Paramètres
+                    <ChevronDown className="w-4 h-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  {settingsModule.map((item) => (
+                    <DropdownMenuItem
+                      key={item.id}
+                      onClick={() => handleNavigation(item.path)}
+                      className={isActive(item.path) ? "bg-gray-100 dark:bg-gray-800" : ""}
+                    >
+                      <item.icon className="w-4 h-4 mr-2" />
+                      {item.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Menu legacy (compatibilité) */}
+            {legacyMenuItems.map((item) => (
+              <Button
+                key={item.id}
+                variant={isActive(item.path) ? "default" : "ghost"}
+                size="sm"
+                onClick={() => handleNavigation(item.path)}
+                className="text-white hover:text-cjd-green hover:bg-gray-700"
+              >
+                <item.icon className="w-4 h-4 mr-2" />
+                {item.label}
+              </Button>
+            ))}
           </nav>
-          
+
           {/* User info + Logout */}
           <div className="flex items-center space-x-4">
             {/* Menu Mobile Button */}
@@ -79,7 +286,7 @@ export default function AdminHeader() {
                 {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </Button>
             </div>
-            
+
             {/* User Info - Hidden on mobile */}
             <div className="hidden sm:block text-right">
               <p className="text-gray-300 text-xs">Connecté en tant que</p>
@@ -88,7 +295,7 @@ export default function AdminHeader() {
                 {user?.role?.replace('_', ' ') ?? ''}
               </p>
             </div>
-            
+
             {/* Logout Button */}
             <Button
               variant="outline"
@@ -114,23 +321,100 @@ export default function AdminHeader() {
               <p className="font-medium text-sm">{user?.email}</p>
               <p className="text-cjd-green text-xs capitalize">{user?.role?.replace('_', ' ') ?? ''}</p>
             </div>
-            
-            {menuItems.map((item) => {
-              if (item.id === "divider") {
-                return <div key="divider" className="h-px bg-gray-600 my-2" />;
-              }
-              return (
+
+            {/* Dashboard */}
+            <button
+              onClick={() => handleNavigation("/admin/dashboard")}
+              className={`flex items-center gap-3 w-full text-left py-3 px-2 rounded transition-colors duration-200 ${
+                isActive("/admin/dashboard") ? "bg-gray-600" : "hover:bg-gray-600"
+              }`}
+            >
+              <TrendingUp className="w-5 h-5" />
+              Tableau de bord
+            </button>
+
+            {/* Module CRM */}
+            <div className="py-2">
+              <p className="text-gray-400 text-xs font-semibold px-2 mb-1">CRM</p>
+              {crmModule.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => handleNavigation(item.path)}
-                  className="flex items-center gap-3 w-full text-left py-3 px-2 rounded hover:bg-gray-600 transition-colors duration-200"
-                  data-testid={`link-mobile-${item.id}`}
+                  className={`flex items-center gap-3 w-full text-left py-2 px-4 rounded transition-colors duration-200 ${
+                    isActive(item.path) ? "bg-gray-600" : "hover:bg-gray-600"
+                  }`}
                 >
-                  <item.icon className="w-5 h-5" />
+                  <item.icon className="w-4 h-4" />
                   {item.label}
                 </button>
-              );
-            })}
+              ))}
+            </div>
+
+            {/* Module Contenu */}
+            <div className="py-2">
+              <p className="text-gray-400 text-xs font-semibold px-2 mb-1">Contenu</p>
+              {contentModule.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavigation(item.path)}
+                  className={`flex items-center gap-3 w-full text-left py-2 px-4 rounded transition-colors duration-200 ${
+                    isActive(item.path) ? "bg-gray-600" : "hover:bg-gray-600"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Module Finances */}
+            {user?.role === "super_admin" && (
+              <div className="py-2">
+                <p className="text-gray-400 text-xs font-semibold px-2 mb-1">Finances</p>
+                {financeModule.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavigation(item.path)}
+                    className={`flex items-center gap-3 w-full text-left py-2 px-4 rounded transition-colors duration-200 ${
+                      isActive(item.path) ? "bg-gray-600" : "hover:bg-gray-600"
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Tracking */}
+            <button
+              onClick={() => handleNavigation("/admin/tracking")}
+              className={`flex items-center gap-3 w-full text-left py-3 px-2 rounded transition-colors duration-200 ${
+                isActive("/admin/tracking") ? "bg-gray-600" : "hover:bg-gray-600"
+              }`}
+            >
+              <Activity className="w-5 h-5" />
+              Suivi
+            </button>
+
+            {/* Module Settings */}
+            {user?.role === "super_admin" && (
+              <div className="py-2">
+                <p className="text-gray-400 text-xs font-semibold px-2 mb-1">Paramètres</p>
+                {settingsModule.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavigation(item.path)}
+                    className={`flex items-center gap-3 w-full text-left py-2 px-4 rounded transition-colors duration-200 ${
+                      isActive(item.path) ? "bg-gray-600" : "hover:bg-gray-600"
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

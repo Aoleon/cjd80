@@ -9,6 +9,7 @@ import { startTrackingAlertsGeneration } from "./utils/tracking-scheduler";
 import { nanoid } from "nanoid";
 import { logger } from "./lib/logger";
 import { ApiError } from "../shared/errors";
+import { getMinIOService } from "./services/minio-service";
 
 // Support pour ESM (recréer __dirname et __filename)
 const __filename = fileURLToPath(import.meta.url);
@@ -18,14 +19,16 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Servir les fichiers uploadés (photos) - accessible en dev et prod
+// Servir les fichiers uploadés (photos) - DEPRECATED: Utilisé uniquement pour compatibilité avec fichiers non migrés
+// Les nouveaux fichiers sont stockés dans MinIO (http://localhost:9000/loan-items/)
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads'), {
   maxAge: '1y', // Cache long pour les images
   etag: true,
   lastModified: true
 }));
 
-// Servir les assets (logos uploadés) depuis attached_assets
+// Servir les assets (logos uploadés) - DEPRECATED: Utilisé uniquement pour compatibilité avec fichiers non migrés
+// Les nouveaux fichiers sont stockés dans MinIO (http://localhost:9000/assets/)
 app.use('/assets', express.static(path.join(__dirname, '../attached_assets'), {
   maxAge: '1y', // Cache long pour les images
   etag: true,
@@ -118,6 +121,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialiser MinIO au démarrage
+  try {
+    const minioService = getMinIOService();
+    await minioService.initialize();
+    logger.info('MinIO service initialized at startup');
+  } catch (error) {
+    logger.error('Failed to initialize MinIO service at startup', { error });
+    // Ne pas bloquer le démarrage si MinIO échoue (peut être démarré plus tard)
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {

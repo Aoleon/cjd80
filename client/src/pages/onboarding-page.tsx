@@ -390,14 +390,56 @@ export default function OnboardingPage() {
 
   // Déterminer l'étape initiale selon l'état
   useEffect(() => {
-    if (setupStatus?.data) {
-      const steps = setupStatus.data.completedSteps || {};
-      // Si pas d'admins, commencer par la création d'admin
-      if (!steps.admins && !setupStatus.data.hasAdmins) {
-        setCurrentStep('admin');
-      }
+    if (!setupStatus?.data) return;
+    
+    // Si des admins existent déjà, marquer l'étape admin comme complétée
+    if (setupStatus.data.hasAdmins) {
+      setCompletedSteps(prev => {
+        if (!prev.includes('admin')) {
+          return [...prev, 'admin'];
+        }
+        return prev;
+      });
     }
-  }, [setupStatus]);
+  }, [setupStatus?.data?.hasAdmins]);
+
+  // Déterminer l'étape initiale selon l'état (séparé pour éviter les boucles)
+  useEffect(() => {
+    if (!setupStatus?.data) return;
+    
+    const steps = setupStatus.data.completedSteps || {};
+    const hasAdmins = setupStatus.data.hasAdmins;
+    const hasBranding = steps.branding;
+    const hasEmail = steps.email;
+    const hasAdminsStep = steps.admins;
+    
+    // Déterminer la première étape non complétée dans l'ordre
+    // 1. Organization (fait partie de branding)
+    // 2. Colors (fait partie de branding)
+    // 3. Email
+    // 4. Logo (fait partie de branding)
+    // 5. Admin
+    // 6. Summary
+    
+    let targetStep: StepId = 'organization';
+    
+    if (!hasBranding) {
+      // Si branding n'est pas complété, commencer à l'étape 1 (Organization)
+      targetStep = 'organization';
+    } else if (!hasEmail) {
+      // Si email n'est pas configuré, aller à l'étape email
+      targetStep = 'email';
+    } else if (!hasAdminsStep && !hasAdmins) {
+      // Si pas d'admins, aller à l'étape admin
+      targetStep = 'admin';
+    } else if (hasBranding && hasEmail && (hasAdminsStep || hasAdmins)) {
+      // Si tout est complété, aller au récapitulatif
+      targetStep = 'summary';
+    }
+    
+    // Ne mettre à jour que si l'étape change réellement
+    setCurrentStep(prev => prev !== targetStep ? targetStep : prev);
+  }, [setupStatus?.data?.completedSteps?.branding, setupStatus?.data?.completedSteps?.email, setupStatus?.data?.completedSteps?.admins, setupStatus?.data?.hasAdmins]);
 
   // Navigation entre les étapes
   const currentStepIndex = STEPS.findIndex(s => s.id === currentStep);
@@ -428,6 +470,10 @@ export default function OnboardingPage() {
       case 'logo':
         return logoUploaded ? 100 : 0;
       case 'admin':
+        // Si des admins existent déjà, considérer l'étape comme complétée
+        if (setupStatus?.data?.hasAdmins) {
+          return 100;
+        }
         const adminComplete = adminForm.email && adminForm.password && 
                              adminForm.firstName && adminForm.lastName &&
                              adminForm.password === adminForm.confirmPassword;
@@ -2133,12 +2179,24 @@ export default function OnboardingPage() {
               {/* Étape 5: Création du compte admin */}
               {currentStep === 'admin' && (
                 <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-blue-800">
-                    <strong>Création du compte administrateur principal</strong><br />
-                    Ce compte aura tous les droits d'administration sur l'application.
-                  </p>
-                </div>
+                {setupStatus?.data?.hasAdmins ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-green-800 flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5" />
+                      <span>
+                        <strong>Des administrateurs existent déjà.</strong><br />
+                        Vous pouvez passer à l'étape suivante. Pour créer de nouveaux administrateurs, utilisez la page d'administration après avoir terminé l'onboarding.
+                      </span>
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>Création du compte administrateur principal</strong><br />
+                      Ce compte aura tous les droits d'administration sur l'application.
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -2254,22 +2312,31 @@ export default function OnboardingPage() {
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Précédent
                   </Button>
-                  <Button
-                    onClick={() => createAdminMutation.mutate(adminForm)}
-                    disabled={createAdminMutation.isPending || !adminForm.email || !adminForm.password || !adminForm.firstName || !adminForm.lastName}
-                  >
-                    {createAdminMutation.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Création...
-                      </>
-                    ) : (
-                      <>
-                        Créer le compte
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
+                  {setupStatus?.data?.hasAdmins ? (
+                    <Button
+                      onClick={goToNextStep}
+                    >
+                      Continuer
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => createAdminMutation.mutate(adminForm)}
+                      disabled={createAdminMutation.isPending || !adminForm.email || !adminForm.password || !adminForm.firstName || !adminForm.lastName}
+                    >
+                      {createAdminMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Création...
+                        </>
+                      ) : (
+                        <>
+                          Créer le compte
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
               )}

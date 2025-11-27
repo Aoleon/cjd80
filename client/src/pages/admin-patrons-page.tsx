@@ -1,11 +1,17 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAdminQuery } from "@/hooks/use-admin-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import AdminHeader from "@/components/admin-header";
+import AdminSearchBar from "@/components/admin/AdminSearchBar";
+import { AdminFilters } from "@/components/admin/AdminFilters";
+import { useDebounce } from "@/hooks/use-debounce";
+import { getStatusConfig } from "@/lib/admin-status-mapping";
+import { exportToCSV, validateExportData, formatDateForExport } from "@/lib/reports";
 import {
   Card,
   CardContent,
@@ -59,7 +65,7 @@ import { Badge } from "@/components/ui/badge";
 import { SimplePagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Loader2, Search, Plus, Edit, Trash2, Euro, Calendar, User, Building2, Phone, Mail, FileText, Coffee, Star, Eye, EyeOff } from "lucide-react";
+import { Loader2, Search, Plus, Edit, Trash2, Euro, Calendar, User, Building2, Phone, Mail, FileText, Coffee, Star, Eye, EyeOff, Download } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -199,6 +205,8 @@ export default function AdminPatronsPage() {
   
   const [selectedPatronId, setSelectedPatronId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'proposed'>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDonationDialogOpen, setIsDonationDialogOpen] = useState(false);
@@ -214,77 +222,115 @@ export default function AdminPatronsPage() {
   const isSuperAdmin = user?.role === "super_admin";
 
   // Queries
-  const { data: patronsResponse, isLoading: patronsLoading } = useQuery<PaginatedPatronsResponse>({
-    queryKey: ["/api/patrons", page, limit],
-    queryFn: async () => {
-      const res = await fetch(`/api/patrons?page=${page}&limit=${limit}`);
+  const { data: patronsResponse, isLoading: patronsLoading } = useAdminQuery<PaginatedPatronsResponse>(
+    ["/api/patrons", page.toString(), limit.toString(), debouncedSearchQuery, statusFilter],
+    async () => {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
+      if (statusFilter !== 'all') params.append('status', statusFilter);
+      
+      const res = await fetch(`/api/patrons?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch patrons');
       return res.json();
     },
-    enabled: isSuperAdmin,
-  });
+    {
+      enabled: isSuperAdmin,
+      staleTime: 2 * 60 * 1000, // 2 minutes pour les listes filtrées
+    }
+  );
 
   const patrons = patronsResponse?.data || [];
   const total = patronsResponse?.total || 0;
   const totalPages = Math.ceil(total / limit);
 
-  const { data: selectedPatron, isLoading: patronLoading } = useQuery<Patron>({
-    queryKey: [`/api/patrons/${selectedPatronId}`],
-    enabled: isSuperAdmin && !!selectedPatronId,
-  });
+  const { data: selectedPatron, isLoading: patronLoading } = useAdminQuery<Patron>(
+    [`/api/patrons/${selectedPatronId}`],
+    async () => {
+      const res = await fetch(`/api/patrons/${selectedPatronId}`);
+      if (!res.ok) throw new Error('Failed to fetch patron');
+      return res.json();
+    },
+    {
+      enabled: isSuperAdmin && !!selectedPatronId,
+      staleTime: 1 * 60 * 1000, // 1 minute pour les détails
+    }
+  );
 
-  const { data: donations = [], isLoading: donationsLoading } = useQuery<PatronDonation[]>({
-    queryKey: [`/api/patrons/${selectedPatronId}/donations`],
-    enabled: isSuperAdmin && !!selectedPatronId,
-  });
+  const { data: donations = [], isLoading: donationsLoading } = useAdminQuery<PatronDonation[]>(
+    [`/api/patrons/${selectedPatronId}/donations`],
+    async () => {
+      const res = await fetch(`/api/patrons/${selectedPatronId}/donations`);
+      if (!res.ok) throw new Error('Failed to fetch donations');
+      return res.json();
+    },
+    {
+      enabled: isSuperAdmin && !!selectedPatronId,
+      staleTime: 1 * 60 * 1000, // 1 minute
+    }
+  );
 
-  const { data: updates = [], isLoading: updatesLoading } = useQuery<PatronUpdate[]>({
-    queryKey: [`/api/patrons/${selectedPatronId}/updates`],
-    enabled: isSuperAdmin && !!selectedPatronId,
-  });
+  const { data: updates = [], isLoading: updatesLoading } = useAdminQuery<PatronUpdate[]>(
+    [`/api/patrons/${selectedPatronId}/updates`],
+    async () => {
+      const res = await fetch(`/api/patrons/${selectedPatronId}/updates`);
+      if (!res.ok) throw new Error('Failed to fetch updates');
+      return res.json();
+    },
+    {
+      enabled: isSuperAdmin && !!selectedPatronId,
+      staleTime: 1 * 60 * 1000, // 1 minute
+    }
+  );
 
-  const { data: sponsorships = [], isLoading: sponsorshipsLoading } = useQuery<EventSponsorship[]>({
-    queryKey: [`/api/patrons/${selectedPatronId}/sponsorships`],
-    enabled: isSuperAdmin && !!selectedPatronId,
-  });
+  const { data: sponsorships = [], isLoading: sponsorshipsLoading } = useAdminQuery<EventSponsorship[]>(
+    [`/api/patrons/${selectedPatronId}/sponsorships`],
+    async () => {
+      const res = await fetch(`/api/patrons/${selectedPatronId}/sponsorships`);
+      if (!res.ok) throw new Error('Failed to fetch sponsorships');
+      return res.json();
+    },
+    {
+      enabled: isSuperAdmin && !!selectedPatronId,
+      staleTime: 1 * 60 * 1000, // 1 minute
+    }
+  );
 
-  const { data: eventsResponse } = useQuery<{ data: Event[] }>({
-    queryKey: ["/api/events"],
-    queryFn: async () => {
+  const { data: eventsResponse } = useAdminQuery<{ data: Event[] }>(
+    ["/api/events"],
+    async () => {
       const res = await fetch("/api/events");
       if (!res.ok) throw new Error('Failed to fetch events');
       return res.json();
     },
-    enabled: isSuperAdmin,
-  });
+    {
+      enabled: isSuperAdmin,
+      staleTime: 5 * 60 * 1000, // 5 minutes pour les événements
+    }
+  );
 
   const events = eventsResponse?.data || [];
 
   // Récupérer la liste des membres pour le champ prescripteur
-  const { data: membersResponse } = useQuery<{ data: Array<{ id: string; firstName: string; lastName: string; email: string; company: string | null }> }>({
-    queryKey: ["/api/members", { limit: 1000 }],
-    queryFn: async () => {
+  const { data: membersResponse } = useAdminQuery<{ data: Array<{ id: string; firstName: string; lastName: string; email: string; company: string | null }> }>(
+    ["/api/members", "1000"],
+    async () => {
       const res = await fetch("/api/members?limit=1000");
       if (!res.ok) throw new Error('Failed to fetch members');
       return res.json();
     },
-    enabled: isSuperAdmin,
-  });
+    {
+      enabled: isSuperAdmin,
+      staleTime: 5 * 60 * 1000, // 5 minutes pour la liste complète
+    }
+  );
 
   const members = membersResponse?.data || [];
 
-  // Filtrage local des mécènes
-  const filteredPatrons = useMemo(() => {
-    if (!searchQuery.trim()) return patrons;
-    const query = searchQuery.toLowerCase();
-    return patrons.filter(
-      (patron) =>
-        patron.firstName.toLowerCase().includes(query) ||
-        patron.lastName.toLowerCase().includes(query) ||
-        patron.email.toLowerCase().includes(query) ||
-        patron.company?.toLowerCase().includes(query)
-    );
-  }, [patrons, searchQuery]);
+  // Les patrons sont déjà filtrés côté serveur, plus besoin de filtrage côté client
+  const filteredPatrons = patrons;
 
   // Forms
   const patronForm = useForm<PatronFormValues>({
@@ -695,19 +741,51 @@ export default function AdminPatronsPage() {
           <div className="lg:w-2/5">
             <Card>
               <CardHeader>
-                <CardTitle>Mécènes ({filteredPatrons.length})</CardTitle>
-                <CardDescription>Gérer les relations avec les entreprises</CardDescription>
-                <div className="flex gap-2 mt-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Rechercher un mécène..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
-                      data-testid="input-search-patron"
-                    />
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle>Mécènes ({filteredPatrons.length})</CardTitle>
+                    <CardDescription>Gérer les relations avec les entreprises</CardDescription>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const validation = validateExportData(filteredPatrons);
+                      if (!validation.valid) {
+                        toast({ title: "Erreur", description: validation.error, variant: "destructive" });
+                        return;
+                      }
+                      exportToCSV(
+                        filteredPatrons,
+                        ["Prénom", "Nom", "Email", "Société", "Téléphone", "Rôle", "Statut", "Prescripteur", "Date de création"],
+                        "export-mecenes",
+                        (patron) => [
+                          patron.firstName || "",
+                          patron.lastName || "",
+                          patron.email || "",
+                          patron.company || "",
+                          patron.phone || "",
+                          patron.role || "",
+                          patron.status === "active" ? "Actif" : patron.status === "proposed" ? "Proposé" : "Inactif",
+                          patron.referrer ? `${patron.referrer.firstName} ${patron.referrer.lastName}` : "",
+                          patron.createdAt ? formatDateForExport(patron.createdAt) : "",
+                        ]
+                      );
+                      toast({ title: "Export réussi", description: "Les données ont été exportées en CSV" });
+                    }}
+                    className="ml-4"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Exporter CSV
+                  </Button>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <AdminSearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Rechercher un mécène..."
+                    className="flex-1"
+                  />
                   <Button
                     onClick={() => setIsCreateDialogOpen(true)}
                     data-testid="button-create-patron"
@@ -716,6 +794,22 @@ export default function AdminPatronsPage() {
                     Nouveau
                   </Button>
                 </div>
+                
+                <AdminFilters
+                  filters={[
+                    {
+                      label: "Statut",
+                      value: statusFilter,
+                      onChange: (value) => setStatusFilter(value as 'all' | 'active' | 'proposed'),
+                      options: [
+                        { value: "all", label: "Tous" },
+                        { value: "active", label: "Actifs" },
+                        { value: "proposed", label: "Proposés" },
+                      ],
+                    },
+                  ]}
+                  className="mt-4"
+                />
               </CardHeader>
               <CardContent className="max-h-[600px] overflow-y-auto">
                 {filteredPatrons.length === 0 ? (
@@ -749,13 +843,18 @@ export default function AdminPatronsPage() {
                               </div>
                             )}
                           </div>
-                          <Badge 
-                            variant={patron.status === 'active' ? 'default' : 'secondary'}
-                            className={patron.status === 'active' ? 'bg-success-light text-success-dark' : 'bg-warning-light text-warning-dark'}
-                            data-testid={`badge-patron-status-${patron.id}`}
-                          >
-                            {patron.status === 'active' ? 'Actif' : 'Proposition'}
-                          </Badge>
+                          {(() => {
+                            const statusConfig = getStatusConfig(patron.status, "patron");
+                            return (
+                              <Badge
+                                variant={statusConfig.variant}
+                                className={statusConfig.className}
+                                data-testid={`badge-patron-status-${patron.id}`}
+                              >
+                                {statusConfig.label}
+                              </Badge>
+                            );
+                          })()}
                         </div>
                       </div>
                     ))}

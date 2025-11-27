@@ -13,6 +13,156 @@
 - ✅ S'adapte automatiquement selon le contexte
 - ✅ Apprend des performances historiques
 
+## 🏗️ Sélection de Modèle par Rôle (NOUVEAU)
+
+### Principe Fondamental par Rôle
+
+**IMPÉRATIF:** La sélection de modèle DOIT être optimisée selon le rôle pour maximiser l'autonomie et l'auto-completion tout en optimisant les coûts.
+
+**Stratégie:**
+- **Architecte (Architect)** → **TOUJOURS** utiliser le modèle le plus performant (Codex 5.1 ou futures versions)
+- **Autres rôles** → Utiliser des modèles moins chers si qualité suffisante
+
+**Bénéfices:**
+- ✅ Maximise l'autonomie de l'architecte (rôle critique qui contrôle tous les runs)
+- ✅ Optimise les coûts pour les autres rôles
+- ✅ Améliore l'auto-completion grâce à meilleure autonomie architecte
+- ✅ Réduit les erreurs grâce à meilleure supervision
+
+### Règle Spécifique pour l'Architecte
+
+**IMPÉRATIF:** L'architecte DOIT TOUJOURS utiliser le modèle le plus performant disponible (Codex 5.1 ou futures versions) pour maximiser l'autonomie et l'auto-completion.
+
+**Raison:**
+- L'architecte est le rôle qui commence et finit tous les runs
+- L'architecte contrôle le travail des sub-agents
+- L'architecte prend les décisions architecturales critiques
+- L'architecte supervise la qualité et la complétion
+- Maximiser l'autonomie de l'architecte améliore l'auto-completion globale
+
+**Modèles Prioritaires pour Architecte:**
+1. **Codex 5.1** (ou futures versions) - Modèle le plus performant
+2. **GPT-5** - Fallback si Codex 5.1 non disponible
+3. **Claude Sonnet 4** - Fallback uniquement si autres non disponibles
+
+**Pattern:**
+```typescript
+// Sélection modèle pour architecte (toujours modèle le plus performant)
+async function selectModelForArchitect(
+  context: Context
+): Promise<ModelSelection> {
+  // 1. Vérifier disponibilité Codex 5.1 (ou futures versions)
+  const codex51Available = await checkModelAvailability('codex-5.1', context);
+  if (codex51Available.available) {
+    return {
+      model: 'codex-5.1',
+      reason: 'Architecte: Codex 5.1 sélectionné (modèle le plus performant pour maximiser autonomie)',
+      confidence: 1.0,
+      role: 'architect',
+      priority: 'max_performance'
+    };
+  }
+  
+  // 2. Fallback vers GPT-5
+  const gpt5Available = await checkModelAvailability('gpt_5', context);
+  if (gpt5Available.available) {
+    return {
+      model: 'gpt_5',
+      reason: 'Architecte: GPT-5 sélectionné (fallback modèle performant)',
+      confidence: 0.9,
+      role: 'architect',
+      priority: 'max_performance'
+    };
+  }
+  
+  // 3. Fallback vers Claude Sonnet 4 (dernier recours)
+  return {
+    model: 'claude_sonnet_4',
+    reason: 'Architecte: Claude Sonnet 4 sélectionné (fallback uniquement)',
+    confidence: 0.7,
+    role: 'architect',
+    priority: 'max_performance'
+  };
+}
+```
+
+### Règle pour Autres Rôles
+
+**IMPÉRATIF:** Les autres rôles (Developer, Tester, Analyst, Coordinator) DOIVENT utiliser des modèles moins chers si la qualité est suffisante.
+
+**Stratégie:**
+- Analyser complexité de la tâche
+- Si complexité faible/moyenne → Utiliser Claude Sonnet 4 (moins cher)
+- Si complexité élevée → Utiliser GPT-5 ou Codex 5.1
+- Optimiser coûts tout en maintenant qualité suffisante
+
+**Pattern:**
+```typescript
+// Sélection modèle pour autres rôles (optimisation coûts)
+async function selectModelForOtherRoles(
+  role: 'developer' | 'tester' | 'analyst' | 'coordinator',
+  taskAnalysis: TaskTypeAnalysis,
+  context: Context
+): Promise<ModelSelection> {
+  // 1. Analyser complexité
+  const complexity = taskAnalysis.complexity;
+  
+  // 2. Si complexité faible/moyenne, utiliser Claude Sonnet 4 (moins cher)
+  if (complexity < 0.7) {
+    return {
+      model: 'claude_sonnet_4',
+      reason: `${role}: Claude Sonnet 4 sélectionné (complexité ${complexity.toFixed(2)} < 0.7, optimisation coûts)`,
+      confidence: 0.85,
+      role: role,
+      priority: 'cost_optimization'
+    };
+  }
+  
+  // 3. Si complexité élevée, utiliser GPT-5 ou Codex 5.1
+  const codex51Available = await checkModelAvailability('codex-5.1', context);
+  if (codex51Available.available) {
+    return {
+      model: 'codex-5.1',
+      reason: `${role}: Codex 5.1 sélectionné (complexité ${complexity.toFixed(2)} >= 0.7)`,
+      confidence: 0.9,
+      role: role,
+      priority: 'performance'
+    };
+  }
+  
+  return {
+    model: 'gpt_5',
+    reason: `${role}: GPT-5 sélectionné (complexité ${complexity.toFixed(2)} >= 0.7)`,
+    confidence: 0.85,
+    role: role,
+    priority: 'performance'
+  };
+}
+```
+
+### Intégration dans Sélection Globale
+
+**Pattern:**
+```typescript
+// Sélection modèle avec prise en compte du rôle
+async function selectModelWithRole(
+  role: AgentRole,
+  task: Task,
+  context: Context
+): Promise<ModelSelection> {
+  // 1. Analyser type de tâche
+  const taskAnalysis = await analyzeTaskType(task, context);
+  
+  // 2. Si rôle architecte, utiliser modèle le plus performant
+  if (role === 'architect') {
+    return await selectModelForArchitect(context);
+  }
+  
+  // 3. Si autre rôle, optimiser coûts
+  return await selectModelForOtherRoles(role, taskAnalysis, context);
+}
+```
+
 ## 📋 Règles de Sélection Intelligente
 
 ### 1. Analyse Automatique du Type de Tâche
@@ -67,8 +217,9 @@ async function analyzeTaskType(
 
 **TOUJOURS:**
 - ✅ Sélectionner automatiquement le modèle optimal
+- ✅ **NOUVEAU** Prendre en compte le rôle (architecte → modèle le plus performant)
 - ✅ Prendre en compte les performances historiques
-- ✅ Prendre en compte les coûts
+- ✅ Prendre en compte les coûts (sauf pour architecte)
 - ✅ Prendre en compte les contraintes de temps
 - ✅ Adapter selon le contexte
 
@@ -85,15 +236,21 @@ async function analyzeTaskType(
 
 **Pattern:**
 ```typescript
-// Sélectionner modèle optimal automatiquement
+// Sélectionner modèle optimal automatiquement avec prise en compte du rôle
 async function selectOptimalModel(
   taskAnalysis: TaskTypeAnalysis,
+  role: AgentRole | undefined,
   context: Context
 ): Promise<ModelSelection> {
-  // 1. Charger performances historiques
+  // 1. Si rôle architecte, utiliser modèle le plus performant
+  if (role === 'architect') {
+    return await selectModelForArchitect(context);
+  }
+  
+  // 2. Charger performances historiques
   const historicalPerformance = await loadHistoricalPerformance(context);
   
-  // 2. Calculer scores pour chaque modèle
+  // 3. Calculer scores pour chaque modèle
   const claudeScore = calculateModelScore(
     'claude_sonnet_4',
     taskAnalysis,
@@ -106,8 +263,8 @@ async function selectOptimalModel(
     historicalPerformance
   );
   
-  // 3. Sélectionner modèle avec meilleur score
-  let selectedModel: 'claude_sonnet_4' | 'gpt_5';
+  // 4. Sélectionner modèle avec meilleur score (optimisation coûts pour autres rôles)
+  let selectedModel: 'claude_sonnet_4' | 'gpt_5' | 'codex-5.1';
   let reason: string;
   let confidence: number;
   
@@ -128,7 +285,7 @@ async function selectOptimalModel(
     confidence = 0.7;
   }
   
-  // 4. Vérifier disponibilité
+  // 5. Vérifier disponibilité
   const availability = await checkModelAvailability(selectedModel, context);
   if (!availability.available) {
     // Fallback vers autre modèle
@@ -141,6 +298,7 @@ async function selectOptimalModel(
     model: selectedModel,
     reason: reason,
     confidence: confidence,
+    role: role,
     scores: {
       claude: claudeScore,
       gpt: gptScore
@@ -337,33 +495,46 @@ async function optimizeCosts(
 ```typescript
 async function selectModelIntelligently(
   task: Task,
+  role: AgentRole | undefined,
   context: Context
 ): Promise<IntelligentModelSelection> {
   // 1. Analyser type de tâche
   const taskAnalysis = await analyzeTaskType(task, context);
   
-  // 2. Charger performances historiques
-  const historicalPerformance = await loadHistoricalPerformance(context);
+  // 2. Identifier rôle si non fourni
+  const detectedRole = role || await detectRoleFromContext(task, context);
   
-  // 3. Sélectionner modèle optimal
-  const modelSelection = await selectOptimalModel(taskAnalysis, context);
+  // 3. Sélectionner modèle optimal avec prise en compte du rôle
+  const modelSelection = await selectOptimalModel(taskAnalysis, detectedRole, context);
   
-  // 4. Optimiser coûts
-  const costOptimization = await optimizeCosts(taskAnalysis, modelSelection, context);
-  
-  // 5. Appliquer optimisation si recommandée
-  if (costOptimization.optimized) {
-    modelSelection.model = costOptimization.recommendedModel;
-    modelSelection.reason = costOptimization.reason;
+  // 4. Optimiser coûts (sauf pour architecte)
+  let costOptimization;
+  if (detectedRole !== 'architect') {
+    costOptimization = await optimizeCosts(taskAnalysis, modelSelection, context);
+    
+    // 5. Appliquer optimisation si recommandée (sauf pour architecte)
+    if (costOptimization.optimized) {
+      modelSelection.model = costOptimization.recommendedModel;
+      modelSelection.reason = costOptimization.reason;
+    }
+  } else {
+    costOptimization = {
+      optimized: false,
+      reason: 'Architecte: optimisation coûts désactivée (priorité performance)'
+    };
   }
   
   // 6. Vérifier disponibilité finale
   const availability = await checkModelAvailability(modelSelection.model, context);
   
+  // 7. Charger performances historiques
+  const historicalPerformance = await loadHistoricalPerformance(context);
+  
   return {
     model: modelSelection.model,
     reason: modelSelection.reason,
     confidence: modelSelection.confidence,
+    role: detectedRole,
     taskAnalysis: taskAnalysis,
     costOptimization: costOptimization,
     availability: availability,
@@ -378,14 +549,18 @@ async function selectModelIntelligently(
 
 **BLOQUANT:**
 - ❌ Ignorer le type de tâche lors de la sélection
+- ❌ Ignorer le rôle lors de la sélection (architecte → modèle le plus performant)
+- ❌ Utiliser modèle moins performant pour l'architecte
 - ❌ Ignorer les performances historiques
-- ❌ Ignorer les coûts
+- ❌ Ignorer les coûts (sauf pour architecte)
 - ❌ Ne pas apprendre des performances
 
 **TOUJOURS:**
 - ✅ Analyser type de tâche avant sélection
+- ✅ **NOUVEAU** Prendre en compte le rôle (architecte → modèle le plus performant)
+- ✅ **NOUVEAU** Utiliser Codex 5.1 ou futures versions pour l'architecte
 - ✅ Prendre en compte performances historiques
-- ✅ Optimiser coûts tout en maintenant qualité
+- ✅ Optimiser coûts tout en maintenant qualité (sauf pour architecte)
 - ✅ Enregistrer performances pour apprentissage
 
 ## 📊 Checklist Sélection Intelligente
@@ -393,13 +568,15 @@ async function selectModelIntelligently(
 ### Avant Sélection
 
 - [ ] Analyser type de tâche
+- [ ] **NOUVEAU** Identifier le rôle (architecte vs autres rôles)
+- [ ] **NOUVEAU** Si architecte, sélectionner Codex 5.1 ou futures versions
 - [ ] Charger performances historiques
-- [ ] Calculer scores pour chaque modèle
-- [ ] Optimiser coûts si possible
+- [ ] Calculer scores pour chaque modèle (si autre rôle)
+- [ ] Optimiser coûts si possible (si autre rôle)
 
 ### Pendant Sélection
 
-- [ ] Sélectionner modèle optimal
+- [ ] Sélectionner modèle optimal selon rôle
 - [ ] Vérifier disponibilité
 - [ ] Appliquer sélection
 
@@ -408,14 +585,18 @@ async function selectModelIntelligently(
 - [ ] Enregistrer performance
 - [ ] Analyser résultats
 - [ ] Ajuster sélection future si nécessaire
+- [ ] **NOUVEAU** Documenter sélection selon rôle
 
 ## 🔗 Références
 
 - `@server/services/AIService.ts` - Service IA avec sélection de modèle
 - `@.cursor/rules/performance.md` - Optimisations performance
 - `@.cursor/rules/learning-memory.md` - Mémoire persistante des apprentissages
+- `@.cursor/rules/sub-agents-roles.md` - Rôles des sub-agents
+- `@.cursor/rules/senior-architect-oversight.md` - Supervision architecte sénior
+- `@docs/AGENT_ROLES_CONFIG.json` - Configuration des rôles
 
 ---
 
-**Note:** Cette règle garantit que l'agent sélectionne automatiquement le modèle IA le plus adapté à chaque tâche pour optimiser les performances, les coûts et la qualité.
+**Note:** Cette règle garantit que l'agent sélectionne automatiquement le modèle IA le plus adapté à chaque tâche pour optimiser les performances, les coûts et la qualité. **NOUVEAU:** L'architecte utilise automatiquement le modèle le plus performant (Codex 5.1 ou futures versions) pour maximiser l'autonomie et l'auto-completion, tandis que les autres rôles utilisent des modèles moins chers si la qualité est suffisante.
 

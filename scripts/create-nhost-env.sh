@@ -19,7 +19,6 @@ mkdir -p "$NHOST_DIR"
 
 # Générer des mots de passe forts
 POSTGRES_PASSWORD=$(openssl rand -base64 32 | tr -d '\n')
-HASURA_ADMIN_SECRET=$(openssl rand -base64 32 | tr -d '\n')
 MINIO_ACCESS_KEY=$(openssl rand -base64 24 | tr -d '\n')
 MINIO_SECRET_KEY=$(openssl rand -base64 24 | tr -d '\n')
 REDIS_PASSWORD=$(openssl rand -base64 32 | tr -d '\n')
@@ -53,9 +52,6 @@ DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@nhost-postgres-prod:5432
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 POSTGRES_DB=nhost
-
-# Hasura GraphQL
-HASURA_GRAPHQL_ADMIN_SECRET=${HASURA_ADMIN_SECRET}
 
 # Nhost Auth (désactivé car nous utilisons Microsoft OAuth)
 AUTH_HOST=cjd80.fr
@@ -119,7 +115,6 @@ echo "✅ Fichier .env créé: $ENV_FILE"
 echo ""
 echo "📋 Résumé de la configuration:"
 echo "   - PostgreSQL: postgres / [mot de passe généré]"
-echo "   - Hasura Admin Secret: [généré]"
 echo "   - MinIO Access Key: ${MINIO_ACCESS_KEY:0:10}..."
 echo "   - Redis Password: [généré]"
 echo ""

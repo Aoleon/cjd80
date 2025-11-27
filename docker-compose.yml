@@ -50,7 +50,7 @@ services:
     networks:
       - proxy        # Réseau externe Traefik pour exposition publique
       - cjd-network  # Réseau interne pour isolation
-      - nhost_nhost-network-prod  # Réseau Nhost pour accès à PostgreSQL
+      - supabase-network-prod  # Réseau Supabase pour accès à PostgreSQL
     
     # Limites de ressources
     deploy:
@@ -71,6 +71,6 @@ networks:
   cjd-network:
     driver: bridge
   
-  # Réseau Nhost (doit exister - créé par docker-compose.yml de Nhost)
-  nhost_nhost-network-prod:
+  # Réseau Supabase (doit exister - créé par docker-compose.supabase.yml)
+  supabase-network-prod:
     external: true

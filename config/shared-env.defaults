@@ -1,0 +1,21 @@
+# Valeurs partagées pour MinIO + GraphQL/Redis (self-hosted)
+MINIO_ENDPOINT=http://localhost:9000
+MINIO_REGION=us-east-1
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_USE_SSL=false
+MINIO_BUCKET_DEPLOY_ARTIFACTS=deploy-artifacts
+MINIO_BUCKET_TEST_REPORTS=qa-test-reports
+
+REDIS_URL=redis://localhost:6379/0
+REDIS_PASSWORD=
+
+AUTHENTIK_BASE_URL=http://localhost:9002
+AUTHENTIK_TOKEN=
+
+LISTMONK_BASE_URL=http://localhost:9090
+LISTMONK_USERNAME=admin
+LISTMONK_PASSWORD=
+
+GOTIFY_BASE_URL=http://localhost:9001
+GOTIFY_APP_TOKEN=

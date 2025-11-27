@@ -70,8 +70,11 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
           // Si un logo a été uploadé, utiliser celui-ci
           let logoUrl = defaultBranding.assets.logo;
           if (customConfig.logoFilename) {
-            // Le logo uploadé est accessible via /assets/
-            logoUrl = `/assets/${customConfig.logoFilename}`;
+            // Le logo uploadé est accessible via MinIO
+            // URL MinIO: http://localhost:9000/assets/{filename}
+            const minioEndpoint = import.meta.env.VITE_MINIO_ENDPOINT || 'localhost:9000';
+            const minioProtocol = import.meta.env.VITE_MINIO_USE_SSL === 'true' ? 'https' : 'http';
+            logoUrl = `${minioProtocol}://${minioEndpoint}/assets/${customConfig.logoFilename}`;
           }
           
           setBrandingState({

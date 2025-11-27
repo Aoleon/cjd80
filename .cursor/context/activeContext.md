@@ -1,51 +1,72 @@
-# Active Context - CJD Amiens - Boîte à Kiffs
+# Active Context - Saxium
 
 **Dernière mise à jour:** 2025-01-29  
-**Statut:** En production
+**Statut:** En cours de développement actif
 
 ---
 
 ## 🎯 Focus de Travail Actuel
 
-### Application en Production
-**Objectif:** Maintenir et améliorer l'application web interne pour le CJD Amiens
-
-**État:**
-- ✅ Application fonctionnelle en production
-- ✅ PWA opérationnelle avec notifications push
-- ✅ Intégration HelloAsso fonctionnelle
-- ✅ Système de branding personnalisable
-- ✅ Interface d'administration complète
-
-### Améliorations Continues (En Cours)
-**Objectif:** Améliorer l'expérience utilisateur et la maintenabilité
+### Refactoring Robustesse et Maintenabilité (Récent) ✅
+**Objectif:** Améliorer la robustesse et la maintenabilité de l'application
 
 **Améliorations récentes:**
-- ✅ Système de couleurs sémantiques (168+ instances migrées)
-- ✅ Configuration centralisée du branding
-- ✅ PWA avec service workers
-- ✅ Notifications push avec actions inline
-- 🔄 Optimisations performance continues
+- ✅ Correction types `any` : ContextLoaderService avec types Drizzle explicites
+- ✅ Utilitaires centralisés : `formatCurrency()` et `formatPercentage()` créés
+- ✅ Gestion erreurs standardisée : 4 services refactorisés avec `withErrorHandling()`
+- ✅ Élimination duplication : 10 composants client utilisent utilitaires centralisés
 
-**Prochaines améliorations:**
-1. Améliorer la couverture de tests
-2. Optimiser les performances de chargement
-3. Enrichir les fonctionnalités CRM
-4. Améliorer l'expérience mobile
+**Impact:**
+- Types `any` : -100% (3 → 0)
+- Code dupliqué formatage : -100% (11 fichiers → 0)
+- Try-catch manuels : -4 services refactorisés
+
+**Référence:** `docs/REFACTORING_IMPROVEMENTS_REPORT.md`
+
+### Migration Modulaire (En Cours)
+**Objectif:** Refactoriser `server/routes-poc.ts` (11,647 lignes) vers architecture modulaire
+
+**État:**
+- ✅ Module `auth/` : Complété
+- ✅ Module `documents/` : Complété (routes fonctionnelles)
+- 🔄 Module `chiffrage/` : En cours
+- ⏳ Module `suppliers/` : À venir
+- ⏳ Module `projects/` : À venir
+- ⏳ Module `analytics/` : À venir
+
+**Prochaines étapes:**
+1. Finaliser migration `chiffrage/`
+2. Tester modules migrés
+3. Supprimer routes dupliquées dans `routes-poc.ts`
+4. Continuer avec `suppliers/`
+
+### Optimisations Performance (En Cours)
+**Objectif:** Réduire latence chatbot de ~3-7s → ~2.5s max
+
+**Améliorations récentes:**
+- ✅ Dispatch parallèle : Contexte + Modèle simultané
+- ✅ Cache intelligent avec invalidation automatique
+- ✅ Preloading background pour prédictions
+- 🔄 Optimisation SQL queries (objectif < 20s)
+
+**Prochaines optimisations:**
+1. Optimiser requêtes SQL complexes
+2. Améliorer cache hit rate (objectif 70%)
+3. Réduire latence API (objectif < 100ms)
 
 ### Infrastructure de Tests (Stable)
-**Objectif:** Maintenir une bonne couverture de tests
+**Objectif:** Maintenir couverture 85% backend, 80% frontend
 
 **État actuel:**
 - ✅ Tests unitaires backend (Vitest)
 - ✅ Tests unitaires frontend (Vitest + React Testing Library)
 - ✅ Tests E2E (Playwright)
-- 🔄 Amélioration continue de la couverture
+- ✅ Infrastructure anti-boucles de bugs
 
 **Actions en cours:**
 - Surveillance couverture de code
 - Correction des tests flaky
-- Ajout tests pour nouvelles fonctionnalités
+- Ajout tests pour nouveaux modules
 
 ---
 
@@ -53,34 +74,42 @@
 
 ### Janvier 2025
 
-#### Système de Branding
-- ✅ Configuration centralisée dans `branding-core.ts`
-- ✅ Système de couleurs sémantiques unifié
-- ✅ Interface admin pour personnalisation
-- ✅ Migration de 168+ instances vers classes sémantiques
+#### Refactoring Robustesse et Maintenabilité (29 janvier)
+- ✅ Correction types `any` : ContextLoaderService avec types Drizzle explicites
+- ✅ Utilitaires centralisés : `formatCurrency()` et `formatPercentage()` créés
+- ✅ Gestion erreurs standardisée : CacheService, DateIntelligenceService, PDFParser refactorisés
+- ✅ Élimination duplication : 10 composants client utilisent utilitaires centralisés
+- ✅ 16 fichiers modifiés (5 backend, 11 frontend)
+- ✅ Aucune régression détectée
 
-#### PWA et Notifications
-- ✅ Service workers opérationnels
-- ✅ Notifications push avec actions inline
-- ✅ Installation native fonctionnelle
-- ✅ Mode hors ligne partiel
+#### Migration Documents Module
+- ✅ Extraction routes OCR et documents vers `server/modules/documents/`
+- ✅ Création `coreRoutes.ts` avec routes fonctionnelles uniquement
+- ✅ Archivage `routes.ts` → `routes.legacy.ts`
+- ✅ Réduction erreurs LSP de 30 → 1
 
-#### Intégration HelloAsso
-- ✅ Synchronisation automatique des événements
-- ✅ Gestion des inscriptions
-- ✅ Suivi des paiements
+#### Optimisations Chatbot
+- ✅ Pipeline parallèle pour réduction latence
+- ✅ Cache intelligent avec invalidation EventBus
+- ✅ Suggestions adaptatives par rôle
+
+#### Sécurité et Robustesse
+- ✅ Rate limiting global et par route
+- ✅ Circuit breakers pour appels IA
+- ✅ Graceful shutdown complet
+- ✅ Logging structuré avec correlation IDs
 
 ### Décembre 2024
 
-#### Gestion d'Idées
-- ✅ Système de vote et workflow
-- ✅ Attribution de responsables
-- ✅ Suivi des statuts
+#### Intégration Monday.com
+- ✅ Service de migration consolidé
+- ✅ Support Excel import + API sync
+- ✅ Dashboard de migration
 
-#### CRM Intégré
-- ✅ Gestion des membres et mécènes
-- ✅ Scoring d'engagement
-- ✅ Profils utilisateurs
+#### Intelligence Temporelle
+- ✅ DateIntelligenceService avec règles métier
+- ✅ Détection d'alertes automatiques
+- ✅ Prise en compte saisonnalité BTP
 
 ---
 
@@ -88,54 +117,53 @@
 
 ### Court Terme (1-2 semaines)
 
-1. **Amélioration Tests**
-   - Augmenter couverture de code
-   - Corriger tests flaky E2E
-   - Ajout tests pour nouvelles fonctionnalités
+1. **Finaliser Migration Modulaire**
+   - Compléter module `chiffrage/`
+   - Tester intégration complète
+   - Documenter patterns de migration
 
 2. **Optimisations Performance**
-   - Analyser temps de chargement
-   - Optimiser images et assets
-   - Améliorer lazy loading
+   - Analyser requêtes SQL lentes
+   - Optimiser index base de données
+   - Améliorer cache hit rate
 
-3. **Expérience Utilisateur**
-   - Améliorer interface mobile
-   - Enrichir notifications push
-   - Optimiser workflows
+3. **Tests et Qualité**
+   - Augmenter couverture tests nouveaux modules
+   - Corriger tests flaky E2E
+   - Valider performance après optimisations
 
 ### Moyen Terme (1 mois)
 
-1. **Fonctionnalités CRM**
-   - Améliorer scoring d'engagement
-   - Enrichir profils membres
-   - Statistiques avancées
+1. **Migration Modules Restants**
+   - Module `suppliers/`
+   - Module `projects/`
+   - Module `analytics/`
 
-2. **Intégrations**
-   - Améliorer intégration HelloAsso
-   - Explorer nouvelles intégrations
-   - Optimiser synchronisations
+2. **Améliorations IA**
+   - Enrichir base de connaissances menuiserie
+   - Améliorer précision OCR contextuel
+   - Optimiser suggestions chatbot
 
 3. **Documentation**
-   - Compléter guides utilisateur
+   - Compléter READMEs par module
    - Documenter API endpoints
-   - Créer guides d'administration
+   - Créer guides utilisateur
 
 ### Long Terme (3+ mois)
 
 1. **Nouvelles Fonctionnalités**
-   - Amélioration notifications push
-   - Export de données avancé
-   - Analytics améliorés
+   - Notifications push (mobile)
+   - Export PDF avancé
+   - Intégrations ERP supplémentaires
 
 2. **Scalabilité**
-   - Optimisation base de données
-   - Cache distribué (si nécessaire)
-   - Performance monitoring
+   - Optimisation base de données (N+1 queries)
+   - Cache distribué (Redis)
+   - Load balancing
 
 3. **Mobile**
-   - Amélioration PWA
-   - Expérience mobile optimisée
-   - Fonctionnalités natives supplémentaires
+   - Application mobile native (optionnel)
+   - PWA améliorée
 
 ---
 
@@ -143,57 +171,57 @@
 
 ### Décisions Techniques en Cours
 
-#### 1. Architecture
-**Question:** Faut-il migrer vers une architecture modulaire ?
+#### 1. Architecture Modulaire
+**Question:** Faut-il migrer toutes les routes ou garder `routes-poc.ts` pour legacy ?
 
-**Décision actuelle:** Architecture monolithique modulaire actuelle suffisante pour le périmètre
-
-**Considérations:**
-- ✅ Architecture actuelle fonctionnelle
-- ✅ Pas de besoin de scalabilité extrême
-- 🔄 Évaluer selon évolution du projet
-
-#### 2. Performance
-**Question:** Quelles optimisations prioritaires ?
-
-**Décision actuelle:** Focus sur expérience utilisateur et temps de chargement
+**Décision actuelle:** Migration progressive, garder `routes-poc.ts` temporairement pour compatibilité
 
 **Considérations:**
-- ✅ Performance actuelle acceptable
-- ⚠️ Quelques optimisations possibles
+- ✅ Pas de breaking changes
+- ✅ Tests à chaque étape
+- ⚠️ Duplication temporaire acceptable
+
+#### 2. Performance Chatbot
+**Question:** Comment réduire latence sans compromettre qualité ?
+
+**Décision actuelle:** Dispatch parallèle + cache intelligent
+
+**Considérations:**
+- ✅ Latence réduite de ~50%
+- ⚠️ Cache invalidation complexe
 - 🔄 Monitoring continu nécessaire
 
-#### 3. Tests
-**Question:** Quel niveau de couverture viser ?
+#### 3. Base de Données
+**Question:** Optimiser requêtes N+1 ou accepter performance actuelle ?
 
-**Décision actuelle:** Objectif 80%+ pour maintenir qualité
+**Décision actuelle:** Optimiser requêtes critiques uniquement
 
 **Considérations:**
-- ✅ Infrastructure de tests en place
-- ⚠️ Amélioration continue nécessaire
-- 🔄 Focus sur tests critiques
+- ✅ Performance acceptable pour la plupart des cas
+- ⚠️ Quelques requêtes lentes identifiées
+- 🔄 Analyse continue nécessaire
 
 ### Décisions Métier en Cours
 
-#### 1. Fonctionnalités
-**Question:** Quelles nouvelles fonctionnalités prioriser ?
+#### 1. Workflow Validation
+**Question:** Faut-il rendre tous les jalons obligatoires ?
 
-**Décision actuelle:** Focus sur amélioration expérience utilisateur existante
-
-**Considérations:**
-- ✅ Fonctionnalités actuelles complètes
-- ⚠️ Demandes utilisateurs à évaluer
-- 🔄 Priorisation selon impact
-
-#### 2. Branding
-**Question:** Faut-il permettre personnalisation avancée ?
-
-**Décision actuelle:** Système de branding centralisé avec interface admin
+**Décision actuelle:** Jalons critiques obligatoires, autres optionnels
 
 **Considérations:**
-- ✅ Configuration flexible en place
-- ✅ Multi-tenant ready
-- 🔄 Évaluer besoins spécifiques
+- ✅ Flexibilité pour équipes
+- ⚠️ Risque de contournement
+- 🔄 Ajustement selon retours utilisateurs
+
+#### 2. Intégrations
+**Question:** Prioriser quelles intégrations supplémentaires ?
+
+**Décision actuelle:** Focus sur Monday.com et OneDrive (stables)
+
+**Considérations:**
+- ✅ Intégrations actuelles fonctionnelles
+- ⚠️ Demande ERP supplémentaire
+- 🔄 Évaluer ROI nouvelles intégrations
 
 ---
 
@@ -201,62 +229,66 @@
 
 ### Techniques
 
-1. **Tests Flaky E2E**
+1. **Requêtes SQL Lentes**
+   - **Impact:** Quelques requêtes > 20s
+   - **Priorité:** Moyenne
+   - **Action:** Analyse et optimisation en cours
+
+2. **Tests Flaky E2E**
    - **Impact:** Échecs aléatoires dans CI
    - **Priorité:** Basse
    - **Action:** Investigation et correction progressive
 
-2. **Performance Chargement**
-   - **Impact:** Quelques pages peuvent être plus lentes
+3. **Cache Invalidation**
+   - **Impact:** Parfois données obsolètes
    - **Priorité:** Moyenne
-   - **Action:** Optimisation progressive
-
-3. **Cache PWA**
-   - **Impact:** Parfois données obsolètes en mode hors ligne
-   - **Priorité:** Basse
-   - **Action:** Amélioration stratégie de cache
+   - **Action:** Amélioration logique invalidation
 
 ### Métier
 
-1. **Engagement Membres**
-   - **Impact:** Scoring d'engagement à affiner
+1. **Double Saisie Résiduelle**
+   - **Impact:** Certains champs encore ressaisis
    - **Priorité:** Basse
-   - **Action:** Améliorer algorithmes de scoring
+   - **Action:** Améliorer import Monday.com
 
-2. **Notifications**
-   - **Impact:** Parfois trop nombreuses
+2. **Alertes Trop Nombreuses**
+   - **Impact:** Fatigue utilisateurs
    - **Priorité:** Basse
-   - **Action:** Ajuster seuils et préférences
+   - **Action:** Ajuster seuils et filtres
 
 ---
 
 ## 📊 Métriques Actuelles
 
 ### Performance
+- **Latence chatbot moyenne:** ~2.5s (objectif atteint ✅)
 - **Temps chargement pages:** ~1.5s (objectif < 2s ✅)
-- **Temps chargement PWA:** ~2s (objectif < 3s ✅)
-- **Requêtes API moyennes:** ~150ms (objectif < 200ms ✅)
+- **Requêtes API moyennes:** ~150ms (objectif < 100ms 🔄)
 
 ### Qualité
-- **Couverture tests backend:** ~75% (objectif 80% 🔄)
-- **Couverture tests frontend:** ~70% (objectif 80% 🔄)
-- **Tests E2E:** 90% passent (objectif 95% 🔄)
+- **Couverture tests backend:** ~82% (objectif 85% 🔄)
+- **Couverture tests frontend:** ~78% (objectif 80% 🔄)
+- **Tests E2E:** 95% passent (objectif 100% 🔄)
 
 ### Utilisation
-- **Utilisateurs actifs:** Stable
-- **Idées proposées:** En croissance
-- **Événements créés:** Stable
-- **Installations PWA:** En croissance
+- **Utilisateurs actifs:** En croissance
+- **Requêtes chatbot/jour:** En augmentation
+- **Documents traités/jour:** Stable
 
 ---
 
 ## 🔗 Liens Utiles
 
 - **Documentation technique:** `/docs/`
-- **Guide de déploiement:** `docs/deployment/DEPLOYMENT.md`
-- **Guide de personnalisation:** `docs/features/CUSTOMIZATION.md`
-- **Tests:** Rapports dans `tests/`
+- **Rapports d'audit:** Fichiers `RAPPORT_*.md`
+- **Guides d'intégration:** `BATIGEST_INTEGRATION.md`, `MONDAY_*.md`
+- **Tests:** `README-TESTS.md`, `TESTING.md`
 
 ---
 
 **Note:** Ce document est mis à jour régulièrement pour refléter l'état actuel du projet et les priorités.
+
+
+
+
+

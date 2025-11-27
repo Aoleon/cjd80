@@ -1,36 +1,28 @@
 // Script pour créer des données de test (admin + membre)
+// NOTE: Avec Authentik, les mots de passe ne sont plus stockés localement
+// Ce script crée uniquement les entrées dans la base de données locale
+// Les utilisateurs doivent être créés dans Authentik séparément
 import 'dotenv/config';
-import { scrypt, randomBytes } from 'crypto';
-import { promisify } from 'util';
 import { db } from '../server/db.js';
 import { admins, members } from '../shared/schema.js';
 import { eq } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 
-const scryptAsync = promisify(scrypt);
-
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
-
 async function createTestData() {
   try {
     console.log('🔧 Création des données de test...\n');
+    console.log('⚠️  ATTENTION: Avec Authentik, les utilisateurs doivent être créés dans Authentik.\n');
 
     // Créer un admin de test
     const testAdminEmail = 'test@admin.com';
-    const testAdminPassword = 'TestAdmin123!';
     
     // Vérifier si l'admin existe déjà
     const existingAdmin = await db.select().from(admins).where(eq(admins.email, testAdminEmail)).limit(1);
     
     if (existingAdmin.length === 0) {
-      const hashedPassword = await hashPassword(testAdminPassword);
       await db.insert(admins).values({
         email: testAdminEmail,
-        password: hashedPassword,
+        password: undefined, // Password géré par Authentik
         addedBy: 'system',
         firstName: 'Test',
         lastName: 'Admin',
@@ -38,19 +30,20 @@ async function createTestData() {
         status: 'active',
         isActive: true
       });
-      console.log('✅ Admin de test créé avec succès');
+      console.log('✅ Admin de test créé dans la base de données');
+      console.log('   → Créez cet utilisateur dans Authentik avec le même email');
     } else {
       // Mettre à jour l'admin existant pour s'assurer qu'il est actif
-      const hashedPassword = await hashPassword(testAdminPassword);
       await db.update(admins)
         .set({
-          password: hashedPassword,
+          password: undefined, // Password géré par Authentik
           status: 'active',
           isActive: true,
           role: 'super_admin'
         })
         .where(eq(admins.email, testAdminEmail));
-      console.log('✅ Admin de test mis à jour avec succès');
+      console.log('✅ Admin de test mis à jour dans la base de données');
+      console.log('   → Assurez-vous que cet utilisateur existe dans Authentik');
     }
 
     // Créer un membre de test
@@ -78,13 +71,14 @@ async function createTestData() {
       console.log('ℹ️  Membre de test existe déjà');
     }
 
-    console.log('\n🔐 Identifiants de test:');
+    console.log('\n📋 Informations de test:');
     console.log('Admin:');
     console.log(`  Email: ${testAdminEmail}`);
-    console.log(`  Mot de passe: ${testAdminPassword}`);
+    console.log('  → Créez cet utilisateur dans Authentik avec le même email');
     console.log('\nMembre de test:');
     console.log(`  Email: ${testMemberEmail}`);
     console.log('\n✅ Données de test prêtes !');
+    console.log('⚠️  N\'oubliez pas de créer les utilisateurs dans Authentik pour pouvoir vous connecter.');
     
   } catch (error) {
     console.error('❌ Erreur:', error);

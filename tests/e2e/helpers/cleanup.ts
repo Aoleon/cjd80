@@ -1,4 +1,4 @@
-import { db } from '../../server/db';
+import { db } from '../../../server/db';
 import { 
   ideas, 
   votes, 
@@ -12,7 +12,7 @@ import {
   memberActivities,
   memberSubscriptions,
   ideaPatronProposals
-} from '../../shared/schema';
+} from '../../../shared/schema';
 import { sql } from 'drizzle-orm';
 
 /**

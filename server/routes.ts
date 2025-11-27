@@ -8,7 +8,7 @@ import { checkDatabaseHealth } from "./utils/db-health";
 import { notificationService } from "./notification-service";
 import { emailNotificationService } from "./email-notification-service";
 import { emailService } from "./email-service";
-import { hashPassword } from "./auth";
+// hashPassword removed - passwords are now managed by Authentik
 import { sql } from "drizzle-orm";
 import { pool, getPoolStats, db, dbResilience } from "./db";
 import { patrons } from "../shared/schema";
@@ -1458,20 +1458,12 @@ export function createRouter(storageInstance: IStorage): any {
   });
 
   // Changer le mot de passe d'un administrateur (super admin seulement)
+  // NOTE: Cette route n'est plus utilisée avec Authentik - les mots de passe sont gérés par Authentik
   router.patch("/api/admin/administrators/:email/password", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const { password } = updateAdminPasswordSchema.parse(req.body);
-      
-      // Hacher le nouveau mot de passe
-      const hashedPassword = await hashPassword(password);
-      
-      const result = await storageInstance.updateAdminPassword(req.params.email, hashedPassword);
-
-      if (!result.success) {
-        return res.status(400).json({ message: result.error.message });
-      }
-
-      res.json({ success: true, message: "Mot de passe mis à jour avec succès" });
+      return res.status(501).json({ 
+        message: "La modification de mot de passe n'est plus disponible. Les mots de passe sont maintenant gérés par Authentik." 
+      });
     } catch (error) {
       if (error instanceof ZodError) {
         const validationError = fromZodError(error);
@@ -1525,19 +1517,20 @@ export function createRouter(storageInstance: IStorage): any {
   // Créer un nouvel administrateur avec statut actif (super admin seulement)
   router.post("/api/admin/administrators", requirePermission('admin.manage'), async (req, res, next) => {
     try {
-      const { email, password, firstName, lastName, role } = insertAdminSchema.parse(req.body);
+      // NOTE: Avec Authentik, le champ password est optionnel dans insertAdminSchema
+      const parsed = insertAdminSchema.parse(req.body);
+      const { email, firstName, lastName, role } = parsed;
       
-      if (!email || !password || !firstName || !lastName || !role) {
-        return res.status(400).json({ message: "Tous les champs sont requis" });
+      if (!email || !firstName || !lastName || !role) {
+        return res.status(400).json({ message: "Tous les champs sont requis (sauf mot de passe - géré par Authentik)" });
       }
 
-      // Hasher le mot de passe
-      const hashedPassword = await hashPassword(password);
-      
-      // Créer l'admin (créé par un admin)
+      // NOTE: Avec Authentik, les utilisateurs doivent être créés dans Authentik
+      // Cette route crée uniquement l'entrée dans la base de données locale
+      // Le mot de passe n'est plus stocké localement
       const result = await storageInstance.createUser({
         email,
-        password: hashedPassword,
+        password: undefined, // Password géré par Authentik
         firstName,
         lastName,
         role,
@@ -1857,12 +1850,12 @@ export function createRouter(storageInstance: IStorage): any {
         });
       }
 
-      const { email, password, firstName, lastName } = req.body;
+      const { email, firstName, lastName } = req.body;
       
-      if (!email || !password || !firstName || !lastName) {
+      if (!email || !firstName || !lastName) {
         return res.status(400).json({ 
           success: false, 
-          error: "Tous les champs sont requis (email, password, firstName, lastName)" 
+          error: "Tous les champs sont requis (email, firstName, lastName). Le mot de passe est géré par Authentik." 
         });
       }
 
@@ -1875,21 +1868,12 @@ export function createRouter(storageInstance: IStorage): any {
         });
       }
 
-      // Valider le mot de passe (minimum 8 caractères)
-      if (password.length < 8) {
-        return res.status(400).json({ 
-          success: false, 
-          error: "Le mot de passe doit contenir au moins 8 caractères" 
-        });
-      }
-
-      // Hasher le mot de passe
-      const hashedPassword = await hashPassword(password);
-      
-      // Créer le premier admin avec rôle super_admin et statut actif
+      // NOTE: Avec Authentik, les utilisateurs doivent être créés dans Authentik
+      // Cette route crée uniquement l'entrée dans la base de données locale pour le bootstrap
+      // Le mot de passe n'est plus stocké localement - l'utilisateur doit être créé dans Authentik séparément
       const result = await storageInstance.createUser({
         email,
-        password: hashedPassword,
+        password: undefined, // Password géré par Authentik
         firstName,
         lastName,
         role: 'super_admin',

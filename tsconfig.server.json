@@ -4,7 +4,9 @@
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo.server",
-    "noEmit": true,
+    "noEmit": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
     "module": "ESNext",
     "target": "ESNext",
     "strict": true,
@@ -15,6 +17,7 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "baseUrl": ".",
+    "outDir": "./dist",
     "types": ["node"],
     "paths": {
       "@shared/*": ["./shared/*"]

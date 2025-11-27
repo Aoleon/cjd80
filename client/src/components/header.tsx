@@ -6,6 +6,7 @@ import { getShortAppName, getOrgName } from '@/config/branding';
 import { useBranding } from '@/contexts/BrandingContext';
 import { useAuth } from "@/hooks/use-auth";
 import { hasPermission } from "@shared/schema";
+import { useFeatureConfig } from "@/contexts/FeatureConfigContext";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -24,14 +25,16 @@ export default function Header() {
 
   const activeSection = getActiveSection();
 
-  // Items de menu visibles pour tous les utilisateurs
+  const { isFeatureEnabled } = useFeatureConfig();
+  
+  // Items de menu visibles pour tous les utilisateurs (filtrés selon les fonctionnalités activées)
   const menuItems = [
-    { id: "ideas" as const, label: "Voter pour des idées", route: "/" },
-    { id: "propose" as const, label: "Proposer une idée", route: "/propose" },
-    { id: "events" as const, label: "Événements", route: "/events" },
-    { id: "loan" as const, label: "Prêt", route: "/loan" },
+    { id: "ideas" as const, label: "Voter pour des idées", route: "/", feature: "ideas" as const },
+    { id: "propose" as const, label: "Proposer une idée", route: "/propose", feature: "ideas" as const },
+    { id: "events" as const, label: "Événements", route: "/events", feature: "events" as const },
+    { id: "loan" as const, label: "Prêt", route: "/loan", feature: "loan" as const },
     { id: "tools" as const, label: "Les outils du dirigeants", route: "/tools" },
-  ];
+  ].filter(item => !item.feature || isFeatureEnabled(item.feature));
 
   return (
     <header className="bg-cjd-green text-white shadow-lg">
