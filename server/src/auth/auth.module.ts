@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
-import { ConfigModule } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthentikStrategy } from './strategies/authentik.strategy';
@@ -15,7 +14,6 @@ import { StorageService } from '../common/storage/storage.service';
     PassportModule.register({
       session: true,
     }),
-    ConfigModule,
     StorageModule,
     AuthentikModule,
   ],

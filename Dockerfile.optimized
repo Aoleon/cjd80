@@ -1,0 +1,120 @@
+# ===================================
+# Dockerfile optimisé pour production
+# Multi-stage build avec optimisations de sécurité et performance
+# ===================================
+
+# ===================================
+# Stage 1: Base - Image de base avec outils communs
+# ===================================
+FROM node:20-alpine AS base
+
+# Installer les dépendances système nécessaires
+RUN apk add --no-cache \
+    tini \
+    dumb-init \
+    wget \
+    curl
+
+WORKDIR /app
+
+# ===================================
+# Stage 2: Dependencies - Installation des dépendances
+# ===================================
+FROM base AS dependencies
+
+# Copier les fichiers de dépendances
+COPY package*.json ./
+
+# Installer toutes les dépendances (dev + prod) pour le build
+RUN npm ci --legacy-peer-deps --prefer-offline --no-audit
+
+# ===================================
+# Stage 3: Builder - Construction de l'application
+# ===================================
+FROM dependencies AS builder
+
+# Copier le code source
+COPY . .
+
+# Variables d'environnement pour le build
+ENV NODE_ENV=production
+ENV NODE_OPTIONS=--max-old-space-size=3072
+
+# Vérifications TypeScript et build
+RUN npm run check && npm run build
+
+# ===================================
+# Stage 4: Production Dependencies - Dépendances production uniquement
+# ===================================
+FROM base AS prod-dependencies
+
+COPY package*.json ./
+
+# Installer UNIQUEMENT les dépendances de production + drizzle-kit pour migrations
+RUN npm ci --omit=dev --legacy-peer-deps --prefer-offline --no-audit && \
+    npm install drizzle-kit --save-dev --no-audit --no-fund
+
+# ===================================
+# Stage 5: Runner - Image de production finale
+# ===================================
+FROM base AS runner
+
+# Créer un utilisateur non-root pour la sécurité
+RUN addgroup -S cjd && \
+    adduser -S cjduser -G cjd && \
+    mkdir -p /app/logs && \
+    chown -R cjduser:cjd /app
+
+WORKDIR /app
+
+# Copier les dépendances de production
+COPY --from=prod-dependencies --chown=cjduser:cjd /app/node_modules ./node_modules
+
+# Copier package.json pour référence
+COPY --chown=cjduser:cjd package*.json ./
+
+# Copier les fichiers nécessaires pour les migrations
+COPY --chown=cjduser:cjd drizzle.config.ts ./
+COPY --chown=cjduser:cjd shared ./shared
+
+# Créer vite.config.js stub (nécessaire pour imports dynamiques)
+RUN echo 'export default {};' > vite.config.js && \
+    chown cjduser:cjd vite.config.js
+
+# Copier les fichiers buildés
+COPY --from=builder --chown=cjduser:cjd /app/dist ./dist
+
+# Utiliser l'utilisateur non-root
+USER cjduser
+
+# Exposer le port
+EXPOSE 5000
+
+# Build args pour métadonnées
+ARG GIT_TAG=unknown
+ARG BUILD_DATE
+ARG GIT_COMMIT
+
+# Labels OCI standard
+LABEL org.opencontainers.image.title="CJD80 Application"
+LABEL org.opencontainers.image.description="Application full-stack CJD Amiens"
+LABEL org.opencontainers.image.version="${GIT_TAG}"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
+LABEL org.opencontainers.image.vendor="CJD Amiens"
+
+# Variables d'environnement
+ENV NODE_ENV=production \
+    PORT=5000 \
+    GIT_TAG=${GIT_TAG} \
+    NODE_OPTIONS="--max-old-space-size=512"
+
+# Health check optimisé
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD wget --spider -q http://localhost:5000/api/health/ready || exit 1
+
+# Utiliser tini comme init system pour gérer les signaux
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# Commande de démarrage avec node directement (pas de npm)
+CMD ["node", "--enable-source-maps", "dist/main.js"]

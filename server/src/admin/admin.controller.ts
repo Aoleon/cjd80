@@ -1,9 +1,20 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus, BadRequestException, Req } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { PermissionGuard } from '../auth/guards/permission.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { User } from '../auth/decorators/user.decorator';
+import { logger } from '../../lib/logger';
+import { z } from 'zod';
+
+const frontendErrorSchema = z.object({
+  message: z.string().min(1).max(1000),
+  stack: z.string().optional(),
+  componentStack: z.string().optional(),
+  url: z.string().url().max(500),
+  userAgent: z.string().max(500),
+  timestamp: z.string().datetime()
+});
 
 /**
  * Controller Admin - Routes d'administration

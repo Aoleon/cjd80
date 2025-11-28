@@ -7,6 +7,9 @@ import { startAutoSync } from '../utils/auto-sync';
 import { startTrackingAlertsGeneration } from '../utils/tracking-scheduler';
 import { setupVite } from '../vite';
 import { AuthService } from './auth/auth.service';
+import { validateEnvironment, checkExternalDependencies } from './config/env-validation';
+import { setupGracefulShutdown, rejectDuringShutdown } from './config/graceful-shutdown';
+import { getHelmetConfig } from './config/security-middleware';
 import session from 'express-session';
 import passport from 'passport';
 import type { Express } from 'express';
@@ -17,20 +20,47 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function bootstrap() {
+  // 1. Valider les variables d'environnement au démarrage (fail-fast)
+  logger.info('======================================');
+  logger.info('🚀 Démarrage de l\'application CJD80');
+  logger.info('======================================');
+  
+  try {
+    validateEnvironment();
+  } catch (error) {
+    logger.error('❌ Validation des variables d\'environnement échouée', { error });
+    process.exit(1);
+  }
+  
+  // 2. Vérifier les dépendances externes
+  logger.info('[Startup] Vérification des dépendances externes...');
+  const dependencies = await checkExternalDependencies();
+  logger.info('[Startup] État des dépendances:', dependencies);
+  // 3. Créer l'application NestJS
   const app = await NestFactory.create(AppModule, {
     logger: process.env.NODE_ENV === 'development' ? ['log', 'error', 'warn', 'debug'] : ['error', 'warn'],
   });
 
-  // Configuration CORS si nécessaire
+  // 4. Configuration de sécurité
+  const expressApp = app.getHttpAdapter().getInstance() as Express;
+  
+  // Trust proxy pour les headers X-Forwarded-* (important derrière Traefik/nginx)
+  expressApp.set('trust proxy', 1);
+  
+  // Headers de sécurité HTTP avec Helmet
+  const helmet = getHelmetConfig();
+  expressApp.use(helmet);
+  logger.info('[Security] ✅ Headers de sécurité HTTP configurés');
+  
+  // Middleware pour rejeter les requêtes pendant le shutdown
+  expressApp.use(rejectDuringShutdown());
+  
+  // 5. Configuration CORS
   app.enableCors({
     origin: process.env.CORS_ORIGIN || '*',
     credentials: true,
   });
-
-  // Trust proxy pour les headers X-Forwarded-*
-  // Dans NestJS, on configure cela via l'Express adapter
-  const expressApp = app.getHttpAdapter().getInstance() as Express;
-  expressApp.set('trust proxy', 1);
+  logger.info('[CORS] Origine autorisée:', process.env.CORS_ORIGIN || '*');
 
   // Configurer les sessions Express et Passport
   // Récupérer la configuration de session depuis AuthModule
@@ -63,10 +93,17 @@ async function bootstrap() {
     // Ne pas bloquer le démarrage si MinIO échoue
   }
 
+  // 6. Démarrer le serveur HTTP
   const port = parseInt(process.env.PORT || '5000', 10);
   const httpServer = await app.listen(port, '0.0.0.0');
+  
+  logger.info('======================================');
+  logger.info(`✅ Application démarrée avec succès`);
+  logger.info(`🌐 URL: http://0.0.0.0:${port}`);
+  logger.info(`📦 Environnement: ${process.env.NODE_ENV || 'development'}`);
+  logger.info('======================================');
 
-  // Setup Vite en développement (après le listen pour avoir le server)
+  // 7. Setup Vite en développement (après le listen pour avoir le server)
   if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
     try {
       await setupVite(expressApp, httpServer);
@@ -89,9 +126,9 @@ async function bootstrap() {
     });
   }
 
-  logger.info(`Application is running on: http://0.0.0.0:${port}`);
-  logger.info('DB pool monitoring activé');
-
+  // 8. Démarrer les services en arrière-plan
+  logger.info('[Background Services] Démarrage des services en arrière-plan...');
+  
   // Démarrer le monitoring du pool de connexions
   const monitoringInterval = process.env.NODE_ENV === 'development' ? 300000 : 600000;
   startPoolMonitoring(monitoringInterval);
@@ -102,9 +139,18 @@ async function bootstrap() {
   // Démarrer la génération automatique des alertes de tracking
   const trackingInterval = parseInt(process.env.TRACKING_ALERTS_INTERVAL_MINUTES || '1440', 10);
   startTrackingAlertsGeneration(trackingInterval);
+  
+  logger.info('[Background Services] ✅ Tous les services en arrière-plan sont démarrés');
+  
+  // 9. Configurer le graceful shutdown
+  setupGracefulShutdown(app);
+  
+  logger.info('======================================');
+  logger.info('✅ Application prête à recevoir du trafic');
+  logger.info('======================================');
 }
 
 bootstrap().catch((error) => {
-  logger.error('Failed to start application', { error });
+  logger.error('❌ Erreur fatale lors du démarrage de l\'application', { error });
   process.exit(1);
 });

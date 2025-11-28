@@ -88,8 +88,8 @@ export function setupAuth(app: Express) {
                   });
 
                   if (groupsResponse.ok) {
-                    const groupsData = await groupsResponse.json();
-                    userProfile.groups = groupsData.results?.map((g: any) => g.name) || [];
+                    const groupsData = await groupsResponse.json() as { results?: { name: string }[] };
+                    userProfile.groups = groupsData.results?.map((g) => g.name) || [];
                     logger.info("[Auth] Groupes utilisateur récupérés", { groups: userProfile.groups });
                   }
                 } catch (groupsError) {

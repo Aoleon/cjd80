@@ -1,231 +1,65 @@
-# ============================================================================
-# Git et Version Control
-# ============================================================================
-.git/
-.gitignore
-.gitattributes
-.github/
-.git/
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+.npm
+.yarn
 
-# ============================================================================
-# Secrets et Fichiers Sensibles
-# ============================================================================
+# Build artifacts
+dist
+build
+.next
+.nuxt
+.cache
+
+# Environment
 .env
 .env.*
 !.env.example
-*.env
-*.env.local
-*.env.production
-*.env.development
-*.env.test
-*.env.staging
 
-# Clés SSH et certificats
-*.key
-*.pem
-*.p12
-*.pfx
-*.crt
-*.cer
-id_rsa
-id_rsa.pub
-id_ed25519
-id_ed25519.pub
-*.pub
-ssh_key
-ssh_key.pub
-github-actions-*.key
-github-actions-*.pub
-*_deploy_key
-*_deploy_key.pub
+# Git
+.git
+.gitignore
+.gitattributes
 
-# Secrets et tokens
-secrets/
-*.secret
-*.token
-*.password
-*secret*
-*token*
-*password*
-credentials.json
-service-account*.json
-
-# ============================================================================
-# Node.js et Dépendances
-# ============================================================================
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-.pnpm-store/
-.yarn/
-.yarn/cache
-.yarn/unplugged
-.yarn/build-state.yml
-.yarn/install-state.gz
-
-# ============================================================================
-# Build Artifacts (seront générés dans le container)
-# ============================================================================
-dist/
-build/
-.next/
-.nuxt/
-.output/
-.cache/
-.parcel-cache/
-.vite/
-.turbo/
-*.tsbuildinfo
-
-# ============================================================================
-# Logs et Rapports
-# ============================================================================
-logs/
-*.log
-test-results/
-playwright-report/
-coverage/
-.nyc_output/
-*.log.*
-
-# ============================================================================
-# Tests
-# ============================================================================
-tests/
-test-results/
-playwright-report/
-coverage/
-.nyc_output/
-*.test.ts
-*.test.tsx
-*.spec.ts
-*.spec.tsx
-vitest.config.ts
-playwright.config.ts
-
-# ============================================================================
-# Documentation (non nécessaire pour le build)
-# ============================================================================
-docs/
-*.md
-!README.md
-!CHANGELOG.md
-
-# ============================================================================
-# IDE et Éditeurs
-# ============================================================================
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-*.code-workspace
-.project
-.classpath
-.settings/
-
-# Fichiers Cursor
-.cursor/
-.cursor-config/
-.cursor-version
-.cursorrules
-.cursorrules.backup.*
-.cursor.backup.*
-
-# ============================================================================
-# OS et Fichiers Système
-# ============================================================================
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-desktop.ini
+# IDE
+.vscode
+.idea
 *.swp
 *.swo
 *~
 
-# ============================================================================
-# Configuration Locale
-# ============================================================================
-# Replit
-replit.md
-.replit
-replit.nix
-.cache/
-.upm/
+# OS
+.DS_Store
+Thumbs.db
 
-# Docker
-docker-compose.override.yml
-docker-compose.local.yml
-.dockerignore
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# ============================================================================
-# Assets et Uploads (non nécessaires pour le build)
-# ============================================================================
-# Exclure attached_assets sauf les fichiers nécessaires au build
-attached_assets/*
-!attached_assets/logo-cjd-social_1756108273665.jpg
-!attached_assets/boite-kiff_1756106212980.jpeg
-public/uploads/*
-!public/uploads/.gitkeep
-assets/archive/
-*.jpeg
-*.jpg
-*.png
-*.gif
-*.webp
-!attached_assets/*.jpg
-!attached_assets/*.jpeg
-!assets/screenshots/
+# Test
+coverage
+.nyc_output
+test-results
 
-# ============================================================================
-# Fichiers Temporaires
-# ============================================================================
-.tmp/
-temp/
-tmp/
-*.tmp
-*.temp
-.cache/
-.temp/
+# Documentation
+docs
+*.md
+!README.md
 
-# ============================================================================
-# Dumps et Backups
-# ============================================================================
-*.sql
-*.dump
-*.backup
-*.bak
-dump_*.sql
-backup_*.sql
-*.sql.gz
-*.dump.gz
+# CI/CD
+.github
+.gitlab-ci.yml
 
-# ============================================================================
-# Scripts de Développement (non nécessaires en production)
-# ============================================================================
-# Note: scripts/vps-deploy.sh est nécessaire pour le déploiement
-scripts/
-!scripts/vps-deploy.sh
+# Development
+*.dev.js
+*.dev.ts
 
-# ============================================================================
-# Fichiers de Configuration Locaux
-# ============================================================================
-.vercel/
-.netlify/
-.railway/
-vite.config.ts.*
-*.local.sh
-local-*.sh
-
-# ============================================================================
-# Fichiers de Build Locaux
-# ============================================================================
-.eslintcache
-.stylelintcache
-.turbo/
+# Misc
+.prettierrc
+.eslintrc
+.editorconfig
+tsconfig.tsbuildinfo
