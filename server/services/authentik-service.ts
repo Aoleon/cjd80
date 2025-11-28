@@ -13,6 +13,21 @@ export interface AuthentikGroup {
   pk: string;
 }
 
+interface AuthentikAPIUser {
+  email?: string;
+  name?: string;
+  pk: string;
+  attributes?: Record<string, any>;
+}
+
+interface AuthentikAPIResponse {
+  results: AuthentikAPIUser[];
+}
+
+interface AuthentikGroupsResponse {
+  results: AuthentikGroup[];
+}
+
 /**
  * Service pour interagir avec l'API Authentik
  * Utilisé pour récupérer les informations utilisateur, groupes, etc.
@@ -52,7 +67,7 @@ export class AuthentikService {
         return null;
       }
 
-      const data = await response.json();
+      const data = await response.json() as AuthentikAPIResponse;
       if (data.results && data.results.length > 0) {
         const user = data.results[0];
         
@@ -66,7 +81,7 @@ export class AuthentikService {
 
         let groups: string[] = [];
         if (groupsResponse.ok) {
-          const groupsData = await groupsResponse.json();
+          const groupsData = await groupsResponse.json() as AuthentikGroupsResponse;
           groups = groupsData.results?.map((g: AuthentikGroup) => g.name) || [];
         }
 

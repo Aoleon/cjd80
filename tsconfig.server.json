@@ -13,7 +13,6 @@
     "lib": ["esnext"],
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "baseUrl": ".",

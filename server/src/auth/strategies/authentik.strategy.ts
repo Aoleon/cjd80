@@ -8,15 +8,17 @@ import { UserSyncService } from '../user-sync.service';
 
 @Injectable()
 export class AuthentikStrategy extends PassportStrategy(OAuth2Strategy, 'authentik') {
+  private configService: ConfigService;
+  
   constructor(
-    private configService: ConfigService,
+    configService: ConfigService,
     private storageService: StorageService,
     private userSyncService: UserSyncService,
   ) {
-    const authentikBaseUrl = configService.get<string>('AUTHENTIK_BASE_URL') || 'http://localhost:9002';
-    const clientID = configService.get<string>('AUTHENTIK_CLIENT_ID') || '';
-    const clientSecret = configService.get<string>('AUTHENTIK_CLIENT_SECRET') || '';
-    const redirectURI = configService.get<string>('AUTHENTIK_REDIRECT_URI') || 'http://localhost:5000/api/auth/authentik/callback';
+    const authentikBaseUrl = process.env.AUTHENTIK_BASE_URL || 'http://localhost:9002';
+    const clientID = process.env.AUTHENTIK_CLIENT_ID || '';
+    const clientSecret = process.env.AUTHENTIK_CLIENT_SECRET || '';
+    const redirectURI = process.env.AUTHENTIK_REDIRECT_URI || 'http://localhost:5000/api/auth/authentik/callback';
 
     if (!clientID || !clientSecret) {
       logger.warn('[Auth] AUTHENTIK_CLIENT_ID ou AUTHENTIK_CLIENT_SECRET non configuré. L\'authentification OAuth2 ne fonctionnera pas.');
@@ -30,13 +32,15 @@ export class AuthentikStrategy extends PassportStrategy(OAuth2Strategy, 'authent
       callbackURL: redirectURI,
       scope: ['openid', 'profile', 'email'],
     });
+    
+    this.configService = configService;
   }
 
   async validate(accessToken: string, refreshToken: string, profile: any): Promise<any> {
     try {
       logger.info('[Auth] Callback OAuth2 reçu', { hasAccessToken: !!accessToken });
 
-      const authentikBaseUrl = this.configService.get<string>('AUTHENTIK_BASE_URL') || 'http://localhost:9002';
+      const authentikBaseUrl = process.env.AUTHENTIK_BASE_URL || 'http://localhost:9002';
       
       // Récupérer les informations utilisateur depuis l'API Authentik avec l'accessToken
       let userProfile: any = {};

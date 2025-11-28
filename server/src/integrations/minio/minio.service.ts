@@ -20,14 +20,14 @@ export class MinIOService implements OnModuleInit {
   private initialized: boolean = false;
 
   constructor(private configService: ConfigService) {
-    this.endpoint = this.configService.get<string>('MINIO_ENDPOINT') || 'localhost';
-    this.port = parseInt(this.configService.get<string>('MINIO_PORT') || '9000', 10);
-    this.externalPort = parseInt(this.configService.get<string>('MINIO_EXTERNAL_PORT') || '9002', 10);
-    this.useSSL = this.configService.get<string>('MINIO_USE_SSL') === 'true';
-    this.accessKey = this.configService.get<string>('MINIO_ACCESS_KEY') || 'minioadmin';
-    this.secretKey = this.configService.get<string>('MINIO_SECRET_KEY') || 'minioadmin';
-    this.bucketLoanItems = this.configService.get<string>('MINIO_BUCKET_LOAN_ITEMS') || 'loan-items';
-    this.bucketAssets = this.configService.get<string>('MINIO_BUCKET_ASSETS') || 'assets';
+    this.endpoint = process.env.MINIO_ENDPOINT || 'localhost';
+    this.port = parseInt(process.env.MINIO_PORT || '9000', 10);
+    this.externalPort = parseInt(process.env.MINIO_EXTERNAL_PORT || '9002', 10);
+    this.useSSL = process.env.MINIO_USE_SSL === 'true';
+    this.accessKey = process.env.MINIO_ACCESS_KEY || 'minioadmin';
+    this.secretKey = process.env.MINIO_SECRET_KEY || 'minioadmin';
+    this.bucketLoanItems = process.env.MINIO_BUCKET_LOAN_ITEMS || 'loan-items';
+    this.bucketAssets = process.env.MINIO_BUCKET_ASSETS || 'assets';
   }
 
   async onModuleInit() {

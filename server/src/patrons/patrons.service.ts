@@ -115,7 +115,7 @@ export class PatronsService {
   async createPatron(data: unknown, userEmail: string) {
     try {
       const validatedData = insertPatronSchema.parse({
-        ...data,
+        ...(data as Record<string, any>),
         createdBy: userEmail,
       });
 
@@ -211,7 +211,7 @@ export class PatronsService {
   async createPatronDonation(patronId: string, data: unknown, userEmail: string) {
     try {
       const validatedData = insertPatronDonationSchema.parse({
-        ...data,
+        ...(data as Record<string, any>),
         patronId,
         recordedBy: userEmail,
       });
@@ -247,7 +247,7 @@ export class PatronsService {
   }
 
   async updatePatronDonation(id: string, data: unknown) {
-    const result = await this.storageService.instance.updatePatronDonation(id, data);
+    const result = await this.storageService.instance.updatePatronDonation(id, data as Partial<{ patronId: string; donatedAt: Date; amount: number; occasion: string; recordedBy: string; }>);
     if (!result.success) {
       throw new BadRequestException(result.error.message);
     }
@@ -276,7 +276,7 @@ export class PatronsService {
   async createPatronUpdate(patronId: string, data: unknown, userEmail: string) {
     try {
       const validatedData = insertPatronUpdateSchema.parse({
-        ...data,
+        ...(data as Record<string, any>),
         patronId,
         createdBy: userEmail,
       });
@@ -311,7 +311,7 @@ export class PatronsService {
   async createPatronSponsorship(patronId: string, data: unknown, userEmail: string) {
     try {
       const validatedData = insertEventSponsorshipSchema.parse({
-        ...data,
+        ...(data as Record<string, any>),
         patronId,
         proposedByAdminEmail: userEmail,
       });
