@@ -131,6 +131,15 @@ export class HealthService {
 
   async getReadiness() {
     try {
+      // Si l'application est en train de s'arrêter, pas ready
+      if (process.env.APP_SHUTTING_DOWN === 'true') {
+        return {
+          status: 'not ready',
+          timestamp: new Date().toISOString(),
+          reason: 'Application is shutting down',
+        };
+      }
+      
       const dbStatus = await dbResilience.healthCheck('readiness', 3000);
 
       if (dbStatus.status === 'healthy' || dbStatus.status === 'warning') {
