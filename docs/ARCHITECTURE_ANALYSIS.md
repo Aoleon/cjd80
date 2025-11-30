@@ -60,7 +60,7 @@
 ### 1. Session & Passport (Express middleware dans NestJS)
 
 ```typescript
-// server/src/main.ts (lignes 40-45)
+// server/src/main.ts
 const expressApp = app.getHttpAdapter().getInstance() as Express;
 expressApp.use(session(sessionConfig));
 expressApp.use(passport.initialize());
@@ -73,25 +73,23 @@ expressApp.use(passport.session());
 - Utiliser `@nestjs/passport` avec stratégies JWT uniquement (sans sessions)
 - Ou créer un middleware NestJS pour `express-session`
 
-### 2. Fichiers Statiques (Production)
+### 2. ~~Fichiers Statiques (Production)~~ ✅ MIGRÉ
 
 ```typescript
-// server/src/main.ts (lignes 72-83)
-if (process.env.NODE_ENV !== 'development') {
-  const expressStatic = (await import('express')).default.static;
-  expressApp.use(expressStatic(distPath));
-  expressApp.get('*', (req, res) => { /* SPA fallback */ });
-}
+// server/src/app.module.ts - Configuration @nestjs/serve-static
+ServeStaticModule.forRoot({
+  rootPath: join(process.cwd(), 'dist/public'),
+  exclude: ['/api*'],
+  serveStaticOptions: { /* headers cache, etc. */ },
+}),
 ```
 
-**Alternative Nest pure:**
-- Utiliser `@nestjs/serve-static` module
-- Installer: `npm install @nestjs/serve-static`
+**Migré vers `@nestjs/serve-static@4.0.2`** - Plus de code Express pour les fichiers statiques.
 
 ### 3. Vite Middleware (Développement)
 
 ```typescript
-// server/src/main.ts (lignes 89-96)
+// server/src/main.ts
 await setupVite(expressApp, httpServer);
 ```
 
@@ -202,9 +200,9 @@ import { join } from 'path';
 - [x] Marquage de `server/auth.ts` comme deprecated
 - [x] Marquage des services legacy comme deprecated (minio, authentik, user-sync)
 - [x] Vérification que l'API fonctionne à 100% via NestJS
+- [x] **Migration vers `@nestjs/serve-static`** pour les fichiers statiques en production
 
 ### Moyen Terme (prochain sprint)
-⬜ **Option B** - Migrer les fichiers statiques vers `@nestjs/serve-static`  
 ⬜ Supprimer définitivement les fichiers deprecated après validation (2026-01-31)  
 
 ### Long Terme (si scalabilité requise)
