@@ -49,7 +49,10 @@
     "clean:all": "./scripts/clean-all.sh",
     "reset:env": "./scripts/reset-env.sh",
     "validate": "./scripts/validate-app.sh",
-    "analyze:migration": "./scripts/analyze-routes-migration.sh"
+    "analyze:migration": "./scripts/analyze-routes-migration.sh",
+    "test:startup": "./scripts/test-startup.sh",
+    "check:deps": "./scripts/check-dependencies.sh",
+    "validate:env": "./scripts/validate-env.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
