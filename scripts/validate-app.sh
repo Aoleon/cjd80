@@ -16,12 +16,14 @@ WARNINGS=0
 # 1. Vérifier TypeScript (fichiers NestJS uniquement)
 echo ""
 echo "🔍 Vérification TypeScript (fichiers NestJS)..."
-if tsc -p tsconfig.server.json --noEmit > /dev/null 2>&1; then
+TS_OUTPUT=$(tsc -p tsconfig.server.json --noEmit 2>&1)
+TS_EXIT=$?
+if [ $TS_EXIT -eq 0 ]; then
   echo "   ✅ TypeScript NestJS: OK"
 else
   # Compter les erreurs dans les fichiers NestJS uniquement
-  NESTJS_ERRORS=$(tsc -p tsconfig.server.json --noEmit 2>&1 | grep -c "error TS" || echo "0")
-  if [ "$NESTJS_ERRORS" -eq 0 ]; then
+  NESTJS_ERRORS=$(echo "$TS_OUTPUT" | grep -c "error TS" || echo "0")
+  if [ "$NESTJS_ERRORS" = "0" ] || [ -z "$NESTJS_ERRORS" ]; then
     echo "   ✅ TypeScript NestJS: OK"
   else
     echo "   ⚠️  TypeScript NestJS: $NESTJS_ERRORS erreur(s) (fichiers legacy non comptés)"
