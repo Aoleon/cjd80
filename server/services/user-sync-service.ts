@@ -1,6 +1,9 @@
 // @ts-nocheck
-// Service legacy de synchronisation utilisateurs - erreurs TypeScript ignorées
-
+/**
+ * @deprecated Ce service legacy est remplacé par le service NestJS.
+ * Utiliser: server/src/auth/user-sync.service.ts
+ * Date de dépréciation: 2025-11-30
+ */
 import { logger } from "../lib/logger";
 import { getAuthentikService, AuthentikUser } from "./authentik-service";
 import { IStorage } from "../storage";

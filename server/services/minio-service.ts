@@ -1,3 +1,10 @@
+/**
+ * @deprecated Ce service legacy est remplacé par le service NestJS.
+ * Utiliser: server/src/integrations/minio/minio.service.ts
+ * 
+ * Pour les scripts CLI, ce fichier peut encore être utilisé.
+ * Date de dépréciation: 2025-11-30
+ */
 import { Client } from 'minio';
 import { promises as fs } from 'fs';
 import { join } from 'path';

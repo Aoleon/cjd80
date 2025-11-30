@@ -1,6 +1,9 @@
 // @ts-nocheck
-// Service legacy Authentik - erreurs TypeScript ignorées
-
+/**
+ * @deprecated Ce service legacy est remplacé par le service NestJS.
+ * Utiliser: server/src/integrations/authentik/authentik.service.ts
+ * Date de dépréciation: 2025-11-30
+ */
 import { logger } from "../lib/logger";
 
 export interface AuthentikUser {

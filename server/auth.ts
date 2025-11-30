@@ -1,3 +1,8 @@
+/**
+ * @deprecated Ce fichier legacy est remplacé par le module NestJS AuthModule.
+ * Utiliser: server/src/auth/auth.module.ts
+ * Date de dépréciation: 2025-11-30
+ */
 import passport from "passport";
 // @ts-ignore - passport-oauth2 types may not be available until npm install
 import { Strategy as OAuth2Strategy } from "passport-oauth2";
