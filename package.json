@@ -44,7 +44,10 @@
     "migrate:minio": "tsx scripts/migrate-to-minio.ts",
     "migrate:minio:delete": "tsx scripts/migrate-to-minio.ts --delete",
     "verify:nestjs": "./scripts/verify-nestjs-migration.sh",
-    "validate:nestjs": "./scripts/validate-nestjs-quick.sh"
+    "validate:nestjs": "./scripts/validate-nestjs-quick.sh",
+    "start:dev": "./scripts/start-dev.sh",
+    "clean:all": "./scripts/clean-all.sh",
+    "reset:env": "./scripts/reset-env.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -34,7 +34,7 @@ export default function AuthPage() {
   }
 
   const handleLogin = () => {
-    loginMutation.mutate();
+    loginMutation.mutate(undefined);
   };
 
   return (

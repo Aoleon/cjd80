@@ -193,6 +193,13 @@ PGPORT=5432
 
 ### Démarrage
 
+**Méthode recommandée (automatisée)** :
+```bash
+# Démarrage complet automatisé (services Docker + DB + application)
+npm run start:dev
+```
+
+**Méthode manuelle** :
 ```bash
 # 1. Démarrer les services Docker (si pas déjà fait)
 docker compose -f docker-compose.services.yml up -d postgres redis authentik-server authentik-worker
@@ -201,7 +208,8 @@ docker compose -f docker-compose.services.yml up -d postgres redis authentik-ser
 docker compose -f docker-compose.services.yml ps
 
 # 3. Pousser le schéma vers la base de données
-npm run db:push
+# Note: Utiliser localhost:5433 pour la connexion depuis l'hôte
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/cjd80" npm run db:push
 
 # 4. Configurer Authentik (première fois uniquement)
 # - Accéder à http://localhost:9002
@@ -211,13 +219,17 @@ npm run db:push
 # - Remplir les variables d'environnement avec les valeurs d'Authentik
 
 # 5. Démarrer en développement (frontend + backend)
-npm run dev
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/cjd80" npm run dev
 
 # L'application sera disponible sur http://localhost:5000
 # Authentik sera disponible sur http://localhost:9002
 ```
 
-**Script d'automatisation** : Utiliser `./scripts/setup-authentik.sh` pour automatiser les étapes 1-3.
+**Scripts d'automatisation disponibles** :
+- `npm run start:dev` - Démarrage complet automatisé
+- `npm run clean:all` - Nettoyage complet de l'environnement
+- `npm run reset:env` - Reset complet (supprime toutes les données Docker)
+- `./scripts/setup-authentik.sh` - Configuration automatique d'Authentik
 
 ### Scripts disponibles
 

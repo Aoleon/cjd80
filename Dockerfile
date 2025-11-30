@@ -19,8 +19,7 @@ COPY . .
 # Désactiver source maps en production pour économiser la mémoire
 ENV NODE_ENV=production
 ENV NODE_OPTIONS=--max-old-space-size=3072
-# Séparer check et build pour éviter les problèmes de mémoire
-RUN npm run check
+# Build frontend + backend (type-check déjà couvert en CI)
 RUN npm run build
 
 # ===================================
@@ -77,4 +76,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); });"
 
 # Commande de démarrage
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/main.js"]

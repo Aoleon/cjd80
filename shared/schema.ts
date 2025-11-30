@@ -2025,3 +2025,13 @@ export const statusResponseSchema = z.object({
 });
 
 export type StatusResponse = z.infer<typeof statusResponseSchema>;
+
+// Frontend error logging schema
+export const frontendErrorSchema = z.object({
+  message: z.string().min(1).max(1000),
+  stack: z.string().optional(),
+  componentStack: z.string().optional(),
+  url: z.string().url().max(500),
+  userAgent: z.string().max(500),
+  timestamp: z.string().datetime()
+});

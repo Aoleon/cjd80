@@ -12,7 +12,7 @@ type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<void, Error, void>;
+  loginMutation: UseMutationResult<void, Error, { email: string; password: string } | undefined>;
   logoutMutation: UseMutationResult<void, Error, void>;
 };
 
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (_credentials?: { email: string; password: string }) => {
       // Rediriger vers le flow OAuth2 Authentik
       // Le backend redirigera vers Authentik qui gérera l'authentification
       window.location.href = "/api/auth/authentik";
