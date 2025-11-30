@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { APP_INTERCEPTOR, APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { join } from 'path';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './common/database/database.module';
 import { StorageModule } from './common/storage/storage.module';
@@ -24,6 +26,31 @@ import { DbMonitoringInterceptor } from './common/interceptors/db-monitoring.int
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
+// Configuration conditionnelle pour les fichiers statiques en production
+const isProduction = process.env.NODE_ENV === 'production';
+const staticModules = isProduction
+  ? [
+      ServeStaticModule.forRoot({
+        rootPath: join(process.cwd(), 'dist/public'),
+        exclude: ['/api*'], // Exclure les routes API
+        serveStaticOptions: {
+          index: ['index.html'],
+          maxAge: '1y', // Cache long pour assets avec hash
+          setHeaders: (res, path) => {
+            // Pas de cache pour HTML (SPA)
+            if (path.endsWith('.html')) {
+              res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+              res.setHeader('Pragma', 'no-cache');
+              res.setHeader('Expires', '0');
+            }
+            // Empêcher l'indexation
+            res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet, noimageindex');
+          },
+        },
+      }),
+    ]
+  : [];
+
 @Module({
   imports: [
     // Configuration globale (remplacé par ConfigModule personnalisé)
@@ -37,6 +64,8 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     ]),
     // Schedule pour les tâches cron
     ScheduleModule.forRoot(),
+    // Fichiers statiques en production (via @nestjs/serve-static)
+    ...staticModules,
     // Modules de base
     DatabaseModule,
     StorageModule,
