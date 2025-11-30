@@ -249,6 +249,12 @@ npm run db:studio        # Interface graphique Drizzle Studio
 # Configuration
 npm run generate:config  # Génère index.html et manifest.json depuis branding
 
+# Nettoyage et maintenance
+npm run clean:all        # Nettoyage complet de l'environnement
+npm run reset:env        # Reset complet (supprime toutes les données Docker)
+npm run validate         # Validation complète de l'application
+npm run analyze:migration # Analyse de la migration NestJS
+
 # Production
 npm run build           # Build pour production (NestJS)
 npm run build:express   # Build Express legacy (pour transition)
