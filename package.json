@@ -47,7 +47,9 @@
     "validate:nestjs": "./scripts/validate-nestjs-quick.sh",
     "start:dev": "./scripts/start-dev.sh",
     "clean:all": "./scripts/clean-all.sh",
-    "reset:env": "./scripts/reset-env.sh"
+    "reset:env": "./scripts/reset-env.sh",
+    "validate": "./scripts/validate-app.sh",
+    "analyze:migration": "./scripts/analyze-routes-migration.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
