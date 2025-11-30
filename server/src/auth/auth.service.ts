@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { StorageService } from '../common/storage/storage.service';
 import { logger } from '../../lib/logger';
+import type { Admin } from '../../../shared/schema';
 
 // Cache en mémoire pour éviter les requêtes DB répétées
-const userCache = new Map<string, { user: any; timestamp: number }>();
+const userCache = new Map<string, { user: Admin; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 @Injectable()
@@ -24,7 +25,7 @@ export class AuthService {
    * Désérialiser l'utilisateur depuis la session (email)
    * Utilisé par Passport pour récupérer l'utilisateur depuis la session
    */
-  async deserializeUser(email: string): Promise<any> {
+  async deserializeUser(email: string): Promise<Admin | null> {
     try {
       // Vérifier le cache d'abord
       const cached = userCache.get(email);
@@ -56,7 +57,7 @@ export class AuthService {
    * Sérialiser l'utilisateur pour la session
    * Retourne l'email de l'utilisateur
    */
-  serializeUser(user: any): string {
+  serializeUser(user: Admin): string {
     return user.email;
   }
 

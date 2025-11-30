@@ -6,7 +6,7 @@ import { AuthentikStrategy } from './strategies/authentik.strategy';
 import { UserSyncService } from './user-sync.service';
 import { StorageModule } from '../common/storage/storage.module';
 import { AuthentikModule } from '../integrations/authentik/authentik.module';
-import * as session from 'express-session';
+import session from 'express-session';
 import { StorageService } from '../common/storage/storage.service';
 
 @Module({

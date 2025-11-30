@@ -15,6 +15,7 @@ import passport from 'passport';
 import type { Express } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import './types/express';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,7 +72,7 @@ async function bootstrap() {
 
   // Configurer Passport serialize/deserialize
   const authService = app.get(AuthService);
-  passport.serializeUser((user: any, done) => {
+  passport.serializeUser((user: Express.User, done) => {
     done(null, authService.serializeUser(user));
   });
   passport.deserializeUser(async (email: string, done) => {
