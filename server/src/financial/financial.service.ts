@@ -29,7 +29,7 @@ export class FinancialService {
   }) {
     const result = await this.storageService.instance.getBudgets(options);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -37,7 +37,7 @@ export class FinancialService {
   async getBudgetById(id: string) {
     const result = await this.storageService.instance.getBudgetById(id);
     if (!result.success) {
-      throw new NotFoundException(result.error.message);
+      throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -47,7 +47,7 @@ export class FinancialService {
       const validated = insertFinancialBudgetSchema.parse(data);
       const result = await this.storageService.instance.createBudget(validated);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -63,7 +63,7 @@ export class FinancialService {
       const validated = updateFinancialBudgetSchema.parse(data);
       const result = await this.storageService.instance.updateBudget(id, validated);
       if (!result.success) {
-        throw new NotFoundException(result.error.message);
+        throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -77,7 +77,7 @@ export class FinancialService {
   async deleteBudget(id: string) {
     const result = await this.storageService.instance.deleteBudget(id);
     if (!result.success) {
-      throw new NotFoundException(result.error.message);
+      throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true };
   }
@@ -85,7 +85,7 @@ export class FinancialService {
   async getBudgetStats(period?: string, year?: number) {
     const result = await this.storageService.instance.getBudgetStats(period, year);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -102,7 +102,7 @@ export class FinancialService {
   }) {
     const result = await this.storageService.instance.getExpenses(options);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -110,7 +110,7 @@ export class FinancialService {
   async getExpenseById(id: string) {
     const result = await this.storageService.instance.getExpenseById(id);
     if (!result.success) {
-      throw new NotFoundException(result.error.message);
+      throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -120,7 +120,7 @@ export class FinancialService {
       const validated = insertFinancialExpenseSchema.parse(data);
       const result = await this.storageService.instance.createExpense(validated);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -136,7 +136,7 @@ export class FinancialService {
       const validated = updateFinancialExpenseSchema.parse(data);
       const result = await this.storageService.instance.updateExpense(id, validated);
       if (!result.success) {
-        throw new NotFoundException(result.error.message);
+        throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -150,7 +150,7 @@ export class FinancialService {
   async deleteExpense(id: string) {
     const result = await this.storageService.instance.deleteExpense(id);
     if (!result.success) {
-      throw new NotFoundException(result.error.message);
+      throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true };
   }
@@ -158,7 +158,7 @@ export class FinancialService {
   async getExpenseStats(period?: string, year?: number) {
     const result = await this.storageService.instance.getExpenseStats(period, year);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -168,7 +168,7 @@ export class FinancialService {
   async getCategories(type?: string) {
     const result = await this.storageService.instance.getFinancialCategories(type);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -178,7 +178,7 @@ export class FinancialService {
       const validated = insertFinancialCategorySchema.parse(data);
       const result = await this.storageService.instance.createCategory(validated);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -194,7 +194,7 @@ export class FinancialService {
       const validated = updateFinancialCategorySchema.parse(data);
       const result = await this.storageService.instance.updateCategory(id, validated);
       if (!result.success) {
-        throw new NotFoundException(result.error.message);
+        throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -214,7 +214,7 @@ export class FinancialService {
   }) {
     const result = await this.storageService.instance.getForecasts(options);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -224,7 +224,7 @@ export class FinancialService {
       const validated = insertFinancialForecastSchema.parse(data);
       const result = await this.storageService.instance.createForecast(validated);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -240,7 +240,7 @@ export class FinancialService {
       const validated = updateFinancialForecastSchema.parse(data);
       const result = await this.storageService.instance.updateForecast(id, validated);
       if (!result.success) {
-        throw new NotFoundException(result.error.message);
+        throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -254,7 +254,7 @@ export class FinancialService {
   async generateForecasts(period: string, year: number) {
     const result = await this.storageService.instance.generateForecasts(period, year);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -264,7 +264,7 @@ export class FinancialService {
   async getFinancialKPIsExtended(period?: string, year?: number) {
     const result = await this.storageService.instance.getFinancialKPIsExtended(period, year);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -280,7 +280,7 @@ export class FinancialService {
       { period: period2, year: year2 },
     );
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -288,7 +288,7 @@ export class FinancialService {
   async getFinancialReport(type: 'monthly' | 'quarterly' | 'yearly', period: number, year: number) {
     const result = await this.storageService.instance.getFinancialReport(type, period, year);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }

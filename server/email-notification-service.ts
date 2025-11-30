@@ -21,7 +21,10 @@ class EmailNotificationService {
       const adminsResult = await storage.getAllAdmins();
       
       if (!adminsResult.success) {
-        return adminsResult;
+        return {
+          success: false,
+          error: 'error' in adminsResult ? adminsResult.error : new Error('Unknown error')
+        };
       }
 
       // Filtrer les admins actifs uniquement
@@ -80,7 +83,8 @@ class EmailNotificationService {
       if (emailResult.success) {
         console.log(`[Email Notifications] ✅ Notification idée envoyée à ${adminEmailsResult.data.length} administrateurs`);
       } else {
-        console.error('[Email Notifications] ❌ Erreur envoi notification idée:', emailResult.error);
+        const error = 'error' in emailResult ? emailResult.error : new Error('Unknown error');
+        console.error('[Email Notifications] ❌ Erreur envoi notification idée:', error);
       }
 
       return emailResult;
@@ -129,7 +133,8 @@ class EmailNotificationService {
       if (emailResult.success) {
         console.log(`[Email Notifications] ✅ Notification événement envoyée à ${adminEmailsResult.data.length} administrateurs`);
       } else {
-        console.error('[Email Notifications] ❌ Erreur envoi notification événement:', emailResult.error);
+        const error = 'error' in emailResult ? emailResult.error : new Error('Unknown error');
+        console.error('[Email Notifications] ❌ Erreur envoi notification événement:', error);
       }
 
       return emailResult;
@@ -149,7 +154,10 @@ class EmailNotificationService {
       const memberResult = await storage.getMemberByCjdRole(CJD_ROLES.RESPONSABLE_RECRUTEMENT);
       
       if (!memberResult.success) {
-        return memberResult;
+        return {
+          success: false,
+          error: 'error' in memberResult ? memberResult.error : new Error('Unknown error')
+        };
       }
 
       const recruitmentManager = memberResult.data;
@@ -227,7 +235,8 @@ class EmailNotificationService {
       if (emailResult.success) {
         console.log(`[Email Notifications] ✅ Notification proposition membre envoyée à ${recipients.length} destinataire(s)`);
       } else {
-        console.error('[Email Notifications] ❌ Erreur envoi notification proposition membre:', emailResult.error);
+        const error = 'error' in emailResult ? emailResult.error : new Error('Unknown error');
+        console.error('[Email Notifications] ❌ Erreur envoi notification proposition membre:', error);
       }
 
       return emailResult;
@@ -318,7 +327,8 @@ class EmailNotificationService {
       if (emailResult.success) {
         console.log(`[Email Notifications] ✅ Notification matériel envoyée à ${adminEmailsResult.data.length} administrateurs`);
       } else {
-        console.error('[Email Notifications] ❌ Erreur envoi notification matériel:', emailResult.error);
+        const error = 'error' in emailResult ? emailResult.error : new Error('Unknown error');
+        console.error('[Email Notifications] ❌ Erreur envoi notification matériel:', error);
       }
 
       return emailResult;

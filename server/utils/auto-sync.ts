@@ -11,7 +11,8 @@ export async function autoSyncAllDevelopmentRequests(): Promise<void> {
     // Récupérer toutes les demandes
     const result = await storage.getDevelopmentRequests();
     if (!result.success) {
-      console.error("[Auto-Sync] Erreur récupération des demandes:", result.error.message);
+      const error = 'error' in result ? result.error : new Error('Unknown error');
+      console.error("[Auto-Sync] Erreur récupération des demandes:", error.message);
       return;
     }
 
@@ -50,7 +51,8 @@ export async function autoSyncAllDevelopmentRequests(): Promise<void> {
               console.log(`[Auto-Sync] ✓ Demande ${request.id} synchronized (${request.title})`);
               syncSuccess++;
             } else {
-              console.error(`[Auto-Sync] ✗ Erreur mise à jour demande ${request.id}:`, updateResult.error.message);
+              const error = 'error' in updateResult ? updateResult.error : new Error('Unknown error');
+              console.error(`[Auto-Sync] ✗ Erreur mise à jour demande ${request.id}:`, error.message);
               syncErrors++;
             }
           } else {

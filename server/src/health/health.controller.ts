@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/auth.guard';
 
 @Controller('api/health')
 export class HealthController {
-  constructor(private healthService: HealthService) {}
+  constructor(private readonly healthService: HealthService) {}
 
   /**
    * GET /api/health - Health check global
@@ -55,7 +55,7 @@ export class HealthController {
 
 @Controller('api')
 export class StatusController {
-  constructor(private healthService: HealthService) {}
+  constructor(private readonly healthService: HealthService) {}
 
   /**
    * GET /api/version - Version de l'application

@@ -83,7 +83,7 @@ export class SetupService {
     });
 
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
 
     return {
@@ -119,7 +119,8 @@ export class SetupService {
     });
 
     if (!testResult.success) {
-      throw new InternalServerErrorException(testResult.error?.message || "Erreur lors de l'envoi de l'email de test");
+      const error = 'error' in testResult ? testResult.error : new Error('Unknown error');
+      throw new InternalServerErrorException(error.message || "Erreur lors de l'envoi de l'email de test");
     }
 
     return { message: `Email de test envoyé avec succès à ${email}` };

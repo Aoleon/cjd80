@@ -11,8 +11,8 @@ import type { StatusResponse, StatusCheck } from '../../../shared/schema';
 @Injectable()
 export class HealthService {
   constructor(
-    @Inject(DATABASE) private db: any,
-    private minioService: MinIOService
+    @Inject(DATABASE) private readonly db: any,
+    private readonly minioService: MinIOService
   ) {}
 
   async getHealthCheck() {

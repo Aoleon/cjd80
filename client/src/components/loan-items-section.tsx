@@ -185,7 +185,7 @@ export default function LoanItemsSection({ onNavigateToPropose }: LoanItemsSecti
     // Normaliser description vide pour éviter les problèmes
     const normalizedData = {
       ...data,
-      description: data.description?.trim() || undefined,
+      description: typeof data.description === 'string' ? data.description.trim() || undefined : undefined,
     };
     createMutation.mutate(normalizedData);
   }, [createMutation]);

@@ -105,7 +105,7 @@ async function generateAlerts(): Promise<void> {
         metadata: {
           service: 'TrackingScheduler',
           operation: 'generateAlerts',
-          error: result.error.message,
+          error: 'error' in result ? result.error.message : 'Unknown error',
           timestamp: new Date().toISOString()
         }
       });

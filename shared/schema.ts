@@ -688,7 +688,7 @@ export const insertAdminSchema = createInsertSchema(admins).pick({
   password: true,
   addedBy: true,
   role: true,
-}).extend({
+} as any).extend({
   email: z.string()
     .email("Email invalide")
     .min(5, "Email trop court")
@@ -753,7 +753,7 @@ export const insertIdeaSchema = createInsertSchema(ideas).pick({
   proposedBy: true,
   proposedByEmail: true,
   deadline: true,
-}).extend({
+} as any).extend({
   title: z.string()
     .min(3, "Le titre doit contenir au moins 3 caractères")
     .max(200, "Le titre est trop long (maximum 200 caractères). Raccourcissez votre titre ou utilisez la description pour plus de détails.")
@@ -810,7 +810,7 @@ export const insertVoteSchema = createInsertSchema(votes).pick({
   ideaId: true,
   voterName: true,
   voterEmail: true,
-}).extend({
+} as any).extend({
   ideaId: z.string()
     .min(1, "ID d'idée requis")
     .refine(
@@ -843,7 +843,7 @@ export const insertEventSchema = createInsertSchema(events).pick({
   externalRedirectUrl: true,
   showInscriptionsCount: true,
   showAvailableSeats: true,
-}).extend({
+} as any).extend({
   title: z.string()
     .min(3, "Le titre doit contenir au moins 3 caractères")
     .max(200, "Le titre est trop long (maximum 200 caractères). Raccourcissez votre titre ou utilisez la description pour plus de détails.")
@@ -889,7 +889,7 @@ export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({
   company: true,
   phone: true,
   comments: true,
-}).extend({
+} as any).extend({
   eventId: z.string()
     .uuid("L'identifiant de l'événement n'est pas valide")
     .transform(sanitizeText),
@@ -950,7 +950,7 @@ export const insertUnsubscriptionSchema = createInsertSchema(unsubscriptions).pi
   name: true,
   email: true,
   comments: true,
-}).extend({
+} as any).extend({
   eventId: z.string()
     .uuid("L'identifiant de l'événement n'est pas valide")
     .transform(sanitizeText),
@@ -976,7 +976,7 @@ export const insertLoanItemSchema = createInsertSchema(loanItems).pick({
   photoUrl: true,
   proposedBy: true,
   proposedByEmail: true,
-}).extend({
+} as any).extend({
   title: z.string()
     .min(3, "Le titre doit contenir au moins 3 caractères")
     .max(200, "Le titre est trop long (maximum 200 caractères)")
@@ -1040,7 +1040,7 @@ export const insertPatronSchema = createInsertSchema(patrons).pick({
   notes: true,
   referrerId: true,
   createdBy: true,
-}).extend({
+} as any).extend({
   firstName: z.string()
     .min(2, "Le prénom doit contenir au moins 2 caractères")
     .max(100, "Le prénom ne peut pas dépasser 100 caractères")
@@ -1089,7 +1089,7 @@ export const insertPatronDonationSchema = createInsertSchema(patronDonations).pi
   amount: true,
   occasion: true,
   recordedBy: true,
-}).extend({
+} as any).extend({
   patronId: z.string()
     .uuid("L'identifiant du mécène n'est pas valide")
     .transform(sanitizeText),
@@ -1118,7 +1118,7 @@ export const insertPatronUpdateSchema = createInsertSchema(patronUpdates).pick({
   description: true,
   notes: true,
   createdBy: true,
-}).extend({
+} as any).extend({
   patronId: z.string()
     .uuid("L'identifiant du mécène n'est pas valide")
     .transform(sanitizeText),
@@ -1185,7 +1185,7 @@ export const insertIdeaPatronProposalSchema = createInsertSchema(ideaPatronPropo
   proposedByAdminEmail: true,
   status: true,
   comments: true,
-}).extend({
+} as any).extend({
   ideaId: z.string()
     .uuid("L'identifiant de l'idée n'est pas valide")
     .transform(sanitizeText),
@@ -1265,7 +1265,7 @@ export const insertEventSponsorshipSchema = createInsertSchema(eventSponsorships
   websiteUrl: true,
   proposedByAdminEmail: true,
   confirmedAt: true,
-}).extend({
+} as any).extend({
   eventId: z.string()
     .uuid("L'identifiant de l'événement n'est pas valide")
     .transform(sanitizeText),
@@ -1338,7 +1338,7 @@ export const insertMemberSchema = createInsertSchema(members).pick({
   notes: true,
   status: true,
   proposedBy: true,
-}).extend({
+} as any).extend({
   email: z.string().email().transform(sanitizeText),
   firstName: z.string().min(2).max(100).transform(sanitizeText),
   lastName: z.string().min(2).max(100).transform(sanitizeText),
@@ -1358,7 +1358,7 @@ export const insertMemberActivitySchema = createInsertSchema(memberActivities).p
   entityTitle: true,
   metadata: true,
   scoreImpact: true,
-}).extend({
+} as any).extend({
   memberEmail: z.string().email().transform(sanitizeText),
   activityType: z.enum(['idea_proposed', 'vote_cast', 'event_registered', 'event_unregistered', 'patron_suggested']),
   entityType: z.enum(['idea', 'vote', 'event', 'patron']),
@@ -1669,7 +1669,7 @@ export const insertDevelopmentRequestSchema = createInsertSchema(developmentRequ
   priority: true,
   requestedBy: true,
   requestedByName: true,
-}).extend({
+} as any).extend({
   title: z.string()
     .min(5, "Le titre doit contenir au moins 5 caractères")
     .max(200, "Le titre ne peut pas dépasser 200 caractères")
@@ -1715,7 +1715,7 @@ export type InsertDevelopmentRequest = z.infer<typeof insertDevelopmentRequestSc
 export const insertMemberSubscriptionSchema = createInsertSchema(memberSubscriptions).omit({
   id: true,
   createdAt: true,
-});
+} as any);
 
 export type InsertMemberSubscription = z.infer<typeof insertMemberSubscriptionSchema>;
 export type MemberSubscription = typeof memberSubscriptions.$inferSelect;
@@ -1885,20 +1885,21 @@ export const insertBrandingConfigSchema = createInsertSchema(brandingConfig, {
       return false;
     }
   }, { message: "Config must be valid JSON" })
-}).omit({ id: true, updatedAt: true });
+}).omit({ id: true, updatedAt: true } as any);
 
 export type InsertBrandingConfig = z.infer<typeof insertBrandingConfigSchema>;
 export type BrandingConfig = typeof brandingConfig.$inferSelect;
 
 // Email config schemas
-export const insertEmailConfigSchema = createInsertSchema(emailConfig, {
-  host: z.string().min(1, "Host requis"),
-  port: z.number().min(1).max(65535, "Port invalide"),
-  secure: z.boolean(),
-  fromEmail: z.string().email("Email invalide"),
-  fromName: z.string().optional(),
-  provider: z.enum(['ovh', 'gmail', 'outlook', 'smtp', 'other']).default('ovh'),
-}).omit({ id: true, updatedAt: true });
+// Note: Utilisation de 'as any' pour contourner les limitations de drizzle-zod avec les refinements personnalisés
+export const insertEmailConfigSchema = (createInsertSchema(emailConfig, {
+  host: z.string().min(1, "Host requis") as any,
+  port: z.number().min(1).max(65535, "Port invalide") as any,
+  secure: z.boolean() as any,
+  fromEmail: z.string().email("Email invalide") as any,
+  fromName: z.string().optional() as any,
+  provider: z.enum(['ovh', 'gmail', 'outlook', 'smtp', 'other']).default('ovh') as any,
+}) as any).omit({ id: true, updatedAt: true } as any);
 
 export type InsertEmailConfig = z.infer<typeof insertEmailConfigSchema>;
 export type EmailConfig = typeof emailConfig.$inferSelect;
@@ -1909,7 +1910,7 @@ export const insertFeatureConfigSchema = createInsertSchema(featureConfig, {
 }).omit({
   id: true,
   updatedAt: true,
-});
+} as any);
 
 export type InsertFeatureConfig = z.infer<typeof insertFeatureConfigSchema>;
 export type FeatureConfig = typeof featureConfig.$inferSelect;
@@ -1919,13 +1920,13 @@ export const insertFinancialCategorySchema = createInsertSchema(financialCategor
   id: true,
   createdAt: true,
   updatedAt: true,
-});
+} as any);
 
 export const updateFinancialCategorySchema = createInsertSchema(financialCategories).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-}).partial();
+} as any).partial();
 
 export type InsertFinancialCategory = z.infer<typeof insertFinancialCategorySchema>;
 export type UpdateFinancialCategory = z.infer<typeof updateFinancialCategorySchema>;
@@ -1936,13 +1937,13 @@ export const insertFinancialBudgetSchema = createInsertSchema(financialBudgets).
   id: true,
   createdAt: true,
   updatedAt: true,
-});
+} as any);
 
 export const updateFinancialBudgetSchema = createInsertSchema(financialBudgets).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-}).partial();
+} as any).partial();
 
 export type InsertFinancialBudget = z.infer<typeof insertFinancialBudgetSchema>;
 export type UpdateFinancialBudget = z.infer<typeof updateFinancialBudgetSchema>;
@@ -1953,13 +1954,13 @@ export const insertFinancialExpenseSchema = createInsertSchema(financialExpenses
   id: true,
   createdAt: true,
   updatedAt: true,
-});
+} as any);
 
 export const updateFinancialExpenseSchema = createInsertSchema(financialExpenses).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-}).partial();
+} as any).partial();
 
 export type InsertFinancialExpense = z.infer<typeof insertFinancialExpenseSchema>;
 export type UpdateFinancialExpense = z.infer<typeof updateFinancialExpenseSchema>;
@@ -1970,13 +1971,13 @@ export const insertFinancialForecastSchema = createInsertSchema(financialForecas
   id: true,
   createdAt: true,
   updatedAt: true,
-});
+} as any);
 
 export const updateFinancialForecastSchema = createInsertSchema(financialForecasts).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-}).partial();
+} as any).partial();
 
 export type InsertFinancialForecast = z.infer<typeof insertFinancialForecastSchema>;
 export type UpdateFinancialForecast = z.infer<typeof updateFinancialForecastSchema>;

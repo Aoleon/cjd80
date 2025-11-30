@@ -1,7 +1,7 @@
 # Guide de Démarrage Rapide - CJD Amiens
 
-**Date:** 2025-01-30  
-**Version:** Optimisée
+**Date:** 2025-11-30  
+**Version:** Optimisée avec tsup
 
 ## Démarrage en 3 Étapes
 
@@ -11,44 +11,38 @@
 docker compose -f docker-compose.services.yml up -d postgres redis authentik-server authentik-worker minio
 ```
 
-**Ou utiliser le script automatisé:**
-```bash
-npm run start:dev
-```
-
 ### 2. Initialiser la Base de Données
 
 ```bash
-DATABASE_URL="postgresql://postgres:postgres@localhost:5433/cjd80" npm run db:push
+npm run db:push
 ```
 
 ### 3. Démarrer l'Application
 
 ```bash
-DATABASE_URL="postgresql://postgres:postgres@localhost:5433/cjd80" npm run dev
+npm run dev
 ```
 
-**L'application sera disponible sur:** http://localhost:5000
+**L'application sera disponible sur:**
+- **API Backend:** http://localhost:5001
+- **Frontend (dev):** http://localhost:5173 (avec proxy vers API)
 
 ## Scripts Utiles
 
-### Démarrage et Maintenance
+### Développement
 
 ```bash
-# Démarrage complet automatisé
-npm run start:dev
+# Démarrage complet (API + Frontend)
+npm run dev
 
-# Nettoyage complet
-npm run clean:all
+# API seule (tsup build + node)
+npm run dev:api
 
-# Reset complet (supprime toutes les données)
-npm run reset:env
+# Frontend seul (Vite sur port 5173)
+npm run dev:client
 
-# Validation de l'application
-npm run validate
-
-# Analyse de la migration NestJS
-npm run analyze:migration
+# Mode tsx (ancien, injection KO)
+npm run dev:tsx
 ```
 
 ### Base de Données
@@ -61,13 +55,10 @@ npm run db:push
 npx drizzle-kit studio
 ```
 
-### Développement
+### Production
 
 ```bash
-# Démarrage développement
-npm run dev
-
-# Build production
+# Build complet
 npm run build
 
 # Démarrage production
@@ -87,13 +78,13 @@ Tous les services doivent être "healthy" ou "running".
 ### 2. Vérifier la Connexion DB
 
 ```bash
-curl http://localhost:5000/api/health/db
+curl http://localhost:5001/api/health/db
 ```
 
 ### 3. Vérifier l'Application
 
 ```bash
-curl http://localhost:5000/api/health
+curl http://localhost:5001/api/health
 ```
 
 ## Configuration
@@ -115,7 +106,8 @@ AUTHENTIK_CLIENT_SECRET=your-client-secret
 
 ### Ports Utilisés
 
-- **5000** - Application principale
+- **5001** - API Backend NestJS
+- **5173** - Frontend Vite (développement)
 - **5433** - PostgreSQL (externe)
 - **6381** - Redis (externe)
 - **9000-9001** - MinIO
@@ -123,11 +115,13 @@ AUTHENTIK_CLIENT_SECRET=your-client-secret
 
 ## Dépannage
 
-### Problème: Port 5000 occupé
+### Problème: Port 5001 occupé
 
 ```bash
-# Utiliser un autre port
-PORT=5001 npm run dev
+# Vérifier ce qui utilise le port
+lsof -i:5001
+# Tuer le processus si nécessaire
+kill -9 <PID>
 ```
 
 ### Problème: Connexion DB échoue

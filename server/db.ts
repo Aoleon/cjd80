@@ -240,8 +240,20 @@ export const getPoolStats = () => {
 };
 
 // Graceful shutdown du pool
-process.on('SIGTERM', async () => {
+let isPoolClosed = false;
+const closePool = async () => {
+  if (isPoolClosed) {
+    return;
+  }
+  isPoolClosed = true;
   console.log('[DB] Fermeture gracieuse du pool de connexions...');
-  await pool.end();
-  console.log('[DB] Pool fermé');
-});
+  try {
+    await pool.end();
+    console.log('[DB] Pool fermé');
+  } catch (error) {
+    console.error('[DB] Erreur lors de la fermeture du pool:', error);
+  }
+};
+
+process.on('SIGTERM', closePool);
+process.on('SIGINT', closePool);

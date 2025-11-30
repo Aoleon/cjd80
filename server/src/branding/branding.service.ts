@@ -9,7 +9,8 @@ export class BrandingService {
     const result = await this.storageService.instance.getBrandingConfig();
     
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      const error = 'error' in result ? result.error : new Error('Unknown error');
+      throw new BadRequestException(error.message);
     }
     
     if (!result.data) {
@@ -34,7 +35,8 @@ export class BrandingService {
     const result = await this.storageService.instance.updateBrandingConfig(config, userEmail);
     
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      const error = 'error' in result ? result.error : new Error('Unknown error');
+      throw new BadRequestException(error.message);
     }
     
     return result.data;

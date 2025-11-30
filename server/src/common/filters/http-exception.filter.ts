@@ -1,5 +1,5 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { logger } from '../../../lib/logger';
 import { nanoid } from 'nanoid';
 import { ApiError } from '../../../../shared/errors';

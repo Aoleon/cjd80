@@ -36,9 +36,10 @@ export class UserSyncService {
         if (existingUserResult.data.role !== role) {
           const roleUpdateResult = await this.storageService.instance.updateAdminRole(authentikUser.email, role);
           if (!roleUpdateResult.success) {
+            const error = 'error' in roleUpdateResult ? roleUpdateResult.error : new Error('Unknown error');
             logger.error('[UserSync] Erreur lors de la mise à jour du rôle', {
               email: authentikUser.email,
-              error: roleUpdateResult.error,
+              error,
             });
           }
         }
@@ -52,9 +53,10 @@ export class UserSyncService {
             lastName,
           });
           if (!infoUpdateResult.success) {
+            const error = 'error' in infoUpdateResult ? infoUpdateResult.error : new Error('Unknown error');
             logger.error('[UserSync] Erreur lors de la mise à jour des informations', {
               email: authentikUser.email,
-              error: infoUpdateResult.error,
+              error,
             });
           }
         }
@@ -85,11 +87,12 @@ export class UserSyncService {
         }
 
         if (!createResult.success) {
+          const error = 'error' in createResult ? createResult.error : new Error('Unknown error');
           logger.error('[UserSync] Erreur lors de la création de l\'utilisateur', {
             email: authentikUser.email,
-            error: createResult.error,
+            error,
           });
-          return { success: false, error: createResult.error };
+          return { success: false, error };
         }
 
         return { success: true, user: createResult.data };

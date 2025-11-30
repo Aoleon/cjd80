@@ -28,7 +28,7 @@ export class EventsService {
       const result = await this.storageService.instance.createEvent(validatedData);
       
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       // Envoyer notifications pour nouvel événement
@@ -72,7 +72,7 @@ export class EventsService {
       );
       
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       // Envoyer notifications pour nouvel événement
@@ -109,10 +109,10 @@ export class EventsService {
       const validatedData = insertEventSchema.parse(data);
       const result = await this.storageService.instance.updateEvent(id, validatedData);
       if (!result.success) {
-        if (result.error.name === 'NotFoundError') {
-          throw new NotFoundException(result.error.message);
+        if (('error' in result ? result.error : new Error('Unknown error')).name === 'NotFoundError') {
+          throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
         }
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return result.data;
     } catch (error) {
@@ -126,17 +126,17 @@ export class EventsService {
   async deleteEvent(id: string) {
     const result = await this.storageService.instance.deleteEvent(id);
     if (!result.success) {
-      if (result.error.name === 'NotFoundError') {
-        throw new NotFoundException(result.error.message);
+      if (('error' in result ? result.error : new Error('Unknown error')).name === 'NotFoundError') {
+        throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
   }
 
   async getEventInscriptions(eventId: string): Promise<Inscription[]> {
     const result = await this.storageService.instance.getEventInscriptions(eventId);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data;
   }
@@ -147,7 +147,7 @@ export class EventsService {
       const result = await this.storageService.instance.createInscription(validatedData);
       
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       
       // Get event title for activity
@@ -181,7 +181,7 @@ export class EventsService {
       const result = await this.storageService.instance.createUnsubscription(validatedData);
       
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       
       // Get event title for activity

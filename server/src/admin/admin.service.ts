@@ -44,7 +44,7 @@ export class AdminService {
   async getAllIdeas(page: number = 1, limit: number = 20) {
     const result = await this.storageService.instance.getAllIdeas({ page, limit });
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data.data; // Retourner seulement les données (comme dans routes.ts)
   }
@@ -56,7 +56,7 @@ export class AdminService {
   async toggleIdeaFeatured(id: string) {
     const result = await this.storageService.instance.toggleIdeaFeatured(id);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { featured: result.data };
   }
@@ -64,7 +64,7 @@ export class AdminService {
   async transformIdeaToEvent(ideaId: string) {
     const result = await this.storageService.instance.transformIdeaToEvent(ideaId);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, eventId: result.data.id };
   }
@@ -74,7 +74,7 @@ export class AdminService {
       const validatedData = updateIdeaSchema.parse(data);
       const result = await this.storageService.instance.updateIdea(id, validatedData);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -90,7 +90,7 @@ export class AdminService {
   async getAllEvents(page: number = 1, limit: number = 20) {
     const result = await this.storageService.instance.getAllEvents({ page, limit });
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data.data; // Retourner seulement les données (comme dans routes.ts)
   }
@@ -100,7 +100,7 @@ export class AdminService {
       const validatedData = insertEventSchema.parse(data);
       const result = await this.storageService.instance.updateEvent(id, validatedData);
       if (!result.success) {
-        throw new NotFoundException(result.error.message);
+        throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -116,7 +116,7 @@ export class AdminService {
       const validatedData = updateEventStatusSchema.parse({ status });
       const result = await this.storageService.instance.updateEventStatus(id, validatedData.status);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
     } catch (error) {
       if (error instanceof ZodError) {
@@ -129,7 +129,7 @@ export class AdminService {
   async getEventInscriptions(eventId: string) {
     const result = await this.storageService.instance.getEventInscriptions(eventId);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data;
   }
@@ -141,7 +141,7 @@ export class AdminService {
       const validatedData = insertInscriptionSchema.parse(data);
       const result = await this.storageService.instance.createInscription(validatedData);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return result.data;
     } catch (error) {
@@ -155,7 +155,7 @@ export class AdminService {
   async deleteInscription(inscriptionId: string) {
     const result = await this.storageService.instance.deleteInscription(inscriptionId);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true };
   }
@@ -184,7 +184,7 @@ export class AdminService {
       if (result.success) {
         results.push(result.data);
       } else {
-        errors.push(`Erreur pour ${inscription.name}: ${result.error.message}`);
+        errors.push(`Erreur pour ${inscription.name}: ${('error' in result ? result.error : new Error('Unknown error')).message}`);
       }
     }
 
@@ -210,7 +210,7 @@ export class AdminService {
   async deleteVote(voteId: string) {
     const result = await this.storageService.instance.deleteVote(voteId);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true };
   }
@@ -227,7 +227,7 @@ export class AdminService {
   async getAllAdministrators() {
     const result = await this.storageService.instance.getAllAdmins();
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return {
       success: true,
@@ -238,7 +238,7 @@ export class AdminService {
   async getPendingAdministrators() {
     const result = await this.storageService.instance.getPendingAdmins();
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return {
       success: true,
@@ -267,7 +267,7 @@ export class AdminService {
       });
 
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       return {
@@ -296,7 +296,7 @@ export class AdminService {
 
       const result = await this.storageService.instance.updateAdminRole(email, validatedData.role);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       return {
@@ -324,7 +324,7 @@ export class AdminService {
 
       const result = await this.storageService.instance.updateAdminStatus(email, validatedData.isActive);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       return {
@@ -349,7 +349,7 @@ export class AdminService {
       const result = await this.storageService.instance.updateAdminInfo(email, validatedData);
 
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       return {
@@ -372,7 +372,7 @@ export class AdminService {
 
     const result = await this.storageService.instance.deleteAdmin(email);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
 
     return {
@@ -388,7 +388,7 @@ export class AdminService {
 
     const result = await this.storageService.instance.approveAdmin(email, role as string);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
 
     return {
@@ -401,7 +401,7 @@ export class AdminService {
   async rejectAdministrator(email: string) {
     const result = await this.storageService.instance.deleteAdmin(email);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
 
     return {
@@ -415,7 +415,7 @@ export class AdminService {
   async getAdminStats() {
     const stats = await this.storageService.instance.getAdminStats();
     if (!stats.success) {
-      throw new BadRequestException(stats.error.message);
+      throw new BadRequestException(('error' in stats ? stats.error : new Error('Unknown error')).message);
     }
     return {
       success: true,
@@ -448,7 +448,7 @@ export class AdminService {
   async getEventUnsubscriptions(eventId: string) {
     const result = await this.storageService.instance.getEventUnsubscriptions(eventId);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data;
   }
@@ -456,7 +456,7 @@ export class AdminService {
   async deleteUnsubscription(id: string) {
     const result = await this.storageService.instance.deleteUnsubscription(id);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { message: 'Absence supprimée avec succès' };
   }
@@ -466,7 +466,7 @@ export class AdminService {
       const validatedData = insertUnsubscriptionSchema.omit({ eventId: true }).parse(data);
       const result = await this.storageService.instance.updateUnsubscription(id, validatedData);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return result.data;
     } catch (error) {
@@ -482,7 +482,7 @@ export class AdminService {
   async getDevelopmentRequests() {
     const result = await this.storageService.instance.getDevelopmentRequests();
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data;
   }
@@ -500,12 +500,12 @@ export class AdminService {
 
       const result = await this.storageService.instance.createDevelopmentRequest(validatedData);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       // Créer l'issue GitHub en arrière-plan
       const { createGitHubIssue } = await import('../../utils/github-integration');
-      createGitHubIssue(validatedData)
+      createGitHubIssue(validatedData as any)
         .then(async (githubIssue) => {
           if (githubIssue) {
             await this.storageService.instance.updateDevelopmentRequest(result.data.id, {
@@ -537,7 +537,7 @@ export class AdminService {
       const validatedData = updateDevelopmentRequestSchema.parse(data);
       const result = await this.storageService.instance.updateDevelopmentRequest(id, validatedData);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return result.data;
     } catch (error) {
@@ -551,7 +551,8 @@ export class AdminService {
   async syncDevelopmentRequestWithGitHub(id: string) {
     const getResult = await this.storageService.instance.getDevelopmentRequests();
     if (!getResult.success) {
-      throw new BadRequestException(getResult.error.message);
+      const error = 'error' in getResult ? getResult.error : new Error('Unknown error');
+      throw new BadRequestException(error.message);
     }
 
     const request = getResult.data.find((r) => r.id === id);
@@ -577,7 +578,8 @@ export class AdminService {
     });
 
     if (!updateResult.success) {
-      throw new BadRequestException(updateResult.error.message);
+      const error = 'error' in updateResult ? updateResult.error : new Error('Unknown error');
+      throw new BadRequestException(error.message);
     }
 
     logger.info('GitHub sync successful', { requestId: id, issueNumber: request.githubIssueNumber });
@@ -617,7 +619,7 @@ export class AdminService {
       );
 
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       logger.info('Development request status updated by admin', {
@@ -650,7 +652,7 @@ export class AdminService {
 
     const result = await this.storageService.instance.deleteDevelopmentRequest(id);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
 
     return { success: true, message: 'Demande supprimée avec succès' };
@@ -704,7 +706,8 @@ export class AdminService {
   async testEmailConfiguration() {
     const result = await emailNotificationService.testEmailConfiguration();
     if (!result.success) {
-      throw new BadRequestException(result.error?.message || 'Erreur lors du test email');
+      const error = 'error' in result ? result.error : new Error('Unknown error');
+      throw new BadRequestException(error.message || 'Erreur lors du test email');
     }
     return {
       success: true,
@@ -746,7 +749,8 @@ export class AdminService {
 
     logger.info('[Test Email] Résultat:', { success: result.success });
     if (!result.success) {
-      logger.error('[Test Email] Erreur:', { error: result.error });
+      const error = 'error' in result ? result.error : new Error('Unknown error');
+      logger.error('[Test Email] Erreur:', { error });
     }
 
     return {

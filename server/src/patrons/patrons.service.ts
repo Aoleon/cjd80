@@ -34,10 +34,11 @@ export class PatronsService {
       });
 
       if (!result.success) {
-        if (result.error instanceof DuplicateError) {
-          throw new ConflictException(result.error.message);
+        const error = 'error' in result ? result.error : new Error('Unknown error');
+        if (error instanceof DuplicateError) {
+          throw new ConflictException(error.message);
         }
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(error.message);
       }
 
       // Enregistrer une métrique de tracking pour la proposition
@@ -82,7 +83,7 @@ export class PatronsService {
     });
 
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
 
     return result.data;
@@ -95,7 +96,7 @@ export class PatronsService {
 
     const result = await this.storageService.instance.getPatronByEmail(email);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
 
     return result.data;
@@ -104,7 +105,7 @@ export class PatronsService {
   async getPatronById(id: string) {
     const result = await this.storageService.instance.getPatronById(id);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     if (!result.data) {
       throw new NotFoundException('Mécène non trouvé');
@@ -121,7 +122,7 @@ export class PatronsService {
 
       const result = await this.storageService.instance.createPatron(validatedData);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       return result.data;
@@ -143,7 +144,7 @@ export class PatronsService {
 
       const result = await this.storageService.instance.updatePatron(id, validatedData);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       // Enregistrer une métrique si le statut a changé
@@ -202,7 +203,7 @@ export class PatronsService {
   async deletePatron(id: string) {
     const result = await this.storageService.instance.deletePatron(id);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
   }
 
@@ -218,7 +219,7 @@ export class PatronsService {
 
       const result = await this.storageService.instance.createPatronDonation(validatedData);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       return result.data;
@@ -233,7 +234,7 @@ export class PatronsService {
   async getPatronDonations(patronId: string) {
     const result = await this.storageService.instance.getPatronDonations(patronId);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data;
   }
@@ -241,7 +242,7 @@ export class PatronsService {
   async getAllDonations() {
     const result = await this.storageService.instance.getAllDonations();
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data;
   }
@@ -249,7 +250,7 @@ export class PatronsService {
   async updatePatronDonation(id: string, data: unknown) {
     const result = await this.storageService.instance.updatePatronDonation(id, data as Partial<{ patronId: string; donatedAt: Date; amount: number; occasion: string; recordedBy: string; }>);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data;
   }
@@ -257,7 +258,7 @@ export class PatronsService {
   async deletePatronDonation(id: string) {
     const result = await this.storageService.instance.deletePatronDonation(id);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
   }
 
@@ -266,7 +267,7 @@ export class PatronsService {
   async getPatronProposals(patronId: string) {
     const result = await this.storageService.instance.getPatronProposals(patronId);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data;
   }
@@ -283,10 +284,11 @@ export class PatronsService {
 
       const result = await this.storageService.instance.createPatronUpdate(validatedData);
       if (!result.success) {
-        if (result.error instanceof DuplicateError) {
-          throw new ConflictException(result.error.message);
+        const error = 'error' in result ? result.error : new Error('Unknown error');
+        if (error instanceof DuplicateError) {
+          throw new ConflictException(error.message);
         }
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(error.message);
       }
 
       return result.data;
@@ -301,7 +303,7 @@ export class PatronsService {
   async getPatronUpdates(patronId: string) {
     const result = await this.storageService.instance.getPatronUpdates(patronId);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data;
   }
@@ -318,10 +320,11 @@ export class PatronsService {
 
       const result = await this.storageService.instance.createEventSponsorship(validatedData);
       if (!result.success) {
-        if (result.error instanceof DuplicateError) {
-          throw new ConflictException(result.error.message);
+        const error = 'error' in result ? result.error : new Error('Unknown error');
+        if (error instanceof DuplicateError) {
+          throw new ConflictException(error.message);
         }
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(error.message);
       }
 
       return result.data;
@@ -336,7 +339,7 @@ export class PatronsService {
   async getPatronSponsorships(patronId: string) {
     const result = await this.storageService.instance.getPatronSponsorships(patronId);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data;
   }
@@ -348,7 +351,7 @@ export class PatronsService {
       const validatedData = updateIdeaPatronProposalSchema.parse(data);
       const result = await this.storageService.instance.updateIdeaPatronProposal(id, validatedData);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return result.data;
     } catch (error) {
@@ -362,7 +365,7 @@ export class PatronsService {
   async deleteIdeaPatronProposal(id: string) {
     const result = await this.storageService.instance.deleteIdeaPatronProposal(id);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
   }
 
@@ -373,10 +376,10 @@ export class PatronsService {
       const validatedData = updatePatronUpdateSchema.parse(data);
       const result = await this.storageService.instance.updatePatronUpdate(id, validatedData);
       if (!result.success) {
-        if (result.error.name === 'NotFoundError') {
-          throw new NotFoundException(result.error.message);
+        if (('error' in result ? result.error : new Error('Unknown error')).name === 'NotFoundError') {
+          throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
         }
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return result.data;
     } catch (error) {
@@ -390,10 +393,10 @@ export class PatronsService {
   async deletePatronUpdate(id: string) {
     const result = await this.storageService.instance.deletePatronUpdate(id);
     if (!result.success) {
-      if (result.error.name === 'NotFoundError') {
-        throw new NotFoundException(result.error.message);
+      if (('error' in result ? result.error : new Error('Unknown error')).name === 'NotFoundError') {
+        throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
   }
 
@@ -402,7 +405,7 @@ export class PatronsService {
   async getAllSponsorships() {
     const result = await this.storageService.instance.getAllSponsorships();
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data;
   }
@@ -410,7 +413,7 @@ export class PatronsService {
   async getSponsorshipStats() {
     const result = await this.storageService.instance.getSponsorshipStats();
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data;
   }
@@ -420,10 +423,10 @@ export class PatronsService {
       const validatedData = updateEventSponsorshipSchema.parse(data);
       const result = await this.storageService.instance.updateEventSponsorship(id, validatedData);
       if (!result.success) {
-        if (result.error.name === 'NotFoundError') {
-          throw new NotFoundException(result.error.message);
+        if (('error' in result ? result.error : new Error('Unknown error')).name === 'NotFoundError') {
+          throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
         }
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return result.data;
     } catch (error) {
@@ -437,10 +440,10 @@ export class PatronsService {
   async deleteEventSponsorship(id: string) {
     const result = await this.storageService.instance.deleteEventSponsorship(id);
     if (!result.success) {
-      if (result.error.name === 'NotFoundError') {
-        throw new NotFoundException(result.error.message);
+      if (('error' in result ? result.error : new Error('Unknown error')).name === 'NotFoundError') {
+        throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
   }
 }

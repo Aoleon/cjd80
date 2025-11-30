@@ -42,10 +42,11 @@ export class MembersService {
       });
 
       if (!result.success) {
-        if (result.error instanceof DuplicateError) {
-          throw new ConflictException(result.error.message);
+        const error = 'error' in result ? result.error : new Error('Unknown error');
+        if (error instanceof DuplicateError) {
+          throw new ConflictException(error.message);
         }
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(error.message);
       }
 
       // Enregistrer une métrique de tracking pour la proposition
@@ -106,7 +107,7 @@ export class MembersService {
     });
 
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
 
     return { success: true, ...result.data };
@@ -115,7 +116,7 @@ export class MembersService {
   async getMemberByEmail(email: string) {
     const result = await this.storageService.instance.getMemberByEmail(email);
     if (!result.success) {
-      throw new NotFoundException(result.error.message);
+      throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     if (!result.data) {
       throw new NotFoundException('Membre non trouvé');
@@ -126,7 +127,7 @@ export class MembersService {
   async getMemberActivities(email: string) {
     const result = await this.storageService.instance.getMemberActivities(email);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -134,7 +135,7 @@ export class MembersService {
   async getMemberDetails(email: string) {
     const result = await this.storageService.instance.getMemberDetails(email);
     if (!result.success) {
-      throw new NotFoundException(result.error.message);
+      throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -149,7 +150,7 @@ export class MembersService {
 
       const result = await this.storageService.instance.updateMember(email, validatedData);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       // Enregistrer une métrique si le statut a changé
@@ -208,10 +209,10 @@ export class MembersService {
   async deleteMember(email: string) {
     const result = await this.storageService.instance.deleteMember(email);
     if (!result.success) {
-      if (result.error.name === 'NotFoundError') {
-        throw new NotFoundException(result.error.message);
+      if (('error' in result ? result.error : new Error('Unknown error')).name === 'NotFoundError') {
+        throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
   }
 
@@ -244,7 +245,7 @@ export class MembersService {
   async getAllTags() {
     const result = await this.storageService.instance.getAllTags();
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -254,10 +255,10 @@ export class MembersService {
       const validatedData = insertMemberTagSchema.parse(data);
       const result = await this.storageService.instance.createTag(validatedData);
       if (!result.success) {
-        if (result.error.name === 'DuplicateError') {
-          throw new ConflictException(result.error.message);
+        if (('error' in result ? result.error : new Error('Unknown error')).name === 'DuplicateError') {
+          throw new ConflictException(('error' in result ? result.error : new Error('Unknown error')).message);
         }
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -273,10 +274,10 @@ export class MembersService {
       const validatedData = updateMemberTagSchema.parse(data);
       const result = await this.storageService.instance.updateTag(id, validatedData);
       if (!result.success) {
-        if (result.error.name === 'NotFoundError') {
-          throw new NotFoundException(result.error.message);
+        if (('error' in result ? result.error : new Error('Unknown error')).name === 'NotFoundError') {
+          throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
         }
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -290,14 +291,14 @@ export class MembersService {
   async deleteTag(id: string) {
     const result = await this.storageService.instance.deleteTag(id);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
   }
 
   async getMemberTags(email: string) {
     const result = await this.storageService.instance.getTagsByMember(email);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -309,9 +310,10 @@ export class MembersService {
         memberEmail: email,
         assignedBy: userEmail,
       });
-      const result = await this.storageService.instance.assignTagToMember(validatedData);
+      const result = await this.storageService.instance.assignTagToMember(validatedData as { memberEmail: string; tagId: string });
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        const error = 'error' in result ? result.error : new Error('Unknown error');
+        throw new BadRequestException(error.message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -325,7 +327,7 @@ export class MembersService {
   async removeTagFromMember(email: string, tagId: string) {
     const result = await this.storageService.instance.removeTagFromMember(email, tagId);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
   }
 
@@ -334,7 +336,7 @@ export class MembersService {
   async getMemberTasks(email: string) {
     const result = await this.storageService.instance.getTasksByMember(email);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -348,7 +350,7 @@ export class MembersService {
       });
       const result = await this.storageService.instance.createTask(validatedData);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -371,10 +373,10 @@ export class MembersService {
       }
       const result = await this.storageService.instance.updateTask(id, updateData);
       if (!result.success) {
-        if (result.error.name === 'NotFoundError') {
-          throw new NotFoundException(result.error.message);
+        if (('error' in result ? result.error : new Error('Unknown error')).name === 'NotFoundError') {
+          throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
         }
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -388,7 +390,7 @@ export class MembersService {
   async deleteTask(id: string) {
     const result = await this.storageService.instance.deleteTask(id);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
   }
 
@@ -397,7 +399,7 @@ export class MembersService {
   async getMemberRelations(email: string) {
     const result = await this.storageService.instance.getRelationsByMember(email);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -411,7 +413,7 @@ export class MembersService {
       });
       const result = await this.storageService.instance.createRelation(validatedData);
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -425,7 +427,7 @@ export class MembersService {
   async deleteRelation(id: string) {
     const result = await this.storageService.instance.deleteRelation(id);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
   }
 }

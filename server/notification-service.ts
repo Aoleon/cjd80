@@ -141,19 +141,19 @@ export class NotificationService {
           endpoint: subscription.endpoint,
           p256dh: subscription.p256dh,
           auth: subscription.auth,
-          userEmail: subscription.userId || null,
+          userEmail: subscription.userId || null as any,
           createdAt: new Date(),
           updatedAt: new Date()
-        });
+        } as any);
       } else {
         // Mettre à jour l'abonnement existant
         await db.update(pushSubscriptions)
           .set({
             p256dh: subscription.p256dh,
             auth: subscription.auth,
-            userEmail: subscription.userId || null,
+            userEmail: subscription.userId || null as any,
             updatedAt: new Date()
-          })
+          } as any)
           .where(eq(pushSubscriptions.endpoint, subscription.endpoint));
       }
 

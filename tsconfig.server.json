@@ -1,6 +1,6 @@
 {
   "include": ["server/**/*", "shared/**/*"],
-  "exclude": ["node_modules", "dist", "client", "**/*.test.ts"],
+  "exclude": ["node_modules", "dist", "client", "**/*.test.ts", "server/routes.ts", "server/auth.ts", "server/firebase-import.ts", "server/storage.ts", "server/index.ts"],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo.server",

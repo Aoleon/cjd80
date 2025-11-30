@@ -1,3 +1,6 @@
+// IMPORTANT: reflect-metadata MUST be imported first for NestJS DI to work
+import 'reflect-metadata';
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { logger } from '../lib/logger';
@@ -15,7 +18,8 @@ import passport from 'passport';
 import type { Express } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import './types/express';
+// Import types for Express.User extension
+import type { Admin } from '@shared/schema';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

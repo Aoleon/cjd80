@@ -21,7 +21,7 @@ export class TrackingService {
   async getTrackingDashboard() {
     const result = await this.storageService.instance.getTrackingDashboard();
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -48,7 +48,7 @@ export class TrackingService {
 
     const result = await this.storageService.instance.getTrackingMetrics(queryOptions);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -61,9 +61,18 @@ export class TrackingService {
         recordedBy: userEmail,
       });
 
-      const result = await this.storageService.instance.createTrackingMetric(validatedData);
+      const result = await this.storageService.instance.createTrackingMetric(validatedData as {
+        entityType: "member" | "patron";
+        entityId: string;
+        entityEmail: string;
+        metricType: "status_change" | "engagement" | "contact" | "conversion" | "activity";
+        metricValue?: number;
+        metricData?: string;
+        description?: string;
+        recordedBy?: string;
+      });
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -94,7 +103,7 @@ export class TrackingService {
 
     const result = await this.storageService.instance.getTrackingAlerts(queryOptions);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return { success: true, data: result.data };
   }
@@ -113,9 +122,19 @@ export class TrackingService {
         expiresAt: validatedData.expiresAt ? new Date(validatedData.expiresAt) : undefined,
       };
 
-      const result = await this.storageService.instance.createTrackingAlert(alertData);
+      const result = await this.storageService.instance.createTrackingAlert(alertData as {
+        entityType: "member" | "patron";
+        entityId: string;
+        entityEmail: string;
+        alertType: "stale" | "high_potential" | "needs_followup" | "conversion_opportunity";
+        severity?: "high" | "medium" | "low" | "critical";
+        title: string;
+        message: string;
+        createdBy?: string;
+        expiresAt?: Date;
+      });
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -136,7 +155,7 @@ export class TrackingService {
 
       const result = await this.storageService.instance.updateTrackingAlert(id, validatedData);
       if (!result.success) {
-        throw new NotFoundException(result.error.message);
+        throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       return { success: true, data: result.data };
     } catch (error) {
@@ -150,7 +169,7 @@ export class TrackingService {
   async generateTrackingAlerts() {
     const result = await this.storageService.instance.generateTrackingAlerts();
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
 
     // Si des alertes critiques ont été créées, logger l'information

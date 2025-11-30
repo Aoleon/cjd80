@@ -21,7 +21,7 @@ export class IdeasService {
       const result = await this.storageService.instance.createIdea(validatedData);
       
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       // Track member activity
@@ -60,10 +60,10 @@ export class IdeasService {
   async deleteIdea(id: string) {
     const result = await this.storageService.instance.deleteIdea(id);
     if (!result.success) {
-      if (result.error.name === 'NotFoundError') {
-        throw new NotFoundException(result.error.message);
+      if (('error' in result ? result.error : new Error('Unknown error')).name === 'NotFoundError') {
+        throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
   }
 
@@ -73,10 +73,10 @@ export class IdeasService {
       const result = await this.storageService.instance.updateIdeaStatus(id, validatedStatus.status);
       
       if (!result.success) {
-        if (result.error.name === 'NotFoundError') {
-          throw new NotFoundException(result.error.message);
+        if (('error' in result ? result.error : new Error('Unknown error')).name === 'NotFoundError') {
+          throw new NotFoundException(('error' in result ? result.error : new Error('Unknown error')).message);
         }
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
 
       // Envoyer notification pour changement de statut
@@ -100,7 +100,7 @@ export class IdeasService {
   async getVotesByIdea(ideaId: string): Promise<Vote[]> {
     const result = await this.storageService.instance.getVotesByIdea(ideaId);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
     return result.data;
   }
@@ -121,7 +121,7 @@ export class IdeasService {
       const result = await this.storageService.instance.createVote(validatedData);
       
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
       }
       
       // Get idea title for activity

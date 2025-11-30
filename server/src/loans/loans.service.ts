@@ -32,7 +32,8 @@ export class LoansService {
     });
 
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      const error = 'error' in result ? result.error : new Error('Unknown error');
+      throw new BadRequestException(error.message);
     }
 
     return result.data;
@@ -44,7 +45,8 @@ export class LoansService {
       const result = await this.storageService.instance.createLoanItem(validatedData);
 
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        const error = 'error' in result ? result.error : new Error('Unknown error');
+      throw new BadRequestException(error.message);
       }
 
       // Envoyer notifications pour nouveau matériel
@@ -74,7 +76,8 @@ export class LoansService {
     const result = await this.storageService.instance.getAllLoanItems({ page, limit, search });
 
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      const error = 'error' in result ? result.error : new Error('Unknown error');
+      throw new BadRequestException(error.message);
     }
 
     return result.data;
@@ -84,7 +87,8 @@ export class LoansService {
     const result = await this.storageService.instance.getLoanItem(id);
 
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      const error = 'error' in result ? result.error : new Error('Unknown error');
+      throw new BadRequestException(error.message);
     }
 
     if (!result.data) {
@@ -100,7 +104,8 @@ export class LoansService {
       const result = await this.storageService.instance.updateLoanItem(id, validatedData);
 
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        const error = 'error' in result ? result.error : new Error('Unknown error');
+      throw new BadRequestException(error.message);
       }
 
       return { success: true, data: result.data };
@@ -122,7 +127,8 @@ export class LoansService {
       );
 
       if (!result.success) {
-        throw new BadRequestException(result.error.message);
+        const error = 'error' in result ? result.error : new Error('Unknown error');
+      throw new BadRequestException(error.message);
       }
     } catch (error) {
       if (error instanceof ZodError) {
@@ -152,7 +158,8 @@ export class LoansService {
 
     const result = await this.storageService.instance.deleteLoanItem(id);
     if (!result.success) {
-      throw new BadRequestException(result.error.message);
+      const error = 'error' in result ? result.error : new Error('Unknown error');
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -185,7 +192,8 @@ export class LoansService {
       const updateResult = await this.storageService.instance.updateLoanItem(id, { photoUrl });
 
       if (!updateResult.success) {
-        throw new BadRequestException(updateResult.error.message);
+        const error = 'error' in updateResult ? updateResult.error : new Error('Unknown error');
+        throw new BadRequestException(error.message);
       }
 
       return { success: true, data: updateResult.data };
