@@ -1,14 +1,20 @@
 # Analyse Architecture Express/NestJS
 
 **Date:** 30 novembre 2025  
-**Mise à jour:** 30 novembre 2025 - Nettoyage du code legacy mort  
+**Mise à jour:** 30 novembre 2025 - Upgrade NestJS 11  
 **Objectif:** Clarifier l'état actuel de la migration Express → NestJS
 
 ---
 
 ## 🎯 Résumé Exécutif
 
-**L'application est désormais 100% NestJS pour l'API.** Les fichiers Express legacy (`server/index.ts`, `server/routes.ts`) sont marqués comme deprecated et ne sont plus chargés.
+**L'application est désormais 100% NestJS 11 pour l'API.** Les fichiers Express legacy (`server/index.ts`, `server/routes.ts`) sont marqués comme deprecated et ne sont plus chargés.
+
+### Stack Actuelle
+- **NestJS:** 11.x (upgrade depuis 10.x)
+- **Compilation:** tsup (support décorateurs)
+- **Fichiers statiques:** @nestjs/serve-static v5
+- **Vulnérabilités:** 0 High, 5 Moderate
 
 ---
 
@@ -84,7 +90,7 @@ ServeStaticModule.forRoot({
 }),
 ```
 
-**Migré vers `@nestjs/serve-static@4.0.2`** - Plus de code Express pour les fichiers statiques.
+**Migré vers `@nestjs/serve-static@5.x`** (NestJS 11) - Plus de code Express pour les fichiers statiques.
 
 ### 3. Vite Middleware (Développement)
 
@@ -200,7 +206,8 @@ import { join } from 'path';
 - [x] Marquage de `server/auth.ts` comme deprecated
 - [x] Marquage des services legacy comme deprecated (minio, authentik, user-sync)
 - [x] Vérification que l'API fonctionne à 100% via NestJS
-- [x] **Migration vers `@nestjs/serve-static`** pour les fichiers statiques en production
+- [x] Migration vers `@nestjs/serve-static` pour les fichiers statiques en production
+- [x] **Upgrade NestJS 10 → 11** (correction vulnérabilités High)
 
 ### Moyen Terme (prochain sprint)
 ⬜ Supprimer définitivement les fichiers deprecated après validation (2026-01-31)  
