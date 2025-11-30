@@ -52,7 +52,9 @@
     "analyze:migration": "./scripts/analyze-routes-migration.sh",
     "test:startup": "./scripts/test-startup.sh",
     "check:deps": "./scripts/check-dependencies.sh",
-    "validate:env": "./scripts/validate-env.sh"
+    "validate:env": "./scripts/validate-env.sh",
+    "monitor": "./scripts/monitor-app.sh",
+    "health:check": "./scripts/health-check-complete.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
