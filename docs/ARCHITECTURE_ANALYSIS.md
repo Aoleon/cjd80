@@ -177,18 +177,20 @@ import { join } from 'path';
 |---------|--------|--------|--------|
 | `server/index.ts` | 245 | ⚠️ DEPRECATED | Supprimer après 2026-01-31 |
 | `server/routes.ts` | 4514 | ⚠️ DEPRECATED | Supprimer après 2026-01-31 |
-| `server/auth.ts` | ~200 | À vérifier | Potentiellement deprecated |
+| `server/auth.ts` | ~200 | ⚠️ DEPRECATED | Supprimer après 2026-01-31 |
 | `server/storage.ts` | ~2000 | ✅ UTILISÉ | Conserver (utilisé par NestJS) |
 
 **Note:** Les fichiers deprecated ont été marqués avec des commentaires `@deprecated` en haut du fichier.
 
-### Services Dupliqués Potentiels
+### Services Legacy (Consolidés)
 
-| Service Legacy | Service NestJS | Action |
+| Service Legacy | Service NestJS | Statut |
 |---------------|----------------|--------|
-| `server/services/minio-service.ts` | `server/src/integrations/minio/minio.service.ts` | À consolider |
-| `server/services/authentik-service.ts` | `server/src/integrations/authentik/authentik.service.ts` | À consolider |
-| `server/services/user-sync-service.ts` | `server/src/auth/user-sync.service.ts` | À consolider |
+| `server/services/minio-service.ts` | `server/src/integrations/minio/minio.service.ts` | ⚠️ DEPRECATED |
+| `server/services/authentik-service.ts` | `server/src/integrations/authentik/authentik.service.ts` | ⚠️ DEPRECATED |
+| `server/services/user-sync-service.ts` | `server/src/auth/user-sync.service.ts` | ⚠️ DEPRECATED |
+
+**Note:** Les services legacy sont conservés pour les scripts CLI (`scripts/migrate-to-minio.ts`) mais ne sont plus utilisés par l'application principale.
 
 ---
 
@@ -197,12 +199,13 @@ import { join } from 'path';
 ### ✅ Réalisé (30 nov 2025)
 - [x] Suppression du code legacy mort dans `main.ts`
 - [x] Marquage des fichiers `server/index.ts` et `server/routes.ts` comme deprecated
+- [x] Marquage de `server/auth.ts` comme deprecated
+- [x] Marquage des services legacy comme deprecated (minio, authentik, user-sync)
 - [x] Vérification que l'API fonctionne à 100% via NestJS
 
 ### Moyen Terme (prochain sprint)
 ⬜ **Option B** - Migrer les fichiers statiques vers `@nestjs/serve-static`  
 ⬜ Supprimer définitivement les fichiers deprecated après validation (2026-01-31)  
-⬜ Consolider les services dupliqués  
 
 ### Long Terme (si scalabilité requise)
 ⬜ **Option C** - Envisager JWT stateless si multi-instance requise
