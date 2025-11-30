@@ -8,6 +8,13 @@ import { StorageModule } from '../common/storage/storage.module';
 import { AuthentikModule } from '../integrations/authentik/authentik.module';
 import session from 'express-session';
 import { StorageService } from '../common/storage/storage.service';
+import { logger } from '../../lib/logger';
+
+// Charger AuthentikStrategy seulement si les credentials sont configurés
+const authentikConfigured = process.env.AUTHENTIK_CLIENT_ID && process.env.AUTHENTIK_CLIENT_SECRET;
+if (!authentikConfigured) {
+  logger.warn('[AuthModule] AuthentikStrategy non chargée - credentials manquants');
+}
 
 @Module({
   imports: [
@@ -20,7 +27,8 @@ import { StorageService } from '../common/storage/storage.service';
   controllers: [AuthController],
   providers: [
     AuthService,
-    AuthentikStrategy,
+    // Charger AuthentikStrategy seulement si configuré
+    ...(authentikConfigured ? [AuthentikStrategy] : []),
     UserSyncService,
     {
       provide: 'SESSION_CONFIG',

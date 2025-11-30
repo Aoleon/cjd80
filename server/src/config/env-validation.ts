@@ -22,10 +22,10 @@ const envSchema = z.object({
       return true;
     }, 'SESSION_SECRET doit être changé en production'),
   
-  // Authentik OAuth2 (CRITIQUE)
+  // Authentik OAuth2 (OPTIONNEL en dev, CRITIQUE en prod)
   AUTHENTIK_BASE_URL: z.string().url().default('http://localhost:9002'),
-  AUTHENTIK_CLIENT_ID: z.string().min(1, 'AUTHENTIK_CLIENT_ID est requis'),
-  AUTHENTIK_CLIENT_SECRET: z.string().min(1, 'AUTHENTIK_CLIENT_SECRET est requis'),
+  AUTHENTIK_CLIENT_ID: z.string().default(''),
+  AUTHENTIK_CLIENT_SECRET: z.string().default(''),
   AUTHENTIK_REDIRECT_URI: z.string().url().default('http://localhost:5000/api/auth/authentik/callback'),
   AUTHENTIK_TOKEN: z.string().optional(),
   
@@ -84,8 +84,36 @@ export function validateEnvironment(): ValidatedEnv {
         throw new Error('Environment validation failed. Check logs for details.');
       } else {
         logger.warn('[Env Validation] Variables invalides mais on continue en développement');
-        // En dev, on retourne les valeurs par défaut
-        return envSchema.parse(process.env);
+        // En dev, on retourne un objet partiel avec les valeurs disponibles
+        return {
+          NODE_ENV: (process.env.NODE_ENV as 'development' | 'test' | 'production') || 'development',
+          PORT: parseInt(process.env.PORT || '5000', 10),
+          DATABASE_URL: process.env.DATABASE_URL || '',
+          SESSION_SECRET: process.env.SESSION_SECRET || 'dev-secret-key-not-for-production',
+          AUTHENTIK_BASE_URL: process.env.AUTHENTIK_BASE_URL || 'http://localhost:9002',
+          AUTHENTIK_CLIENT_ID: process.env.AUTHENTIK_CLIENT_ID || '',
+          AUTHENTIK_CLIENT_SECRET: process.env.AUTHENTIK_CLIENT_SECRET || '',
+          AUTHENTIK_REDIRECT_URI: process.env.AUTHENTIK_REDIRECT_URI || 'http://localhost:5000/api/auth/authentik/callback',
+          AUTHENTIK_TOKEN: process.env.AUTHENTIK_TOKEN,
+          MINIO_ENDPOINT: process.env.MINIO_ENDPOINT || 'localhost',
+          MINIO_PORT: parseInt(process.env.MINIO_PORT || '9000', 10),
+          MINIO_USE_SSL: process.env.MINIO_USE_SSL === 'true',
+          MINIO_ACCESS_KEY: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+          MINIO_SECRET_KEY: process.env.MINIO_SECRET_KEY || 'minioadmin',
+          MINIO_BUCKET_LOAN_ITEMS: process.env.MINIO_BUCKET_LOAN_ITEMS || 'loan-items',
+          MINIO_BUCKET_ASSETS: process.env.MINIO_BUCKET_ASSETS || 'assets',
+          SMTP_HOST: process.env.SMTP_HOST,
+          SMTP_PORT: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined,
+          SMTP_USER: process.env.SMTP_USER,
+          SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+          VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
+          VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
+          VAPID_SUBJECT: process.env.VAPID_SUBJECT,
+          OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+          GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+          GITHUB_REPO_OWNER: process.env.GITHUB_REPO_OWNER,
+          GITHUB_REPO_NAME: process.env.GITHUB_REPO_NAME,
+        } as ValidatedEnv;
       }
     }
     

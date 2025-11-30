@@ -16,13 +16,8 @@ import { getHelmetConfig } from './config/security-middleware';
 import session from 'express-session';
 import passport from 'passport';
 import type { Express } from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
 // Import types for Express.User extension
 import type { Admin } from '@shared/schema';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 async function bootstrap() {
   // 1. Valider les variables d'environnement au démarrage (fail-fast)
@@ -109,6 +104,8 @@ async function bootstrap() {
   logger.info('======================================');
 
   // 7. Setup Vite en développement (après le listen pour avoir le server)
+  // Note: En production, les fichiers statiques sont servis par @nestjs/serve-static
+  // configuré dans AppModule. Pas besoin de code Express ici.
   if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
     try {
       await setupVite(expressApp, httpServer);
@@ -116,19 +113,6 @@ async function bootstrap() {
     } catch (error) {
       logger.error('Failed to setup Vite middleware', { error });
     }
-  } else {
-    // En production, servir les fichiers statiques
-    const expressStatic = (await import('express')).default.static;
-    const distPath = path.join(__dirname, '../../dist/public');
-    expressApp.use(expressStatic(distPath));
-    
-    // Fallback pour SPA
-    expressApp.get('*', (req, res) => {
-      if (req.path.startsWith('/api')) {
-        return res.status(404).end();
-      }
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
   }
 
   // 8. Démarrer les services en arrière-plan
