@@ -18,6 +18,10 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5000
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_USE_SSL=${MINIO_USE_SSL:-false}
     
     # Labels Traefik pour le routage et SSL
     labels:
@@ -51,6 +55,7 @@ services:
       - proxy        # Réseau externe Traefik pour exposition publique
       - cjd-network  # Réseau interne pour isolation
       - supabase-network-prod  # Réseau Supabase pour accès à PostgreSQL
+      - nhost-network-prod     # Réseau Nhost (Postgres/MinIO)
     
     # Limites de ressources
     deploy:
@@ -74,3 +79,8 @@ networks:
   # Réseau Supabase (doit exister - créé par docker-compose.supabase.yml)
   supabase-network-prod:
     external: true
+
+  # Réseau Nhost (externe)
+  nhost-network-prod:
+    external: true
+    name: nhost_nhost-network-prod

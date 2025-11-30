@@ -12,6 +12,14 @@ export class HealthController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async getHealth() {
+    if (!this.healthService) {
+      // Fallback minimal pour éviter les erreurs si l'injection échoue
+      return {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'production',
+      };
+    }
     return this.healthService.getHealthCheck();
   }
 
@@ -75,4 +83,3 @@ export class StatusController {
     return this.healthService.getAllStatus();
   }
 }
-

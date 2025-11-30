@@ -1,3 +1,10 @@
+/**
+ * @deprecated Ce fichier est l'ancien point d'entrée Express.
+ * Il n'est plus utilisé depuis la migration vers NestJS.
+ * Point d'entrée actuel: server/src/main.ts
+ * Date de dépréciation: 2025-11-30
+ * À supprimer après: 2026-01-31 (si aucune régression)
+ */
 import express, { type Request, Response, NextFunction } from "express";
 import path from "path";
 import { fileURLToPath } from 'url';

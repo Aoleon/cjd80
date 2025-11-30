@@ -1,3 +1,18 @@
+/**
+ * @deprecated Ce fichier contient les routes Express legacy.
+ * Il n'est plus utilisé depuis la migration vers NestJS.
+ * Les routes sont maintenant dans: server/src/*/\*.controller.ts
+ * Date de dépréciation: 2025-11-30
+ * À supprimer après: 2026-01-31 (si aucune régression)
+ * 
+ * ROUTES MIGRÉES VERS NESTJS:
+ * - /api/health -> server/src/health/health.controller.ts
+ * - /api/ideas -> server/src/ideas/ideas.controller.ts
+ * - /api/events -> server/src/events/events.controller.ts
+ * - /api/auth -> server/src/auth/auth.controller.ts
+ * - /api/admin/* -> server/src/admin/admin.controller.ts
+ * - etc.
+ */
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, type IStorage } from "./storage";
