@@ -54,8 +54,13 @@ RUN echo 'export default {};' > vite.config.js
 # Copier les fichiers buildés depuis le stage builder
 COPY --from=builder /app/dist ./dist
 
-# Créer le dossier logs avec les bonnes permissions
-RUN mkdir -p /app/logs && chown -R cjduser:cjd /app
+# Créer le dossier logs et symlink pour @shared (alias vers dist/shared)
+RUN mkdir -p /app/logs /app/node_modules && \
+    ln -sf /app/dist/shared /app/node_modules/@shared && \
+    chown -R cjduser:cjd /app
+
+# Charger le loader ESM pour la résolution des imports sans extension
+COPY --from=builder /app/server/esm-loader.js ./server/esm-loader.js
 
 # Utiliser l'utilisateur non-root
 USER cjduser
@@ -76,4 +81,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); });"
 
 # Commande de démarrage
-CMD ["node", "dist/main.js"]
+CMD ["node", "--experimental-specifier-resolution=node", "--experimental-loader=./server/esm-loader.js", "dist/server/src/main.js"]

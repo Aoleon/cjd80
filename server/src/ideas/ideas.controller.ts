@@ -14,11 +14,14 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { IdeasService } from './ideas.service';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
+import { PermissionGuard } from '../auth/guards/permission.guard';
+import { Permissions } from '../auth/decorators/permissions.decorator';
 
 @Controller('api/ideas')
 export class IdeasController {
   constructor(private readonly ideasService: IdeasService) {}
 
+  // Liste publique des idées (pas de permission requise)
   @Get()
   async getIdeas(
     @Query('page') page?: string,
@@ -29,21 +32,26 @@ export class IdeasController {
     return await this.ideasService.getIdeas(pageNum, limitNum);
   }
 
+  // Création d'idée publique (throttled)
   @Post()
   @Throttle({ default: { limit: 20, ttl: 900000 } })
   async createIdea(@Body() body: unknown) {
     return await this.ideasService.createIdea(body);
   }
 
+  // Suppression d'idée - nécessite ideas.delete (ideas_manager ou super_admin)
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Permissions('ideas.delete')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteIdea(@Param('id') id: string) {
     await this.ideasService.deleteIdea(id);
   }
 
+  // Mise à jour du statut - nécessite ideas.manage (ideas_manager ou super_admin)
   @Patch(':id/status')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Permissions('ideas.manage')
   async updateIdeaStatus(
     @Param('id') id: string,
     @Body() body: { status: unknown },
@@ -51,8 +59,10 @@ export class IdeasController {
     await this.ideasService.updateIdeaStatus(id, body.status);
   }
 
+  // Voir les votes - nécessite ideas.read (ideas_reader, ideas_manager ou super_admin)
   @Get(':id/votes')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Permissions('ideas.read')
   async getVotesByIdea(@Param('id') id: string) {
     return await this.ideasService.getVotesByIdea(id);
   }

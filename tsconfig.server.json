@@ -1,6 +1,6 @@
 {
   "include": ["server/**/*", "shared/**/*"],
-  "exclude": ["node_modules", "dist", "client", "**/*.test.ts", "server/routes.ts", "server/auth.ts", "server/firebase-import.ts", "server/storage.ts", "server/index.ts"],
+  "exclude": ["node_modules", "dist", "client", "**/*.test.ts", "server/firebase-import.ts", "server/storage.ts"],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo.server",
@@ -8,16 +8,16 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "module": "ESNext",
+    "moduleResolution": "node",
     "target": "ESNext",
     "strict": false,
     "lib": ["esnext"],
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "moduleResolution": "node",
     "resolveJsonModule": true,
     "baseUrl": ".",
     "outDir": "./dist",
-    "types": ["node"],
+    "types": ["node", "multer"],
     "paths": {
       "@shared/*": ["./shared/*"]
     }

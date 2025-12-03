@@ -1,6 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { hasPermission, ADMIN_ROLES } from '../../../../shared/schema';
+import { PERMISSION_KEY } from '../decorators/permissions.decorator';
 
 /**
  * Guard pour vérifier les permissions de l'utilisateur
@@ -11,7 +12,7 @@ export class PermissionGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredPermission = this.reflector.get<string>('permission', context.getHandler());
+    const requiredPermission = this.reflector.get<string>(PERMISSION_KEY, context.getHandler());
     
     if (!requiredPermission) {
       return true; // Pas de permission requise
