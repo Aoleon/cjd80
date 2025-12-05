@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, Router as WouterRouter } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -65,10 +65,13 @@ const AdminPageFallback = () => (
 
 function Router() {
   const { isFeatureEnabled } = useFeatureConfig();
-  
+  // Base path pour le déploiement sur /cjd80
+  const basePath = import.meta.env.VITE_BASE_PATH ? import.meta.env.VITE_BASE_PATH.replace(/\/$/, '') : '';
+
   return (
-    <Switch>
-      <Route path="/" component={HomePage} />
+    <WouterRouter base={basePath}>
+      <Switch>
+        <Route path="/" component={HomePage} />
       <Route path="/propose">
         <FeatureGuard featureKey="ideas" featureName="La boîte à idées">
           <ProposePage />
@@ -204,6 +207,7 @@ function Router() {
       </ProtectedRoute>
       <Route component={NotFound} />
     </Switch>
+    </WouterRouter>
   );
 }
 
@@ -215,9 +219,11 @@ function PWAWrapper({ children }: { children: React.ReactNode }) {
   useBadge();
 
   useEffect(() => {
+    const basePath = import.meta.env.VITE_BASE_PATH ? import.meta.env.VITE_BASE_PATH.replace(/\/$/, '') : '';
+
     // Enregistrer le Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
+      navigator.serviceWorker.register(`${basePath}/sw.js`)
         .then(registration => {
           if (import.meta.env.DEV) {
             console.log('[PWA] Service Worker enregistré:', registration.scope);
@@ -230,8 +236,8 @@ function PWAWrapper({ children }: { children: React.ReactNode }) {
 
     // Précharger les ressources critiques
     PWAUtils.preloadCriticalResources([
-      '/api/ideas',
-      '/api/events'
+      `${basePath}/api/ideas`,
+      `${basePath}/api/events`
     ]);
 
     // Nettoyer les anciens caches

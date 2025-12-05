@@ -7,7 +7,7 @@ export default function AdminLogin() {
   const { loginMutation } = useAuth();
 
   const handleLogin = () => {
-    loginMutation.mutate();
+    loginMutation.mutate(undefined);
   };
 
   return (

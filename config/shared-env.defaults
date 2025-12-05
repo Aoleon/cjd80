@@ -1,5 +1,5 @@
 # Valeurs partagées pour MinIO + GraphQL/Redis (self-hosted)
-MINIO_ENDPOINT=http://localhost:9000
+MINIO_ENDPOINT=localhost
 MINIO_REGION=us-east-1
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin

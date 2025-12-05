@@ -33,7 +33,7 @@ const staticModules = isProduction
       ServeStaticModule.forRoot({
         rootPath: join(process.cwd(), 'dist/public'),
         // Exclure toutes les routes API
-        exclude: ['/api*'],
+        exclude: ['/api/*'],
         serveStaticOptions: {
           index: ['index.html'],
           maxAge: '1y', // Cache long pour assets avec hash

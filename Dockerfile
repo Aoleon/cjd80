@@ -14,11 +14,15 @@ RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 # Copier le code source
 COPY . .
 
+# Build arg pour le base path
+ARG VITE_BASE_PATH=/cjd80/
+
 # Vérifications et build (frontend + backend)
 # Augmenter la limite de mémoire Node.js pour éviter les erreurs "heap out of memory"
 # Désactiver source maps en production pour économiser la mémoire
 ENV NODE_ENV=production
 ENV NODE_OPTIONS=--max-old-space-size=3072
+ENV VITE_BASE_PATH=${VITE_BASE_PATH}
 # Build frontend + backend (type-check déjà couvert en CI)
 RUN npm run build
 
@@ -54,9 +58,9 @@ RUN echo 'export default {};' > vite.config.js
 # Copier les fichiers buildés depuis le stage builder
 COPY --from=builder /app/dist ./dist
 
-# Créer le dossier logs et symlink pour @shared (alias vers dist/shared)
+# Créer le dossier logs et symlink pour @shared (alias vers shared)
 RUN mkdir -p /app/logs /app/node_modules && \
-    ln -sf /app/dist/shared /app/node_modules/@shared && \
+    ln -sf /app/shared /app/node_modules/@shared && \
     chown -R cjduser:cjd /app
 
 # Charger le loader ESM pour la résolution des imports sans extension
