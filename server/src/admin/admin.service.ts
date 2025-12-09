@@ -759,5 +759,110 @@ export class AdminService {
       details: result,
     };
   }
+
+  // ===== Routes Admin Feature Configuration =====
+
+  async getFeatureConfig() {
+    const result = await this.storageService.instance.getFeatureConfig();
+    if (!result.success) {
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
+    }
+    return {
+      success: true,
+      data: result.data,
+    };
+  }
+
+  async updateFeatureConfig(featureKey: string, enabled: boolean, updatedBy: string) {
+    if (typeof enabled !== 'boolean') {
+      throw new BadRequestException('Le champ "enabled" doit être un booléen');
+    }
+
+    const result = await this.storageService.instance.updateFeatureConfig(featureKey, enabled, updatedBy);
+    if (!result.success) {
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
+    }
+
+    logger.info('Feature config updated', { featureKey, enabled, updatedBy });
+    return {
+      success: true,
+      data: result.data,
+    };
+  }
+
+  // ===== Routes Admin Email Configuration =====
+
+  async getEmailConfig() {
+    const result = await this.storageService.instance.getEmailConfig();
+    if (!result.success) {
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
+    }
+
+    // Si pas de config, retourner les valeurs par défaut des variables d'environnement
+    if (!result.data) {
+      return {
+        success: true,
+        data: {
+          host: process.env.SMTP_HOST || 'ssl0.ovh.net',
+          port: parseInt(process.env.SMTP_PORT || '465', 10),
+          secure: process.env.SMTP_SECURE !== 'false',
+          username: process.env.SMTP_USER || '',
+          fromEmail: process.env.SMTP_FROM_EMAIL || '',
+          fromName: process.env.SMTP_FROM_NAME || 'CJD',
+          isDefault: true,
+        },
+      };
+    }
+
+    return {
+      success: true,
+      data: result.data,
+    };
+  }
+
+  async updateEmailConfig(data: unknown, updatedBy: string) {
+    // Validation basique des champs requis
+    const config = data as {
+      host?: string;
+      port?: number;
+      secure?: boolean;
+      username?: string;
+      password?: string;
+      fromEmail?: string;
+      fromName?: string;
+    };
+
+    if (!config.host || !config.fromEmail) {
+      throw new BadRequestException('Les champs host et fromEmail sont requis');
+    }
+
+    const result = await this.storageService.instance.updateEmailConfig({
+      host: config.host,
+      port: config.port || 465,
+      secure: config.secure ?? true,
+      username: config.username || '',
+      password: config.password,
+      fromEmail: config.fromEmail,
+      fromName: config.fromName || 'CJD',
+    }, updatedBy);
+
+    if (!result.success) {
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
+    }
+
+    // Recharger la configuration email
+    try {
+      await emailService.reloadConfig();
+      logger.info('Email config updated and reloaded', { updatedBy });
+    } catch (reloadError) {
+      logger.warn('Email config updated but reload failed', { updatedBy, error: reloadError });
+    }
+
+    return {
+      success: true,
+      data: result.data,
+      message: 'Configuration email mise à jour avec succès',
+    };
+  }
 }
 

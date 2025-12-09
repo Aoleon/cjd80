@@ -350,6 +350,40 @@ export class AdminController {
   async testEmailSimple() {
     return await this.adminService.testEmailSimple();
   }
+
+  // ===== Routes Admin Feature Configuration =====
+
+  @Get('features')
+  async getFeatureConfig() {
+    return await this.adminService.getFeatureConfig();
+  }
+
+  @Put('features/:featureKey')
+  @Permissions('admin.manage')
+  async updateFeatureConfig(
+    @Param('featureKey') featureKey: string,
+    @Body() body: { enabled: boolean },
+    @User() user: { email: string },
+  ) {
+    return await this.adminService.updateFeatureConfig(featureKey, body.enabled, user.email);
+  }
+
+  // ===== Routes Admin Email Configuration =====
+
+  @Get('email-config')
+  @Permissions('admin.view')
+  async getEmailConfig() {
+    return await this.adminService.getEmailConfig();
+  }
+
+  @Put('email-config')
+  @Permissions('admin.manage')
+  async updateEmailConfig(
+    @Body() body: unknown,
+    @User() user: { email: string },
+  ) {
+    return await this.adminService.updateEmailConfig(body, user.email);
+  }
 }
 
 /**
