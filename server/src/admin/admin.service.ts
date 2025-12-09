@@ -2,10 +2,10 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { StorageService } from '../common/storage/storage.service';
 import { IdeasService } from '../ideas/ideas.service';
 import { EventsService } from '../events/events.service';
-import { 
-  updateIdeaSchema, 
-  updateIdeaStatusSchema, 
-  insertEventSchema, 
+import {
+  updateIdeaSchema,
+  updateIdeaStatusSchema,
+  insertEventSchema,
   updateEventStatusSchema,
   insertAdminSchema,
   updateAdminSchema,
@@ -16,7 +16,7 @@ import {
   updateDevelopmentRequestSchema,
   updateDevelopmentRequestStatusSchema,
   ADMIN_ROLES,
-  type Idea 
+  type Idea
 } from '../../../shared/schema';
 import { ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
@@ -27,6 +27,7 @@ import { emailNotificationService } from '../../email-notification-service';
 import { emailService } from '../../email-service';
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import type { UpdateEmailConfigDto } from './admin.dto';
 
 /**
  * Service Admin - Gestion des routes d'administration
@@ -757,6 +758,97 @@ export class AdminService {
       success: result.success,
       message: result.success ? `Email envoyé à ${testEmail}` : "Erreur lors de l'envoi",
       details: result,
+    };
+  }
+
+  // ===== Routes Admin Feature Configuration =====
+
+  async getFeatureConfig() {
+    const result = await this.storageService.instance.getFeatureConfig();
+    if (!result.success) {
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
+    }
+    return {
+      success: true,
+      data: result.data,
+    };
+  }
+
+  async updateFeatureConfig(featureKey: string, enabled: boolean, updatedBy: string) {
+    if (typeof enabled !== 'boolean') {
+      throw new BadRequestException('Le champ "enabled" doit être un booléen');
+    }
+
+    const result = await this.storageService.instance.updateFeatureConfig(featureKey, enabled, updatedBy);
+    if (!result.success) {
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
+    }
+
+    logger.info('Feature config updated', { featureKey, enabled, updatedBy });
+    return {
+      success: true,
+      data: result.data,
+    };
+  }
+
+  // ===== Routes Admin Email Configuration =====
+
+  async getEmailConfig() {
+    const result = await this.storageService.instance.getEmailConfig();
+    if (!result.success) {
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
+    }
+
+    // Si pas de config, retourner les valeurs par défaut des variables d'environnement
+    if (!result.data) {
+      return {
+        success: true,
+        data: {
+          host: process.env.SMTP_HOST || 'ssl0.ovh.net',
+          port: parseInt(process.env.SMTP_PORT || '465', 10),
+          secure: process.env.SMTP_SECURE !== 'false',
+          username: process.env.SMTP_USER || '',
+          fromEmail: process.env.SMTP_FROM_EMAIL || '',
+          fromName: process.env.SMTP_FROM_NAME || 'CJD',
+          isDefault: true,
+        },
+      };
+    }
+
+    return {
+      success: true,
+      data: result.data,
+    };
+  }
+
+  async updateEmailConfig(config: UpdateEmailConfigDto, updatedBy: string) {
+    // La validation est faite par le ZodValidationPipe dans le contrôleur
+    const result = await this.storageService.instance.updateEmailConfig({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      username: config.username || '',
+      password: config.password,
+      fromEmail: config.fromEmail,
+      fromName: config.fromName,
+    }, updatedBy);
+
+    if (!result.success) {
+      throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
+    }
+
+    // Recharger la configuration email
+    try {
+      await emailService.reloadConfig();
+      logger.info('Email config updated and reloaded', { updatedBy });
+    } catch (reloadError) {
+      logger.warn('Email config updated but reload failed', { updatedBy, error: reloadError });
+    }
+
+    return {
+      success: true,
+      data: result.data,
+      message: 'Configuration email mise à jour avec succès',
     };
   }
 }

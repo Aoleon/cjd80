@@ -1,12 +1,47 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus, Req, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus, Req, BadRequestException, UsePipes } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { PermissionGuard } from '../auth/guards/permission.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { User } from '../auth/decorators/user.decorator';
+import { ZodValidationPipe } from '../common/pipes/validation.pipe';
 import { logger } from '../../lib/logger';
 import { frontendErrorSchema } from '@shared/schema';
 import { z } from 'zod';
+import {
+  updateIdeaStatusDto,
+  updateEventStatusDto,
+  createInscriptionDto,
+  bulkCreateInscriptionsDto,
+  createAdministratorDto,
+  updateAdministratorRoleDto,
+  updateAdministratorStatusDto,
+  updateAdministratorInfoDto,
+  approveAdministratorDto,
+  createDevelopmentRequestDto,
+  updateDevelopmentRequestDto,
+  updateDevelopmentRequestStatusDto,
+  createVoteDto,
+  updateUnsubscriptionDto,
+  updateFeatureConfigDto,
+  updateEmailConfigDto,
+  type UpdateIdeaStatusDto,
+  type UpdateEventStatusDto,
+  type CreateInscriptionDto,
+  type BulkCreateInscriptionsDto,
+  type CreateAdministratorDto,
+  type UpdateAdministratorRoleDto,
+  type UpdateAdministratorStatusDto,
+  type UpdateAdministratorInfoDto,
+  type ApproveAdministratorDto,
+  type CreateDevelopmentRequestDto,
+  type UpdateDevelopmentRequestDto,
+  type UpdateDevelopmentRequestStatusDto,
+  type CreateVoteDto,
+  type UpdateUnsubscriptionDto,
+  type UpdateFeatureConfigDto,
+  type UpdateEmailConfigDto,
+} from './admin.dto';
 
 /**
  * Controller Admin - Routes d'administration
@@ -32,9 +67,10 @@ export class AdminController {
   @Patch('ideas/:id/status')
   @Permissions('admin.edit')
   @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(updateIdeaStatusDto))
   async updateIdeaStatus(
     @Param('id') id: string,
-    @Body() body: { status: unknown },
+    @Body() body: UpdateIdeaStatusDto,
   ) {
     await this.adminService.updateIdeaStatus(id, body.status);
   }
@@ -97,9 +133,10 @@ export class AdminController {
   @Patch('events/:id/status')
   @Permissions('admin.edit')
   @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(updateEventStatusDto))
   async updateEventStatus(
     @Param('id') id: string,
-    @Body() body: { status: unknown },
+    @Body() body: UpdateEventStatusDto,
   ) {
     await this.adminService.updateEventStatus(id, body.status);
   }
@@ -114,7 +151,8 @@ export class AdminController {
 
   @Post('inscriptions')
   @Permissions('admin.edit')
-  async createInscription(@Body() body: unknown) {
+  @UsePipes(new ZodValidationPipe(createInscriptionDto))
+  async createInscription(@Body() body: CreateInscriptionDto) {
     return await this.adminService.createInscription(body);
   }
 
@@ -126,8 +164,9 @@ export class AdminController {
 
   @Post('inscriptions/bulk')
   @Permissions('admin.edit')
+  @UsePipes(new ZodValidationPipe(bulkCreateInscriptionsDto))
   async bulkCreateInscriptions(
-    @Body() body: { eventId: string; inscriptions: Array<{ name: string; email: string; comments?: string }> },
+    @Body() body: BulkCreateInscriptionsDto,
   ) {
     return await this.adminService.bulkCreateInscriptions(body.eventId, body.inscriptions);
   }
@@ -142,7 +181,8 @@ export class AdminController {
 
   @Post('votes')
   @Permissions('admin.edit')
-  async createVote(@Body() body: unknown) {
+  @UsePipes(new ZodValidationPipe(createVoteDto))
+  async createVote(@Body() body: CreateVoteDto) {
     return await this.adminService.createVote(body);
   }
 
@@ -168,8 +208,9 @@ export class AdminController {
 
   @Post('administrators')
   @Permissions('admin.manage')
+  @UsePipes(new ZodValidationPipe(createAdministratorDto))
   async createAdministrator(
-    @Body() body: unknown,
+    @Body() body: CreateAdministratorDto,
     @User() user: { email: string },
   ) {
     return await this.adminService.createAdministrator(body, user.email);
@@ -177,9 +218,10 @@ export class AdminController {
 
   @Patch('administrators/:email/role')
   @Permissions('admin.manage')
+  @UsePipes(new ZodValidationPipe(updateAdministratorRoleDto))
   async updateAdministratorRole(
     @Param('email') email: string,
-    @Body() body: { role: unknown },
+    @Body() body: UpdateAdministratorRoleDto,
     @User() user: { email: string },
   ) {
     return await this.adminService.updateAdministratorRole(email, body.role, user.email);
@@ -187,9 +229,10 @@ export class AdminController {
 
   @Patch('administrators/:email/status')
   @Permissions('admin.manage')
+  @UsePipes(new ZodValidationPipe(updateAdministratorStatusDto))
   async updateAdministratorStatus(
     @Param('email') email: string,
-    @Body() body: { isActive: unknown },
+    @Body() body: UpdateAdministratorStatusDto,
     @User() user: { email: string },
   ) {
     return await this.adminService.updateAdministratorStatus(email, body.isActive, user.email);
@@ -197,9 +240,10 @@ export class AdminController {
 
   @Patch('administrators/:email/info')
   @Permissions('admin.manage')
+  @UsePipes(new ZodValidationPipe(updateAdministratorInfoDto))
   async updateAdministratorInfo(
     @Param('email') email: string,
-    @Body() body: unknown,
+    @Body() body: UpdateAdministratorInfoDto,
     @User() user: { email: string },
   ) {
     return await this.adminService.updateAdministratorInfo(email, body, user.email);
@@ -226,9 +270,10 @@ export class AdminController {
 
   @Patch('administrators/:email/approve')
   @Permissions('admin.manage')
+  @UsePipes(new ZodValidationPipe(approveAdministratorDto))
   async approveAdministrator(
     @Param('email') email: string,
-    @Body() body: { role: unknown },
+    @Body() body: ApproveAdministratorDto,
   ) {
     return await this.adminService.approveAdministrator(email, body.role);
   }
@@ -275,9 +320,10 @@ export class AdminController {
 
   @Put('unsubscriptions/:id')
   @Permissions('admin.edit')
+  @UsePipes(new ZodValidationPipe(updateUnsubscriptionDto))
   async updateUnsubscription(
     @Param('id') id: string,
-    @Body() body: unknown,
+    @Body() body: UpdateUnsubscriptionDto,
   ) {
     return await this.adminService.updateUnsubscription(id, body);
   }
@@ -292,8 +338,9 @@ export class AdminController {
 
   @Post('development-requests')
   @Permissions('admin.manage')
+  @UsePipes(new ZodValidationPipe(createDevelopmentRequestDto))
   async createDevelopmentRequest(
-    @Body() body: unknown,
+    @Body() body: CreateDevelopmentRequestDto,
     @User() user: { email: string; firstName?: string; lastName?: string },
   ) {
     return await this.adminService.createDevelopmentRequest(body, user);
@@ -301,9 +348,10 @@ export class AdminController {
 
   @Put('development-requests/:id')
   @Permissions('admin.manage')
+  @UsePipes(new ZodValidationPipe(updateDevelopmentRequestDto))
   async updateDevelopmentRequest(
     @Param('id') id: string,
-    @Body() body: unknown,
+    @Body() body: UpdateDevelopmentRequestDto,
   ) {
     return await this.adminService.updateDevelopmentRequest(id, body);
   }
@@ -316,9 +364,10 @@ export class AdminController {
 
   @Patch('development-requests/:id/status')
   @Permissions('admin.manage')
+  @UsePipes(new ZodValidationPipe(updateDevelopmentRequestStatusDto))
   async updateDevelopmentRequestStatus(
     @Param('id') id: string,
-    @Body() body: unknown,
+    @Body() body: UpdateDevelopmentRequestStatusDto,
     @User() user: { email: string },
   ) {
     return await this.adminService.updateDevelopmentRequestStatus(id, body, user);
@@ -349,6 +398,42 @@ export class AdminController {
   @Permissions('admin.manage')
   async testEmailSimple() {
     return await this.adminService.testEmailSimple();
+  }
+
+  // ===== Routes Admin Feature Configuration =====
+
+  @Get('features')
+  async getFeatureConfig() {
+    return await this.adminService.getFeatureConfig();
+  }
+
+  @Put('features/:featureKey')
+  @Permissions('admin.manage')
+  @UsePipes(new ZodValidationPipe(updateFeatureConfigDto))
+  async updateFeatureConfig(
+    @Param('featureKey') featureKey: string,
+    @Body() body: UpdateFeatureConfigDto,
+    @User() user: { email: string },
+  ) {
+    return await this.adminService.updateFeatureConfig(featureKey, body.enabled, user.email);
+  }
+
+  // ===== Routes Admin Email Configuration =====
+
+  @Get('email-config')
+  @Permissions('admin.view')
+  async getEmailConfig() {
+    return await this.adminService.getEmailConfig();
+  }
+
+  @Put('email-config')
+  @Permissions('admin.manage')
+  @UsePipes(new ZodValidationPipe(updateEmailConfigDto))
+  async updateEmailConfig(
+    @Body() body: UpdateEmailConfigDto,
+    @User() user: { email: string },
+  ) {
+    return await this.adminService.updateEmailConfig(body, user.email);
   }
 }
 
