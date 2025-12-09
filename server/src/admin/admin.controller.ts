@@ -1,12 +1,21 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus, Req, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus, Req, BadRequestException, UsePipes } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { PermissionGuard } from '../auth/guards/permission.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { User } from '../auth/decorators/user.decorator';
+import { ZodValidationPipe } from '../common/pipes/validation.pipe';
 import { logger } from '../../lib/logger';
 import { frontendErrorSchema } from '@shared/schema';
 import { z } from 'zod';
+import {
+  bulkCreateInscriptionsDto,
+  updateFeatureConfigDto,
+  updateEmailConfigDto,
+  type BulkCreateInscriptionsDto,
+  type UpdateFeatureConfigDto,
+  type UpdateEmailConfigDto,
+} from './admin.dto';
 
 /**
  * Controller Admin - Routes d'administration
@@ -126,8 +135,9 @@ export class AdminController {
 
   @Post('inscriptions/bulk')
   @Permissions('admin.edit')
+  @UsePipes(new ZodValidationPipe(bulkCreateInscriptionsDto))
   async bulkCreateInscriptions(
-    @Body() body: { eventId: string; inscriptions: Array<{ name: string; email: string; comments?: string }> },
+    @Body() body: BulkCreateInscriptionsDto,
   ) {
     return await this.adminService.bulkCreateInscriptions(body.eventId, body.inscriptions);
   }
@@ -360,9 +370,10 @@ export class AdminController {
 
   @Put('features/:featureKey')
   @Permissions('admin.manage')
+  @UsePipes(new ZodValidationPipe(updateFeatureConfigDto))
   async updateFeatureConfig(
     @Param('featureKey') featureKey: string,
-    @Body() body: { enabled: boolean },
+    @Body() body: UpdateFeatureConfigDto,
     @User() user: { email: string },
   ) {
     return await this.adminService.updateFeatureConfig(featureKey, body.enabled, user.email);
@@ -378,8 +389,9 @@ export class AdminController {
 
   @Put('email-config')
   @Permissions('admin.manage')
+  @UsePipes(new ZodValidationPipe(updateEmailConfigDto))
   async updateEmailConfig(
-    @Body() body: unknown,
+    @Body() body: UpdateEmailConfigDto,
     @User() user: { email: string },
   ) {
     return await this.adminService.updateEmailConfig(body, user.email);

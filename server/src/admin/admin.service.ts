@@ -2,10 +2,10 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { StorageService } from '../common/storage/storage.service';
 import { IdeasService } from '../ideas/ideas.service';
 import { EventsService } from '../events/events.service';
-import { 
-  updateIdeaSchema, 
-  updateIdeaStatusSchema, 
-  insertEventSchema, 
+import {
+  updateIdeaSchema,
+  updateIdeaStatusSchema,
+  insertEventSchema,
   updateEventStatusSchema,
   insertAdminSchema,
   updateAdminSchema,
@@ -16,7 +16,7 @@ import {
   updateDevelopmentRequestSchema,
   updateDevelopmentRequestStatusSchema,
   ADMIN_ROLES,
-  type Idea 
+  type Idea
 } from '../../../shared/schema';
 import { ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
@@ -27,6 +27,7 @@ import { emailNotificationService } from '../../email-notification-service';
 import { emailService } from '../../email-service';
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import type { UpdateEmailConfigDto } from './admin.dto';
 
 /**
  * Service Admin - Gestion des routes d'administration
@@ -820,30 +821,16 @@ export class AdminService {
     };
   }
 
-  async updateEmailConfig(data: unknown, updatedBy: string) {
-    // Validation basique des champs requis
-    const config = data as {
-      host?: string;
-      port?: number;
-      secure?: boolean;
-      username?: string;
-      password?: string;
-      fromEmail?: string;
-      fromName?: string;
-    };
-
-    if (!config.host || !config.fromEmail) {
-      throw new BadRequestException('Les champs host et fromEmail sont requis');
-    }
-
+  async updateEmailConfig(config: UpdateEmailConfigDto, updatedBy: string) {
+    // La validation est faite par le ZodValidationPipe dans le contrôleur
     const result = await this.storageService.instance.updateEmailConfig({
       host: config.host,
-      port: config.port || 465,
-      secure: config.secure ?? true,
+      port: config.port,
+      secure: config.secure,
       username: config.username || '',
       password: config.password,
       fromEmail: config.fromEmail,
-      fromName: config.fromName || 'CJD',
+      fromName: config.fromName,
     }, updatedBy);
 
     if (!result.success) {
