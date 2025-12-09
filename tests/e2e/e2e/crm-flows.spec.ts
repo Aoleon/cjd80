@@ -182,7 +182,7 @@ test.describe('CRM - Patron Management', () => {
 test.describe('CRM - Member Management', () => {
   test.beforeEach(async ({ page }) => {
     // Mock authentication API - this is what useAuth actually checks
-    await page.route('/api/user', async (route) => {
+    await page.route('/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

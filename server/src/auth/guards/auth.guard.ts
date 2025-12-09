@@ -1,22 +1,25 @@
-import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { Observable } from 'rxjs';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import type { Request } from 'express';
 
 /**
- * Guard pour vérifier que l'utilisateur est authentifié
- * Remplace requireAuth de Express
+ * Guard basé sur la session pour vérifier qu'un utilisateur est authentifié
+ * Fonctionne avec Authentik (OAuth2) et l'auth par formulaire classique
  */
 @Injectable()
-export class JwtAuthGuard extends AuthGuard('authentik') {
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
-    return super.canActivate(context);
-  }
+export class JwtAuthGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest<Request>();
 
-  handleRequest(err: any, user: any, info: any) {
-    if (err || !user) {
-      throw err || new UnauthorizedException('Authentication required');
+    // Passport attache `isAuthenticated` quand les sessions sont activées
+    const isAuthenticated = typeof request.isAuthenticated === 'function'
+      ? request.isAuthenticated()
+      : false;
+
+    // Accepte également le cas où Passport a déjà peuplé req.user sans exposer isAuthenticated (tests)
+    if (isAuthenticated || request.user) {
+      return true;
     }
-    return user;
+
+    throw new UnauthorizedException('Authentication required');
   }
 }
-

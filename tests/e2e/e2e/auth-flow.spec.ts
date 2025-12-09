@@ -48,8 +48,8 @@ test.describe('Authentication Flow', () => {
       path: '/',
     }]);
 
-    // Mock the /api/user endpoint to return authenticated user
-    await page.route('/api/user', async (route) => {
+    // Mock the /api/auth/user endpoint to return authenticated user
+    await page.route('/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -79,7 +79,7 @@ test.describe('Authentication Flow', () => {
       path: '/',
     }]);
 
-    await page.route('/api/user', async (route) => {
+    await page.route('/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -110,7 +110,7 @@ test.describe('Authentication Flow', () => {
       path: '/',
     }]);
 
-    await page.route('/api/user', async (route) => {
+    await page.route('/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -141,7 +141,7 @@ test.describe('Authentication Flow', () => {
       path: '/',
     }]);
 
-    await page.route('/api/user', async (route) => {
+    await page.route('/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -187,7 +187,7 @@ test.describe('Authentication Flow', () => {
       path: '/',
     }]);
 
-    await page.route('/api/user', async (route) => {
+    await page.route('/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -218,7 +218,7 @@ test.describe('Authentication Flow', () => {
       path: '/',
     }]);
 
-    await page.route('/api/user', async (route) => {
+    await page.route('/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -264,7 +264,7 @@ test.describe('Authentication Flow', () => {
       path: '/',
     }]);
 
-    await page.route('/api/user', async (route) => {
+    await page.route('/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -318,7 +318,7 @@ test.describe('Authentication Flow', () => {
     });
 
     // Mock user creation/sync
-    await page.route('/api/user', async (route) => {
+    await page.route('/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -361,7 +361,7 @@ test.describe('API Authentication', () => {
       path: '/',
     }]);
 
-    await page.route('/api/user', async (route) => {
+    await page.route('/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

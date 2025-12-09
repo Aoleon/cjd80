@@ -757,8 +757,8 @@ test.describe('Loan Items - Formulaire de proposition et gestion admin', () => {
     await page.waitForTimeout(2000);
     await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 5000 });
 
-    // Mocker l'endpoint /api/user pour simuler un utilisateur admin authentifié
-    await page.route('**/api/user', async (route) => {
+    // Mocker l'endpoint /api/auth/user pour simuler un utilisateur admin authentifié
+    await page.route('**/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -913,8 +913,8 @@ test.describe('Loan Items - Formulaire de proposition et gestion admin', () => {
     await page.waitForTimeout(2000);
     await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 5000 });
 
-    // Mocker l'endpoint /api/user pour simuler un utilisateur admin authentifié
-    await page.route('**/api/user', async (route) => {
+    // Mocker l'endpoint /api/auth/user pour simuler un utilisateur admin authentifié
+    await page.route('**/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -1627,8 +1627,8 @@ test.describe('Loan Items - Formulaire de proposition et gestion admin', () => {
     
     await page.waitForTimeout(2000);
     
-    // Mocker l'endpoint /api/user pour l'admin
-    await page.route('**/api/user', async (route) => {
+    // Mocker l'endpoint /api/auth/user pour l'admin
+    await page.route('**/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

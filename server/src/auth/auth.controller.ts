@@ -4,6 +4,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { User } from './decorators/user.decorator';
 import { logger } from '../../lib/logger';
+import { JwtAuthGuard } from './guards/auth.guard';
 
 @Controller('api/auth')
 export class AuthController {
@@ -94,9 +95,8 @@ export class AuthController {
    * GET /api/user
    */
   @Get('user')
-  @UseGuards(AuthGuard('authentik'))
+  @UseGuards(JwtAuthGuard)
   getCurrentUser(@User() user: any) {
     return this.authService.getUserWithoutPassword(user);
   }
 }
-
