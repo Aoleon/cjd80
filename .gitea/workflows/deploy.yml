@@ -7,14 +7,10 @@ on:
     tags:
       - 'v*.*.*'
 
-env:
-  IMAGE_NAME: cjd80-app
-  IMAGE_TAG: latest
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,12 +30,6 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Build Docker image
-        run: |
-          docker build -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
-          docker save ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} | gzip > /tmp/cjd80-app.tar.gz
-          ls -lh /tmp/cjd80-app.tar.gz
-
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -47,18 +37,36 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.PROD_SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      - name: Transfer and deploy
+      - name: Deploy to production
         run: |
-          # Transfer image
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 /tmp/cjd80-app.tar.gz ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}:/tmp/
+          # Create deployment tarball
+          tar -czf /tmp/deploy.tar.gz --exclude=node_modules --exclude=.git .
           
-          # Load and restart
+          # Transfer to production
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 /tmp/deploy.tar.gz ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}:/tmp/
+          
+          # Deploy on production server
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'ENDSSH'
             cd /opt/cjd80
-            gunzip -c /tmp/cjd80-app.tar.gz | docker load
+            
+            # Backup current version
+            [ -d app-backup ] && rm -rf app-backup
+            [ -d app ] && mv app app-backup
+            
+            # Extract new version
+            mkdir -p app
+            tar -xzf /tmp/deploy.tar.gz -C app
+            rm -f /tmp/deploy.tar.gz
+            
+            # Rebuild Docker image
+            cd app
+            docker build -t cjd80-app:latest .
+            
+            # Restart services
+            cd /opt/cjd80
             docker compose down
             docker compose up -d
-            rm -f /tmp/cjd80-app.tar.gz
+            
             echo "Deployment completed at $(date)"
             sleep 10
             docker compose ps
