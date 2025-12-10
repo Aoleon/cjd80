@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { NotificationBell } from "@/components/notification-bell";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useFeatureConfig } from "@/contexts/FeatureConfigContext";

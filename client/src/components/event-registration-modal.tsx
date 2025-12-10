@@ -244,13 +244,16 @@ export default function EventRegistrationModal({
                       <span className="break-words">{event.location}</span>
                     </div>
                   )}
-                  <div className="flex items-start sm:items-center">
-                    <Users className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0 mt-0.5 sm:mt-0" />
-                    <span className="break-words">
-                      {event.inscriptionCount} personne(s) déjà inscrite(s)
-                      {event.maxParticipants && ` / ${event.maxParticipants} maximum`}
-                    </span>
-                  </div>
+                  {(event.showInscriptionsCount || event.showAvailableSeats) && (
+                    <div className="flex items-start sm:items-center">
+                      <Users className="w-4 h-4 mr-2 text-cjd-green flex-shrink-0 mt-0.5 sm:mt-0" />
+                      <span className="break-words">
+                        {event.showInscriptionsCount && `${event.inscriptionCount} personne(s) inscrite(s)`}
+                        {event.showInscriptionsCount && event.maxParticipants && event.showAvailableSeats && " / "}
+                        {event.maxParticipants && event.showAvailableSeats && `${event.maxParticipants} places maximum`}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 {event.description && (
                   <p className="mt-3 text-xs sm:text-sm text-gray-700 break-words whitespace-pre-line">{event.description}</p>

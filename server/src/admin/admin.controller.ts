@@ -72,7 +72,10 @@ export class AdminController {
     @Param('id') id: string,
     @Body() body: UpdateIdeaStatusDto,
   ) {
+    logger.info('[AdminController] Updating idea status', { ideaId: id, newStatus: body.status });
     await this.adminService.updateIdeaStatus(id, body.status);
+    logger.info('[AdminController] Idea status updated successfully', { ideaId: id });
+    return { success: true, message: 'Statut mis à jour' };
   }
 
   @Patch('ideas/:id/featured')
@@ -337,7 +340,7 @@ export class AdminController {
   }
 
   @Post('development-requests')
-  @Permissions('admin.manage')
+  @Permissions('admin.edit')
   @UsePipes(new ZodValidationPipe(createDevelopmentRequestDto))
   async createDevelopmentRequest(
     @Body() body: CreateDevelopmentRequestDto,
