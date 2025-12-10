@@ -4,6 +4,9 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "dev": "dotenv -e .env -- ts-node --swc -P tsconfig.server.json server/src/main.ts",
     "dev:client": "vite --port 5173",
     "build": "rm -rf dist && vite build && tsc -p tsconfig.server.json",
