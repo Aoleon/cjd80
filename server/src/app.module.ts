@@ -1,9 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, type NestModule, type MiddlewareConsumer } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ServeStaticModule } from '@nestjs/serve-static';
+// ServeStaticModule n'est plus nécessaire - le SpaFallbackController gère tout
+// import { ServeStaticModule } from '@nestjs/serve-static';
 import { APP_INTERCEPTOR, APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { join } from 'path';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './common/database/database.module';
 import { StorageModule } from './common/storage/storage.module';
@@ -22,35 +22,15 @@ import { FinancialModule } from './financial/financial.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { AuthentikModule } from './integrations/authentik/authentik.module';
 import { MinIOModule } from './integrations/minio/minio.module';
+import { ViteModule } from './integrations/vite/vite.module';
 import { DbMonitoringInterceptor } from './common/interceptors/db-monitoring.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
-// Configuration conditionnelle pour les fichiers statiques en production
-const isProduction = process.env.NODE_ENV === 'production';
-const staticModules = isProduction
-  ? [
-      ServeStaticModule.forRoot({
-        rootPath: join(process.cwd(), 'dist/public'),
-        // Exclure toutes les routes API
-        exclude: ['/api/*'],
-        serveStaticOptions: {
-          index: ['index.html'],
-          maxAge: '1y', // Cache long pour assets avec hash
-          setHeaders: (res, path) => {
-            // Pas de cache pour HTML (SPA)
-            if (path.endsWith('.html')) {
-              res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-              res.setHeader('Pragma', 'no-cache');
-              res.setHeader('Expires', '0');
-            }
-            // Empêcher l'indexation
-            res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet, noimageindex');
-          },
-        },
-      }),
-    ]
-  : [];
+// Note: ServeStaticModule n'est plus utilisé
+// Le fallback SPA et le service des fichiers statiques sont maintenant gérés
+// entièrement par ViteModule/SpaFallbackController qui utilise un Controller NestJS
+// avec @Get('*') et res.sendFile() au lieu du middleware Express ServeStaticModule
 
 @Module({
   imports: [
@@ -65,8 +45,6 @@ const staticModules = isProduction
     ]),
     // Schedule pour les tâches cron
     ScheduleModule.forRoot(),
-    // Fichiers statiques en production (via @nestjs/serve-static)
-    ...staticModules,
     // Modules de base
     DatabaseModule,
     StorageModule,
@@ -85,6 +63,8 @@ const staticModules = isProduction
     TrackingModule,
     AuthentikModule,
     MinIOModule,
+    // ViteModule gère le SPA fallback et les fichiers statiques via SpaFallbackController
+    ViteModule,
   ],
   controllers: [],
   providers: [
@@ -109,4 +89,9 @@ const staticModules = isProduction
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // SPA fallback is now handled by ViteModule/SpaFallbackController
+    // No middleware needed here
+  }
+}

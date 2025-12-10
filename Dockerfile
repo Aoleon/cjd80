@@ -14,8 +14,8 @@ RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 # Copier le code source
 COPY . .
 
-# Build arg pour le base path
-ARG VITE_BASE_PATH=/cjd80/
+# Build arg pour le base path (vide par défaut pour servir à la racine)
+ARG VITE_BASE_PATH=/
 
 # Vérifications et build (frontend + backend)
 # Augmenter la limite de mémoire Node.js pour éviter les erreurs "heap out of memory"

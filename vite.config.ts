@@ -29,9 +29,17 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    sourcemap: process.env.NODE_ENV === "development", // Source maps seulement en dev pour économiser la mémoire
+    sourcemap: process.env.NODE_ENV === "development",
   },
   server: {
+    port: 5173,
+    host: '0.0.0.0',
+    hmr: {
+      protocol: 'wss',
+      host: 'cjd80-dev.robinswood.io',
+      port: 443,
+      clientPort: 443,
+    },
     fs: {
       strict: true,
       deny: ["**/.*"],

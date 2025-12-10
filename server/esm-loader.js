@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 export async function resolve(specifier, context, nextResolve) {
   // Map @shared/* to compiled dist/shared/* outputs
   if (specifier.startsWith('@shared/')) {
-    const targetPath = `/app/dist/shared/${specifier.slice('@shared/'.length)}.js`;
+    const targetPath = `${process.cwd()}/dist/shared/${specifier.slice('@shared/'.length)}.js`;
     try {
       await access(targetPath);
       return { url: pathToFileURL(targetPath).href, shortCircuit: true };
