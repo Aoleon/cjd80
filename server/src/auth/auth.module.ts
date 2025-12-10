@@ -3,17 +3,27 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthentikStrategy } from './strategies/authentik.strategy';
+import { LocalStrategy } from './strategies/local.strategy';
 import { UserSyncService } from './user-sync.service';
+import { PasswordService } from './password.service';
+import { PasswordResetService } from './password-reset.service';
 import { StorageModule } from '../common/storage/storage.module';
 import { AuthentikModule } from '../integrations/authentik/authentik.module';
 import session from 'express-session';
 import { StorageService } from '../common/storage/storage.service';
 import { logger } from '../../lib/logger';
 
-// Charger AuthentikStrategy seulement si les credentials sont configurés
+// Déterminer le mode d'authentification
+const authMode = process.env.AUTH_MODE || 'oauth';
+const useLocalAuth = authMode === 'local';
 const authentikConfigured = process.env.AUTHENTIK_CLIENT_ID && process.env.AUTHENTIK_CLIENT_SECRET;
-if (!authentikConfigured) {
-  logger.warn('[AuthModule] AuthentikStrategy non chargée - credentials manquants');
+
+if (useLocalAuth) {
+  logger.info('[AuthModule] Mode authentification: LOCAL (formulaire)');
+} else if (authentikConfigured) {
+  logger.info('[AuthModule] Mode authentification: AUTHENTIK (OAuth2)');
+} else {
+  logger.warn('[AuthModule] Aucune stratégie d\'authentification configurée');
 }
 
 @Module({
@@ -27,9 +37,13 @@ if (!authentikConfigured) {
   controllers: [AuthController],
   providers: [
     AuthService,
-    // Charger AuthentikStrategy seulement si configuré
-    ...(authentikConfigured ? [AuthentikStrategy] : []),
+    PasswordService,
+    PasswordResetService,
     UserSyncService,
+    // Charger LocalStrategy si mode local
+    ...(useLocalAuth ? [LocalStrategy] : []),
+    // Charger AuthentikStrategy si mode oauth et configuré
+    ...((!useLocalAuth && authentikConfigured) ? [AuthentikStrategy] : []),
     {
       provide: 'SESSION_CONFIG',
       useFactory: (storageService: StorageService) => {
@@ -49,8 +63,11 @@ if (!authentikConfigured) {
       },
       inject: [StorageService],
     },
+    {
+      provide: 'AUTH_MODE',
+      useValue: useLocalAuth ? 'local' : 'oauth',
+    },
   ],
-  exports: [AuthService, PassportModule, 'SESSION_CONFIG'],
+  exports: [AuthService, PasswordService, PasswordResetService, PassportModule, 'SESSION_CONFIG', 'AUTH_MODE'],
 })
 export class AuthModule {}
-

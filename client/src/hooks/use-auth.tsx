@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import {
   useQuery,
   useMutation,
@@ -8,18 +8,40 @@ import { User as SelectUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+type AuthMode = 'local' | 'oauth';
+
 type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<void, Error, { email: string; password: string } | undefined>;
+  authMode: AuthMode;
+  loginMutation: UseMutationResult<SelectUser | void, Error, { email: string; password: string } | undefined>;
   logoutMutation: UseMutationResult<void, Error, void>;
+  forgotPasswordMutation: UseMutationResult<{ message: string }, Error, { email: string }>;
+  resetPasswordMutation: UseMutationResult<{ message: string }, Error, { token: string; password: string }>;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const [authMode, setAuthMode] = useState<AuthMode>('oauth');
+
+  // Récupérer le mode d'authentification au démarrage
+  useEffect(() => {
+    const fetchAuthMode = async () => {
+      try {
+        const response = await fetch('/api/auth/mode');
+        const data = await response.json();
+        setAuthMode(data.mode || 'oauth');
+      } catch {
+        // Par défaut, utiliser oauth si la requête échoue
+        setAuthMode('oauth');
+      }
+    };
+    fetchAuthMode();
+  }, []);
+
   const {
     data: user,
     error,
@@ -30,15 +52,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (_credentials?: { email: string; password: string }) => {
-      // Rediriger vers le flow OAuth2 Authentik
-      // Le backend redirigera vers Authentik qui gérera l'authentification
-      window.location.href = "/api/auth/authentik";
+    mutationFn: async (credentials?: { email: string; password: string }) => {
+      if (authMode === 'oauth' || !credentials) {
+        // Rediriger vers le flow OAuth2 Authentik
+        window.location.href = "/api/auth/authentik";
+        return;
+      }
+
+      // Mode local : envoyer les credentials
+      const response = await apiRequest("POST", "/api/auth/login", credentials);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data && authMode === 'local') {
+        queryClient.setQueryData(["/api/auth/user"], data);
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        toast({
+          title: "Connexion réussie",
+          description: "Bienvenue !",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
         title: "Erreur de connexion",
-        description: error.message || "Erreur lors de la redirection vers Authentik",
+        description: error.message || "Identifiants invalides",
         variant: "destructive",
       });
     },
@@ -46,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
+      await apiRequest("POST", "/api/auth/logout");
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/auth/user"], null);
@@ -65,14 +103,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const forgotPasswordMutation = useMutation({
+    mutationFn: async ({ email }: { email: string }) => {
+      const response = await apiRequest("POST", "/api/auth/forgot-password", { email });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Email envoyé",
+        description: "Si votre email est enregistré, vous recevrez un lien de réinitialisation.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async ({ token, password }: { token: string; password: string }) => {
+      const response = await apiRequest("POST", "/api/auth/reset-password", { token, password });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Mot de passe réinitialisé",
+        description: "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <AuthContext.Provider
       value={{
         user: user ?? null,
         isLoading,
         error,
+        authMode,
         loginMutation,
         logoutMutation,
+        forgotPasswordMutation,
+        resetPasswordMutation,
       }}
     >
       {children}

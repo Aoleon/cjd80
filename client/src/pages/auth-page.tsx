@@ -1,27 +1,29 @@
-import { useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect, useLocation } from "wouter";
+import { Redirect, Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Shield, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Loader2, Shield, AlertCircle, Mail, Lock } from "lucide-react";
 import { hasPermission } from "@shared/schema";
 import { branding, getShortAppName } from '@/config/branding';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function AuthPage() {
-  const { user, isLoading, loginMutation } = useAuth();
-  const [location, setLocation] = useLocation();
+  const { user, isLoading, loginMutation, authMode } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  // Calculer isAdmin après tous les hooks pour éviter les problèmes de réconciliation
+  // Calculer isAdmin après tous les hooks
   const isAdmin = user ? hasPermission(user.role, 'admin.view') : false;
 
   // Vérifier les paramètres d'erreur dans l'URL
   const urlParams = new URLSearchParams(window.location.search);
   const error = urlParams.get('error');
 
-  // Redirect if already logged in (after hooks are called)
+  // Redirect if already logged in
   if (!isLoading && user) {
-    // Rediriger les admins vers la page d'administration
     return <Redirect to={isAdmin ? "/admin" : "/"} />;
   }
 
@@ -33,8 +35,13 @@ export default function AuthPage() {
     );
   }
 
-  const handleLogin = () => {
-    loginMutation.mutate(undefined);
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (authMode === 'local') {
+      loginMutation.mutate({ email, password });
+    } else {
+      loginMutation.mutate(undefined);
+    }
   };
 
   return (
@@ -54,45 +61,117 @@ export default function AuthPage() {
             <CardHeader>
               <CardTitle>Connexion</CardTitle>
               <CardDescription>
-                Utilisez Authentik pour vous connecter à l'administration
+                {authMode === 'local' 
+                  ? "Entrez vos identifiants pour vous connecter"
+                  : "Utilisez Authentik pour vous connecter à l'administration"
+                }
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Erreur d'authentification</AlertTitle>
-                  <AlertDescription>
-                    {error === "authentication_failed" && "L'authentification a échoué. Veuillez réessayer."}
-                    {error === "session_failed" && "Erreur lors de l'établissement de la session. Veuillez réessayer."}
-                    {error !== "authentication_failed" && error !== "session_failed" && decodeURIComponent(error)}
-                  </AlertDescription>
-                </Alert>
-              )}
+            <form onSubmit={handleLogin}>
+              <CardContent className="space-y-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Erreur d'authentification</AlertTitle>
+                    <AlertDescription>
+                      {error === "authentication_failed" && "L'authentification a échoué. Veuillez réessayer."}
+                      {error === "session_failed" && "Erreur lors de l'établissement de la session. Veuillez réessayer."}
+                      {error !== "authentication_failed" && error !== "session_failed" && decodeURIComponent(error)}
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-              <Button 
-                onClick={handleLogin}
-                className="w-full bg-cjd-green hover:bg-cjd-green-dark"
-                disabled={loginMutation.isPending}
-                size="lg"
-              >
-                {loginMutation.isPending ? (
+                {authMode === 'local' ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Redirection en cours...
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="votre@email.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Mot de passe</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <Button 
+                      type="submit"
+                      className="w-full bg-cjd-green hover:bg-cjd-green-dark"
+                      disabled={loginMutation.isPending}
+                      size="lg"
+                    >
+                      {loginMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Connexion en cours...
+                        </>
+                      ) : (
+                        <>
+                          <Shield className="mr-2 h-4 w-4" />
+                          Se connecter
+                        </>
+                      )}
+                    </Button>
                   </>
                 ) : (
-                  <>
-                    <Shield className="mr-2 h-4 w-4" />
-                    Se connecter avec Authentik
-                  </>
+                  <Button 
+                    type="submit"
+                    className="w-full bg-cjd-green hover:bg-cjd-green-dark"
+                    disabled={loginMutation.isPending}
+                    size="lg"
+                  >
+                    {loginMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Redirection en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Shield className="mr-2 h-4 w-4" />
+                        Se connecter avec Authentik
+                      </>
+                    )}
+                  </Button>
                 )}
-              </Button>
+              </CardContent>
+            </form>
 
-              <p className="text-sm text-gray-500 text-center mt-4">
-                Vous serez redirigé vers Authentik pour vous authentifier
-              </p>
-            </CardContent>
+            {authMode === 'local' && (
+              <CardFooter className="flex justify-center">
+                <Link href="/forgot-password" className="text-sm text-cjd-green hover:underline">
+                  Mot de passe oublié ?
+                </Link>
+              </CardFooter>
+            )}
+
+            {authMode === 'oauth' && (
+              <CardFooter>
+                <p className="text-sm text-gray-500 text-center w-full">
+                  Vous serez redirigé vers Authentik pour vous authentifier
+                </p>
+              </CardFooter>
+            )}
           </Card>
         </div>
       </div>
@@ -113,7 +192,12 @@ export default function AuthPage() {
               </div>
               <div>
                 <h3 className="font-semibold">Authentification sécurisée</h3>
-                <p className="text-sm opacity-90">Connexion via Authentik pour une sécurité renforcée</p>
+                <p className="text-sm opacity-90">
+                  {authMode === 'local' 
+                    ? "Connexion par email et mot de passe sécurisé"
+                    : "Connexion via Authentik pour une sécurité renforcée"
+                  }
+                </p>
               </div>
             </div>
           </div>

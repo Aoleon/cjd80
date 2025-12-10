@@ -40,6 +40,20 @@ export const admins = pgTable("admins", {
   activeIdx: index("admins_active_idx").on(table.isActive),
 }));
 
+
+// Password reset tokens table - Tokens pour la réinitialisation de mot de passe
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().references(() => admins.email, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  emailIdx: index("password_reset_tokens_email_idx").on(table.email),
+  tokenIdx: index("password_reset_tokens_token_idx").on(table.token),
+  expiresAtIdx: index("password_reset_tokens_expires_at_idx").on(table.expiresAt),
+}));
 // Status constants for ideas and events
 export const IDEA_STATUS = {
   PENDING: "pending",
@@ -1473,6 +1487,9 @@ export const updateTrackingAlertSchema = z.object({
 export type Admin = typeof admins.$inferSelect;
 export type InsertAdmin = z.infer<typeof insertAdminSchema>;
 export type User = Admin; // For compatibility with auth blueprint
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 
 export type Idea = typeof ideas.$inferSelect;
 export type InsertIdea = z.infer<typeof insertIdeaSchema>;

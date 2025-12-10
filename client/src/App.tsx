@@ -17,6 +17,8 @@ import { OnboardingGuard } from "@/components/onboarding-guard";
 import { Loader2 } from "lucide-react";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import ResetPasswordPage from "@/pages/reset-password";
 import ProposePage from "@/pages/propose-page";
 import EventsPage from "@/pages/events-page";
 import ToolsPage from "@/pages/tools-page";
@@ -90,6 +92,8 @@ function Router() {
       </Route>
       <Route path="/statuts" component={StatusPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/onboarding" component={OnboardingPage} />
       <Route path="/test-error" component={TestErrorPage} />
       {/* Routes legacy (maintenues pour compatibilité) */}
