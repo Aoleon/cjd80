@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { useAdminEvents } from "@/hooks/useAdminEvents";
 import EventTable from "./EventTable";
 import EventMobileCard from "./EventMobileCard";
+import { ExportButton } from "@/components/ui/export-button";
 import type { EventWithInscriptions } from "@/types/admin";
+import type { ExportColumn } from "@/lib/export-utils";
 
 interface AdminEventsPanelProps {
   enabled: boolean;
@@ -13,6 +15,19 @@ interface AdminEventsPanelProps {
   onManageInscriptions: (event: EventWithInscriptions) => void;
   onExportInscriptions: (event: EventWithInscriptions) => void;
 }
+
+// Colonnes pour l'export des événements
+const exportColumns: ExportColumn[] = [
+  { header: 'Titre', accessor: 'title' },
+  { header: 'Description', accessor: 'description', format: (v) => v || '' },
+  { header: 'Date', accessor: 'date', format: (v) => v ? new Date(v).toLocaleDateString('fr-FR') : '' },
+  { header: 'Lieu', accessor: 'location', format: (v) => v || '' },
+  { header: 'Places max', accessor: 'maxParticipants', format: (v) => v ? String(v) : 'Illimité' },
+  { header: 'Inscrits', accessor: 'inscriptionCount', format: (v) => String(v) },
+  { header: 'Désinscrits', accessor: 'unsubscriptionCount', format: (v) => String(v) },
+  { header: 'Statut', accessor: 'status' },
+  { header: 'Date création', accessor: 'createdAt', format: (v) => v ? new Date(v).toLocaleDateString('fr-FR') : '' },
+];
 
 export default function AdminEventsPanel({
   enabled,
@@ -39,14 +54,26 @@ export default function AdminEventsPanel({
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <h3 className="text-base sm:text-lg font-semibold">Tous les événements</h3>
-        <Button
-          onClick={onCreateEvent}
-          className="bg-cjd-green hover:bg-cjd-green-dark text-white w-full sm:w-auto"
-          data-testid="button-create-event"
-        >
-          <CalendarPlus className="w-4 h-4 mr-2" />
-          Nouvel événement
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          {events && events.length > 0 && (
+            <ExportButton
+              filename="evenements-cjd"
+              title="Liste des Événements CJD"
+              columns={exportColumns}
+              getData={() => events || []}
+              size="sm"
+              variant="outline"
+            />
+          )}
+          <Button
+            onClick={onCreateEvent}
+            className="bg-cjd-green hover:bg-cjd-green-dark text-white flex-1 sm:flex-initial"
+            data-testid="button-create-event"
+          >
+            <CalendarPlus className="w-4 h-4 mr-2" />
+            Nouvel événement
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (

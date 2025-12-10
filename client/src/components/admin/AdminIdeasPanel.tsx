@@ -2,7 +2,9 @@ import { Loader2, Lightbulb } from "lucide-react";
 import { useAdminIdeas } from "@/hooks/useAdminIdeas";
 import IdeaTable from "./IdeaTable";
 import IdeaMobileCard from "./IdeaMobileCard";
+import { ExportButton } from "@/components/ui/export-button";
 import type { IdeaWithVotes } from "@/types/admin";
+import type { ExportColumn } from "@/lib/export-utils";
 
 interface AdminIdeasPanelProps {
   enabled: boolean;
@@ -10,6 +12,18 @@ interface AdminIdeasPanelProps {
   onManageVotes: (idea: IdeaWithVotes) => void;
   onEdit: (idea: IdeaWithVotes) => void;
 }
+
+// Colonnes pour l'export
+const exportColumns: ExportColumn[] = [
+  { header: 'Titre', accessor: 'title' },
+  { header: 'Description', accessor: 'description', format: (v) => v || '' },
+  { header: 'Proposé par', accessor: 'proposedBy' },
+  { header: 'Email', accessor: 'proposedByEmail' },
+  { header: 'Statut', accessor: 'status' },
+  { header: 'Votes', accessor: 'voteCount', format: (v) => String(v) },
+  { header: 'Mis en avant', accessor: 'featured', format: (v) => v ? 'Oui' : 'Non' },
+  { header: 'Date création', accessor: 'createdAt', format: (v) => v ? new Date(v).toLocaleDateString('fr-FR') : '' },
+];
 
 export default function AdminIdeasPanel({
   enabled,
@@ -50,6 +64,15 @@ export default function AdminIdeasPanel({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-base sm:text-lg font-semibold">Toutes les idées</h3>
+        {ideas && ideas.length > 0 && (
+          <ExportButton
+            filename="idees-cjd"
+            title="Liste des Idées CJD"
+            columns={exportColumns}
+            getData={() => ideas || []}
+            size="sm"
+          />
+        )}
       </div>
 
       {isLoading ? (
