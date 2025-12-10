@@ -21,6 +21,7 @@ import { User } from './decorators/user.decorator';
 import { logger } from '../../lib/logger';
 import { JwtAuthGuard } from './guards/auth.guard';
 import { z } from 'zod';
+import passport from 'passport';
 
 // Schémas de validation
 const loginSchema = z.object({
@@ -111,11 +112,13 @@ export class AuthController {
       
       // Utiliser la stratégie locale via Passport
       return new Promise<void>((resolve, reject) => {
-        // Import dynamique pour éviter les erreurs si la stratégie n'est pas chargée
-        const passport = require('passport');
-        
         passport.authenticate('local', (err: any, user: any, info: any) => {
           if (err) {
+            // Gérer les UnauthorizedException de la stratégie Passport
+            if (err.status === 401 || err.name === 'UnauthorizedException' || err.response?.statusCode === 401) {
+              logger.warn('[Auth] Authentification échouée', { email: validatedData.email, message: err.message });
+              return res.status(401).json({ message: err.message || 'Identifiants invalides' });
+            }
             logger.error('[Auth] Erreur authentification locale', { error: err });
             return res.status(500).json({ message: 'Erreur serveur' });
           }
