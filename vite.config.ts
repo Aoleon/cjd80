@@ -32,6 +32,7 @@ export default defineConfig({
     sourcemap: process.env.NODE_ENV === "development",
   },
   server: {
+    allowedHosts: ["all"],
     port: 5173,
     host: '0.0.0.0',
     hmr: {

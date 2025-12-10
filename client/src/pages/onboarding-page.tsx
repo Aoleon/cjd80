@@ -630,7 +630,7 @@ export default function OnboardingPage() {
           },
         };
         
-        const result = await apiRequest("PUT", "/api/admin/branding", {
+        const result = await apiRequest("PUT", "/api/setup/branding", {
           config: JSON.stringify(fullConfig)
         });
         logApiSuccess();

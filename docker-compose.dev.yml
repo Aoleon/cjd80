@@ -1,5 +1,4 @@
 # Docker Compose for Development - CJD80 on work.robinswood.io
-version: '3.8'
 
 services:
   cjd80-app:
@@ -34,11 +33,11 @@ services:
 
     networks:
       - rbw-network
-      - cjd-network
+      - cjd80-dev-network
 
 networks:
   rbw-network:
     driver: bridge
-  cjd-network:
+  cjd80-dev-network:
     external: true
-    name: cjd80_cjd-network
+    name: cjd80_cjd80-dev-network

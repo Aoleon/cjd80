@@ -1,3 +1,9 @@
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { StorageService } from '../common/storage/storage.service';
 import { emailService } from '../../email-service';
@@ -42,7 +48,7 @@ export class SetupService {
     const adminsResult = await this.storageService.instance.getAllAdmins();
     const hasAdmins = adminsResult.success && adminsResult.data && adminsResult.data.length > 0;
     
-    const isFirstInstall = !hasBranding || !hasEmailConfig || !hasAdmins;
+    const isFirstInstall = !hasAdmins; // Only admin is required, email and branding are optional
     
     return {
       isFirstInstall,
@@ -162,6 +168,22 @@ export class SetupService {
       logger.error('Erreur lors de la génération des fichiers statiques', { error });
       throw new InternalServerErrorException(error.message || "Erreur lors de la génération des fichiers statiques. Vous pouvez les générer manuellement avec 'npm run generate:config'.");
     }
+  }
+
+  async saveBrandingConfig(config: string) {
+    try {
+      // Validate JSON
+      JSON.parse(config);
+    } catch {
+      throw new BadRequestException("Configuration branding invalide (JSON malformé)");
+    }
+
+    const result = await this.storageService.instance.updateBrandingConfig(config, "setup");
+    if (!result.success) {
+      throw new BadRequestException(("error" in result ? result.error : new Error("Unknown error")).message);
+    }
+
+    return result.data;
   }
 }
 

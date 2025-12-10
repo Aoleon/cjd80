@@ -161,7 +161,7 @@ export class AdminService {
     return { success: true };
   }
 
-  async bulkCreateInscriptions(eventId: string, inscriptions: Array<{ name: string; email: string; comments?: string }>) {
+  async bulkCreateInscriptions(eventId: string, inscriptions: Array<{ name?: string; email?: string; comments?: string }>) {
     if (!eventId || !Array.isArray(inscriptions)) {
       throw new BadRequestException('eventId et inscriptions (array) requis');
     }
