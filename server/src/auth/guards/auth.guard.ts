@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { Request } from 'express';
+import { logger } from '../../../lib/logger';
 
 /**
  * Guard basé sur la session pour vérifier qu'un utilisateur est authentifié
@@ -15,11 +16,29 @@ export class JwtAuthGuard implements CanActivate {
       ? request.isAuthenticated()
       : false;
 
+    // Log pour debug
+    const url = request.url;
+    const method = request.method;
+    const hasSession = !!(request as any).session;
+    const sessionId = (request as any).session?.id?.substring(0, 8) || 'none';
+    const hasCookie = !!request.headers.cookie;
+
+    logger.debug('[AuthGuard] Request check', {
+      method,
+      url,
+      isAuthenticated,
+      hasUser: !!request.user,
+      hasSession,
+      sessionId,
+      hasCookie
+    });
+
     // Accepte également le cas où Passport a déjà peuplé req.user sans exposer isAuthenticated (tests)
     if (isAuthenticated || request.user) {
       return true;
     }
 
+    logger.warn('[AuthGuard] Rejected - not authenticated', { method, url, hasSession, hasCookie, sessionId });
     throw new UnauthorizedException('Authentication required');
   }
 }

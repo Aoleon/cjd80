@@ -56,6 +56,7 @@ if (useLocalAuth) {
           cookie: {
             secure: process.env.NODE_ENV === 'production',
             httpOnly: true,
+            sameSite: 'lax', // Nécessaire pour PATCH/POST requests
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
           },
         };
