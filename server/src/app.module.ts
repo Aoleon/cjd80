@@ -20,6 +20,7 @@ import { PatronsModule } from './patrons/patrons.module';
 import { LoansModule } from './loans/loans.module';
 import { FinancialModule } from './financial/financial.module';
 import { TrackingModule } from './tracking/tracking.module';
+import { FeaturesModule } from './features/features.module';
 import { AuthentikModule } from './integrations/authentik/authentik.module';
 import { MinIOModule } from './integrations/minio/minio.module';
 import { ViteModule } from './integrations/vite/vite.module';
@@ -61,6 +62,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     LoansModule,
     FinancialModule,
     TrackingModule,
+    FeaturesModule,
     AuthentikModule,
     MinIOModule,
     // ViteModule gère le SPA fallback et les fichiers statiques via SpaFallbackController
