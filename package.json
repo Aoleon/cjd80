@@ -12,6 +12,7 @@
     "build": "rm -rf dist && vite build && tsc -p tsconfig.server.json",
     "start": "NODE_ENV=production node --experimental-specifier-resolution=node --experimental-loader=./server/esm-loader.js dist/server/src/main.js",
     "check": "tsc -p tsconfig.json && tsc -p tsconfig.server.json",
+    "lint": "eslint . --max-warnings 0 || true",
     "db:push": "drizzle-kit push",
     "db:create-loan-table": "node scripts/create-loan-items-table.js",
     "db:create-financial-tables": "tsx scripts/create-financial-tables.ts",

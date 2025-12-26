@@ -46,8 +46,8 @@ export class SpaFallbackController {
   ) {
     const requestPath = req.path || req.url;
 
-    // Pour les assets, servir le fichier directement s'il existe
-    if (requestPath.startsWith('/assets/') || requestPath.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
+    // Pour les assets et fichiers statiques, servir le fichier directement s'il existe
+    if (requestPath.startsWith('/assets/') || requestPath.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|xml|webmanifest|txt)$/)) {
       const filePath = join(process.cwd(), 'dist', 'public', requestPath);
       if (existsSync(filePath)) {
         return res.sendFile(filePath);
