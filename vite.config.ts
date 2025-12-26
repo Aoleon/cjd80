@@ -30,6 +30,53 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
     sourcemap: process.env.NODE_ENV === "development",
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // Vendor chunks - bibliothèques tierces
+          if (id.includes('node_modules')) {
+            // React core
+            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+              return 'vendor-react';
+            }
+            // Radix UI components
+            if (id.includes('@radix-ui')) {
+              return 'vendor-radix';
+            }
+            // Charts
+            if (id.includes('recharts') || id.includes('d3-')) {
+              return 'vendor-charts';
+            }
+            // PDF/Excel export (heavy, lazy-loaded)
+            if (id.includes('xlsx') || id.includes('jspdf') || id.includes('html2canvas')) {
+              return 'vendor-export';
+            }
+            // Rich text editor
+            if (id.includes('@tiptap') || id.includes('prosemirror')) {
+              return 'vendor-editor';
+            }
+            // Forms & validation
+            if (id.includes('react-hook-form') || id.includes('zod') || id.includes('@hookform')) {
+              return 'vendor-forms';
+            }
+            // Date utilities
+            if (id.includes('date-fns')) {
+              return 'vendor-dates';
+            }
+            // Query & routing
+            if (id.includes('@tanstack') || id.includes('wouter')) {
+              return 'vendor-router';
+            }
+            // Animation
+            if (id.includes('framer-motion')) {
+              return 'vendor-animation';
+            }
+            // Remaining node_modules
+            return 'vendor-misc';
+          }
+        },
+      },
+    },
   },
   server: {
     allowedHosts: ["all"],
