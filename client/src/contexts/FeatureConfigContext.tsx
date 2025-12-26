@@ -26,11 +26,11 @@ export function FeatureConfigProvider({ children }: { children: ReactNode }) {
     loan: true,
   });
 
-  // Charger la configuration des fonctionnalités
+  // Charger la configuration des fonctionnalités (endpoint public)
   const { data: featuresData, isLoading, error: featuresError } = useQuery<{ success: boolean; data: FeatureConfig[] }>({
-    queryKey: ["/api/admin/features"],
+    queryKey: ["/api/features"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/features");
+      const res = await fetch("/api/features");
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to fetch feature config');
@@ -59,10 +59,10 @@ export function FeatureConfigProvider({ children }: { children: ReactNode }) {
     }
   }, [featuresData, featuresError]);
 
-  // Mutation pour mettre à jour une fonctionnalité
+  // Mutation pour mettre à jour une fonctionnalité (endpoint protégé)
   const updateMutation = useMutation({
     mutationFn: async ({ featureKey, enabled }: { featureKey: string; enabled: boolean }) => {
-      const res = await fetch(`/api/admin/features/${featureKey}`, {
+      const res = await fetch(`/api/features/${featureKey}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled }),
@@ -76,7 +76,7 @@ export function FeatureConfigProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => {
       // Invalider et refetch la config
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/features"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
     },
   });
 
