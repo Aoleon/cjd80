@@ -191,4 +191,5 @@ docker-compose.local.yml
 # ============================================================================
 deploy.sh.local
 *.local.sh
-local-*.sh
+local-*.sh.next/
+.npmrc
