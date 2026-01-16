@@ -122,16 +122,11 @@ describe('API Routes Tests - Admin Inscriptions/Votes', () => {
         data: mockInscriptions
       });
 
-      // Simple simulation without supertest
-      const mockReq = { params: { eventId: 'event-1' }, user: { id: 'admin' } };
-      const mockRes = {
-        json: vi.fn(),
-        status: vi.fn(() => mockRes)
-      };
+      const response = await request(app)
+        .get('/api/admin/inscriptions/event-1')
+        .expect(200);
 
-      // Simulate the route handler
-      await mockStorage.getEventInscriptions('event-1');
-      
+      expect(response.body).toEqual(mockInscriptions);
       expect(mockStorage.getEventInscriptions).toHaveBeenCalledWith('event-1');
       expect(mockRequireAuth).toHaveBeenCalled();
     });
