@@ -1,7 +1,7 @@
 'use server'
 
 import { cookies } from 'next/headers'
-import { jwtVerify } from 'jose'
+import jwt from 'jsonwebtoken'
 import { redirect } from 'next/navigation'
 
 /**
@@ -30,8 +30,8 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
     }
 
     // Vérifier et décoder le JWT
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key')
-    const { payload } = await jwtVerify(token.value, secret)
+    const secret = process.env.JWT_SECRET || 'your-secret-key'
+    const payload = jwt.verify(token.value, secret) as any
 
     return {
       id: payload.id as string,

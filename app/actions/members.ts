@@ -19,9 +19,15 @@
  * - deleteMemberRelation(id)
  */
 
+import { headers } from 'next/headers'
+import { db, runDbQuery } from '@/server/db'
+import { members, insertMemberSchema, type Member } from '@/shared/schema'
 import { revalidateMembers, revalidateMember } from './utils/revalidate'
 import { requireAuth } from './utils/auth'
+import { rateLimit } from './utils/rate-limit'
 import type { ActionResult } from './utils/errors'
+import { createSuccess, createError, formatZodError } from './utils/errors'
+import { eq } from 'drizzle-orm'
 
 /**
  * Phase 1: Proposer un nouveau membre (public)
@@ -29,9 +35,71 @@ import type { ActionResult } from './utils/errors'
 export async function proposeMember(
   prevState: any,
   formData: FormData
-): Promise<ActionResult<any>> {
-  // TODO: Implémenter Phase 1
-  throw new Error('Not implemented yet - Phase 1')
+): Promise<ActionResult<Member>> {
+  try {
+    // 1. Rate limiting
+    const headersList = await headers()
+    const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+    const allowed = await rateLimit(ip, 'propose-member', 10, 60)
+
+    if (!allowed) {
+      return createError('Trop de requêtes. Veuillez patienter quelques instants.')
+    }
+
+    // 2. Validation
+    const rawData = {
+      email: formData.get('email'),
+      firstName: formData.get('firstName'),
+      lastName: formData.get('lastName'),
+      company: formData.get('company'),
+      phone: formData.get('phone'),
+      role: formData.get('role'),
+      notes: formData.get('notes'),
+      proposedBy: formData.get('proposedBy'),
+      status: 'proposed', // Membres proposés doivent être validés
+    }
+
+    const result = insertMemberSchema.safeParse(rawData)
+
+    if (!result.success) {
+      return formatZodError(result.error)
+    }
+
+    // 3. Vérifier si membre existe déjà
+    const existing = await runDbQuery(
+      async () => db.select().from(members).where(eq(members.email, result.data.email)).limit(1),
+      'quick'
+    )
+
+    if (existing.length > 0) {
+      return createError('Ce membre existe déjà')
+    }
+
+    // 4. Insert membre avec firstSeenAt et lastActivityAt
+    const now = new Date()
+    const [member] = await runDbQuery(
+      async () =>
+        db
+          .insert(members)
+          .values({
+            ...result.data,
+            firstSeenAt: now,
+            lastActivityAt: now,
+            activityCount: 0,
+            engagementScore: 0,
+          })
+          .returning(),
+      'complex'
+    )
+
+    // 5. Revalidation
+    await revalidateMembers()
+
+    return createSuccess(member, 'Proposition de membre enregistrée')
+  } catch (error) {
+    console.error('proposeMember error:', error)
+    return createError('Erreur lors de la proposition')
+  }
 }
 
 /**

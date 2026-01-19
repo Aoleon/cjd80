@@ -20,9 +20,9 @@ export async function revalidateIdeas() {
  * Revalide les pages liées aux événements
  */
 export async function revalidateEvents() {
-  revalidatePath('/(public)/events', 'page')
-  revalidatePath('/(admin)/admin/events', 'page')
-  revalidatePath('/', 'page')
+  revalidatePath('/(public)/events')
+  revalidatePath('/(admin)/admin/events')
+  revalidatePath('/')
   revalidateTag('events')
 }
 
@@ -30,7 +30,7 @@ export async function revalidateEvents() {
  * Revalide les pages liées aux membres
  */
 export async function revalidateMembers() {
-  revalidatePath('/(admin)/admin/members', 'page')
+  revalidatePath('/(admin)/admin/members')
   revalidateTag('members')
 }
 
@@ -38,8 +38,8 @@ export async function revalidateMembers() {
  * Revalide une page membre spécifique
  */
 export async function revalidateMember(memberEmail: string) {
-  revalidatePath(`/(admin)/admin/members/${memberEmail}`, 'page')
-  revalidatePath('/(admin)/admin/members', 'page')
+  revalidatePath(`/(admin)/admin/members/${memberEmail}`)
+  revalidatePath('/(admin)/admin/members')
   revalidateTag(`member-${memberEmail}`)
   revalidateTag('members')
 }
@@ -48,8 +48,8 @@ export async function revalidateMember(memberEmail: string) {
  * Revalide les pages liées aux patrons
  */
 export async function revalidatePatrons() {
-  revalidatePath('/(public)/patrons', 'page')
-  revalidatePath('/(admin)/admin/patrons', 'page')
+  revalidatePath('/(public)/patrons')
+  revalidatePath('/(admin)/admin/patrons')
   revalidateTag('patrons')
 }
 
@@ -57,8 +57,8 @@ export async function revalidatePatrons() {
  * Revalide un patron spécifique
  */
 export async function revalidatePatron(patronId: string) {
-  revalidatePath(`/(admin)/admin/patrons/${patronId}`, 'page')
-  revalidatePath('/(admin)/admin/patrons', 'page')
+  revalidatePath(`/(admin)/admin/patrons/${patronId}`)
+  revalidatePath('/(admin)/admin/patrons')
   revalidateTag(`patron-${patronId}`)
   revalidateTag('patrons')
 }
@@ -67,8 +67,8 @@ export async function revalidatePatron(patronId: string) {
  * Revalide les pages liées aux prêts
  */
 export async function revalidateLoans() {
-  revalidatePath('/(public)/loan-items', 'page')
-  revalidatePath('/(admin)/admin/loan-items', 'page')
+  revalidatePath('/(public)/loan-items')
+  revalidatePath('/(admin)/admin/loan-items')
   revalidateTag('loan-items')
 }
 
@@ -76,7 +76,7 @@ export async function revalidateLoans() {
  * Revalide les pages financières
  */
 export async function revalidateFinancial() {
-  revalidatePath('/(admin)/admin/finance', 'layout') // Revalide tout le layout finance
+  revalidatePath('/(admin)/admin/finance') // Revalide tout le layout finance
   revalidateTag('financial')
 }
 
@@ -84,8 +84,8 @@ export async function revalidateFinancial() {
  * Revalide les dashboards (home admin, analytics, etc.)
  */
 export async function revalidateDashboards() {
-  revalidatePath('/(admin)/admin', 'page')
-  revalidatePath('/(admin)/admin/analytics', 'page')
+  revalidatePath('/(admin)/admin')
+  revalidatePath('/(admin)/admin/analytics')
   revalidateTag('dashboard')
   revalidateTag('analytics')
 }
@@ -94,7 +94,7 @@ export async function revalidateDashboards() {
  * Revalide la configuration (branding, features, email)
  */
 export async function revalidateConfig() {
-  revalidatePath('/(admin)/admin/settings', 'layout')
+  revalidatePath('/(admin)/admin/settings')
   revalidateTag('config')
   revalidateTag('branding')
   revalidateTag('features')
@@ -104,5 +104,5 @@ export async function revalidateConfig() {
  * Revalidation complète (à utiliser avec parcimonie)
  */
 export async function revalidateAll() {
-  revalidatePath('/', 'layout') // Revalide tout depuis la racine
+  revalidatePath('/') // Revalide tout depuis la racine
 }
