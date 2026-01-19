@@ -1,7 +1,6 @@
-'use server'
-
 /**
  * Types de résultats pour Server Actions
+ * Note: Ce fichier ne contient pas de Server Actions, donc pas de 'use server'
  */
 
 export type ActionSuccess<T> = {

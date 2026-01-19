@@ -1,5 +1,8 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useActionState } from "react";
 import { Vote, Loader2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getIdentity, saveIdentity, clearIdentity, createUserIdentity } from "@/lib/user-identity";
+import { createVote } from "../../../app/actions/ideas";
 import type { Idea, InsertVote } from "@shared/schema";
 
 interface VoteModalProps {
@@ -25,6 +29,10 @@ export default function VoteModal({ open, onOpenChange, idea }: VoteModalProps) 
     voterEmail: "",
   });
   const [rememberMe, setRememberMe] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Feature flag for Server Actions
+  const useServerActionsIdeas = process.env.NEXT_PUBLIC_USE_SERVER_ACTIONS_IDEAS === 'true';
 
   useEffect(() => {
     if (open) {
@@ -78,15 +86,64 @@ export default function VoteModal({ open, onOpenChange, idea }: VoteModalProps) 
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!idea) return;
 
-    voteMutation.mutate({
-      ideaId: idea.id,
-      voterName: formData.voterName,
-      voterEmail: formData.voterEmail,
-    });
+    if (useServerActionsIdeas) {
+      // Use Server Action
+      setIsSubmitting(true);
+      try {
+        const formDataObj = new FormData();
+        formDataObj.append('ideaId', idea.id);
+        formDataObj.append('voterName', formData.voterName);
+        formDataObj.append('voterEmail', formData.voterEmail);
+
+        const result = await createVote(null, formDataObj);
+
+        if (result.success) {
+          // Handle identity storage
+          try {
+            if (rememberMe && formData.voterName && formData.voterEmail) {
+              const identity = createUserIdentity(formData.voterName, formData.voterEmail);
+              saveIdentity(identity);
+            } else if (!rememberMe) {
+              clearIdentity();
+            }
+          } catch (error) {
+            console.warn('Failed to manage user identity:', error);
+          }
+
+          onOpenChange(false);
+          toast({
+            title: "Vote enregistré avec succès !",
+            description: "Merci pour votre participation",
+          });
+        } else {
+          toast({
+            title: "Erreur",
+            description: result.error || "Impossible d'enregistrer votre vote",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Error submitting vote:', error);
+        toast({
+          title: "Erreur",
+          description: error instanceof Error ? error.message : "Une erreur est survenue",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      // Use old API route
+      voteMutation.mutate({
+        ideaId: idea.id,
+        voterName: formData.voterName,
+        voterEmail: formData.voterEmail,
+      });
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -196,18 +253,18 @@ export default function VoteModal({ open, onOpenChange, idea }: VoteModalProps) 
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={voteMutation.isPending}
+              disabled={useServerActionsIdeas ? isSubmitting : voteMutation.isPending}
               data-testid="button-cancel-vote"
             >
               Annuler
             </Button>
             <Button
               type="submit"
-              disabled={voteMutation.isPending}
+              disabled={useServerActionsIdeas ? isSubmitting : voteMutation.isPending}
               className="bg-cjd-green hover:bg-cjd-green-dark"
               data-testid="button-submit-vote"
             >
-              {voteMutation.isPending ? (
+              {(useServerActionsIdeas ? isSubmitting : voteMutation.isPending) ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Vote className="w-4 h-4 mr-2" />

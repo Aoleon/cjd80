@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserPlus, UserMinus, Loader2, Calendar, Users, MapPin, Trash2 } from "lucide-react";
@@ -10,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getIdentity, saveIdentity, clearIdentity, createUserIdentity } from "@/lib/user-identity";
+import { registerForEvent, unsubscribeFromEvent } from "../../../app/actions/events";
 import type { Event, InsertInscription, InsertUnsubscription } from "@shared/schema";
 
 interface EventRegistrationModalProps {
@@ -35,7 +38,11 @@ export default function EventRegistrationModal({
     comments: "",
   });
   const [rememberMe, setRememberMe] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isUnsubscribeMode = mode === 'unsubscribe';
+
+  // Feature flag for Server Actions
+  const useServerActionsEvents = process.env.NEXT_PUBLIC_USE_SERVER_ACTIONS_EVENTS === 'true';
 
   useEffect(() => {
     if (!open) {
@@ -155,50 +162,114 @@ export default function EventRegistrationModal({
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!event) return;
 
-    if (isUnsubscribeMode) {
-      // Déclaration d'absence
-      if (!formData.name.trim() || !formData.email.trim()) {
+    // Validation
+    if (!formData.name.trim() || !formData.email.trim()) {
+      toast({
+        title: "Champs requis",
+        description: isUnsubscribeMode
+          ? "Veuillez saisir votre nom et email pour déclarer votre absence"
+          : "Veuillez remplir votre nom et email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (useServerActionsEvents) {
+      // Use Server Actions
+      setIsSubmitting(true);
+      try {
+        const formDataObj = new FormData();
+        formDataObj.append('eventId', event.id);
+        formDataObj.append('name', formData.name.trim());
+        formDataObj.append('email', formData.email.trim());
+        if (formData.company?.trim()) formDataObj.append('company', formData.company.trim());
+        if (formData.phone?.trim()) formDataObj.append('phone', formData.phone.trim());
+        if (formData.comments?.trim()) formDataObj.append('comments', formData.comments.trim());
+
+        const result = isUnsubscribeMode
+          ? await unsubscribeFromEvent(null, formDataObj)
+          : await registerForEvent(null, formDataObj);
+
+        if (result.success) {
+          // Handle identity storage
+          try {
+            if (rememberMe && formData.name.trim() && formData.email.trim()) {
+              const identity = createUserIdentity(formData.name.trim(), formData.email.trim());
+              saveIdentity(identity);
+            } else if (!rememberMe) {
+              clearIdentity();
+            }
+          } catch (error) {
+            console.warn('Failed to manage user identity:', error);
+          }
+
+          // Check for external redirect (inscription only)
+          if (!isUnsubscribeMode && event?.enableExternalRedirect && event?.externalRedirectUrl) {
+            toast({
+              title: "✅ Inscription confirmée !",
+              description: `Vous êtes inscrit(e) à "${event?.title}". Vous allez être redirigé vers le site de paiement...`,
+              duration: 3000,
+            });
+            setTimeout(() => {
+              if (event.externalRedirectUrl) {
+                window.location.href = event.externalRedirectUrl;
+              }
+            }, 2000);
+          } else {
+            toast({
+              title: isUnsubscribeMode ? "✅ Absence déclarée !" : "✅ Inscription confirmée !",
+              description: isUnsubscribeMode
+                ? `Votre absence à "${event?.title}" a été enregistrée.`
+                : `Vous êtes inscrit(e) à "${event?.title}". Un email de confirmation vous sera envoyé.`,
+              duration: 6000,
+            });
+          }
+
+          onOpenChange(false);
+        } else {
+          toast({
+            title: isUnsubscribeMode ? "❌ Erreur lors de la déclaration d'absence" : "❌ Erreur lors de l'inscription",
+            description: result.error,
+            variant: "destructive",
+            duration: 8000,
+          });
+        }
+      } catch (error) {
+        console.error('Error submitting event action:', error);
         toast({
-          title: "Champs requis",
-          description: "Veuillez saisir votre nom et email pour déclarer votre absence",
+          title: "❌ Erreur",
+          description: error instanceof Error ? error.message : "Une erreur est survenue",
           variant: "destructive",
+          duration: 8000,
         });
-        return;
+      } finally {
+        setIsSubmitting(false);
       }
-
-      const unsubscription: InsertUnsubscription = {
-        eventId: event.id,
-        name: formData.name.trim(),
-        email: formData.email.trim(),
-        comments: formData.comments.trim() || undefined,
-      };
-
-      unsubscribeMutation.mutate(unsubscription);
     } else {
-      // Inscription
-      if (!formData.name.trim() || !formData.email.trim()) {
-        toast({
-          title: "Champs requis",
-          description: "Veuillez remplir votre nom et email",
-          variant: "destructive",
-        });
-        return;
+      // Use old API routes
+      if (isUnsubscribeMode) {
+        const unsubscription: InsertUnsubscription = {
+          eventId: event.id,
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          comments: formData.comments.trim() || undefined,
+        };
+        unsubscribeMutation.mutate(unsubscription);
+      } else {
+        const inscription: InsertInscription = {
+          eventId: event.id,
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          company: formData.company.trim() || undefined,
+          phone: formData.phone.trim() || undefined,
+          comments: formData.comments.trim() || undefined,
+        };
+        registerMutation.mutate(inscription);
       }
-
-      const inscription: InsertInscription = {
-        eventId: event.id,
-        name: formData.name.trim(),
-        email: formData.email.trim(),
-        company: formData.company.trim() || undefined,
-        phone: formData.phone.trim() || undefined,
-        comments: formData.comments.trim() || undefined,
-      };
-
-      registerMutation.mutate(inscription);
     }
   };
 
@@ -500,49 +571,33 @@ export default function EventRegistrationModal({
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 border-t">
             <Button
               type="submit"
-              disabled={isUnsubscribeMode ? unsubscribeMutation.isPending : registerMutation.isPending}
+              disabled={useServerActionsEvents ? isSubmitting : (isUnsubscribeMode ? unsubscribeMutation.isPending : registerMutation.isPending)}
               className={`flex-1 h-11 sm:h-12 text-sm sm:text-base ${
-                isUnsubscribeMode 
+                isUnsubscribeMode
                   ? 'bg-error hover:bg-error-dark text-white'
                   : 'bg-cjd-green hover:bg-cjd-green-dark text-white'
               }`}
             >
-              {isUnsubscribeMode ? (
-                unsubscribeMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    <span className="hidden sm:inline">Désinscription en cours...</span>
-                    <span className="sm:hidden">Désinscription...</span>
-                  </>
-                ) : (
-                  <>
-                    <UserMinus className="mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">Déclarer mon absence</span>
-                    <span className="sm:hidden">Déclarer absence</span>
-                  </>
-                )
+              {(useServerActionsEvents ? isSubmitting : (isUnsubscribeMode ? unsubscribeMutation.isPending : registerMutation.isPending)) ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span className="hidden sm:inline">{isUnsubscribeMode ? 'Désinscription en cours...' : 'Inscription en cours...'}</span>
+                  <span className="sm:hidden">{isUnsubscribeMode ? 'Désinscription...' : 'Inscription...'}</span>
+                </>
               ) : (
-                registerMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    <span className="hidden sm:inline">Inscription en cours...</span>
-                    <span className="sm:hidden">Inscription...</span>
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">Confirmer mon inscription</span>
-                    <span className="sm:hidden">S'inscrire</span>
-                  </>
-                )
+                <>
+                  {isUnsubscribeMode ? <UserMinus className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
+                  <span className="hidden sm:inline">{isUnsubscribeMode ? 'Déclarer mon absence' : 'Confirmer mon inscription'}</span>
+                  <span className="sm:hidden">{isUnsubscribeMode ? 'Déclarer absence' : "S'inscrire"}</span>
+                </>
               )}
             </Button>
-            
+
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={isUnsubscribeMode ? unsubscribeMutation.isPending : registerMutation.isPending}
+              disabled={useServerActionsEvents ? isSubmitting : (isUnsubscribeMode ? unsubscribeMutation.isPending : registerMutation.isPending)}
               className="sm:px-8 h-11 sm:h-12 text-sm sm:text-base"
             >
               Annuler

@@ -20,8 +20,8 @@
  */
 
 import { headers } from 'next/headers'
-import { db, runDbQuery } from '@/server/db'
-import { members, insertMemberSchema, type Member } from '@/shared/schema'
+import { db, runDbQuery } from '../../server/db'
+import { members, insertMemberSchema, type Member } from '@shared/schema'
 import { revalidateMembers, revalidateMember } from './utils/revalidate'
 import { requireAuth } from './utils/auth'
 import { rateLimit } from './utils/rate-limit'
@@ -91,6 +91,10 @@ export async function proposeMember(
           .returning(),
       'complex'
     )
+
+    if (!member) {
+      return createError('Erreur lors de la proposition de membre')
+    }
 
     // 5. Revalidation
     await revalidateMembers()

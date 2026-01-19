@@ -1,8 +1,11 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useActionState } from "react";
 import { Plus, Lightbulb, Calendar, Send, Loader2, UserPlus } from "lucide-react";
 import Layout from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -20,6 +23,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { insertIdeaSchema, insertPatronSchema, proposeMemberSchema, type InsertIdea, type InsertPatron, type Patron } from "@shared/schema";
 import { z } from "zod";
 import { getShortAppName } from '@/config/branding';
+import { createIdea } from "../../../app/actions/ideas";
+import { createVote } from "../../../app/actions/ideas";
+import { proposeMember } from "../../../app/actions/members";
 
 // Form schema with client-side validation matching server schema
 const proposeIdeaFormSchema = insertIdeaSchema.extend({
@@ -118,19 +124,27 @@ interface SavedProposerInfo {
 export default function ProposePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const { user } = useAuth();
-  
+
   // Proposal type state
   type ProposalType = 'idea' | 'patron' | 'member';
   const [proposalType, setProposalType] = useState<ProposalType>('idea');
-  
+
   // Patron-related state
   const [selectedPatronId, setSelectedPatronId] = useState<string | null>(null);
   const [isPatronDialogOpen, setIsPatronDialogOpen] = useState(false);
-  
+
   // Remember me state
   const [rememberMe, setRememberMe] = useState(false);
+
+  // Loading states for Server Actions
+  const [isSubmittingIdea, setIsSubmittingIdea] = useState(false);
+  const [isSubmittingMember, setIsSubmittingMember] = useState(false);
+
+  // Feature flags for Server Actions
+  const useServerActionsIdeas = process.env.NEXT_PUBLIC_USE_SERVER_ACTIONS_IDEAS === 'true';
+  const useServerActionsMembers = process.env.NEXT_PUBLIC_USE_SERVER_ACTIONS_MEMBERS === 'true';
   
   // Load saved proposer info
   const loadSavedProposerInfo = (): SavedProposerInfo | null => {
@@ -355,7 +369,7 @@ export default function ProposePage() {
         description: `${newPatron.firstName} ${newPatron.lastName} a été ajouté au CRM`,
         duration: 5000,
       });
-      setLocation("/");
+      router.push("/");
     },
     onError: (error: Error) => {
       toast({
@@ -392,7 +406,7 @@ export default function ProposePage() {
         description: `${newMember.data.firstName} ${newMember.data.lastName} a été proposé avec succès`,
         duration: 5000,
       });
-      setLocation("/");
+      router.push("/");
     },
     onError: (error: Error) => {
       toast({
@@ -403,6 +417,74 @@ export default function ProposePage() {
       });
     },
   });
+
+  const handleSubmitMember = async (memberData: ProposeMemberForm) => {
+    if (useServerActionsMembers) {
+      // Use Server Action
+      setIsSubmittingMember(true);
+      try {
+        const { proposerFirstName, proposerLastName, proposerEmail, proposerCompany, ...memberInfo } = memberData;
+
+        const formData = new FormData();
+        formData.append('firstName', memberInfo.firstName);
+        formData.append('lastName', memberInfo.lastName);
+        formData.append('email', memberInfo.email);
+        if (memberInfo.company) formData.append('company', memberInfo.company);
+        if (memberInfo.phone) formData.append('phone', memberInfo.phone);
+        if (memberInfo.role) formData.append('role', memberInfo.role);
+
+        const notesText = memberInfo.notes
+          ? `${memberInfo.notes}\n\nProposé par: ${proposerFirstName} ${proposerLastName} (${proposerCompany || 'N/A'})`
+          : `Proposé par: ${proposerFirstName} ${proposerLastName} (${proposerCompany || 'N/A'})`;
+        formData.append('notes', notesText);
+        formData.append('proposedBy', proposerEmail);
+
+        const result = await proposeMember(null, formData);
+
+        if (result.success) {
+          // Handle remember me
+          if (rememberMe) {
+            saveProposerInfo({
+              firstName: proposerFirstName,
+              lastName: proposerLastName,
+              email: proposerEmail,
+              company: proposerCompany || '',
+            });
+          } else {
+            clearProposerInfo();
+          }
+
+          memberProposalForm.reset();
+          toast({
+            title: "✅ Membre proposé !",
+            description: `${result.data.firstName} ${result.data.lastName} a été proposé avec succès`,
+            duration: 5000,
+          });
+          router.push("/");
+        } else {
+          toast({
+            title: "❌ Erreur",
+            description: result.error,
+            variant: "destructive",
+            duration: 8000,
+          });
+        }
+      } catch (error) {
+        console.error('Error submitting member:', error);
+        toast({
+          title: "❌ Erreur",
+          description: error instanceof Error ? error.message : "Une erreur est survenue",
+          variant: "destructive",
+          duration: 8000,
+        });
+      } finally {
+        setIsSubmittingMember(false);
+      }
+    } else {
+      // Use old API route
+      proposeMemberMutation.mutate(memberData);
+    }
+  };
 
   const proposeIdeaMutation = useMutation({
     mutationFn: async (data: ProposeIdeaForm) => {
@@ -416,7 +498,7 @@ export default function ProposePage() {
     onSuccess: async (idea) => {
       queryClient.invalidateQueries({ queryKey: ["/api/ideas"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      
+
       // Si un mécène est sélectionné, créer la proposition
       if (selectedPatronId && isAdmin) {
         try {
@@ -447,11 +529,11 @@ export default function ProposePage() {
           duration: 5000,
         });
       }
-      
+
       // Reset form and redirect to ideas
       form.reset();
       setSelectedPatronId(null);
-      setLocation("/");
+      router.push("/");
     },
     onError: (error: Error) => {
       toast({
@@ -463,13 +545,74 @@ export default function ProposePage() {
     },
   });
 
-  const onSubmit = (data: ProposeIdeaForm) => {
+  const onSubmit = async (data: ProposeIdeaForm) => {
     // Convert deadline to ISO string if provided
     const formattedData = {
       ...data,
       deadline: data.deadline ? new Date(data.deadline).toISOString() : undefined,
     };
-    proposeIdeaMutation.mutate(formattedData);
+
+    if (useServerActionsIdeas) {
+      // Use Server Action
+      setIsSubmittingIdea(true);
+      try {
+        const formData = new FormData();
+        formData.append('title', formattedData.title);
+        formData.append('description', formattedData.description || '');
+        formData.append('proposedBy', formattedData.proposedBy);
+        formData.append('proposedByEmail', formattedData.proposedByEmail);
+        if (formattedData.company) formData.append('company', formattedData.company);
+        if (formattedData.deadline) formData.append('deadline', formattedData.deadline);
+
+        const result = await createIdea(null, formData);
+
+        if (result.success) {
+          // Handle remember me
+          if (rememberMe && formattedData.proposedBy && formattedData.proposedByEmail) {
+            const nameParts = formattedData.proposedBy.trim().split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            saveProposerInfo({
+              firstName,
+              lastName,
+              email: formattedData.proposedByEmail,
+              company: formattedData.company || '',
+            });
+          } else if (!rememberMe) {
+            clearProposerInfo();
+          }
+
+          toast({
+            title: "✅ Idée proposée avec succès !",
+            description: `"${result.data.title}" a été ajoutée à la Boîte à Kiffs`,
+            duration: 5000,
+          });
+          form.reset();
+          setSelectedPatronId(null);
+          router.push("/");
+        } else {
+          toast({
+            title: "❌ Erreur lors de la proposition",
+            description: result.error,
+            variant: "destructive",
+            duration: 8000,
+          });
+        }
+      } catch (error) {
+        console.error('Error submitting idea:', error);
+        toast({
+          title: "❌ Erreur lors de la proposition",
+          description: error instanceof Error ? error.message : "Une erreur est survenue",
+          variant: "destructive",
+          duration: 8000,
+        });
+      } finally {
+        setIsSubmittingIdea(false);
+      }
+    } else {
+      // Use old API route
+      proposeIdeaMutation.mutate(formattedData);
+    }
   };
 
   const handleCreatePatron = patronForm.handleSubmit((data) => {
@@ -767,12 +910,12 @@ export default function ProposePage() {
               <div className="flex gap-4 pt-4">
                 <Button
                   type="submit"
-                  disabled={proposeIdeaMutation.isPending}
+                  disabled={useServerActionsIdeas ? isSubmittingIdea : proposeIdeaMutation.isPending}
                   className="bg-cjd-green hover:bg-success-dark text-white flex-1"
                   size="lg"
                   data-testid="button-submit-idea"
                 >
-                  {proposeIdeaMutation.isPending ? (
+                  {(useServerActionsIdeas ? isSubmittingIdea : proposeIdeaMutation.isPending) ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Envoi en cours...
@@ -788,7 +931,7 @@ export default function ProposePage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setLocation("/")}
+                  onClick={() => router.push("/")}
                   className="px-8"
                   size="lg"
                   data-testid="button-cancel"
@@ -1018,7 +1161,7 @@ export default function ProposePage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setLocation("/")}
+                    onClick={() => router.push("/")}
                     className="px-8"
                     size="lg"
                     data-testid="button-cancel"
@@ -1032,7 +1175,7 @@ export default function ProposePage() {
 
           {proposalType === 'member' && (
             <Form {...memberProposalForm}>
-              <form onSubmit={memberProposalForm.handleSubmit((data) => proposeMemberMutation.mutate(data))} className="space-y-8">
+              <form onSubmit={memberProposalForm.handleSubmit(handleSubmitMember)} className="space-y-8">
                 
                 {/* Section: Vos coordonnées */}
                 <div className="space-y-4">
@@ -1226,12 +1369,12 @@ export default function ProposePage() {
                 <div className="flex gap-4 pt-4">
                   <Button
                     type="submit"
-                    disabled={proposeMemberMutation.isPending}
+                    disabled={useServerActionsMembers ? isSubmittingMember : proposeMemberMutation.isPending}
                     className="bg-cjd-green hover:bg-success-dark text-white flex-1"
                     size="lg"
                     data-testid="button-submit-member"
                   >
-                    {proposeMemberMutation.isPending ? (
+                    {(useServerActionsMembers ? isSubmittingMember : proposeMemberMutation.isPending) ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Envoi en cours...
@@ -1247,7 +1390,7 @@ export default function ProposePage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setLocation("/")}
+                    onClick={() => router.push("/")}
                     className="px-8"
                     size="lg"
                     data-testid="button-cancel"

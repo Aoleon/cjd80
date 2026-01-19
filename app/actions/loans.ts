@@ -14,8 +14,8 @@
  */
 
 import { headers } from 'next/headers'
-import { db, runDbQuery } from '@/server/db'
-import { loanItems, insertLoanItemSchema, type LoanItem } from '@/shared/schema'
+import { db, runDbQuery } from '../../server/db'
+import { loanItems, insertLoanItemSchema, type LoanItem } from '@shared/schema'
 import { revalidateLoans } from './utils/revalidate'
 import { rateLimit } from './utils/rate-limit'
 import type { ActionResult } from './utils/errors'
@@ -56,10 +56,14 @@ export async function createLoanItemRequest(
       async () =>
         db
           .insert(loanItems)
-          .values(result.data)
+          .values([result.data])
           .returning(),
       'complex'
     )
+
+    if (!loanItem) {
+      return createError('Erreur lors de la création de la demande de prêt')
+    }
 
     // 4. Revalidation
     await revalidateLoans()

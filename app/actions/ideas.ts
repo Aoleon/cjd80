@@ -16,8 +16,8 @@
  */
 
 import { headers } from 'next/headers'
-import { db, runDbQuery } from '@/server/db'
-import { ideas, votes, insertIdeaSchema, insertVoteSchema, type Idea, type Vote } from '@/shared/schema'
+import { db, runDbQuery } from '../../server/db'
+import { ideas, votes, insertIdeaSchema, insertVoteSchema, type Idea, type Vote } from '@shared/schema'
 import { revalidateIdeas } from './utils/revalidate'
 import { requireAuth } from './utils/auth'
 import { rateLimit } from './utils/rate-limit'
@@ -63,15 +63,26 @@ export async function createIdea(
       return formatZodError(result.error)
     }
 
+    // 2.5. Transformation types Zod → Drizzle (TypeScript strict)
+    // Zod retourne string datetime, Drizzle attend Date
+    const ideaData = {
+      ...result.data,
+      deadline: result.data.deadline ? new Date(result.data.deadline) : undefined,
+    }
+
     // 3. Insert database avec Drizzle
     const [idea] = await runDbQuery(
       async () =>
         db
           .insert(ideas)
-          .values(result.data)
+          .values([ideaData])
           .returning(),
       'complex'
     )
+
+    if (!idea) {
+      return createError('Erreur lors de la création de l\'idée')
+    }
 
     // 4. Revalidation cache Next.js
     await revalidateIdeas()
@@ -144,10 +155,14 @@ export async function createVote(
       async () =>
         db
           .insert(votes)
-          .values(result.data)
+          .values([result.data])
           .returning(),
       'complex'
     )
+
+    if (!vote) {
+      return createError('Erreur lors de l\'enregistrement du vote')
+    }
 
     // 5. Revalidation cache
     await revalidateIdeas()

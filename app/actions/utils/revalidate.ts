@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidatePath } from 'next/cache'
 
 /**
  * Helpers pour revalidation intelligente du cache Next.js
@@ -13,7 +13,6 @@ export async function revalidateIdeas() {
   revalidatePath('/(public)/ideas', 'page')
   revalidatePath('/(admin)/admin/ideas', 'page')
   revalidatePath('/', 'page') // Homepage peut afficher des idées featured
-  revalidateTag('ideas')
 }
 
 /**
@@ -23,7 +22,6 @@ export async function revalidateEvents() {
   revalidatePath('/(public)/events')
   revalidatePath('/(admin)/admin/events')
   revalidatePath('/')
-  revalidateTag('events')
 }
 
 /**
@@ -31,7 +29,6 @@ export async function revalidateEvents() {
  */
 export async function revalidateMembers() {
   revalidatePath('/(admin)/admin/members')
-  revalidateTag('members')
 }
 
 /**
@@ -40,8 +37,6 @@ export async function revalidateMembers() {
 export async function revalidateMember(memberEmail: string) {
   revalidatePath(`/(admin)/admin/members/${memberEmail}`)
   revalidatePath('/(admin)/admin/members')
-  revalidateTag(`member-${memberEmail}`)
-  revalidateTag('members')
 }
 
 /**
@@ -50,7 +45,6 @@ export async function revalidateMember(memberEmail: string) {
 export async function revalidatePatrons() {
   revalidatePath('/(public)/patrons')
   revalidatePath('/(admin)/admin/patrons')
-  revalidateTag('patrons')
 }
 
 /**
@@ -59,8 +53,6 @@ export async function revalidatePatrons() {
 export async function revalidatePatron(patronId: string) {
   revalidatePath(`/(admin)/admin/patrons/${patronId}`)
   revalidatePath('/(admin)/admin/patrons')
-  revalidateTag(`patron-${patronId}`)
-  revalidateTag('patrons')
 }
 
 /**
@@ -69,7 +61,6 @@ export async function revalidatePatron(patronId: string) {
 export async function revalidateLoans() {
   revalidatePath('/(public)/loan-items')
   revalidatePath('/(admin)/admin/loan-items')
-  revalidateTag('loan-items')
 }
 
 /**
@@ -77,7 +68,6 @@ export async function revalidateLoans() {
  */
 export async function revalidateFinancial() {
   revalidatePath('/(admin)/admin/finance') // Revalide tout le layout finance
-  revalidateTag('financial')
 }
 
 /**
@@ -86,8 +76,6 @@ export async function revalidateFinancial() {
 export async function revalidateDashboards() {
   revalidatePath('/(admin)/admin')
   revalidatePath('/(admin)/admin/analytics')
-  revalidateTag('dashboard')
-  revalidateTag('analytics')
 }
 
 /**
@@ -95,9 +83,6 @@ export async function revalidateDashboards() {
  */
 export async function revalidateConfig() {
   revalidatePath('/(admin)/admin/settings')
-  revalidateTag('config')
-  revalidateTag('branding')
-  revalidateTag('features')
 }
 
 /**

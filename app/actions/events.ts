@@ -18,14 +18,14 @@
  */
 
 import { headers } from 'next/headers'
-import { db, runDbQuery } from '@/server/db'
+import { db, runDbQuery } from '../../server/db'
 import {
   events,
   inscriptions,
   unsubscriptions,
   insertInscriptionSchema,
   type Inscription,
-} from '@/shared/schema'
+} from '@shared/schema'
 import { revalidateEvents } from './utils/revalidate'
 import { requireAuth } from './utils/auth'
 import { rateLimit } from './utils/rate-limit'
@@ -91,10 +91,14 @@ export async function registerForEvent(
       async () =>
         db
           .insert(inscriptions)
-          .values(result.data)
+          .values([result.data])
           .returning(),
       'complex'
     )
+
+    if (!inscription) {
+      return createError('Erreur lors de la création de l\'inscription')
+    }
 
     // 5. Revalidation
     await revalidateEvents()
