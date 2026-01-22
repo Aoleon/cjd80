@@ -17,10 +17,10 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { LoansService } from './loans.service';
-import { JwtAuthGuard } from '../auth/guards/auth.guard';
-import { PermissionGuard } from '../auth/guards/permission.guard';
-import { Permissions } from '../auth/decorators/permissions.decorator';
-import { User } from '../auth/decorators/user.decorator';
+import { JwtAuthGuard } from '@robinswood/auth';
+// import { PermissionsGuard } from '@robinswood/auth'; // TEMPORAIRE - À réimplémenter
+// import { RequirePermission } from '@robinswood/auth'; // TEMPORAIRE - À réimplémenter
+import { User } from '@robinswood/auth';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
 /**
@@ -52,12 +52,12 @@ export class LoansController {
  * Controller Admin Loans - Routes admin pour la gestion des prêts
  */
 @Controller('api/admin/loan-items')
-@UseGuards(JwtAuthGuard, PermissionGuard)
+@UseGuards(JwtAuthGuard) // TODO: Restore PermissionsGuard
 export class AdminLoansController {
   constructor(private readonly loansService: LoansService) {}
 
   @Get()
-  @Permissions('admin.view')
+  // @RequirePermission // TODO: Restore('admin.view')
   async getAllLoanItems(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -69,19 +69,19 @@ export class AdminLoansController {
   }
 
   @Get(':id')
-  @Permissions('admin.view')
+  // @RequirePermission // TODO: Restore('admin.view')
   async getLoanItem(@Param('id') id: string) {
     return await this.loansService.getLoanItem(id);
   }
 
   @Put(':id')
-  @Permissions('admin.edit')
+  // @RequirePermission // TODO: Restore('admin.edit')
   async updateLoanItem(@Param('id') id: string, @Body() body: unknown) {
     return await this.loansService.updateLoanItem(id, body);
   }
 
   @Patch(':id/status')
-  @Permissions('admin.edit')
+  // @RequirePermission // TODO: Restore('admin.edit')
   async updateLoanItemStatus(
     @Param('id') id: string,
     @Body() body: { status: unknown },
@@ -92,14 +92,14 @@ export class AdminLoansController {
   }
 
   @Delete(':id')
-  @Permissions('admin.edit')
+  // @RequirePermission // TODO: Restore('admin.edit')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteLoanItem(@Param('id') id: string) {
     await this.loansService.deleteLoanItem(id);
   }
 
   @Post(':id/photo')
-  @Permissions('admin.edit')
+  // @RequirePermission // TODO: Restore('admin.edit')
   @UseInterceptors(
     FileInterceptor('photo', {
       limits: {

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -288,18 +290,20 @@ export default function ManageInscriptionsModal({
     const errors: string[] = [];
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
+      const lineItem = lines[i];
+      if (!lineItem) continue;
+      const line = lineItem.trim();
       if (!line) continue;
 
       // Support several formats:
       // "Name,email" or "Name,email,comments" or "Name;email" or "Name email@domain.com"
       const parts = line.split(/[,;]/);
       
-      if (parts.length >= 2) {
+      if (parts.length >= 2 && parts[0] && parts[1]) {
         // CSV format: "Name,email" or "Name,email,comments"
         const name = parts[0].trim();
         const email = parts[1].trim();
-        const comments = parts.length > 2 ? parts[2].trim() : undefined;
+        const comments = parts.length > 2 && parts[2] ? parts[2].trim() : undefined;
         
         if (name && email && email.includes('@')) {
           parsed.push({ name, email, comments });

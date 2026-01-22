@@ -71,73 +71,12 @@ services:
     networks:
       - cjd-network
 
-  # Authentik - Identity Provider (OAuth2/OIDC)
-  # Note: Utilisation de beryju/authentik comme alternative à ghcr.io (qui nécessite authentification)
-  authentik-server:
-    image: beryju/authentik:2024.10.1
-    container_name: cjd-authentik-server
-    restart: unless-stopped
-    command: server
-    environment:
-      AUTHENTIK_REDIS__HOST: redis
-      AUTHENTIK_REDIS__PORT: 6379
-      AUTHENTIK_REDIS__PASSWORD: ${REDIS_PASSWORD:-}
-      AUTHENTIK_POSTGRESQL__HOST: postgres
-      AUTHENTIK_POSTGRESQL__PORT: 5432
-      AUTHENTIK_POSTGRESQL__USER: ${POSTGRES_USER:-postgres}
-      AUTHENTIK_POSTGRESQL__NAME: authentik
-      AUTHENTIK_POSTGRESQL__PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-changeme-in-production}
-    ports:
-      - "9002:9000"  # Port externe 9002 pour l'interface web
-      - "9443:9443"  # HTTPS
-    volumes:
-      - authentik-media:/media
-      - authentik-certs:/certs
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - cjd-network
-
-  authentik-worker:
-    image: beryju/authentik:2024.10.1
-    container_name: cjd-authentik-worker
-    restart: unless-stopped
-    command: worker
-    environment:
-      AUTHENTIK_REDIS__HOST: redis
-      AUTHENTIK_REDIS__PORT: 6379
-      AUTHENTIK_REDIS__PASSWORD: ${REDIS_PASSWORD:-}
-      AUTHENTIK_POSTGRESQL__HOST: postgres
-      AUTHENTIK_POSTGRESQL__PORT: 5432
-      AUTHENTIK_POSTGRESQL__USER: ${POSTGRES_USER:-postgres}
-      AUTHENTIK_POSTGRESQL__NAME: authentik
-      AUTHENTIK_POSTGRESQL__PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-changeme-in-production}
-    volumes:
-      - authentik-media:/media
-      - authentik-certs:/certs
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - cjd-network
-
 volumes:
   postgres-data:
     driver: local
   minio-data:
     driver: local
   redis-data:
-    driver: local
-  authentik-media:
-    driver: local
-  authentik-certs:
     driver: local
 
 networks:

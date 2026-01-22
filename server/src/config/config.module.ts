@@ -11,6 +11,7 @@ import configuration from './configuration';
       cache: true,
     }),
   ],
+  // NestConfigModule est global, ConfigService sera automatiquement disponible
   exports: [NestConfigModule],
 })
 export class ConfigModule {}

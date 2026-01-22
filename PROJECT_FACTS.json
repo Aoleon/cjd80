@@ -1,0 +1,106 @@
+{
+  "project_name": "cjd80",
+  "version": "1.0.0",
+  "description": "Boîte à Kiffs CJD Amiens - Gestion collaborative idées, événements HelloAsso, CRM",
+
+  "env_urls": {
+    "dev": "https://cjd80.robinswood.io",
+    "staging": "https://staging-cjd80.robinswood.io",
+    "production": "https://cjd80.helloasso.org"
+  },
+
+  "ports": {
+    "app": 3000,
+    "external_dev": 5013,
+    "db": 5432,
+    "db_external_dev": 5443,
+    "redis": 6379
+  },
+
+  "container_name": "cjd80-app-dev",
+
+  "official_commands": {
+    "dev": "npm run dev",
+    "build": "npm run build",
+    "test": "npm test",
+    "migrate": "npm run db:migrate",
+    "deploy": "./scripts/deploy.sh"
+  },
+
+  "paths": {
+    "app_root": "/app",
+    "client": "/app/client",
+    "server": "/app/server",
+    "config": "/app/config",
+    "migrations": "/app/server/drizzle/migrations"
+  },
+
+  "auth_mode": "oauth2",
+  "auth_provider": "authentik",
+
+  "health_endpoints": {
+    "health": "https://cjd80.robinswood.io/health",
+    "ready": "https://cjd80.robinswood.io/ready"
+  },
+
+  "observability_links": {
+    "grafana_dashboard": "https://grafana.robinswood.io/d/cjd80",
+    "loki_logs": "https://grafana.robinswood.io/explore?orgId=1&left=%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22expr%22%3A%22%7Bcontainer%3D%5C%22cjd80-app-dev%5C%22%7D%22%7D%5D%7D",
+    "prometheus_metrics": "https://grafana.robinswood.io/explore?datasource=prometheus"
+  },
+
+  "database": {
+    "type": "postgresql",
+    "host": "postgres",
+    "port": 5432,
+    "name": "cjd80_dev",
+    "migrations_tool": "drizzle"
+  },
+
+  "cache": {
+    "type": "redis",
+    "host": "redis",
+    "port": 6379
+  },
+
+  "dependencies": {
+    "critical": ["database", "redis"],
+    "optional": ["authentik_oauth", "helloasso_api"]
+  },
+
+  "docker": {
+    "compose_file": "docker-compose.dev.yml",
+    "services": ["app", "postgres", "redis"],
+    "networks": ["cjd80-network-dev", "ia-webdev-network"]
+  },
+
+  "stack": {
+    "backend": "NestJS 11",
+    "frontend": "Next.js 16 + Turbopack + App Router",
+    "orm": "Drizzle",
+    "validation": "Zod",
+    "auth": "Authentik OAuth2/OIDC",
+    "ui": "shadcn/ui + Tailwind"
+  },
+
+  "architecture": {
+    "pattern": "Monorepo hybride (Next.js + NestJS dans même container)",
+    "features": "PWA, OAuth2/OIDC, branding customizable, HelloAsso integration"
+  },
+
+  "git": {
+    "repository": "private",
+    "branch_main": "main",
+    "branch_dev": "develop"
+  },
+
+  "contacts": {
+    "owner": "thibault@youcom.io",
+    "team": "dev-team"
+  },
+
+  "runbook_path": "docs/runbook.json",
+  "context_index_path": "CONTEXT_INDEX.yaml",
+
+  "notes": "Production active. Migration NestJS complète ✅. Architecture monorepo (Next.js + NestJS même container). Bind mount complet."
+}

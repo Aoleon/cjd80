@@ -1,4 +1,6 @@
-import { useLocation } from "wouter";
+"use client";
+
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Layout from "@/components/layout";
 import IdeasSection from "@/components/ideas-section";
@@ -8,7 +10,7 @@ import { SiGithub } from 'react-icons/si';
 import { useFeatureConfig } from "@/contexts/FeatureConfigContext";
 
 export default function HomePage() {
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const { isFeatureEnabled } = useFeatureConfig();
   const [version, setVersion] = useState<string | null>(null);
 
@@ -30,7 +32,7 @@ export default function HomePage() {
     <Layout>
       <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
         {isFeatureEnabled('ideas') && (
-          <IdeasSection onNavigateToPropose={() => setLocation("/propose")} />
+          <IdeasSection onNavigateToPropose={() => router.push("/propose")} />
         )}
         {/* Séparateur visuel entre les sections */}
         {isFeatureEnabled('events') && (
@@ -58,7 +60,7 @@ export default function HomePage() {
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
               <button
-                onClick={() => setLocation("/admin")}
+                onClick={() => router.push("/admin")}
                 className="text-xs sm:text-sm text-gray-400 hover:text-cjd-green transition-colors duration-200 underline"
                 data-testid="link-admin"
               >

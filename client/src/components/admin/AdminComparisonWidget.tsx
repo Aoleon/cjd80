@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { useAdminQuery } from "@/hooks/use-admin-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

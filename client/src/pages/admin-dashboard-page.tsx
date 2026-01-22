@@ -1,3 +1,5 @@
+"use client";
+
 import AdminPageLayout from "@/components/admin/AdminPageLayout";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, TrendingUp } from "lucide-react";

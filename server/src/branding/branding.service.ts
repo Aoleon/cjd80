@@ -1,11 +1,14 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Optional, Inject } from '@nestjs/common';
 import { StorageService } from '../common/storage/storage.service';
 
 @Injectable()
 export class BrandingService {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(@Optional() @Inject(StorageService) private readonly storageService: StorageService) {}
 
   async getBrandingConfig() {
+    if (!this.storageService) {
+      throw new Error('StorageService not available');
+    }
     const result = await this.storageService.instance.getBrandingConfig();
     
     if (!result.success) {
@@ -28,10 +31,13 @@ export class BrandingService {
   }
 
   async updateBrandingConfig(config: string, userEmail: string) {
+    if (!this.storageService) {
+      throw new Error('StorageService not available');
+    }
     if (!config) {
       throw new BadRequestException("Configuration manquante");
     }
-    
+
     const result = await this.storageService.instance.updateBrandingConfig(config, userEmail);
     
     if (!result.success) {

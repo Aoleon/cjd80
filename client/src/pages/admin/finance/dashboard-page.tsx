@@ -1,3 +1,5 @@
+"use client";
+
 import AdminPageLayout from "@/components/admin/AdminPageLayout";
 import AdminFinancialDashboard from "@/components/admin/AdminFinancialDashboard";
 import { BarChart3 } from "lucide-react";

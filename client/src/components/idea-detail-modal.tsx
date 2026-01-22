@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Lightbulb, User, Calendar, TrendingUp, Users, Loader2, CalendarPlus } from "lucide-react";

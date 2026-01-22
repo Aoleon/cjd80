@@ -1,3 +1,5 @@
+"use client";
+
 import { Loader2, Lightbulb } from "lucide-react";
 import { useAdminIdeas } from "@/hooks/useAdminIdeas";
 import IdeaTable from "./IdeaTable";

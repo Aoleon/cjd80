@@ -1,6 +1,9 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Link, Redirect, useLocation } from "wouter";
+import Link from "next/link";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +14,8 @@ import { getShortAppName } from '@/config/branding';
 
 export default function ResetPasswordPage() {
   const { resetPasswordMutation, authMode } = useAuth();
-  const [, setLocation] = useLocation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [token, setToken] = useState<string | null>(null);
@@ -21,8 +25,7 @@ export default function ResetPasswordPage() {
 
   // Extraire le token de l'URL
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tokenParam = params.get('token');
+    const tokenParam = searchParams?.get('token');
     setToken(tokenParam);
 
     // Valider le token
@@ -32,12 +35,14 @@ export default function ResetPasswordPage() {
         .then(data => setTokenValid(data.valid))
         .catch(() => setTokenValid(false));
     }
-  }, []);
+  }, [searchParams]);
 
   // Rediriger vers la page de connexion si pas en mode local
-  if (authMode === 'oauth') {
-    return <Redirect to="/auth" />;
-  }
+  useEffect(() => {
+    if (authMode === 'oauth') {
+      router.push("/auth");
+    }
+  }, [authMode, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,7 +161,7 @@ export default function ResetPasswordPage() {
                 </p>
               </div>
               <Button 
-                onClick={() => setLocation('/auth')}
+                onClick={() => router.push('/auth')}
                 className="w-full bg-cjd-green hover:bg-cjd-green-dark"
                 size="lg"
               >

@@ -1,8 +1,10 @@
+"use client";
+
 import { useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useRouter } from 'next/navigation';
 
 export function useNotificationHandler() {
-  const [, setLocation] = useLocation();
+  const router = useRouter();
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
@@ -17,9 +19,9 @@ export function useNotificationHandler() {
           const search = urlObj.search;
           
           // Naviguer
-          setLocation(pathname + search);
+          router.push(pathname + search);
           
-          if (import.meta.env.DEV) {
+          if (process.env.NODE_ENV === 'development') {
             console.log('[Notification] Navigation vers:', pathname + search);
           }
         }
@@ -32,5 +34,5 @@ export function useNotificationHandler() {
     return () => {
       navigator.serviceWorker.removeEventListener('message', handleMessage);
     };
-  }, [setLocation]);
+  }, [router]);
 }

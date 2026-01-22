@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import AdminPageLayout from "@/components/admin/AdminPageLayout";
 import AdminEventsPanel from "@/components/admin/AdminEventsPanel";

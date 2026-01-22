@@ -399,9 +399,9 @@ jobs:
           echo "🗑️  Nettoyage des anciennes images de l'application (garder les 3 dernières)..."
           if [ -d "/docker/cjd80" ]; then
             cd /docker/cjd80
-            docker images ghcr.io/aoleon/cjd80 --format "{{.Tag}}" | grep -v "latest" | sort -V | head -n -2 | while read tag; do
-              echo "  Suppression de l'image: ghcr.io/aoleon/cjd80:$tag"
-              docker rmi "ghcr.io/aoleon/cjd80:$tag" || true
+            docker images ghcr.io/robinswood-io/cjd80 --format "{{.Tag}}" | grep -v "latest" | sort -V | head -n -2 | while read tag; do
+              echo "  Suppression de l'image: ghcr.io/robinswood-io/cjd80:$tag"
+              docker rmi "ghcr.io/robinswood-io/cjd80:$tag" || true
             done
           fi
           

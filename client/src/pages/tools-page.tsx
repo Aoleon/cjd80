@@ -1,3 +1,5 @@
+"use client";
+
 import { Wrench, Calendar, Users, ChartBar, Lightbulb } from "lucide-react";
 import Layout from "@/components/layout";
 

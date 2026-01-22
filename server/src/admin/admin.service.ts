@@ -16,7 +16,8 @@ import {
   updateDevelopmentRequestSchema,
   updateDevelopmentRequestStatusSchema,
   ADMIN_ROLES,
-  type Idea
+  type Idea,
+  type AdminRole
 } from '../../../shared/schema';
 import { ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
@@ -253,14 +254,13 @@ export class AdminService {
       const { email, firstName, lastName, role } = validatedData;
 
       if (!email || !firstName || !lastName || !role) {
-        throw new BadRequestException('Tous les champs sont requis (sauf mot de passe - géré par Authentik)');
+        throw new BadRequestException('Tous les champs sont requis');
       }
 
-      // NOTE: Avec Authentik, les utilisateurs doivent être créés dans Authentik
-      // Cette route crée uniquement l'entrée dans la base de données locale
+      // Créer l'utilisateur avec mot de passe initial
       const result = await this.storageService.instance.createUser({
         email,
-        password: undefined, // Password géré par Authentik
+        password: validatedData.password, // Mot de passe fourni ou undefined pour génération auto
         firstName,
         lastName,
         role,
@@ -366,6 +366,30 @@ export class AdminService {
     }
   }
 
+  async updateAdministratorPassword(email: string, newPassword: string) {
+    try {
+      if (!newPassword || newPassword.length < 8) {
+        throw new BadRequestException('Le mot de passe doit contenir au moins 8 caractères');
+      }
+
+      const result = await this.storageService.instance.updatePassword(email, newPassword);
+
+      if (!result.success) {
+        throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
+      }
+
+      return {
+        success: true,
+        message: 'Mot de passe mis à jour avec succès',
+      };
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new BadRequestException(fromZodError(error).message);
+      }
+      throw error;
+    }
+  }
+
   async deleteAdministrator(email: string, currentUserEmail: string) {
     if (email === currentUserEmail) {
       throw new BadRequestException('Vous ne pouvez pas supprimer votre propre compte');
@@ -383,11 +407,16 @@ export class AdminService {
   }
 
   async approveAdministrator(email: string, role: unknown) {
-    if (!role || !Object.values(ADMIN_ROLES).includes(role as any)) {
+    // Type guard pour valider le rôle
+    const isValidRole = (r: unknown): r is AdminRole => {
+      return typeof r === 'string' && Object.values(ADMIN_ROLES).includes(r as AdminRole);
+    };
+
+    if (!isValidRole(role)) {
       throw new BadRequestException('Rôle valide requis');
     }
 
-    const result = await this.storageService.instance.approveAdmin(email, role as string);
+    const result = await this.storageService.instance.approveAdmin(email, role);
     if (!result.success) {
       throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }
@@ -506,7 +535,7 @@ export class AdminService {
 
       // Créer l'issue GitHub en arrière-plan
       const { createGitHubIssue } = await import('../../utils/github-integration');
-      createGitHubIssue(validatedData as any)
+      createGitHubIssue(validatedData)
         .then(async (githubIssue) => {
           if (githubIssue) {
             await this.storageService.instance.updateDevelopmentRequest(result.data.id, {

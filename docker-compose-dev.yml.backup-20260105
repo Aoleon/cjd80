@@ -1,0 +1,139 @@
+# Docker Compose Development - CJD80
+# Docker Watch disabled - Using bind mounts
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cjd80-db-dev
+    restart: unless-stopped
+    ports:
+      - "5443:5432"
+    environment:
+      POSTGRES_DB: cjd80_dev
+      POSTGRES_USER: cjd80
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cjd80_dev_password}
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cjd80"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cjd80-network-dev
+
+  redis:
+    image: redis:7-alpine
+    container_name: cjd80-redis-dev
+    restart: unless-stopped
+    volumes:
+      - redis_data_dev:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - cjd80-network-dev
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cjd80-app-dev
+    restart: unless-stopped
+    ports:
+      - "5013:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://cjd80:${DB_PASSWORD:-cjd80_dev_password}@postgres:5432/cjd80_dev
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: 695e3812a01c4fe26f002bf2e13f787b4f520c26107252433749b7b8fc2b35221977cffb1c5eae9561245f7a030adaf1a209355af774ee5a4e01f241c7079e92
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # Bind mount complet du projet
+      - ./:/app
+
+      # Exclusions : Préserver node_modules du container
+      - /app/node_modules
+      - /app/client/node_modules
+      - /app/server/node_modules
+
+      # Exclusions build outputs
+      - /app/dist
+      - /app/build
+
+    # Docker Watch : HMR Next.js + Turbopack
+    develop:
+      watch:
+        # Frontend Next.js : Sync instantané (Turbopack HMR)
+        - action: sync
+          path: ./client/src
+          target: /app/client/src
+          ignore:
+            - node_modules/
+            - .next/
+            - dist/
+
+        # App directory Next.js : Sync instantané
+        - action: sync
+          path: ./client/app
+          target: /app/client/app
+          ignore:
+            - node_modules/
+            - .next/
+
+        # Config Next.js : Sync + restart
+        - action: sync+restart
+          path: ./client/next.config.mjs
+          target: /app/client/next.config.mjs
+
+        # Backend NestJS/Server : Sync + restart
+        - action: sync+restart
+          path: ./server
+          target: /app/server
+          ignore:
+            - node_modules/
+            - dist/
+
+        # Dependencies : Rebuild complet
+        - action: rebuild
+          path: ./package.json
+
+        - action: rebuild
+          path: ./client/package.json
+
+        - action: rebuild
+          path: ./server/package.json
+
+    networks:
+      - cjd80-network-dev
+      - ia-webdev-network  # Connexion au réseau nginx
+    # Resource limits : Éviter monopolisation serveur
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+volumes:
+  postgres_data_dev:
+    name: cjd80-postgres-dev
+  redis_data_dev:
+    name: cjd80-redis-dev
+
+networks:
+  cjd80-network-dev:
+    driver: bridge
+  ia-webdev-network:
+    external: true
+    name: ia-webdev_ia-webdev-network

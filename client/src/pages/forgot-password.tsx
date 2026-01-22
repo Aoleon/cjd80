@@ -1,6 +1,9 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Link, Redirect } from "wouter";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,11 +15,14 @@ export default function ForgotPasswordPage() {
   const { forgotPasswordMutation, authMode } = useAuth();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
 
   // Rediriger vers la page de connexion si pas en mode local
-  if (authMode === 'oauth') {
-    return <Redirect to="/auth" />;
-  }
+  useEffect(() => {
+    if (authMode === 'oauth') {
+      router.push("/auth");
+    }
+  }, [authMode, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

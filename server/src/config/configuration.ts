@@ -22,14 +22,11 @@ export default registerAs('app', () => ({
   // Session
   sessionSecret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
 
-  // Authentik
-  authentikBaseUrl: process.env.AUTHENTIK_BASE_URL || 'http://localhost:9002',
-  authentikClientId: process.env.AUTHENTIK_CLIENT_ID || '',
-  authentikClientSecret: process.env.AUTHENTIK_CLIENT_SECRET || '',
-  authentikIssuer: process.env.AUTHENTIK_ISSUER || 'http://localhost:9002/application/o/cjd80/',
-  authentikRedirectUri: process.env.AUTHENTIK_REDIRECT_URI || 'http://localhost:5000/api/auth/authentik/callback',
-  authentikToken: process.env.AUTHENTIK_TOKEN || '',
-  authentikSecretKey: process.env.AUTHENTIK_SECRET_KEY || 'changeme-in-production',
+  // JWT Authentication
+  jwtSecret: process.env.JWT_SECRET || 'your-secret-key-change-in-production-32chars-minimum',
+  accessTokenTTL: process.env.ACCESS_TOKEN_TTL || '15m',
+  refreshTokenTTLDays: parseInt(process.env.REFRESH_TOKEN_TTL_DAYS || '30', 10),
+  authMode: process.env.AUTH_MODE || 'local',
 
   // MinIO
   minioEndpoint: process.env.MINIO_ENDPOINT || 'localhost',

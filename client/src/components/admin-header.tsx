@@ -1,6 +1,8 @@
+"use client";
+
 import { useState, useMemo } from "react";
 import { NotificationBell } from "@/components/notification-bell";
-import { useLocation } from "wouter";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useFeatureConfig } from "@/contexts/FeatureConfigContext";
 import { Button } from "@/components/ui/button";
@@ -47,7 +49,8 @@ interface MenuItem {
 
 export default function AdminHeader() {
   const { user, logoutMutation } = useAuth();
-  const [location, setLocation] = useLocation();
+  const pathname = usePathname();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
@@ -95,21 +98,21 @@ export default function AdminHeader() {
 
   // Déterminer le module actif
   const activeModule = useMemo(() => {
-    if (location.startsWith("/admin/crm")) return "crm";
-    if (location.startsWith("/admin/content")) return "content";
-    if (location.startsWith("/admin/finance")) return "finance";
-    if (location.startsWith("/admin/settings")) return "settings";
+    if (pathname.startsWith("/admin/crm")) return "crm";
+    if (pathname.startsWith("/admin/content")) return "content";
+    if (pathname.startsWith("/admin/finance")) return "finance";
+    if (pathname.startsWith("/admin/settings")) return "settings";
     return null;
-  }, [location]);
+  }, [pathname]);
 
   const handleNavigation = (path: string) => {
-    setLocation(path);
+    router.push(path);
     setMobileMenuOpen(false);
     setOpenDropdown(null);
   };
 
   const isActive = (path: string) => {
-    return location === path || location.startsWith(path + "/");
+    return pathname === path || pathname.startsWith(path + "/");
   };
 
   return (

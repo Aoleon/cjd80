@@ -1,3 +1,5 @@
+"use client";
+
 import { Loader2, Calendar, CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAdminEvents } from "@/hooks/useAdminEvents";

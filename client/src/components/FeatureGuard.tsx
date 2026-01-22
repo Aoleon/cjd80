@@ -1,5 +1,7 @@
+"use client";
+
 import { ReactNode } from "react";
-import { useLocation } from "wouter";
+import { usePathname, useRouter } from "next/navigation";
 import { useFeatureConfig } from "@/contexts/FeatureConfigContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +19,7 @@ interface FeatureGuardProps {
  */
 export default function FeatureGuard({ featureKey, children, featureName }: FeatureGuardProps) {
   const { isFeatureEnabled, isLoading } = useFeatureConfig();
-  const [, setLocation] = useLocation();
+  const router = useRouter();
 
   if (isLoading) {
     return (
@@ -45,7 +47,7 @@ export default function FeatureGuard({ featureKey, children, featureName }: Feat
               Cette fonctionnalité a été temporairement désactivée par l'administrateur.
               Veuillez contacter l'administration si vous avez des questions.
             </p>
-            <Button onClick={() => setLocation("/")} className="w-full">
+            <Button onClick={() => router.push("/")} className="w-full">
               <Home className="h-4 w-4 mr-2" />
               Retour à l'accueil
             </Button>

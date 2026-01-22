@@ -21,14 +21,12 @@ const envSchema = z.object({
       }
       return true;
     }, 'SESSION_SECRET doit être changé en production'),
-  
-  // Authentik OAuth2 (OPTIONNEL en dev, CRITIQUE en prod)
-  AUTHENTIK_BASE_URL: z.string().url().default('http://localhost:9002'),
-  AUTHENTIK_CLIENT_ID: z.string().default(''),
-  AUTHENTIK_CLIENT_SECRET: z.string().default(''),
-  AUTHENTIK_REDIRECT_URI: z.string().url().default('http://localhost:5000/api/auth/authentik/callback'),
-  AUTHENTIK_TOKEN: z.string().optional(),
-  
+
+  // JWT Authentication
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET doit contenir au moins 32 caractères'),
+  ACCESS_TOKEN_TTL: z.string().default('15m'),
+  REFRESH_TOKEN_TTL_DAYS: z.string().regex(/^\d+$/).transform(Number).default('30'),
+
   // MinIO (OPTIONNEL mais recommandé)
   MINIO_ENDPOINT: z.string().default('localhost'),
   MINIO_PORT: z.string().regex(/^\d+$/).transform(Number).default('9000'),
@@ -90,11 +88,9 @@ export function validateEnvironment(): ValidatedEnv {
           PORT: parseInt(process.env.PORT || '5000', 10),
           DATABASE_URL: process.env.DATABASE_URL || '',
           SESSION_SECRET: process.env.SESSION_SECRET || 'dev-secret-key-not-for-production',
-          AUTHENTIK_BASE_URL: process.env.AUTHENTIK_BASE_URL || 'http://localhost:9002',
-          AUTHENTIK_CLIENT_ID: process.env.AUTHENTIK_CLIENT_ID || '',
-          AUTHENTIK_CLIENT_SECRET: process.env.AUTHENTIK_CLIENT_SECRET || '',
-          AUTHENTIK_REDIRECT_URI: process.env.AUTHENTIK_REDIRECT_URI || 'http://localhost:5000/api/auth/authentik/callback',
-          AUTHENTIK_TOKEN: process.env.AUTHENTIK_TOKEN,
+          JWT_SECRET: process.env.JWT_SECRET || 'your-secret-key-change-in-production-32chars-minimum',
+          ACCESS_TOKEN_TTL: process.env.ACCESS_TOKEN_TTL || '15m',
+          REFRESH_TOKEN_TTL_DAYS: parseInt(process.env.REFRESH_TOKEN_TTL_DAYS || '30', 10),
           MINIO_ENDPOINT: process.env.MINIO_ENDPOINT || 'localhost',
           MINIO_PORT: parseInt(process.env.MINIO_PORT || '9000', 10),
           MINIO_USE_SSL: process.env.MINIO_USE_SSL === 'true',
@@ -124,7 +120,7 @@ export function validateEnvironment(): ValidatedEnv {
       nodeEnv: result.data.NODE_ENV,
       port: result.data.PORT,
       databaseUrl: maskUrl(result.data.DATABASE_URL),
-      authentikConfigured: !!result.data.AUTHENTIK_CLIENT_ID,
+      jwtConfigured: result.data.JWT_SECRET !== 'your-secret-key-change-in-production-32chars-minimum',
       minioConfigured: result.data.MINIO_ENDPOINT !== 'localhost',
       smtpConfigured: !!result.data.SMTP_HOST,
       vapidConfigured: !!result.data.VAPID_PUBLIC_KEY,
@@ -163,12 +159,10 @@ function maskUrl(url: string): string {
 export async function checkExternalDependencies(): Promise<{
   database: boolean;
   minio: boolean;
-  authentik: boolean;
 }> {
   const results = {
     database: false,
     minio: false,
-    authentik: false,
   };
   
   // Check database
@@ -195,19 +189,6 @@ export async function checkExternalDependencies(): Promise<{
   } catch (error) {
     logger.warn('[Dependency Check] ⚠️ MinIO check failed', { error });
   }
-  
-  // Check Authentik
-  try {
-    const authentikBaseUrl = process.env.AUTHENTIK_BASE_URL;
-    if (authentikBaseUrl && authentikBaseUrl !== 'http://localhost:9002') {
-      results.authentik = true;
-      logger.info('[Dependency Check] ✅ Authentik configuré');
-    } else {
-      logger.warn('[Dependency Check] ⚠️ Authentik en configuration locale');
-    }
-  } catch (error) {
-    logger.warn('[Dependency Check] ⚠️ Authentik check failed', { error });
-  }
-  
+
   return results;
 }

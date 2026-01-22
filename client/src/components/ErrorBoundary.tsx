@@ -1,3 +1,5 @@
+"use client";
+
 import { Component, ReactNode, ErrorInfo } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,15 +27,15 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error to server
     this.logErrorToServer(error, errorInfo);
-    
+
     // Call optional onError callback
     this.props.onError?.(error, errorInfo);
-    
+
     // Log to console in development
-    if (import.meta.env.DEV) {
+    if (process.env.NODE_ENV === 'development') {
       console.error('ErrorBoundary caught:', error, errorInfo);
     }
   }
@@ -66,7 +68,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({ hasError: false, error: null });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
@@ -83,7 +85,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {import.meta.env.DEV && this.state.error && (
+              {process.env.NODE_ENV === 'development' && this.state.error && (
                 <div className="bg-error-light border border-error rounded-md p-3">
                   <p className="text-sm font-mono text-error-dark">
                     {this.state.error.message}
@@ -95,8 +97,8 @@ export class ErrorBoundary extends Component<Props, State> {
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Réessayer
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => window.location.href = '/'}
                   className="flex-1"
                   data-testid="button-home-error"

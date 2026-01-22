@@ -1,3 +1,5 @@
+"use client";
+
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import {
   useQuery,
@@ -25,22 +27,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  const [authMode, setAuthMode] = useState<AuthMode>('oauth');
-
-  // Récupérer le mode d'authentification au démarrage
-  useEffect(() => {
-    const fetchAuthMode = async () => {
-      try {
-        const response = await fetch('/api/auth/mode');
-        const data = await response.json();
-        setAuthMode(data.mode || 'oauth');
-      } catch {
-        // Par défaut, utiliser oauth si la requête échoue
-        setAuthMode('oauth');
-      }
-    };
-    fetchAuthMode();
-  }, []);
+  const [authMode, setAuthMode] = useState<AuthMode>('local');
 
   const {
     data: user,
@@ -53,18 +40,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials?: { email: string; password: string }) => {
-      if (authMode === 'oauth' || !credentials) {
-        // Rediriger vers le flow OAuth2 Authentik
-        window.location.href = "/api/auth/authentik";
-        return;
+      if (!credentials) {
+        throw new Error("Email et mot de passe requis");
       }
 
-      // Mode local : envoyer les credentials
+      // Authentification locale avec @robinswood/auth
       const response = await apiRequest("POST", "/api/auth/login", credentials);
       return response.json();
     },
     onSuccess: (data) => {
-      if (data && authMode === 'local') {
+      if (data) {
         queryClient.setQueryData(["/api/auth/user"], data);
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         toast({

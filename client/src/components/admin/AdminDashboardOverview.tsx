@@ -1,3 +1,5 @@
+"use client";
+
 import { Loader2, Calendar, Users, Lightbulb, UserCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

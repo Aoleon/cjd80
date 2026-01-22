@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useAdminQuery } from "@/hooks/use-admin-query";

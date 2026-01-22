@@ -1,43 +1,96 @@
-# Docker Compose for Development - CJD80 on work.robinswood.io
+# Docker Compose Development - CJD80
+# Usage: docker compose -f docker-compose.dev.yml up
 
 services:
-  cjd80-app:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cjd80-db-dev
+    restart: unless-stopped
+    ports:
+      - "5443:5432"
+    environment:
+      POSTGRES_DB: cjd80_dev
+      POSTGRES_USER: cjd80
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cjd80_dev_password}
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cjd80"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cjd80-network-dev
+
+  redis:
+    image: redis:7-alpine
+    container_name: cjd80-redis-dev
+    restart: unless-stopped
+    volumes:
+      - redis_data_dev:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - cjd80-network-dev
+
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: cjd80-app
+    container_name: cjd80-app-dev
     restart: unless-stopped
-
+    user: "1000:1001"  # Match host ubuntu:devs UID:GID for bind mount access
     ports:
-      - "5003:5000"  # Expose on port 5003 locally
-
-    env_file:
-      - .env
-
+      - "5013:3000"   # Backend NestJS
+      - "5174:5174"   # Frontend Next.js
     environment:
-      - NODE_ENV=production
-      - PORT=5000
-
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://cjd80:${DB_PASSWORD:-cjd80_dev_password}@postgres:5432/cjd80_dev
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: 695e3812a01c4fe26f002bf2e13f787b4f520c26107252433749b7b8fc2b35221977cffb1c5eae9561245f7a030adaf1a209355af774ee5a4e01f241c7079e92
+      DB_PASSWORD: ${DB_PASSWORD:-cjd80_dev_password}
+    command: ["/app/docker-entrypoint-dev.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # Bind mount complet (no exclusions in dev mode)
+      - ./:/app
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5000/api/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
       start_period: 60s
-
-    volumes:
-      - ./logs:/app/logs
-
+      retries: 3
     networks:
-      - rbw-network
-      - cjd80-dev-network
+      - cjd80-network-dev
+      - ia-webdev-network  # Connexion au réseau nginx
+    # Resource limits : Éviter monopolisation serveur
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+volumes:
+  postgres_data_dev:
+    name: cjd80-postgres-dev
+  redis_data_dev:
+    name: cjd80-redis-dev
 
 networks:
-  rbw-network:
+  cjd80-network-dev:
     driver: bridge
-  cjd80-dev-network:
+  ia-webdev-network:
     external: true
-    name: cjd80_cjd80-dev-network
+    name: ia-webdev_ia-webdev-network

@@ -1,0 +1,19 @@
+{
+  "apiUrl": "http://localhost:3100",
+  "projectName": "default",
+  "theme": {
+    "primaryColor": "#2563eb",
+    "secondaryColor": "#1e40af",
+    "accentColor": "#60a5fa",
+    "errorColor": "#ef4444"
+  },
+  "position": {
+    "bottom": "20px",
+    "right": "20px",
+    "left": "auto"
+  },
+  "title": "Agent Assistant",
+  "subtitle": "Powered by Claude",
+  "placeholder": "Ask me anything...",
+  "buttonLabel": "Send"
+}

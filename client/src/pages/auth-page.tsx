@@ -1,6 +1,9 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect, Link } from "wouter";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,18 +17,21 @@ export default function AuthPage() {
   const { user, isLoading, loginMutation, authMode } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const router = useRouter();
 
   // Calculer isAdmin après tous les hooks
   const isAdmin = user ? hasPermission(user.role, 'admin.view') : false;
 
   // Vérifier les paramètres d'erreur dans l'URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const error = urlParams.get('error');
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const error = urlParams?.get('error');
 
   // Redirect if already logged in
-  if (!isLoading && user) {
-    return <Redirect to={isAdmin ? "/admin" : "/"} />;
-  }
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push(isAdmin ? "/admin" : "/");
+    }
+  }, [isLoading, user, isAdmin, router]);
 
   if (isLoading) {
     return (
@@ -61,10 +67,7 @@ export default function AuthPage() {
             <CardHeader>
               <CardTitle>Connexion</CardTitle>
               <CardDescription>
-                {authMode === 'local' 
-                  ? "Entrez vos identifiants pour vous connecter"
-                  : "Utilisez Authentik pour vous connecter à l'administration"
-                }
+                Entrez vos identifiants pour vous connecter à l'administration
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleLogin}>
@@ -144,12 +147,12 @@ export default function AuthPage() {
                     {loginMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Redirection en cours...
+                        Connexion en cours...
                       </>
                     ) : (
                       <>
                         <Shield className="mr-2 h-4 w-4" />
-                        Se connecter avec Authentik
+                        Se connecter
                       </>
                     )}
                   </Button>
@@ -157,21 +160,11 @@ export default function AuthPage() {
               </CardContent>
             </form>
 
-            {authMode === 'local' && (
-              <CardFooter className="flex justify-center">
-                <Link href="/forgot-password" className="text-sm text-cjd-green hover:underline">
-                  Mot de passe oublié ?
-                </Link>
-              </CardFooter>
-            )}
-
-            {authMode === 'oauth' && (
-              <CardFooter>
-                <p className="text-sm text-gray-500 text-center w-full">
-                  Vous serez redirigé vers Authentik pour vous authentifier
-                </p>
-              </CardFooter>
-            )}
+            <CardFooter className="flex justify-center">
+              <Link href="/forgot-password" className="text-sm text-cjd-green hover:underline">
+                Mot de passe oublié ?
+              </Link>
+            </CardFooter>
           </Card>
         </div>
       </div>
@@ -193,10 +186,7 @@ export default function AuthPage() {
               <div>
                 <h3 className="font-semibold">Authentification sécurisée</h3>
                 <p className="text-sm opacity-90">
-                  {authMode === 'local' 
-                    ? "Connexion par email et mot de passe sécurisé"
-                    : "Connexion via Authentik pour une sécurité renforcée"
-                  }
+                  Connexion par email et mot de passe sécurisé
                 </p>
               </div>
             </div>

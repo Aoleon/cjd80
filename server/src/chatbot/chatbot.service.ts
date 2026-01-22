@@ -166,6 +166,8 @@ Réponds UNIQUEMENT avec la requête SQL, rien d'autre.`;
    */
   private async executeSQL(sqlQuery: string): Promise<any[]> {
     try {
+      // Note: pool.query types differ between NeonPool and PgPool
+      // Using type assertion here as pool is union type (NeonPool | PgPool)
       const result = await (pool as any).query(sqlQuery);
       return result.rows || [];
     } catch (error) {

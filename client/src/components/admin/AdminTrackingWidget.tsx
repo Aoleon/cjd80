@@ -1,10 +1,12 @@
+"use client";
+
 import { useQuery } from "@tanstack/react-query";
 import { useAdminQuery } from "@/hooks/use-admin-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Activity, TrendingUp, Users, AlertCircle } from "lucide-react";
-import { useLocation } from "wouter";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { hasPermission } from "@shared/schema";
 
@@ -34,7 +36,7 @@ interface AdminTrackingWidgetProps {
 }
 
 export default function AdminTrackingWidget({ userRole }: AdminTrackingWidgetProps) {
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const { user } = useAuth();
   const hasViewPermission = user && hasPermission(user.role, 'admin.view');
   
@@ -112,7 +114,7 @@ export default function AdminTrackingWidget({ userRole }: AdminTrackingWidgetPro
   return (
     <Card 
       className="hover:shadow-lg transition-shadow cursor-pointer"
-      onClick={() => setLocation("/admin/tracking")}
+      onClick={() => router.push("/admin/tracking")}
     >
       <CardHeader>
         <CardTitle className="flex items-center gap-2">

@@ -1,5 +1,8 @@
 import { Module, Global } from '@nestjs/common';
-import { databaseProviders } from './database.providers';
+import { databaseProviders, DATABASE } from './database.providers';
+
+// Export DATABASE for use in other modules
+export { DATABASE };
 
 @Global()
 @Module({

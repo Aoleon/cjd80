@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { DATABASE } from '../common/database/database.providers';
 import { sql } from 'drizzle-orm';
@@ -12,8 +12,10 @@ import type { StatusResponse, StatusCheck } from '../../../shared/schema';
 export class HealthService {
   constructor(
     @Inject(DATABASE) private readonly db: any,
-    private readonly minioService: MinIOService
-  ) {}
+    @Optional() private readonly minioService?: MinIOService
+  ) {
+    console.log('[HealthService] Constructor called, db:', db ? 'INJECTED' : 'UNDEFINED', 'minioService:', minioService ? 'INJECTED' : 'UNDEFINED');
+  }
 
   async getHealthCheck() {
     try {
@@ -84,14 +86,23 @@ export class HealthService {
 
       // Health check MinIO
       let minioHealth;
-      try {
-        minioHealth = await this.minioService.healthCheck();
-      } catch (error) {
+      if (this.minioService) {
+        try {
+          minioHealth = await this.minioService.healthCheck();
+        } catch (error) {
+          minioHealth = {
+            status: 'unhealthy' as const,
+            connected: false,
+            buckets: [],
+            error: error instanceof Error ? error.message : 'Unknown error',
+          };
+        }
+      } else {
         minioHealth = {
           status: 'unhealthy' as const,
           connected: false,
           buckets: [],
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: 'MinIO service not available',
         };
       }
 
@@ -213,25 +224,34 @@ export class HealthService {
     results.checks.databasePool = await dbResilience.poolHealthCheck();
 
     // 4. MinIO storage
-    try {
-      const minioHealth = await this.minioService.healthCheck();
-      results.checks.minio = {
-        name: 'MinIO Storage',
-        status: minioHealth.status,
-        message: minioHealth.connected
-          ? `Connected, ${minioHealth.buckets.length} bucket(s) available`
-          : `Not connected: ${minioHealth.error || 'Unknown error'}`,
-        responseTime: 0,
-        details: {
-          connected: minioHealth.connected,
-          buckets: minioHealth.buckets,
-        },
-      };
-    } catch (error) {
+    if (this.minioService) {
+      try {
+        const minioHealth = await this.minioService.healthCheck();
+        results.checks.minio = {
+          name: 'MinIO Storage',
+          status: minioHealth.status,
+          message: minioHealth.connected
+            ? `Connected, ${minioHealth.buckets.length} bucket(s) available`
+            : `Not connected: ${minioHealth.error || 'Unknown error'}`,
+          responseTime: 0,
+          details: {
+            connected: minioHealth.connected,
+            buckets: minioHealth.buckets,
+          },
+        };
+      } catch (error) {
+        results.checks.minio = {
+          name: 'MinIO Storage',
+          status: 'unknown',
+          message: `Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          responseTime: 0,
+        };
+      }
+    } else {
       results.checks.minio = {
         name: 'MinIO Storage',
         status: 'unknown',
-        message: `Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: 'MinIO service not available',
         responseTime: 0,
       };
     }

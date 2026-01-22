@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -46,7 +48,7 @@ import {
   HelpCircle,
   Sparkles
 } from "lucide-react";
-import { useLocation } from "wouter";
+import { usePathname, useRouter } from "next/navigation";
 import type { BrandingCore } from "@/config/branding-core";
 import { brandingCore } from "@/config/branding-core";
 import { Progress } from "@/components/ui/progress";
@@ -141,7 +143,7 @@ type StepId = typeof STEPS[number]['id'];
 
 export default function OnboardingPage() {
   const { user } = useAuth();
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const { toast } = useToast();
   const { reloadBranding } = useBrandingConfig();
   
@@ -258,7 +260,7 @@ export default function OnboardingPage() {
       localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(progress));
     } catch (error) {
       // Erreur non-critique, on continue silencieusement
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV === 'development') {
         console.warn('Impossible de sauvegarder la progression:', error);
       }
     }
@@ -354,7 +356,7 @@ export default function OnboardingPage() {
         }
       }
     } catch (error) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV === 'development') {
         console.warn('Impossible de charger la progression:', error);
       }
     }
@@ -384,9 +386,9 @@ export default function OnboardingPage() {
   // Si l'installation est complète, rediriger
   useEffect(() => {
     if (setupStatus?.data && !setupStatus.data.isFirstInstall) {
-      setLocation("/");
+      router.push("/");
     }
-  }, [setupStatus, setLocation]);
+  }, [setupStatus, router]);
 
   // Déterminer l'étape initiale selon l'état
   useEffect(() => {
@@ -488,18 +490,25 @@ export default function OnboardingPage() {
   const goToNextStep = useCallback(() => {
     if (currentStepIndex < STEPS.length - 1) {
       // Enregistrer le temps passé sur l'étape actuelle
-      const currentStepId = STEPS[currentStepIndex].id;
-      if (performanceMetrics.current.stepTimes[currentStepId]) {
-        performanceMetrics.current.stepTimes[currentStepId].end = Date.now();
+      const currentStepId = STEPS[currentStepIndex]?.id;
+      if (currentStepId && performanceMetrics.current.stepTimes[currentStepId]) {
+        const stepTime = performanceMetrics.current.stepTimes[currentStepId];
+        if (stepTime) {
+          stepTime.end = Date.now();
+        }
       }
-      
+
       // Démarrer le suivi de la nouvelle étape
-      const nextStepId = STEPS[currentStepIndex + 1].id;
-      performanceMetrics.current.stepTimes[nextStepId] = { start: Date.now() };
-      
+      const nextStepId = STEPS[currentStepIndex + 1]?.id;
+      if (nextStepId) {
+        performanceMetrics.current.stepTimes[nextStepId] = { start: Date.now() };
+      }
+
       setIsTransitioning(true);
       setTimeout(() => {
-        setCurrentStep(nextStepId);
+        if (nextStepId) {
+          setCurrentStep(nextStepId);
+        }
         setIsTransitioning(false);
       }, 150);
     }
@@ -508,22 +517,27 @@ export default function OnboardingPage() {
   const goToPreviousStep = useCallback(() => {
     if (currentStepIndex > 0) {
       // Enregistrer le temps passé sur l'étape actuelle
-      const currentStepId = STEPS[currentStepIndex].id;
-      if (performanceMetrics.current.stepTimes[currentStepId]) {
-        performanceMetrics.current.stepTimes[currentStepId].end = Date.now();
+      const currentStepId = STEPS[currentStepIndex]?.id;
+      if (currentStepId && performanceMetrics.current.stepTimes[currentStepId]) {
+        const stepTime = performanceMetrics.current.stepTimes[currentStepId];
+        if (stepTime) {
+          stepTime.end = Date.now();
+        }
       }
-      
+
       // Démarrer le suivi de la nouvelle étape
-      const prevStepId = STEPS[currentStepIndex - 1].id;
-      if (!performanceMetrics.current.stepTimes[prevStepId]) {
-        performanceMetrics.current.stepTimes[prevStepId] = { start: Date.now() };
+      const prevStepId = STEPS[currentStepIndex - 1]?.id;
+      if (prevStepId) {
+        if (!performanceMetrics.current.stepTimes[prevStepId]) {
+          performanceMetrics.current.stepTimes[prevStepId] = { start: Date.now() };
+        }
+
+        setIsTransitioning(true);
+        setTimeout(() => {
+          setCurrentStep(prevStepId);
+          setIsTransitioning(false);
+        }, 150);
       }
-      
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentStep(prevStepId);
-        setIsTransitioning(false);
-      }, 150);
     }
   }, [currentStepIndex]);
 
@@ -552,13 +566,13 @@ export default function OnboardingPage() {
       // Échap : retour à l'accueil (si pas de première installation)
       if (e.key === 'Escape' && !setupStatus?.data?.isFirstInstall) {
         e.preventDefault();
-        setLocation("/");
+        router.push("/");
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentStepIndex, setupStatus, setLocation]);
+  }, [currentStepIndex, setupStatus, router]);
 
   // Charger les données existantes si disponibles
   useEffect(() => {
@@ -747,7 +761,7 @@ export default function OnboardingPage() {
   // Helper pour extraire le domaine d'un email (mémorisé)
   const getEmailDomain = useCallback((email: string): string | null => {
     const match = email.match(/@([^@]+)$/);
-    return match ? match[1].toLowerCase() : null;
+    return match && match[1] ? match[1].toLowerCase() : null;
   }, []);
 
   // Fonction pour calculer la force du mot de passe (mémorisé)
@@ -816,11 +830,15 @@ export default function OnboardingPage() {
     const g = (num >> 8) & 0xff;
     const b = num & 0xff;
     
-    const [rs, gs, bs] = [r, g, b].map(val => {
+    const normalized = [r, g, b].map(val => {
       val = val / 255;
       return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
     });
-    
+
+    const rs = normalized[0] ?? 0;
+    const gs = normalized[1] ?? 0;
+    const bs = normalized[2] ?? 0;
+
     return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
   }, []);
 
@@ -929,11 +947,11 @@ export default function OnboardingPage() {
           // Échantillonnage des pixels (tous les 10 pixels pour performance)
           const colors: { [key: string]: number } = {};
           for (let i = 0; i < data.length; i += 40) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const a = data[i + 3];
-            
+            const r = data[i] ?? 0;
+            const g = data[i + 1] ?? 0;
+            const b = data[i + 2] ?? 0;
+            const a = data[i + 3] ?? 255;
+
             // Ignorer les pixels transparents ou trop clairs/foncés
             if (a < 128) continue;
             const brightness = (r + g + b) / 3;
@@ -952,7 +970,10 @@ export default function OnboardingPage() {
             .sort((a, b) => b[1] - a[1])
             .slice(0, 3)
             .map(([key]) => {
-              const [r, g, b] = key.split(',').map(Number);
+              const parts = key.split(',').map(Number);
+              const r = parts[0] ?? 0;
+              const g = parts[1] ?? 0;
+              const b = parts[2] ?? 0;
               return `#${[r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')}`;
             });
           
@@ -1055,33 +1076,38 @@ export default function OnboardingPage() {
       setLogoFile(processedFile);
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const preview = reader.result as string;
+        const preview = reader.result as string | null;
+        if (!preview || typeof preview !== 'string') {
+          return;
+        }
         setLogoPreview(preview);
-        
+
         // Extraire les couleurs dominantes et suggérer des couleurs
         try {
           const dominantColors = await extractColorsFromImage(preview);
-          if (dominantColors.length > 0) {
+          if (dominantColors && dominantColors.length > 0) {
             // Suggérer la première couleur dominante comme couleur principale
             const suggestedPrimary = dominantColors[0];
-            const suggestedDark = adjustColorBrightness(suggestedPrimary, -20);
-            const suggestedLight = adjustColorBrightness(suggestedPrimary, 20);
-            
-            // Mettre à jour les couleurs si elles sont encore aux valeurs par défaut
-            const currentColors = colorsForm.getValues();
-            if (currentColors.primary === brandingCore.colors.primary) {
-              colorsForm.setValue('primary', suggestedPrimary);
-              colorsForm.setValue('primaryDark', suggestedDark);
-              colorsForm.setValue('primaryLight', suggestedLight);
+            if (suggestedPrimary) {
+              const suggestedDark = adjustColorBrightness(suggestedPrimary, -20);
+              const suggestedLight = adjustColorBrightness(suggestedPrimary, 20);
+
+              // Mettre à jour les couleurs si elles sont encore aux valeurs par défaut
+              const currentColors = colorsForm.getValues();
+              if (currentColors.primary === brandingCore.colors.primary) {
+                colorsForm.setValue('primary', suggestedPrimary);
+                colorsForm.setValue('primaryDark', suggestedDark);
+                colorsForm.setValue('primaryLight', suggestedLight);
               
               toast({
                 title: "Couleurs suggérées",
                 description: "Des couleurs ont été suggérées basées sur votre logo. Vous pouvez les modifier si nécessaire.",
               });
+              }
             }
           }
         } catch (error) {
-          if (import.meta.env.DEV) {
+          if (process.env.NODE_ENV === 'development') {
             console.warn('Impossible d\'extraire les couleurs du logo:', error);
           }
         }
@@ -1210,7 +1236,7 @@ export default function OnboardingPage() {
     },
     onError: (error: any) => {
       // Ne pas bloquer la finalisation si la génération échoue
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV === 'development') {
         console.warn('Génération des fichiers statiques échouée:', error);
       }
     },
@@ -1226,7 +1252,7 @@ export default function OnboardingPage() {
     }
     
     // Enregistrer les métriques dans localStorage pour analyse (optionnel, en dev uniquement)
-    if (import.meta.env.DEV) {
+    if (process.env.NODE_ENV === 'development') {
       const metrics = {
         totalTime,
         stepTimes: performanceMetrics.current.stepTimes,
@@ -1247,7 +1273,7 @@ export default function OnboardingPage() {
     } catch (error) {
       // Ne pas bloquer la finalisation si la génération échoue
       logError('summary', error instanceof Error ? error.message : 'Erreur génération config');
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV === 'development') {
         console.warn('Génération des fichiers statiques échouée:', error);
       }
     }
@@ -1256,7 +1282,7 @@ export default function OnboardingPage() {
     try {
       localStorage.removeItem(ONBOARDING_STORAGE_KEY);
     } catch (error) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV === 'development') {
         console.warn('Impossible de nettoyer la progression:', error);
       }
     }
@@ -1267,7 +1293,7 @@ export default function OnboardingPage() {
     });
     queryClient.invalidateQueries({ queryKey: ["/api/setup/status"] });
     setTimeout(() => {
-      setLocation("/");
+      router.push("/");
     }, 1500);
   };
 

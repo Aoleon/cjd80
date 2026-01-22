@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -46,7 +48,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useBrandingConfig } from "@/hooks/use-branding-config";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Palette, Loader2, Save, RotateCcw } from "lucide-react";
-import { useLocation } from "wouter";
+import { usePathname, useRouter } from "next/navigation";
 import type { BrandingCore } from "@/config/branding-core";
 import { brandingCore } from "@/config/branding-core";
 
@@ -134,7 +136,7 @@ type BrandingFormValues = z.infer<typeof brandingFormSchema>;
 
 export default function AdminBrandingPage() {
   const { user } = useAuth();
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const { toast } = useToast();
   const { reloadBranding } = useBrandingConfig();
   
@@ -313,7 +315,7 @@ export default function AdminBrandingPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => setLocation("/admin")} data-testid="button-back-admin">
+            <Button onClick={() => router.push("/admin")} data-testid="button-back-admin">
               Retour au panneau d'administration
             </Button>
           </CardContent>

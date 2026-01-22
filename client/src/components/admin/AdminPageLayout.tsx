@@ -1,3 +1,5 @@
+"use client";
+
 import { ReactNode } from "react";
 import AdminHeader from "@/components/admin-header";
 import AdminBreadcrumbs from "@/components/admin-breadcrumbs";

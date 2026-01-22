@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Package, User, Image as ImageIcon, Calendar, Mail, Edit, Trash2 } from "lucide-react";

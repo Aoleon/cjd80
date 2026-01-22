@@ -1,3 +1,5 @@
+"use client";
+
 import AdminPageLayout from "@/components/admin/AdminPageLayout";
 import AdminBrandingPage from "../../admin-branding-page";
 import { Palette } from "lucide-react";

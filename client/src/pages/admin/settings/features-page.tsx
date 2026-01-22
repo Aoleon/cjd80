@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import AdminPageLayout from "@/components/admin/AdminPageLayout";
 import { useFeatureConfig } from "@/contexts/FeatureConfigContext";

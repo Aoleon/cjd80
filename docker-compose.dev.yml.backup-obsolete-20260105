@@ -1,0 +1,43 @@
+# Docker Compose for Development - CJD80 on work.robinswood.io
+
+services:
+  cjd80-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cjd80-app
+    restart: unless-stopped
+
+    ports:
+      - "5003:5000"  # Expose on port 5003 locally
+
+    env_file:
+      - .env
+
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    volumes:
+      - ./logs:/app/logs
+
+    networks:
+      - rbw-network
+      - cjd80-dev-network
+
+networks:
+  rbw-network:
+    driver: bridge
+  cjd80-dev-network:
+    external: true
+    name: cjd80_cjd80-dev-network

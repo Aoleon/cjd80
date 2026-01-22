@@ -22,12 +22,12 @@ export const ADMIN_STATUS = {
   INACTIVE: "inactive"   // Compte désactivé
 } as const;
 
-// Admin users table  
+// Admin users table
 export const admins = pgTable("admins", {
   email: text("email").primaryKey(),
   firstName: text("first_name").default("Admin").notNull(),
   lastName: text("last_name").default("User").notNull(),
-  password: text("password"), // Nullable car géré par Authentik pour les nouveaux utilisateurs
+  password: text("password").notNull(), // Mot de passe hashé avec bcrypt
   addedBy: text("added_by"),
   role: text("role").default(ADMIN_ROLES.IDEAS_READER).notNull(), // Rôle par défaut : consultation des idées
   status: text("status").default(ADMIN_STATUS.PENDING).notNull(), // Statut par défaut : en attente
@@ -2043,6 +2043,24 @@ export const statusResponseSchema = z.object({
 });
 
 export type StatusResponse = z.infer<typeof statusResponseSchema>;
+
+// Refresh tokens table - Tokens JWT pour rotation sécurisée
+export const refreshTokens = pgTable('refresh_tokens', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  token: varchar('token', { length: 128 }).unique().notNull(),
+  adminEmail: text('admin_email').references(() => admins.email, { onDelete: 'cascade' }).notNull(),
+  familyId: varchar('family_id').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdFromIp: varchar('created_from_ip', { length: 45 }),
+  createdByUserAgent: text('created_by_user_agent'),
+  isRevoked: boolean('is_revoked').default(false).notNull(),
+  usedAt: timestamp('used_at'),
+  replacedBy: varchar('replaced_by', { length: 128 }),
+}, (table) => ({
+  tokenIdx: index('refresh_tokens_token_idx').on(table.token),
+  adminEmailIdx: index('refresh_tokens_admin_email_idx').on(table.adminEmail),
+  familyIdIdx: index('refresh_tokens_family_id_idx').on(table.familyId),
+}));
 
 // Frontend error logging schema
 export const frontendErrorSchema = z.object({

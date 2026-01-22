@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from 'react';
 import { Bell, BellOff, Settings, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +9,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useNotifications } from '@/hooks/use-notifications';
-import { useLocation } from 'wouter';
+import { useRouter } from 'next/navigation';
 
 interface NotificationBellProps {
   className?: string;
@@ -23,7 +25,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
     testNotification,
   } = useNotifications();
   
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -49,7 +51,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
   };
 
   const handleSettings = () => {
-    setLocation('/admin/settings/notifications');
+    router.push('/admin/settings/notifications');
     setOpen(false);
   };
 

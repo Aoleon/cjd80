@@ -1,3 +1,5 @@
+"use client";
+
 import AdminPageLayout from "@/components/admin/AdminPageLayout";
 import AdminSponsorshipsPage from "../../admin-sponsorships-page";
 import { Award } from "lucide-react";

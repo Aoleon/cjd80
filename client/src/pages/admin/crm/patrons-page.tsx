@@ -1,3 +1,5 @@
+"use client";
+
 import AdminPageLayout from "@/components/admin/AdminPageLayout";
 import AdminPatronsPage from "../../admin-patrons-page";
 import { Building2 } from "lucide-react";

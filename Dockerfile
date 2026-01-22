@@ -5,8 +5,8 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copier les fichiers de dépendances
-COPY package*.json ./
+# Copier les fichiers de dépendances et .npmrc pour Verdaccio
+COPY package*.json .npmrc ./
 
 # Installer les dépendances (toutes, y compris devDependencies pour le build)
 RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
@@ -50,6 +50,7 @@ RUN (npm ci --omit=dev --legacy-peer-deps || npm install --omit=dev --legacy-pee
 # Copier les fichiers nécessaires pour les migrations (drizzle-kit)
 COPY --from=builder /app/drizzle.config.ts ./
 COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/vendor ./vendor
 
 # Créer vite.config.js (nécessaire pour les imports dynamiques, même si non utilisé en production)
 # En production, setupVite n'est pas appelé, mais le module peut être importé
@@ -58,9 +59,11 @@ RUN echo 'export default {};' > vite.config.js
 # Copier les fichiers buildés depuis le stage builder
 COPY --from=builder /app/dist ./dist
 
-# Créer le dossier logs et symlink pour @shared (alias vers shared)
-RUN mkdir -p /app/logs /app/node_modules && \
+# Créer le dossier logs et symlinks pour @shared et @workspace
+RUN mkdir -p /app/logs /app/node_modules/@workspace && \
     ln -sf /app/shared /app/node_modules/@shared && \
+    ln -sf /app/vendor/auth-shared /app/node_modules/@workspace/auth-shared && \
+    ln -sf /app/vendor/auth-unified /app/node_modules/@workspace/auth-unified && \
     chown -R cjduser:cjd /app
 
 # Charger le loader ESM pour la résolution des imports sans extension

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAdminQuery } from "@/hooks/use-admin-query";
@@ -67,7 +69,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Loader2, Search, Plus, Edit, Trash2, Euro, Calendar, User, Building2, Phone, Mail, FileText, Coffee, Star, Eye, EyeOff, Download } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
+import { usePathname, useRouter } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // Types from schema
@@ -200,7 +202,7 @@ interface PaginatedPatronsResponse {
 
 export default function AdminPatronsPage() {
   const { user } = useAuth();
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const { toast } = useToast();
   
   const [selectedPatronId, setSelectedPatronId] = useState<string | null>(null);
@@ -722,7 +724,7 @@ export default function AdminPatronsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => setLocation("/admin")} data-testid="button-back-admin">
+            <Button onClick={() => router.push("/admin")} data-testid="button-back-admin">
               Retour au panneau d'administration
             </Button>
           </CardContent>

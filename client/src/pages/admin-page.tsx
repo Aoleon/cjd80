@@ -1,3 +1,5 @@
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AdminSection from "@/components/admin-section";
 import AdminLogin from "@/components/admin-login";

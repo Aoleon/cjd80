@@ -77,7 +77,7 @@ export const PWAUtils = {
           }
         } catch (error) {
           // Silencieux en production, debug seulement en développement
-          if (import.meta.env.DEV) {
+          if (process.env.NODE_ENV === 'development') {
             console.debug(`[PWA] Échec préchargement de ${url}:`, error);
           }
         }
@@ -91,15 +91,24 @@ export const PWAUtils = {
   logPerformanceMetrics(): void {
     if ('performance' in window && 'getEntriesByType' in performance) {
       // Navigation Timing - logs seulement en développement
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV === 'development') {
         const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
         if (navigationEntries.length > 0) {
           const navigation = navigationEntries[0];
-          console.log('[PWA] Métriques de navigation:', {
-            domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
-            loadComplete: navigation.loadEventEnd - navigation.loadEventStart,
-            ttfb: navigation.responseStart - navigation.requestStart
-          });
+          if (navigation) {
+            const domContentLoadedStart = navigation.domContentLoadedEventStart ?? 0;
+            const domContentLoadedEnd = navigation.domContentLoadedEventEnd ?? 0;
+            const loadEventStart = navigation.loadEventStart ?? 0;
+            const loadEventEnd = navigation.loadEventEnd ?? 0;
+            const responseStart = navigation.responseStart ?? 0;
+            const requestStart = navigation.requestStart ?? 0;
+
+            console.log('[PWA] Métriques de navigation:', {
+              domContentLoaded: domContentLoadedEnd - domContentLoadedStart,
+              loadComplete: loadEventEnd - loadEventStart,
+              ttfb: responseStart - requestStart
+            });
+          }
         }
 
         // Resource Timing pour les assets PWA

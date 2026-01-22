@@ -119,11 +119,13 @@ import { z } from "zod";
 import { db, runDbQuery } from "./db";
 import { eq, desc, and, count, sql, or, asc, ne, like, ilike } from "drizzle-orm";
 import session from "express-session";
-import connectPg from "connect-pg-simple";
+// TEMPORAIRE: Commenté pour débugger le blocage NestFactory.create()
+// import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 import { logger } from "./lib/logger";
 
-const PostgresSessionStore = connectPg(session);
+// TEMPORAIRE: Commenté pour débugger le blocage NestFactory.create()
+// const PostgresSessionStore = connectPg(session);
 
 export type PublicEventSponsorship = EventSponsorship & {
   patronFirstName: string;
@@ -525,27 +527,30 @@ export class DatabaseStorage implements IStorage {
   public sessionStore: session.Store;
 
   constructor() {
-    // Configuration optimisée du store de sessions
-    // PostgresSessionStore nécessite un Pool PostgreSQL standard
-    // Si on utilise Neon, on ne peut pas utiliser ce store
+    // TEMPORAIRE: Utiliser MemoryStore pour débugger le blocage NestFactory.create()
+    // PostgresSessionStore semble bloquer l'initialisation de NestJS
+    logger.warn('[DatabaseStorage] Using in-memory session store (TEMPORARY - for debug)');
+
+    // @ts-ignore - MemoryStore est le store par défaut si on ne fournit pas de store
+    this.sessionStore = new session.MemoryStore();
+
+    /* DÉSACTIVÉ TEMPORAIREMENT - À réactiver après avoir résolu le blocage
     const dbProvider = process.env.DATABASE_URL?.includes('neon.tech') ? 'neon' : 'standard';
     if (dbProvider === 'neon') {
       throw new Error('PostgresSessionStore ne supporte pas Neon. Utilisez un autre store de sessions.');
     }
-    this.sessionStore = new PostgresSessionStore({ 
-      pool: pool as import('pg').Pool, 
+    this.sessionStore = new PostgresSessionStore({
+      pool: pool as import('pg').Pool,
       createTableIfMissing: true,
-      // Optimisations pour les sessions
       tableName: 'user_sessions',
-      pruneSessionInterval: 3600, // 1 heure - moins fréquent
+      pruneSessionInterval: 3600,
       errorLog: (error) => {
         logger.error('Session store error', { error });
       },
-      // Configuration du schéma
       schemaName: 'public',
-      // TTL aligné avec les cookies
-      ttl: 24 * 60 * 60 // 24 heures
+      ttl: 24 * 60 * 60
     });
+    */
   }
 
   // Ultra-robust User methods with Result pattern

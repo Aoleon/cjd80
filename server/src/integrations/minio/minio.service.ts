@@ -31,6 +31,10 @@ export class MinIOService implements OnModuleInit {
   }
 
   async onModuleInit() {
+    // Initialisation désactivée temporairement pour debug
+    // TODO: Réactiver après avoir résolu le problème de blocage
+    logger.info('MinIO onModuleInit: initialization skipped (debug mode)');
+    /*
     // Initialisation optionnelle au démarrage du module
     // Ne pas bloquer si MinIO n'est pas disponible
     try {
@@ -38,6 +42,7 @@ export class MinIOService implements OnModuleInit {
     } catch (error) {
       logger.warn('MinIO initialization failed at module init, will retry on first use', { error });
     }
+    */
   }
 
   async initialize(): Promise<void> {

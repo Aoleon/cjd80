@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAdminQuery } from "@/hooks/use-admin-query";
@@ -69,7 +71,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Loader2, Plus, Edit, Trash2, Eye, EyeOff, Euro, Award, TrendingUp, Calendar, User, Download } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -189,7 +191,7 @@ type SponsorshipFormValues = z.infer<typeof sponsorshipFormSchema>;
 
 export default function AdminSponsorshipsPage() {
   const { user } = useAuth();
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const { toast } = useToast();
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);

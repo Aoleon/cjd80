@@ -1,3 +1,5 @@
+"use client";
+
 import { Edit, Trash2, Users, Star, CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";

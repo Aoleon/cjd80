@@ -1,0 +1,90 @@
+/srv/workspace/cjd80/
+├── package.json [MODIFIÉ]
+│   ├── vitest: 3.2.4 → 4.0.4
+│   ├── jsdom → SUPPRIMÉ
+│   └── happy-dom: 14.1.3 → AJOUTÉ
+│
+├── vitest.config.ts [MODIFIÉ]
+│   ├── environment: 'jsdom' → 'happy-dom'
+│   ├── pool: 'threads' [AJOUTÉ]
+│   └── setupFiles: './test/setup.ts' → './tests/setup.ts'
+│
+├── tests/
+│   ├── setup.ts [CRÉÉ - NOUVEAU/MIGRÉ]
+│   │   ├── setupServer() - MSW 2.x
+│   │   ├── beforeAll: server.listen()
+│   │   ├── afterEach: server.resetHandlers()
+│   │   ├── afterAll: server.close()
+│   │   ├── vi.clearAllMocks()
+│   │   └── vi.clearAllTimers()
+│   │
+│   ├── README.md [CRÉÉ]
+│   │   └── Quick start guide
+│   │
+│   ├── e2e/
+│   │   └── [existant - inchangé]
+│   │
+│   └── playwright-reporter.ts [existant - inchangé]
+│
+├── test/
+│   ├── setup.ts [ANCIEN - peut être supprimé]
+│   │   └── ⚠️ Tous les mocks migrés vers tests/setup.ts
+│   │
+│   ├── unit/ [existant - inchangé]
+│   └── integration/ [existant - inchangé]
+│
+├── VITEST_SETUP_GUIDE.md [CRÉÉ]
+│   ├── Documentation complète
+│   ├── Patterns MSW 2.x
+│   ├── Exemples d'utilisation
+│   └── Troubleshooting
+│
+├── VITEST_CONFIGURATION_SUMMARY.txt [CRÉÉ]
+│   └── Résumé complet de tous les changements
+│
+├── VITEST_CHANGES_TREE.txt [CRÉÉ - CE FICHIER]
+│   └── Vue d'ensemble arborescente
+│
+└── scripts/
+    └── verify-vitest-setup.sh [CRÉÉ]
+        ├── Validation vitest.config.ts
+        ├── Validation package.json
+        ├── Validation tests/setup.ts
+        └── Validation documentation
+
+=============================================================================
+STATISTIQUES
+=============================================================================
+
+Fichiers modifiés:     2 (package.json, vitest.config.ts)
+Fichiers créés:        6 (tests/setup.ts, 3x README/GUIDE, script, summary)
+Dépendances MAJ:       2 (vitest → 4.x, jsdom → happy-dom)
+Dépendances stable:    1 (msw → 2.x - no change)
+
+Lignes de code:
+  • vitest.config.ts: +1 ligne (pool: 'threads')
+  • tests/setup.ts: 70 lignes (nuovo)
+  • package.json: 2 dépendances changées
+
+=============================================================================
+CHECKLIST DE DÉPLOIEMENT
+=============================================================================
+
+Avant de déployer:
+  ☐ npm install (télécharger les nouvelles versions)
+  ☐ npm run test (vérifier que tests passent)
+  ☐ npm run test:coverage (vérifier couverture)
+
+Optionnel (nettoyage):
+  ☐ rm test/setup.ts (ancien setup, inutil après migration)
+  ☐ rm test/integration (si vide et non utilisé)
+
+Après déploiement:
+  ☐ Monitorer performance tests (devrait être 3-4x plus rapide)
+  ☐ Vérifier aucune console error
+  ☐ Vérifier aucun flaky test
+
+=============================================================================
+
+Généré: 2026-01-16
+Version: 1.0.0

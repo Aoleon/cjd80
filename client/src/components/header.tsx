@@ -1,5 +1,8 @@
+"use client";
+
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getShortAppName, getOrgName } from '@/config/branding';
@@ -10,16 +13,17 @@ import { useFeatureConfig } from "@/contexts/FeatureConfigContext";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [location, setLocation] = useLocation();
+  const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuth();
   const { branding } = useBranding();
 
   // Map routes to section names
   const getActiveSection = (): "ideas" | "propose" | "events" | "tools" | "loan" => {
-    if (location === "/propose") return "propose";
-    if (location === "/events") return "events";
-    if (location === "/tools") return "tools";
-    if (location === "/loan") return "loan";
+    if (pathname === "/propose") return "propose";
+    if (pathname === "/events") return "events";
+    if (pathname === "/tools") return "tools";
+    if (pathname === "/loan") return "loan";
     return "ideas";
   };
 
@@ -41,15 +45,18 @@ export default function Header() {
       <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
-            <button 
-              onClick={() => setLocation("/")}
+            <button
+              onClick={() => router.push("/")}
               className="hover:opacity-80 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 rounded flex items-center space-x-3"
               aria-label="Retour à la page d'accueil - Voter pour des idées"
             >
-              <img 
-                src={branding.assets?.logo || '/icon-192.jpg'} 
-                alt={`Logo ${getOrgName()}`} 
+              <Image
+                src={branding.assets?.logo || '/icon-192.jpg'}
+                alt={`Logo ${getOrgName()}`}
+                width={48}
+                height={48}
                 className="h-8 sm:h-10 lg:h-12 w-auto rounded-[60px]"
+                style={{ width: 'auto' }}
               />
               <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">{getShortAppName()}</h1>
             </button>
@@ -59,7 +66,7 @@ export default function Header() {
             {menuItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => setLocation(item.route)}
+                onClick={() => router.push(item.route)}
                 className={`hover:text-white/90 transition-colors duration-200 font-medium text-sm xl:text-base whitespace-nowrap ${
                   activeSection === item.id ? "border-b-2 border-white pb-1" : ""
                 }`}
@@ -90,7 +97,7 @@ export default function Header() {
               <button
                 key={item.id}
                 onClick={() => {
-                  setLocation(item.route);
+                  router.push(item.route);
                   setMobileMenuOpen(false);
                 }}
                 className={`block w-full text-left py-3 px-2 rounded hover:bg-success-dark transition-colors duration-200 ${

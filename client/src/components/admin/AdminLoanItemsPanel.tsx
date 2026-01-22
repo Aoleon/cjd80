@@ -1,3 +1,5 @@
+"use client";
+
 import { Loader2, Package } from "lucide-react";
 import { useAdminLoanItems } from "@/hooks/useAdminLoanItems";
 import LoanItemTable from "./LoanItemTable";

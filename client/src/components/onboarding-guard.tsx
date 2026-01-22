@@ -1,6 +1,8 @@
+"use client";
+
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, Redirect } from "wouter";
+import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 /**
@@ -8,11 +10,12 @@ import { Loader2 } from "lucide-react";
  * si c'est une première installation
  */
 export function OnboardingGuard({ children }: { children: React.ReactNode }) {
-  const [location, setLocation] = useLocation();
+  const pathname = usePathname();
+  const router = useRouter();
   
   // Ignorer la vérification sur certaines routes
   const skipRoutes = ['/onboarding', '/auth', '/test-error'];
-  const shouldSkipCheck = skipRoutes.some(route => location.startsWith(route));
+  const shouldSkipCheck = skipRoutes.some(route => pathname.startsWith(route));
 
   const { data: setupStatus, isLoading } = useQuery({
     queryKey: ["/api/setup/status"],
@@ -39,8 +42,19 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Si c'est une première installation, rediriger vers l'onboarding
+  useEffect(() => {
+    if (setupStatus?.data?.isFirstInstall) {
+      router.push('/onboarding');
+    }
+  }, [setupStatus?.data?.isFirstInstall, router]);
+
+  // Afficher un loader pendant la redirection
   if (setupStatus?.data?.isFirstInstall) {
-    return <Redirect to="/onboarding" />;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-cjd-green" />
+      </div>
+    );
   }
 
   return <>{children}</>;

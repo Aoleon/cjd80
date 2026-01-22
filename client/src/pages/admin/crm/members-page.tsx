@@ -1,3 +1,5 @@
+"use client";
+
 import AdminPageLayout from "@/components/admin/AdminPageLayout";
 import AdminMembersPage from "../../admin-members-page";
 import { UserCircle } from "lucide-react";

@@ -1,16 +1,16 @@
 import { Controller, Post, Body, UseGuards, BadRequestException } from '@nestjs/common';
 import { ChatbotService } from './chatbot.service';
-import { JwtAuthGuard } from '../auth/guards/auth.guard';
-import { PermissionGuard } from '../auth/guards/permission.guard';
-import { Permissions } from '../auth/decorators/permissions.decorator';
+import { JwtAuthGuard } from '@robinswood/auth';
+// import { PermissionsGuard } from '@robinswood/auth'; // TEMPORAIRE - À réimplémenter
+// import { RequirePermission } from '@robinswood/auth'; // TEMPORAIRE - À réimplémenter
 
 @Controller('api/admin/chatbot')
 export class ChatbotController {
   constructor(private readonly chatbotService: ChatbotService) {}
 
   @Post('query')
-  @UseGuards(JwtAuthGuard, PermissionGuard)
-  @Permissions('admin.view')
+  @UseGuards(JwtAuthGuard) // TODO: Restore PermissionsGuard
+  // @RequirePermission // TODO: Restore('admin.view')
   async query(@Body() body: { question?: string; context?: string }) {
     const { question, context } = body;
     

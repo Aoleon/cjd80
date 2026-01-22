@@ -1,21 +1,35 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { StorageService } from '../common/storage/storage.service';
 import { insertIdeaSchema, insertVoteSchema, updateIdeaStatusSchema, type Idea, type Vote } from '../../../shared/schema';
 import { ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 import { logger } from '../../lib/logger';
 import { notificationService } from '../../notification-service';
-import { emailNotificationService } from '../../email-notification-service';
+import { emailNotificationService} from '../../email-notification-service';
 
 @Injectable()
 export class IdeasService {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(@Inject(StorageService) private readonly storageService: StorageService) {
+    logger.info('IdeasService constructor called', {
+      hasStorageService: !!storageService,
+      storageServiceType: storageService ? storageService.constructor.name : 'undefined'
+    });
+  }
 
   async getIdeas(page: number = 1, limit: number = 20) {
-    return await this.storageService.instance.getIdeas({ page, limit });
+    if (!this.storageService) {
+      throw new Error('StorageService not available');
+    }
+    if (!this.storageService.storage) {
+      throw new Error('DatabaseStorage not available');
+    }
+    return await this.storageService.storage.getIdeas({ page, limit });
   }
 
   async createIdea(data: unknown) {
+    if (!this.storageService) {
+      throw new Error('StorageService not available');
+    }
     try {
       const validatedData = insertIdeaSchema.parse(data);
       const result = await this.storageService.instance.createIdea(validatedData);

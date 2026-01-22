@@ -1,6 +1,6 @@
 {
   "include": ["server/**/*", "shared/**/*"],
-  "exclude": ["node_modules", "dist", "client", "**/*.test.ts", "server/firebase-import.ts", "server/storage.ts"],
+  "exclude": ["node_modules", "dist", "client", "**/*.test.ts", "**/*.spec.ts", "server/firebase-import.ts", "server/storage.ts", "server/vite.ts", "server/src/test-*.ts"],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo.server",
@@ -10,7 +10,7 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "target": "ESNext",
-    "strict": false,
+    "strict": true,
     "lib": ["esnext"],
     "esModuleInterop": true,
     "skipLibCheck": true,

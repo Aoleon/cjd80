@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAdminQuery } from "@/hooks/use-admin-query";
@@ -74,7 +76,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
+import { usePathname, useRouter } from "next/navigation";
 import { hasPermission, CJD_ROLES, CJD_ROLE_LABELS } from "@shared/schema";
 import type { Member, MemberActivity, MemberSubscription } from "@shared/schema";
 import { MemberTags } from "@/components/member-tags";
@@ -120,7 +122,7 @@ const subscriptionFormSchema = z.object({
 
 export default function AdminMembersPage() {
   const { user } = useAuth();
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const { toast } = useToast();
   
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
@@ -433,7 +435,7 @@ export default function AdminMembersPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => setLocation("/admin")} data-testid="button-back-admin">
+            <Button onClick={() => router.push("/admin")} data-testid="button-back-admin">
               Retour au panneau d'administration
             </Button>
           </CardContent>

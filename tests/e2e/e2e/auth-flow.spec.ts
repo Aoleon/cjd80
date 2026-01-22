@@ -1,42 +1,54 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Authentication Flow', () => {
-  test('should show Authentik login button when not authenticated', async ({ page }) => {
+  test('should show local login form when not authenticated', async ({ page }) => {
     // Clear any existing auth
     await page.context().clearCookies();
-    
+
     await page.goto('/auth');
     await page.waitForLoadState('networkidle');
-    
-    // Should show Authentik login button
-    const hasAuthentikButton = await page.locator('text=Se connecter avec Authentik').isVisible().catch(() => false);
-    expect(hasAuthentikButton).toBeTruthy();
+
+    // Should show local login form with email and password fields
+    const hasEmailField = await page.locator('input[type="email"]').isVisible().catch(() => false);
+    const hasPasswordField = await page.locator('input[type="password"]').isVisible().catch(() => false);
+    const hasLoginButton = await page.locator('button:has-text("Se connecter")').isVisible().catch(() => false);
+
+    expect(hasEmailField).toBeTruthy();
+    expect(hasPasswordField).toBeTruthy();
+    expect(hasLoginButton).toBeTruthy();
   });
-  
-  test('should redirect to Authentik when clicking login button', async ({ page }) => {
+
+  test('should allow login with valid credentials', async ({ page }) => {
     // Clear any existing auth
     await page.context().clearCookies();
-    
-    // Mock the Authentik OAuth2 flow
-    await page.route('/api/auth/authentik', async (route) => {
-      // Simulate redirect to Authentik
+
+    // Mock successful login
+    await page.route('/api/auth/login', async (route) => {
       await route.fulfill({
-        status: 302,
-        headers: {
-          'Location': 'http://localhost:9002/application/o/authorize/?client_id=test&redirect_uri=http://localhost:5000/api/auth/authentik/callback'
-        }
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          email: 'admin@test.com',
+          firstName: 'Admin',
+          lastName: 'User',
+          role: 'super_admin',
+          status: 'active'
+        })
       });
     });
 
     await page.goto('/auth');
     await page.waitForLoadState('networkidle');
-    
-    // Click login button
-    await page.click('text=Se connecter avec Authentik');
-    
-    // Should redirect to Authentik (or show redirect in test environment)
-    // In a real test, we would follow the redirect, but for E2E we can verify the button works
-    await expect(page.locator('text=Se connecter avec Authentik')).toBeVisible();
+
+    // Fill login form
+    await page.fill('input[type="email"]', 'admin@test.com');
+    await page.fill('input[type="password"]', 'password123');
+    await page.click('button:has-text("Se connecter")');
+
+    // Should show success message or redirect
+    await page.waitForTimeout(1000); // Wait for mutation
+    const hasSuccessToast = await page.locator('text=Connexion réussie').isVisible().catch(() => false);
+    expect(hasSuccessToast || page.url().includes('/admin')).toBeTruthy();
   });
   
   test('should allow authenticated admin to access admin panel', async ({ page }) => {
@@ -304,39 +316,42 @@ test.describe('Authentication Flow', () => {
     expect(hasMembersContent).toBeTruthy();
   });
 
-  test('should handle OAuth2 callback and create user session', async ({ page }) => {
-    // Mock the OAuth2 callback
-    await page.route('/api/auth/authentik/callback*', async (route) => {
-      // Simulate successful OAuth2 callback
-      await route.fulfill({
-        status: 302,
-        headers: {
-          'Location': '/admin',
-          'Set-Cookie': 'connect.sid=mock-session-id; Path=/; HttpOnly'
-        }
-      });
-    });
+  test('should reject invalid credentials', async ({ page }) => {
+    // Clear any existing auth
+    await page.context().clearCookies();
 
-    // Mock user creation/sync
-    await page.route('/api/auth/user', async (route) => {
+    // Mock failed login
+    await page.route('/api/auth/login', async (route) => {
       await route.fulfill({
-        status: 200,
+        status: 401,
         contentType: 'application/json',
         body: JSON.stringify({
-          email: 'newuser@test.com',
-          firstName: 'New',
-          lastName: 'User',
-          role: 'ideas_reader',
-          status: 'active'
+          message: 'Identifiants invalides'
         })
       });
     });
 
-    await page.goto('/api/auth/authentik/callback?code=mock-code&state=mock-state');
+    await page.goto('/auth');
     await page.waitForLoadState('networkidle');
-    
-    // Should redirect to admin or home
-    expect(page.url()).toContain('/admin');
+
+    // Fill login form with invalid credentials
+    await page.fill('input[type="email"]', 'wrong@test.com');
+    await page.fill('input[type="password"]', 'wrongpassword');
+    await page.click('button:has-text("Se connecter")');
+
+    // Should show error message
+    await page.waitForTimeout(1000); // Wait for mutation
+    const hasErrorToast = await page.locator('text=Erreur de connexion').or(page.locator('text=Identifiants invalides')).isVisible().catch(() => false);
+    expect(hasErrorToast).toBeTruthy();
+  });
+
+  test('should show forgot password link', async ({ page }) => {
+    await page.goto('/auth');
+    await page.waitForLoadState('networkidle');
+
+    // Should have forgot password link
+    const hasForgotPasswordLink = await page.locator('a[href="/forgot-password"]').isVisible().catch(() => false);
+    expect(hasForgotPasswordLink).toBeTruthy();
   });
 });
 

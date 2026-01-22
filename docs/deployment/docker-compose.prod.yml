@@ -5,7 +5,7 @@ version: '3.8'
 
 services:
   cjd-app:
-    image: ${DOCKER_IMAGE:-ghcr.io/aoleon/cjd80:latest}
+    image: ${DOCKER_IMAGE:-ghcr.io/robinswood-io/cjd80:latest}
     container_name: cjd-app
     restart: unless-stopped
     ports:

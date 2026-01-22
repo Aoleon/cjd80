@@ -1,8 +1,10 @@
+"use client";
+
 import { useAdminQuery } from "@/hooks/use-admin-query";
 import AdminDashboardOverview from "./AdminDashboardOverview";
 import { FinancialKPIsWidget, EngagementKPIsWidget, ExtendedFinancialKPIsWidget } from "./AdminKPIsWidgets";
 import AdminTrackingWidget from "./AdminTrackingWidget";
-import { useLocation } from "wouter";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { hasPermission } from "@shared/schema";
 import { Loader2, AlertCircle } from "lucide-react";
@@ -31,7 +33,7 @@ interface TrackingDashboard {
 }
 
 export default function AdminUnifiedDashboard() {
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const { user } = useAuth();
   
   const hasViewPermission = user && hasPermission(user.role, 'admin.view');
@@ -101,7 +103,7 @@ export default function AdminUnifiedDashboard() {
         stats={stats}
         isLoading={statsLoading}
         userRole={user?.role}
-        onNavigate={setLocation}
+        onNavigate={router.push}
         onTabChange={(tab) => {
           // Navigation vers les pages modulaires selon l'onglet
           const tabRoutes: Record<string, string> = {
@@ -111,7 +113,7 @@ export default function AdminUnifiedDashboard() {
           };
           const route = tabRoutes[tab];
           if (route) {
-            setLocation(route);
+            router.push(route);
           }
         }}
       />

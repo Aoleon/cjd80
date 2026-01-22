@@ -2,18 +2,71 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Liens Claude CLI centralises
+- Central: `./claude-cli-central`
+- Projets (racine): `./claude-cli-projects`
+- Projets: `./claude-cli-project-home-ubuntu`, `./claude-cli-project-home-cindy`, `./claude-cli-project-opt-workspace-work`, `./claude-cli-project-tmp`
+
 ## Project Overview
 
 CJD Amiens "Boîte à Kiffs" - Modern internal web application for collaborative idea management, event organization with HelloAsso integration, and comprehensive administration interface.
 
 **Tech Stack:**
 - **Backend:** NestJS 11 (migrated from Express.js) + TypeScript + Drizzle ORM
-- **Frontend:** React 18 + TypeScript + Vite + TanStack Query + Wouter routing
+- **Frontend:** Next.js 16 + Turbopack + React 19 + TanStack Query + App Router
 - **Database:** PostgreSQL (Neon) with connection pooling
 - **Auth:** Authentik (OAuth2/OIDC) via Docker Compose
 - **Storage:** MinIO (S3-compatible)
 - **UI:** Tailwind CSS + shadcn/ui with semantic color system
-- **PWA:** Service workers, offline queue, push notifications
+- **PWA:** Service workers, offline queue, push notifications (manual implementation)
+
+## ✅ Migration Stack COMPLÉTÉE (Janvier 2026)
+
+**Statut:** ✅ **100% conforme au standard technique**
+- ✅ Backend: NestJS 11 (conforme)
+- ✅ Frontend: Next.js 16 + Turbopack + App Router (conforme)
+
+**Migration terminée le 2026-01-14:**
+- ✅ Next.js 16.1.1 + Turbopack configuré et opérationnel
+- ✅ 33 pages migrées vers App Router (route groups: admin, public, auth)
+- ✅ Wouter complètement retiré (0 références restantes)
+- ✅ React 19.2.3 installé et fonctionnel
+- ✅ Build production réussit (34 routes générées)
+- ✅ Dev server startup: 2.2 secondes (Turbopack)
+- ✅ Console errors frontend: 0
+- ✅ Tests browser validés avec Playwright
+
+**Résultats migration:**
+- **Performance:** Turbopack HMR ultra-rapide vs Vite
+- **DX:** File-based routing, layouts imbriqués natifs, loading/error states intégrés
+- **Standardisation:** Stack uniforme NestJS + Next.js (aligné avec pns-gen)
+- **PWA:** Implémentation manuelle préservée (528 lignes), migration next-pwa optionnelle
+- **Image optimization:** Next.js Image component avec auto-optimization
+
+**Documentation migration:** Voir `/srv/workspace/cjd80/MIGRATION-NEXTJS-COMPLETED.md`
+
+## 🎯 Objectif : Migration Server Actions
+
+**Statut:** ❌ Non implémenté
+
+**Priorité:** Haute - Standardisation stack complète
+
+**Objectif:** Migrer les API routes et mutations vers Next.js Server Actions pour:
+- Type safety end-to-end (plus de parsing JSON manuel)
+- Réduction boilerplate (fetch, headers, error handling)
+- Progressive enhancement (formulaires fonctionnent sans JS)
+- Revalidation intégrée (`revalidatePath`, `revalidateTag`)
+- Optimistic UI natif (`useOptimistic`)
+
+**Actions à migrer:**
+- [ ] CRUD Ideas (votes, création, édition)
+- [ ] CRUD Events (inscriptions HelloAsso)
+- [ ] CRUD Members/Patrons
+- [ ] Formulaires admin (branding, settings)
+
+**Guide:** `~/.claude/guides/migration-nextjs-server-actions.md`
+
+**Référence:** Le projet `jlm-app` utilise déjà les Server Actions (voir `/srv/workspace/jlm-app/app/actions/`)
 
 **Key Features:**
 - Collaborative idea management with voting system
@@ -90,28 +143,91 @@ The `shared/` directory contains types used by **both frontend and backend**:
 
 ### Frontend State Management
 
-**TanStack Query** for server state:
-- **Hooks pattern:** `client/src/hooks/use-*.ts` - Custom hooks for data fetching
-- **Queries:** `useQuery` for GET operations (auto-cached, auto-revalidated)
-- **Mutations:** `useMutation` for POST/PUT/DELETE with optimistic updates
-- **Query invalidation:** Mutations automatically invalidate related queries
+#### TanStack Query + Server Actions Pattern (Standard)
 
-**Example Pattern:**
-```typescript
-// Hook: client/src/hooks/use-ideas.ts
-export function useIdeas() {
-  return useQuery({
-    queryKey: ["/api/ideas"],
-    queryFn: async () => {
-      const res = await fetch("/api/ideas");
-      return res.json();
-    }
-  });
-}
+**Principe:** Combiner React Server Components (RSC) pour le chargement initial avec TanStack Query pour l'interactivité client.
 
-// Component usage:
-const { data: ideas, isLoading } = useIdeas();
-```
+**📖 Lecture (Fetching Data):**
+
+1. **Données initiales:** RSC + fetch/ORM côté serveur
+   ```typescript
+   // app/ideas/page.tsx (Server Component)
+   import { getIdeas } from '@/server/services/ideas.service';
+
+   export default async function IdeasPage() {
+     const initialIdeas = await getIdeas(); // Direct DB query
+
+     return <IdeasList initialData={initialIdeas} />;
+   }
+   ```
+
+2. **Cache + Updates temps réel:** TanStack Query dans Client Component
+   ```typescript
+   'use client';
+   // components/ideas-list.tsx (Client Component)
+   import { useQuery } from '@tanstack/react-query';
+
+   export function IdeasList({ initialData }) {
+     const { data: ideas, isLoading } = useQuery({
+       queryKey: ['/api/ideas'],
+       queryFn: async () => {
+         const res = await fetch('/api/ideas');
+         return res.json();
+       },
+       initialData, // Hydratation RSC
+       refetchInterval: 60000, // Polling temps réel (1 min)
+     });
+
+     if (isLoading) return <Skeleton />;
+     return <ul>{ideas.map(i => <IdeaCard key={i.id} idea={i} />)}</ul>;
+   }
+   ```
+
+**✍️ Écriture (Mutations):**
+
+1. **Server Actions** pour encapsuler logique métier + DB
+   ```typescript
+   // app/actions/ideas.ts (Server Action)
+   'use server';
+   import { db } from '@/server/db';
+
+   export async function createIdea(data: CreateIdeaInput) {
+     // Validation, règles métier, etc.
+     const idea = await db.insert(ideas).values(data).returning();
+     revalidatePath('/ideas'); // Invalider cache RSC
+     return idea;
+   }
+   ```
+
+2. **useMutation** pour orchestration côté client
+   ```typescript
+   'use client';
+   // hooks/use-ideas.ts
+   import { useMutation, useQueryClient } from '@tanstack/react-query';
+   import { createIdea } from '@/app/actions/ideas';
+
+   export function useCreateIdea() {
+     const queryClient = useQueryClient();
+
+     return useMutation({
+       mutationFn: createIdea,
+       onSuccess: () => {
+         queryClient.invalidateQueries({ queryKey: ['/api/ideas'] }); // Invalider cache TanStack
+         toast.success('Idée créée');
+       },
+       onError: (error) => {
+         toast.error(error.message);
+       },
+     });
+   }
+   ```
+
+**Avantages:**
+- ✅ SEO optimal (données initiales SSR)
+- ✅ Interactivité fluide (cache TanStack Query)
+- ✅ Type-safety complète (Server Actions)
+- ✅ Loading/error states automatiques (useMutation)
+- ✅ Cache invalidation coordonnée (RSC + TanStack Query)
 
 ### Branding System
 

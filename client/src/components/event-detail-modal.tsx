@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Calendar, MapPin, Users, Edit, Trash2, Download, ExternalLink, Award } from "lucide-react";

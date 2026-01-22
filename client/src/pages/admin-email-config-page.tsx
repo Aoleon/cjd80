@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -47,7 +49,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Mail, Loader2, Save, Info } from "lucide-react";
-import { useLocation } from "wouter";
+import { usePathname, useRouter } from "next/navigation";
 
 const emailConfigFormSchema = z.object({
   provider: z.string().min(1, "Le fournisseur est requis"),
@@ -62,7 +64,7 @@ type EmailConfigFormValues = z.infer<typeof emailConfigFormSchema>;
 
 export default function AdminEmailConfigPage() {
   const { user } = useAuth();
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const { toast } = useToast();
   const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
 
@@ -137,7 +139,7 @@ export default function AdminEmailConfigPage() {
 
   // Redirection si non autorisé
   if (!isSuperAdmin && !isLoading) {
-    setLocation("/admin");
+    router.push("/admin");
     return <></>;
   }
 

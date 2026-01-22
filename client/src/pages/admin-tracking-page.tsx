@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAdminQuery } from "@/hooks/use-admin-query";
@@ -102,9 +104,14 @@ export default function AdminTrackingPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState<'dashboard' | 'alerts'>('dashboard');
+  const getDateString = (date: Date): string => {
+    const dateStr = date.toISOString().split('T')[0];
+    return dateStr ?? '';
+  };
+
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0],
+    start: getDateString(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
+    end: getDateString(new Date()),
   });
   const [alertFilters, setAlertFilters] = useState<{
     severity?: string;

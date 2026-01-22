@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, MapPin, Users, CalendarPlus, UserMinus, Loader2, Clock, Star, MessageCircle, Share2, ExternalLink, Award } from "lucide-react";

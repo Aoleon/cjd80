@@ -1,4 +1,6 @@
-import { useLocation } from "wouter";
+"use client";
+
+import { usePathname, useRouter } from "next/navigation";
 import { ChevronRight, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,11 +15,11 @@ interface AdminBreadcrumbsProps {
 }
 
 export default function AdminBreadcrumbs({ items }: AdminBreadcrumbsProps) {
-  const [, setLocation] = useLocation();
+  const router = useRouter();
 
   const handleClick = (path?: string) => {
     if (path) {
-      setLocation(path);
+      router.push(path);
     }
   };
 

@@ -77,21 +77,23 @@ export class FeaturesService {
 
       if (existing) {
         // Update
+        const updateData: Partial<typeof featureConfig.$inferInsert> = {
+          enabled,
+          updatedBy,
+          updatedAt: new Date(),
+        };
         await db.update(featureConfig)
-          .set({
-            enabled,
-            updatedBy,
-            updatedAt: new Date(),
-          } as any)
+          .set(updateData)
           .where(eq(featureConfig.featureKey, featureKey));
       } else {
         // Insert new
-        await db.insert(featureConfig).values({
+        const insertData: typeof featureConfig.$inferInsert = {
           featureKey,
           enabled,
           updatedBy,
           updatedAt: new Date(),
-        } as any);
+        };
+        await db.insert(featureConfig).values(insertData);
       }
 
       this.logger.log(`Feature ${featureKey} updated to ${enabled} by ${updatedBy}`);
@@ -109,12 +111,13 @@ export class FeaturesService {
       if (existing.length === 0) {
         this.logger.log('Initializing default features...');
         for (const feature of this.defaultFeatures) {
-          await db.insert(featureConfig).values({
+          const insertData: typeof featureConfig.$inferInsert = {
             featureKey: feature.featureKey,
             enabled: feature.enabled,
             updatedBy: 'system',
             updatedAt: new Date(),
-          } as any);
+          };
+          await db.insert(featureConfig).values(insertData);
         }
         this.logger.log(`Initialized ${this.defaultFeatures.length} default features`);
       }

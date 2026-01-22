@@ -29,10 +29,11 @@ export function PWAFloatingInstall() {
     const bannerDismissed = localStorage.getItem('pwa-banner-dismissed');
     const bannerDismissedTime = bannerDismissed ? parseInt(bannerDismissed) : 0;
     const timeSinceBannerDismissed = Date.now() - bannerDismissedTime;
-    
+
     if (bannerDismissed && timeSinceBannerDismissed < 86400000) { // Moins de 24h depuis fermeture bannière
       // Montrer le bouton flottant immédiatement si la bannière a été fermée récemment
       setShouldShow(true);
+      return undefined;
     } else if (!bannerDismissed) {
       // Si la bannière n'a jamais été fermée, attendre 90 secondes (plus que les 30s de la bannière)
       const timer = setTimeout(() => {
@@ -41,19 +42,20 @@ export function PWAFloatingInstall() {
           setShouldShow(true);
         }
       }, 90000);
-      
+
       // Écouter si la bannière est fermée
       const handleBannerDismissed = () => {
         setShouldShow(true);
       };
-      
+
       window.addEventListener('pwa-banner-dismissed', handleBannerDismissed);
-      
+
       return () => {
         clearTimeout(timer);
         window.removeEventListener('pwa-banner-dismissed', handleBannerDismissed);
       };
     }
+    return undefined;
   }, []);
 
   // Ne pas afficher si :

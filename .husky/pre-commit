@@ -1,0 +1,32 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "Git Hook - Pre-commit checks..."
+echo ""
+
+# 1. TypeScript Check
+echo "TypeScript check..."
+npm run check || {
+  echo ""
+  echo "ERROR: TypeScript errors detected"
+  echo "   Fix errors before committing"
+  echo "   Command: npm run check"
+  exit 1
+}
+echo "OK - TypeScript passed"
+echo ""
+
+# 2. ESLint Check
+echo "ESLint check..."
+npm run lint || {
+  echo ""
+  echo "ERROR: ESLint errors detected"
+  echo "   Fix errors before committing"
+  echo "   Command: npm run lint"
+  exit 1
+}
+echo "OK - ESLint passed"
+echo ""
+
+echo "All checks passed! Commit allowed."
+echo ""

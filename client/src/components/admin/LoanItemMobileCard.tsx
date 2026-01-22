@@ -1,3 +1,5 @@
+"use client";
+
 import { Edit, Trash2, Image as ImageIcon, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

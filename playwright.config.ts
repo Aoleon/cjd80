@@ -32,7 +32,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'NODE_ENV=test PORT=5001 tsx server/index.ts',
+    command: 'NODE_ENV=test PORT=5001 ts-node --swc -P tsconfig.server.json server/src/main.ts',
     url: 'http://localhost:5001',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

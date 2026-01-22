@@ -1,3 +1,5 @@
+"use client";
+
 import IdeaMobileCardItem from "./IdeaMobileCardItem";
 import type { IdeaWithVotes } from "@/types/admin";
 

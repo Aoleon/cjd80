@@ -1,3 +1,5 @@
+"use client";
+
 import AdminPageLayout from "@/components/admin/AdminPageLayout";
 import AdminEmailConfigPage from "../../admin-email-config-page";
 import { Mail } from "lucide-react";

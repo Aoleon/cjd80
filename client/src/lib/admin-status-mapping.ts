@@ -215,6 +215,13 @@ export function getStatusConfig(
   };
 
   const map = maps[type];
+  if (!map) {
+    return {
+      label: status,
+      variant: "secondary",
+      className: "bg-gray-500 text-white",
+    };
+  }
   return map[status] || {
     label: status,
     variant: "secondary",

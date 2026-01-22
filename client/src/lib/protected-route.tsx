@@ -1,50 +1,39 @@
+"use client";
+
 import { useAuth } from "@/hooks/use-auth";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { Redirect, Route } from "wouter";
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 
 interface ProtectedRouteProps {
-  path: string;
-  component?: () => React.JSX.Element;
-  children?: ReactNode;
+  children: ReactNode;
+  redirectTo?: string;
 }
 
 export function ProtectedRoute({
-  path,
-  component: Component,
   children,
+  redirectTo = "/auth",
 }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push(redirectTo);
+    }
+  }, [isLoading, user, redirectTo, router]);
 
   if (isLoading) {
     return (
-      <Route path={path}>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-border" />
-        </div>
-      </Route>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-border" />
+      </div>
     );
   }
 
   if (!user) {
-    return (
-      <Route path={path}>
-        <Redirect to="/auth" />
-      </Route>
-    );
+    return null; // Will redirect via useEffect
   }
 
-  if (Component) {
-    return (
-      <Route path={path}>
-        <Component />
-      </Route>
-    );
-  }
-
-  return (
-    <Route path={path}>
-      {children}
-    </Route>
-  );
+  return <>{children}</>;
 }

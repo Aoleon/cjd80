@@ -1,8 +1,10 @@
+"use client";
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAdminQuery } from "@/hooks/use-admin-query";
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
+import { usePathname, useRouter } from "next/navigation";
 import { Calendar, Users, Lightbulb, LogOut, Database, TrendingUp, Package, Wallet, BarChart3, Award, Receipt, TrendingDown, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,7 +35,7 @@ interface AdminSectionProps {
 
 export default function AdminSection({ defaultTab = "dashboard" }: AdminSectionProps) {
   const { user, logoutMutation } = useAuth();
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState(defaultTab);
   
   const { data: stats, isLoading: statsLoading } = useAdminQuery<{ success: boolean; data: AdminStats }>(
@@ -136,7 +138,7 @@ export default function AdminSection({ defaultTab = "dashboard" }: AdminSectionP
               stats={stats}
               isLoading={statsLoading}
               userRole={user?.role}
-              onNavigate={setLocation}
+              onNavigate={router.push}
               onTabChange={setActiveTab}
             />
           </TabsContent>
@@ -189,7 +191,7 @@ export default function AdminSection({ defaultTab = "dashboard" }: AdminSectionP
                       <Button
                         variant="outline"
                         className="h-auto flex-col items-start p-4 hover:bg-gray-50 dark:hover:bg-gray-800"
-                        onClick={() => setLocation("/admin/finance/dashboard")}
+                        onClick={() => router.push("/admin/finance/dashboard")}
                       >
                         <div className="flex items-center gap-2 mb-2">
                           <BarChart3 className="w-5 h-5 text-cjd-green" />
@@ -202,7 +204,7 @@ export default function AdminSection({ defaultTab = "dashboard" }: AdminSectionP
                       <Button
                         variant="outline"
                         className="h-auto flex-col items-start p-4 hover:bg-gray-50 dark:hover:bg-gray-800"
-                        onClick={() => setLocation("/admin/finance/budgets")}
+                        onClick={() => router.push("/admin/finance/budgets")}
                       >
                         <div className="flex items-center gap-2 mb-2">
                           <Wallet className="w-5 h-5 text-cjd-green" />
@@ -215,7 +217,7 @@ export default function AdminSection({ defaultTab = "dashboard" }: AdminSectionP
                       <Button
                         variant="outline"
                         className="h-auto flex-col items-start p-4 hover:bg-gray-50 dark:hover:bg-gray-800"
-                        onClick={() => setLocation("/admin/finance/expenses")}
+                        onClick={() => router.push("/admin/finance/expenses")}
                       >
                         <div className="flex items-center gap-2 mb-2">
                           <Receipt className="w-5 h-5 text-cjd-green" />
@@ -228,7 +230,7 @@ export default function AdminSection({ defaultTab = "dashboard" }: AdminSectionP
                       <Button
                         variant="outline"
                         className="h-auto flex-col items-start p-4 hover:bg-gray-50 dark:hover:bg-gray-800"
-                        onClick={() => setLocation("/admin/finance/forecasts")}
+                        onClick={() => router.push("/admin/finance/forecasts")}
                       >
                         <div className="flex items-center gap-2 mb-2">
                           <TrendingDown className="w-5 h-5 text-cjd-green" />
@@ -241,7 +243,7 @@ export default function AdminSection({ defaultTab = "dashboard" }: AdminSectionP
                       <Button
                         variant="outline"
                         className="h-auto flex-col items-start p-4 hover:bg-gray-50 dark:hover:bg-gray-800"
-                        onClick={() => setLocation("/admin/finance/reports")}
+                        onClick={() => router.push("/admin/finance/reports")}
                       >
                         <div className="flex items-center gap-2 mb-2">
                           <FileText className="w-5 h-5 text-cjd-green" />
@@ -254,7 +256,7 @@ export default function AdminSection({ defaultTab = "dashboard" }: AdminSectionP
                       <Button
                         variant="outline"
                         className="h-auto flex-col items-start p-4 hover:bg-gray-50 dark:hover:bg-gray-800"
-                        onClick={() => setLocation("/admin/finance/sponsorships")}
+                        onClick={() => router.push("/admin/finance/sponsorships")}
                       >
                         <div className="flex items-center gap-2 mb-2">
                           <Award className="w-5 h-5 text-cjd-green" />

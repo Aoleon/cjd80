@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { StorageService } from '../common/storage/storage.service';
 import {
   insertEventSchema,
@@ -16,13 +16,19 @@ import { emailNotificationService } from '../../email-notification-service';
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(@Inject(StorageService) private readonly storageService: StorageService) {}
 
   async getEvents(page: number = 1, limit: number = 20) {
+    if (!this.storageService) {
+      throw new Error('StorageService not available');
+    }
     return await this.storageService.instance.getEvents({ page, limit });
   }
 
   async createEvent(data: unknown, user?: { firstName?: string; lastName?: string; email?: string }) {
+    if (!this.storageService) {
+      throw new Error('StorageService not available');
+    }
     try {
       const validatedData = insertEventSchema.parse(data);
       const result = await this.storageService.instance.createEvent(validatedData);
