@@ -106,7 +106,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // Gestion des erreurs du pool (compatible Neon et pg)
 if (dbProvider === 'neon') {
-  (pool as NeonPool).on('error', (err: Error, client: any) => {
+  (pool as NeonPool).on('error', (err: Error, _client: any) => {
     const stats = {
       totalCount: (pool as NeonPool).totalCount,
       idleCount: (pool as NeonPool).idleCount,
@@ -123,7 +123,7 @@ if (dbProvider === 'neon') {
     });
   });
 } else {
-  (pool as PgPool).on('error', (err: Error, client: any) => {
+  (pool as PgPool).on('error', (err: Error, _client: any) => {
     const stats = {
       totalCount: (pool as PgPool).totalCount,
       idleCount: (pool as PgPool).idleCount,
@@ -147,7 +147,7 @@ export const db = dbProvider === 'neon'
       client: pool as NeonPool, 
       schema,
       logger: process.env.NODE_ENV === 'development' ? {
-        logQuery: (query, params) => {
+        logQuery: (query, _params) => {
           console.log(`[DB Query] ${query.slice(0, 100)}...`);
         }
       } : false
@@ -156,7 +156,7 @@ export const db = dbProvider === 'neon'
       client: pool as PgPool, 
       schema,
       logger: process.env.NODE_ENV === 'development' ? {
-        logQuery: (query, params) => {
+        logQuery: (query, _params) => {
           console.log(`[DB Query] ${query.slice(0, 100)}...`);
         }
       } : false

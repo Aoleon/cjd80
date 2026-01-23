@@ -1,18 +1,19 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
+import {
+  Controller,
+  Get,
+  Post,
   Body,
   Query,
-  UseGuards, 
-  Req, 
-  Res, 
-  HttpCode, 
+  UseGuards,
+  Req,
+  Res,
+  HttpCode,
   HttpStatus,
   Inject,
   UnauthorizedException,
   BadRequestException
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
@@ -38,6 +39,7 @@ const resetPasswordSchema = z.object({
   password: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères'),
 });
 
+@ApiTags('auth')
 @Controller('api/auth')
 export class AuthController {
   constructor(
@@ -56,6 +58,8 @@ export class AuthController {
    */
   @Get('authentik')
   @UseGuards(AuthGuard('authentik'))
+  @ApiOperation({ summary: 'Initier le flow OAuth2 avec Authentik' })
+  @ApiResponse({ status: 302, description: 'Redirection vers Authentik pour authentification' })
   async authenticate() {
     // Cette méthode ne sera jamais appelée car AuthGuard redirige vers Authentik
   }
@@ -66,6 +70,9 @@ export class AuthController {
    */
   @Get('authentik/callback')
   @UseGuards(AuthGuard('authentik'))
+  @ApiOperation({ summary: 'Callback OAuth2 après authentification Authentik' })
+  @ApiResponse({ status: 302, description: 'Redirection vers /admin après authentification réussie' })
+  @ApiResponse({ status: 302, description: 'Redirection vers /auth?error=authentication_failed en cas d\'échec' })
   async callback(@Req() req: Request, @Res() res: Response, @User() user: any) {
     if (!user) {
       logger.warn('[Auth] Authentification OAuth2 échouée');
@@ -97,6 +104,22 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Connexion utilisateur (local ou OAuth2)' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', format: 'email', example: 'admin@cjd-amiens.fr' },
+        password: { type: 'string', format: 'password', example: 'SecurePassword123' },
+        returnTo: { type: 'string', example: '/admin' }
+      },
+      required: ['email', 'password']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Connexion réussie (mode local)', schema: { type: 'object', properties: { email: { type: 'string' }, role: { type: 'string' } } } })
+  @ApiResponse({ status: 302, description: 'Redirection vers Authentik (mode OAuth2)' })
+  @ApiResponse({ status: 401, description: 'Identifiants invalides' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
   async login(@Req() req: Request, @Res() res: Response, @Body() body: any) {
     // Mode OAuth2 : redirection vers Authentik
     if (this.authMode === 'oauth') {
@@ -142,7 +165,7 @@ export class AuthController {
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors[0].message });
+        return res.status(400).json({ message: error.issues[0].message });
       }
       throw error;
     }
@@ -158,6 +181,18 @@ export class AuthController {
    */
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Demander un lien de réinitialisation de mot de passe' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', format: 'email', example: 'user@example.com' }
+      },
+      required: ['email']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Email envoyé (si le compte existe)' })
+  @ApiResponse({ status: 400, description: 'Email invalide' })
   async forgotPassword(@Body() body: any) {
     try {
       const validatedData = forgotPasswordSchema.parse(body);
@@ -170,7 +205,7 @@ export class AuthController {
       };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        throw new BadRequestException(error.errors[0].message);
+        throw new BadRequestException(error.issues[0].message);
       }
       throw error;
     }
@@ -181,6 +216,10 @@ export class AuthController {
    * GET /api/auth/reset-password/validate?token=xxx
    */
   @Get('reset-password/validate')
+  @ApiOperation({ summary: 'Valider un token de réinitialisation de mot de passe' })
+  @ApiQuery({ name: 'token', required: true, description: 'Token de réinitialisation', example: 'abcd1234efgh5678' })
+  @ApiResponse({ status: 200, description: 'Token valide', schema: { type: 'object', properties: { valid: { type: 'boolean', example: true } } } })
+  @ApiResponse({ status: 400, description: 'Token manquant ou invalide' })
   async validateResetToken(@Query('token') token: string) {
     if (!token) {
       throw new BadRequestException('Token requis');
@@ -196,6 +235,19 @@ export class AuthController {
    */
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Réinitialiser le mot de passe avec un token' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        token: { type: 'string', example: 'abcd1234efgh5678' },
+        password: { type: 'string', format: 'password', minLength: 8, example: 'NewSecurePass123' }
+      },
+      required: ['token', 'password']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Mot de passe réinitialisé avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides ou token expiré' })
   async resetPassword(@Body() body: any) {
     try {
       const validatedData = resetPasswordSchema.parse(body);
@@ -208,7 +260,7 @@ export class AuthController {
       return { message: 'Mot de passe réinitialisé avec succès' };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        throw new BadRequestException(error.errors[0].message);
+        throw new BadRequestException(error.issues[0].message);
       }
       throw error;
     }
@@ -224,6 +276,9 @@ export class AuthController {
    */
   @Post('logout')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Déconnexion utilisateur' })
+  @ApiResponse({ status: 200, description: 'Déconnexion réussie' })
+  @ApiResponse({ status: 500, description: 'Erreur lors de la déconnexion' })
   async logout(@Req() req: Request, @Res() res: Response) {
     return new Promise<void>((resolve) => {
       (req as any).logout((err: any) => {
@@ -250,6 +305,10 @@ export class AuthController {
    */
   @Get('user')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtenir les informations de l\'utilisateur connecté' })
+  @ApiResponse({ status: 200, description: 'Utilisateur connecté', schema: { type: 'object', properties: { email: { type: 'string' }, role: { type: 'string' }, permissions: { type: 'array', items: { type: 'string' } } } } })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
   getCurrentUser(@User() user: any) {
     return this.authService.getUserWithoutPassword(user);
   }
@@ -259,6 +318,8 @@ export class AuthController {
    * GET /api/auth/mode
    */
   @Get('mode')
+  @ApiOperation({ summary: 'Obtenir le mode d\'authentification configuré' })
+  @ApiResponse({ status: 200, description: 'Mode d\'authentification', schema: { type: 'object', properties: { mode: { type: 'string', enum: ['local', 'oauth'], example: 'oauth' } } } })
   getAuthMode() {
     return { mode: this.authMode };
   }

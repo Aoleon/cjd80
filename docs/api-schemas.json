@@ -1,0 +1,714 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CJD80 API Schemas",
+  "description": "Schémas JSON pour tous les types de données de l'API CJD80",
+  "version": "2.0.0",
+  "definitions": {
+    "Admin": {
+      "type": "object",
+      "description": "Utilisateur administrateur avec permissions",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email (primary key)"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "Prénom"
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Nom de famille"
+        },
+        "password": {
+          "type": ["string", "null"],
+          "description": "Mot de passe hashé (nullable si géré par Authentik)"
+        },
+        "addedBy": {
+          "type": ["string", "null"],
+          "description": "Email de l'admin qui a ajouté cet utilisateur"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["super_admin", "ideas_reader", "ideas_manager", "events_reader", "events_manager"],
+          "description": "Rôle administrateur"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "active", "inactive"],
+          "description": "Statut du compte"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Compte actif ou désactivé"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de création"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de dernière mise à jour"
+        }
+      },
+      "required": ["email", "firstName", "lastName", "role", "status", "isActive", "createdAt", "updatedAt"]
+    },
+    "Idea": {
+      "type": "object",
+      "description": "Idée proposée par un membre",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Identifiant unique"
+        },
+        "title": {
+          "type": "string",
+          "description": "Titre de l'idée"
+        },
+        "description": {
+          "type": ["string", "null"],
+          "description": "Description détaillée"
+        },
+        "proposedBy": {
+          "type": "string",
+          "description": "Nom du proposant"
+        },
+        "proposedByEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "Email du proposant"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected", "under_review", "postponed", "completed"],
+          "description": "Statut de l'idée"
+        },
+        "featured": {
+          "type": "boolean",
+          "description": "Idée mise en avant"
+        },
+        "deadline": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Date limite optionnelle"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de création"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de dernière mise à jour"
+        },
+        "updatedBy": {
+          "type": ["string", "null"],
+          "description": "Email de l'admin qui a fait la dernière modification"
+        }
+      },
+      "required": ["id", "title", "proposedBy", "proposedByEmail", "status", "featured", "createdAt", "updatedAt"]
+    },
+    "Vote": {
+      "type": "object",
+      "description": "Vote pour une idée",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Identifiant unique"
+        },
+        "ideaId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ID de l'idée votée"
+        },
+        "voterName": {
+          "type": "string",
+          "description": "Nom du votant"
+        },
+        "voterEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "Email du votant"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date du vote"
+        }
+      },
+      "required": ["id", "ideaId", "voterName", "voterEmail", "createdAt"]
+    },
+    "Event": {
+      "type": "object",
+      "description": "Événement organisé",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Identifiant unique"
+        },
+        "title": {
+          "type": "string",
+          "description": "Titre de l'événement"
+        },
+        "description": {
+          "type": ["string", "null"],
+          "description": "Description détaillée"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date et heure de l'événement"
+        },
+        "location": {
+          "type": ["string", "null"],
+          "description": "Lieu de l'événement"
+        },
+        "maxParticipants": {
+          "type": ["integer", "null"],
+          "description": "Nombre maximum de participants"
+        },
+        "helloAssoLink": {
+          "type": ["string", "null"],
+          "description": "Lien HelloAsso pour paiement"
+        },
+        "enableExternalRedirect": {
+          "type": "boolean",
+          "description": "Activer la redirection externe après inscription"
+        },
+        "externalRedirectUrl": {
+          "type": ["string", "null"],
+          "description": "URL de redirection externe"
+        },
+        "showInscriptionsCount": {
+          "type": "boolean",
+          "description": "Afficher le nombre d'inscrits"
+        },
+        "showAvailableSeats": {
+          "type": "boolean",
+          "description": "Afficher le nombre de places disponibles"
+        },
+        "allowUnsubscribe": {
+          "type": "boolean",
+          "description": "Permettre la désinscription"
+        },
+        "redUnsubscribeButton": {
+          "type": "boolean",
+          "description": "Bouton de désinscription rouge (pour plénières)"
+        },
+        "buttonMode": {
+          "type": "string",
+          "enum": ["subscribe", "unsubscribe", "both", "custom"],
+          "description": "Mode du bouton d'action"
+        },
+        "customButtonText": {
+          "type": ["string", "null"],
+          "description": "Texte personnalisé du bouton"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "published", "cancelled", "postponed", "completed"],
+          "description": "Statut de l'événement"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de création"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de dernière mise à jour"
+        },
+        "updatedBy": {
+          "type": ["string", "null"],
+          "description": "Email de l'admin qui a fait la dernière modification"
+        }
+      },
+      "required": ["id", "title", "date", "status", "createdAt", "updatedAt"]
+    },
+    "Inscription": {
+      "type": "object",
+      "description": "Inscription à un événement",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Identifiant unique"
+        },
+        "eventId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ID de l'événement"
+        },
+        "name": {
+          "type": "string",
+          "description": "Nom complet du participant"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email du participant"
+        },
+        "company": {
+          "type": ["string", "null"],
+          "description": "Société"
+        },
+        "phone": {
+          "type": ["string", "null"],
+          "description": "Téléphone"
+        },
+        "comments": {
+          "type": ["string", "null"],
+          "description": "Commentaires (accompagnants, régime alimentaire, etc.)"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date d'inscription"
+        }
+      },
+      "required": ["id", "eventId", "name", "email", "createdAt"]
+    },
+    "LoanItem": {
+      "type": "object",
+      "description": "Matériel disponible en prêt",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Identifiant unique"
+        },
+        "title": {
+          "type": "string",
+          "description": "Titre du matériel"
+        },
+        "description": {
+          "type": ["string", "null"],
+          "description": "Description détaillée"
+        },
+        "lenderName": {
+          "type": "string",
+          "description": "Nom du JD qui prête"
+        },
+        "photoUrl": {
+          "type": ["string", "null"],
+          "description": "URL de la photo"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "available", "borrowed", "unavailable"],
+          "description": "Statut du matériel"
+        },
+        "proposedBy": {
+          "type": "string",
+          "description": "Nom du proposant"
+        },
+        "proposedByEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "Email du proposant"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de création"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de dernière mise à jour"
+        },
+        "updatedBy": {
+          "type": ["string", "null"],
+          "description": "Email de l'admin qui a modifié"
+        }
+      },
+      "required": ["id", "title", "lenderName", "status", "proposedBy", "proposedByEmail", "createdAt", "updatedAt"]
+    },
+    "Member": {
+      "type": "object",
+      "description": "Membre CJD",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Identifiant unique"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email (unique)"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "Prénom"
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Nom de famille"
+        },
+        "company": {
+          "type": ["string", "null"],
+          "description": "Société"
+        },
+        "phone": {
+          "type": ["string", "null"],
+          "description": "Téléphone"
+        },
+        "role": {
+          "type": ["string", "null"],
+          "description": "Rôle professionnel/métier"
+        },
+        "cjdRole": {
+          "type": ["string", "null"],
+          "enum": [null, "president", "co_president", "tresorier", "secretaire", "responsable_recrutement", "responsable_jeunesse", "responsable_plenieres", "responsable_mecenes"],
+          "description": "Rôle organisationnel CJD"
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "Notes internes"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "inactive"],
+          "description": "Statut du membre"
+        },
+        "proposedBy": {
+          "type": ["string", "null"],
+          "description": "Proposé par (email)"
+        },
+        "engagementScore": {
+          "type": "integer",
+          "description": "Score d'engagement"
+        },
+        "firstSeenAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Première activité"
+        },
+        "lastActivityAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Dernière activité"
+        },
+        "activityCount": {
+          "type": "integer",
+          "description": "Nombre d'activités"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de création"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de dernière mise à jour"
+        }
+      },
+      "required": ["id", "email", "firstName", "lastName", "status", "engagementScore", "firstSeenAt", "lastActivityAt", "activityCount", "createdAt", "updatedAt"]
+    },
+    "Patron": {
+      "type": "object",
+      "description": "Mécène",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Identifiant unique"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "Prénom"
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Nom de famille"
+        },
+        "role": {
+          "type": ["string", "null"],
+          "description": "Fonction du mécène"
+        },
+        "company": {
+          "type": ["string", "null"],
+          "description": "Société"
+        },
+        "phone": {
+          "type": ["string", "null"],
+          "description": "Téléphone"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email (unique)"
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "Notes internes"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "proposed"],
+          "description": "Statut du mécène"
+        },
+        "referrerId": {
+          "type": ["string", "null"],
+          "format": "uuid",
+          "description": "ID du membre prescripteur"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de création"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de dernière mise à jour"
+        },
+        "createdBy": {
+          "type": ["string", "null"],
+          "description": "Email de l'admin qui a créé"
+        }
+      },
+      "required": ["id", "firstName", "lastName", "email", "status", "createdAt", "updatedAt"]
+    },
+    "PatronDonation": {
+      "type": "object",
+      "description": "Don d'un mécène",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Identifiant unique"
+        },
+        "patronId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ID du mécène"
+        },
+        "donatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date du don"
+        },
+        "amount": {
+          "type": "integer",
+          "description": "Montant en centimes"
+        },
+        "occasion": {
+          "type": "string",
+          "description": "Occasion du don (événement, projet, etc.)"
+        },
+        "recordedBy": {
+          "type": "string",
+          "description": "Email de l'admin qui enregistre"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date d'enregistrement"
+        }
+      },
+      "required": ["id", "patronId", "donatedAt", "amount", "occasion", "recordedBy", "createdAt"]
+    },
+    "PatronUpdate": {
+      "type": "object",
+      "description": "Actualité/contact avec un mécène",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Identifiant unique"
+        },
+        "patronId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ID du mécène"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["meeting", "email", "call", "lunch", "event"],
+          "description": "Type de contact"
+        },
+        "subject": {
+          "type": "string",
+          "description": "Titre/sujet"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date du contact (YYYY-MM-DD)"
+        },
+        "startTime": {
+          "type": ["string", "null"],
+          "description": "Heure de début (HH:MM)"
+        },
+        "duration": {
+          "type": ["integer", "null"],
+          "description": "Durée en minutes"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description détaillée"
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "Notes additionnelles"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Email de l'admin qui a créé"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de création"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de dernière mise à jour"
+        }
+      },
+      "required": ["id", "patronId", "type", "subject", "date", "description", "createdBy", "createdAt", "updatedAt"]
+    },
+    "Budget": {
+      "type": "object",
+      "description": "Budget annuel par catégorie",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Identifiant unique"
+        },
+        "category": {
+          "type": "string",
+          "description": "Catégorie budgétaire"
+        },
+        "amount": {
+          "type": "integer",
+          "description": "Montant en centimes"
+        },
+        "year": {
+          "type": "integer",
+          "description": "Année fiscale"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de création"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de dernière mise à jour"
+        }
+      },
+      "required": ["id", "category", "amount", "year", "createdAt", "updatedAt"]
+    },
+    "Expense": {
+      "type": "object",
+      "description": "Dépense enregistrée",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Identifiant unique"
+        },
+        "category": {
+          "type": "string",
+          "description": "Catégorie de dépense"
+        },
+        "amount": {
+          "type": "integer",
+          "description": "Montant en centimes"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description de la dépense"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de la dépense"
+        },
+        "recordedBy": {
+          "type": "string",
+          "description": "Email de l'admin qui enregistre"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date d'enregistrement"
+        }
+      },
+      "required": ["id", "category", "amount", "description", "date", "recordedBy", "createdAt"]
+    },
+    "TrackingItem": {
+      "type": "object",
+      "description": "Item de suivi automatisé",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Identifiant unique"
+        },
+        "title": {
+          "type": "string",
+          "description": "Titre du suivi"
+        },
+        "description": {
+          "type": ["string", "null"],
+          "description": "Description"
+        },
+        "frequency": {
+          "type": "string",
+          "enum": ["daily", "weekly", "monthly", "quarterly"],
+          "description": "Fréquence des alertes"
+        },
+        "alertRecipients": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "email"
+          },
+          "description": "Liste des destinataires des alertes"
+        },
+        "lastExecutedAt": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Dernière exécution"
+        },
+        "nextExecutionAt": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Prochaine exécution"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "completed", "cancelled"],
+          "description": "Statut du suivi"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de création"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de dernière mise à jour"
+        }
+      },
+      "required": ["id", "title", "frequency", "alertRecipients", "status", "createdAt", "updatedAt"]
+    }
+  }
+}

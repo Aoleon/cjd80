@@ -161,7 +161,7 @@ export class AdminService {
     return { success: true };
   }
 
-  async bulkCreateInscriptions(eventId: string, inscriptions: Array<{ name?: string; email?: string; comments?: string }>) {
+  async bulkCreateInscriptions(eventId: string, inscriptions: Array<{ name?: string; email?: string; comments?: string; company?: string; phone?: string }>) {
     if (!eventId || !Array.isArray(inscriptions)) {
       throw new BadRequestException('eventId et inscriptions (array) requis');
     }
@@ -179,6 +179,8 @@ export class AdminService {
         eventId,
         name: inscription.name.trim(),
         email: inscription.email.trim(),
+        company: inscription.company?.trim() || undefined,
+        phone: inscription.phone?.trim() || undefined,
         comments: inscription.comments?.trim() || undefined,
       });
 
@@ -827,10 +829,11 @@ export class AdminService {
       host: config.host,
       port: config.port,
       secure: config.secure,
-      username: config.username || '',
+      username: config.username,
       password: config.password,
       fromEmail: config.fromEmail,
       fromName: config.fromName,
+      provider: 'smtp' as const,
     }, updatedBy);
 
     if (!result.success) {

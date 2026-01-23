@@ -532,9 +532,9 @@ export class DatabaseStorage implements IStorage {
     if (dbProvider === 'neon') {
       throw new Error('PostgresSessionStore ne supporte pas Neon. Utilisez un autre store de sessions.');
     }
-    this.sessionStore = new PostgresSessionStore({ 
-      pool: pool as import('pg').Pool, 
-      createTableIfMissing: true,
+    this.sessionStore = new PostgresSessionStore({
+      pool: pool as import('pg').Pool,
+      createTableIfMissing: false, // Table created manually - avoid async blocking with Bun
       // Optimisations pour les sessions
       tableName: 'user_sessions',
       pruneSessionInterval: 3600, // 1 heure - moins fréquent

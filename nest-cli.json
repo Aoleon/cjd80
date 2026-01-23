@@ -5,6 +5,13 @@
   "compilerOptions": {
     "tsConfigPath": "tsconfig.server.json",
     "webpack": false,
-    "deleteOutDir": false
+    "deleteOutDir": false,
+    "assets": [
+      {
+        "include": "../package-commonjs.json",
+        "outDir": "./",
+        "watchAssets": false
+      }
+    ]
   }
 }

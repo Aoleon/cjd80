@@ -1,23 +1,100 @@
 {
-  "include": ["client/src/**/*", "shared/**/*"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts", "server"],
   "compilerOptions": {
-    "incremental": true,
-    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo.client",
-    "noEmit": true,
-    "module": "ESNext",
-    "strict": true,
-    "lib": ["esnext", "dom", "dom.iterable"],
-    "jsx": "preserve",
-    "esModuleInterop": true,
+    // Next.js configuration
+    "target": "ES2021",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    // Plugins Next.js
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    // Paths
     "baseUrl": ".",
-    "types": ["vite/client"],
     "paths": {
-      "@/*": ["./client/src/*"],
-      "@shared/*": ["./shared/*"]
-    }
-  }
+      "@/*": [
+        "./*"
+      ],
+      "@/components/*": [
+        "./components/*"
+      ],
+      "@/lib/*": [
+        "./lib/*"
+      ],
+      "@/app/*": [
+        "./app/*"
+      ],
+      "@/contexts/*": [
+        "./contexts/*"
+      ],
+      "@/hooks/*": [
+        "./hooks/*"
+      ],
+      "@/server/*": [
+        "./server/*"
+      ],
+      "@/shared/*": [
+        "./shared/*"
+      ],
+      "@shared/*": [
+        "./shared/*"
+      ],
+      "@/client/*": [
+        "./client/*"
+      ],
+      "@assets/*": [
+        "./assets/*"
+      ]
+    },
+    // Strict checks
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    // Decorator support (pour tRPC context)
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": [
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    "app/**/*",
+    "components/**/*",
+    "contexts/**/*",
+    "hooks/**/*",
+    "lib/**/*",
+    "shared/**/*",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    ".next",
+    "server/**/*",
+    "server/src/**/*",
+    "scripts/**/*",
+    "tests/**/*",
+    "test/**/*",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "client/src/**/*",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ]
 }

@@ -14,7 +14,7 @@ export class BrandingService {
     }
     
     if (!result.data) {
-      const { brandingCore } = await import('../../../client/src/config/branding-core');
+      const { brandingCore } = await import('../../../lib/config/branding-core');
       return {
         config: JSON.stringify(brandingCore),
         isDefault: true

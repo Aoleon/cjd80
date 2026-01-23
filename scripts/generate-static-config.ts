@@ -2,7 +2,7 @@ import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 // Note: Import with .js extension even though source is .ts (TypeScript/ESM convention)
-import { brandingCore, getAppName, getShortAppName } from '../client/src/config/branding-core.js';
+import { brandingCore, getAppName, getShortAppName } from '../lib/config/branding-core.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

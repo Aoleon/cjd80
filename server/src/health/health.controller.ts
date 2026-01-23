@@ -1,7 +1,9 @@
 import { Controller, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { HealthService } from './health.service';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 
+@ApiTags('health')
 @Controller('api/health')
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
@@ -11,6 +13,8 @@ export class HealthController {
    */
   @Get()
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Health check global' })
+  @ApiResponse({ status: 200, description: 'Application en bonne santé' })
   async getHealth() {
     if (!this.healthService) {
       // Fallback minimal pour éviter les erreurs si l'injection échoue
@@ -28,6 +32,8 @@ export class HealthController {
    */
   @Get('db')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Health check de la base de données' })
+  @ApiResponse({ status: 200, description: 'Statut de la connexion à la base de données' })
   async getDatabaseHealth() {
     return this.healthService.getDatabaseHealth();
   }
@@ -38,6 +44,10 @@ export class HealthController {
   @Get('detailed')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Health check détaillé (nécessite authentification)' })
+  @ApiResponse({ status: 200, description: 'Informations de santé détaillées' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
   async getDetailedHealth() {
     return this.healthService.getDetailedHealth();
   }
@@ -47,6 +57,8 @@ export class HealthController {
    */
   @Get('ready')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Readiness probe Kubernetes' })
+  @ApiResponse({ status: 200, description: 'Application prête à recevoir du trafic' })
   async getReadiness() {
     return this.healthService.getReadiness();
   }
@@ -56,11 +68,14 @@ export class HealthController {
    */
   @Get('live')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Liveness probe Kubernetes' })
+  @ApiResponse({ status: 200, description: 'Application en vie' })
   getLiveness() {
     return this.healthService.getLiveness();
   }
 }
 
+@ApiTags('health')
 @Controller('api')
 export class StatusController {
   constructor(private readonly healthService: HealthService) {}
@@ -70,6 +85,8 @@ export class StatusController {
    */
   @Get('version')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtenir la version de l\'application' })
+  @ApiResponse({ status: 200, description: 'Version et informations de build' })
   getVersion() {
     return this.healthService.getVersion();
   }
@@ -79,6 +96,8 @@ export class StatusController {
    */
   @Get('status/all')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtenir le statut complet de tous les services' })
+  @ApiResponse({ status: 200, description: 'Statut de tous les composants' })
   async getAllStatus() {
     return this.healthService.getAllStatus();
   }

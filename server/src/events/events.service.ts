@@ -7,12 +7,16 @@ import {
   insertUnsubscriptionSchema,
   type Event,
   type Inscription,
+  events,
+  inscriptions,
 } from '../../../shared/schema';
 import { ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 import { logger } from '../../lib/logger';
 import { notificationService } from '../../notification-service';
 import { emailNotificationService } from '../../email-notification-service';
+import { sql, count } from 'drizzle-orm';
+import { db } from '../../db';
 
 @Injectable()
 export class EventsService {
@@ -204,6 +208,36 @@ export class EventsService {
         throw new BadRequestException(fromZodError(error).toString());
       }
       throw error;
+    }
+  }
+
+  async getEventsStats() {
+    try {
+      const now = new Date();
+
+      // Récupérer les statistiques des événements
+      const [eventsStats] = await db.select({
+        total: sql<number>`count(*)::int`,
+        upcoming: sql<number>`count(*) FILTER (WHERE ${events.date} > ${now.toISOString()})::int`,
+        past: sql<number>`count(*) FILTER (WHERE ${events.date} <= ${now.toISOString()})::int`,
+      }).from(events);
+
+      // Récupérer le total des inscriptions
+      const [inscriptionsCount] = await db.select({ count: count() }).from(inscriptions);
+
+      const total = eventsStats.total;
+      const totalInscriptions = Number(inscriptionsCount.count);
+
+      return {
+        total,
+        upcoming: eventsStats.upcoming,
+        past: eventsStats.past,
+        totalInscriptions,
+        averageInscriptions: total > 0 ? Math.round(totalInscriptions / total) : 0,
+      };
+    } catch (error) {
+      logger.error('Failed to get events stats', { error });
+      throw new BadRequestException('Failed to retrieve events statistics');
     }
   }
 

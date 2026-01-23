@@ -1,11 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { StorageService } from '../common/storage/storage.service';
-import { insertIdeaSchema, insertVoteSchema, updateIdeaStatusSchema, type Idea, type Vote } from '../../../shared/schema';
+import { insertIdeaSchema, insertVoteSchema, updateIdeaStatusSchema, type Idea, type Vote, ideas, votes } from '../../../shared/schema';
 import { ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 import { logger } from '../../lib/logger';
 import { notificationService } from '../../notification-service';
 import { emailNotificationService } from '../../email-notification-service';
+import { sql, desc, count, eq } from 'drizzle-orm';
+import { db } from '../../db';
 
 @Injectable()
 export class IdeasService {
@@ -144,6 +146,58 @@ export class IdeasService {
         throw new BadRequestException(fromZodError(error).toString());
       }
       throw error;
+    }
+  }
+
+  async getIdeasStats() {
+    try {
+      // Récupérer les statistiques des idées par statut
+      const [ideasStats] = await db.select({
+        total: sql<number>`count(*)::int`,
+        pending: sql<number>`count(*) FILTER (WHERE ${ideas.status} = 'pending')::int`,
+        approved: sql<number>`count(*) FILTER (WHERE ${ideas.status} = 'approved')::int`,
+        rejected: sql<number>`count(*) FILTER (WHERE ${ideas.status} = 'rejected')::int`,
+      }).from(ideas);
+
+      // Récupérer le total des votes
+      const [votesCount] = await db.select({ count: count() }).from(votes);
+
+      // Récupérer le top 5 des idées par nombre de votes
+      const topIdeas = await db
+        .select({
+          id: ideas.id,
+          title: ideas.title,
+          description: ideas.description,
+          proposedBy: ideas.proposedBy,
+          proposedByEmail: ideas.proposedByEmail,
+          status: ideas.status,
+          featured: ideas.featured,
+          deadline: ideas.deadline,
+          createdAt: ideas.createdAt,
+          updatedAt: ideas.updatedAt,
+          updatedBy: ideas.updatedBy,
+          voteCount: count(votes.id),
+        })
+        .from(ideas)
+        .leftJoin(votes, eq(ideas.id, votes.ideaId))
+        .groupBy(ideas.id)
+        .orderBy(desc(count(votes.id)))
+        .limit(5);
+
+      return {
+        total: ideasStats.total,
+        pending: ideasStats.pending,
+        approved: ideasStats.approved,
+        rejected: ideasStats.rejected,
+        totalVotes: Number(votesCount.count),
+        topIdeas: topIdeas.map(idea => ({
+          ...idea,
+          voteCount: Number(idea.voteCount),
+        })),
+      };
+    } catch (error) {
+      logger.error('Failed to get ideas stats', { error });
+      throw new BadRequestException('Failed to retrieve ideas statistics');
     }
   }
 

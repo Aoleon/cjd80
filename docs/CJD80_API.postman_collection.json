@@ -1,0 +1,771 @@
+{
+  "info": {
+    "name": "CJD80 API",
+    "description": "Collection complète pour l'API CJD80 - Boîte à Kiffs\n\nVersion: 2.0.0\nDate: 22 janvier 2026\n\nDocumentation: https://cjd80.rbw.ovh/docs/API_README.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "2.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "apiUrl",
+      "value": "{{baseUrl}}/api",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login (OAuth2)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/auth/login",
+              "host": ["{{apiUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Initie le flow OAuth2 avec Authentik. Redirige vers la page de login."
+          }
+        },
+        {
+          "name": "Get Auth Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/auth/status",
+              "host": ["{{apiUrl}}"],
+              "path": ["auth", "status"]
+            },
+            "description": "Récupère le statut de session actuel."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/auth/logout",
+              "host": ["{{apiUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Déconnexion et suppression de session."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ideas",
+      "item": [
+        {
+          "name": "List Ideas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/ideas?page=1&limit=20",
+              "host": ["{{apiUrl}}"],
+              "path": ["ideas"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Liste toutes les idées avec pagination."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Idea",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Organiser un hackathon\",\n  \"description\": \"Un hackathon pour les jeunes dirigeants sur l'innovation\",\n  \"proposedBy\": \"John Doe\",\n  \"proposedByEmail\": \"john.doe@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/ideas",
+              "host": ["{{apiUrl}}"],
+              "path": ["ideas"]
+            },
+            "description": "Créer une nouvelle idée."
+          }
+        },
+        {
+          "name": "Get Idea by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/ideas/:id",
+              "host": ["{{apiUrl}}"],
+              "path": ["ideas", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              ]
+            },
+            "description": "Récupère une idée par son ID."
+          }
+        },
+        {
+          "name": "Update Idea Status (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/ideas/:id",
+              "host": ["{{apiUrl}}"],
+              "path": ["ideas", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              ]
+            },
+            "description": "Mettre à jour le statut d'une idée (admin uniquement)."
+          }
+        },
+        {
+          "name": "Delete Idea (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/ideas/:id",
+              "host": ["{{apiUrl}}"],
+              "path": ["ideas", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              ]
+            },
+            "description": "Supprimer une idée (admin uniquement)."
+          }
+        },
+        {
+          "name": "Vote for Idea",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"voterName\": \"Jane Doe\",\n  \"voterEmail\": \"jane.doe@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/ideas/:id/vote",
+              "host": ["{{apiUrl}}"],
+              "path": ["ideas", ":id", "vote"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              ]
+            },
+            "description": "Voter pour une idée."
+          }
+        },
+        {
+          "name": "Get Votes for Idea",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/ideas/:id/votes",
+              "host": ["{{apiUrl}}"],
+              "path": ["ideas", ":id", "votes"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              ]
+            },
+            "description": "Récupère tous les votes d'une idée."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "item": [
+        {
+          "name": "List Events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/events?status=published&upcoming=true",
+              "host": ["{{apiUrl}}"],
+              "path": ["events"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "published"
+                },
+                {
+                  "key": "upcoming",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Liste tous les événements publiés à venir."
+          }
+        },
+        {
+          "name": "Create Event (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Plénière mensuelle\",\n  \"description\": \"Réunion mensuelle de tous les membres\",\n  \"date\": \"2026-02-15T18:00:00Z\",\n  \"location\": \"Amiens\",\n  \"maxParticipants\": 50,\n  \"showInscriptionsCount\": true,\n  \"showAvailableSeats\": true,\n  \"allowUnsubscribe\": false,\n  \"buttonMode\": \"subscribe\",\n  \"status\": \"published\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/events",
+              "host": ["{{apiUrl}}"],
+              "path": ["events"]
+            },
+            "description": "Créer un nouvel événement (admin uniquement)."
+          }
+        },
+        {
+          "name": "Get Event by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/events/:id",
+              "host": ["{{apiUrl}}"],
+              "path": ["events", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              ]
+            },
+            "description": "Récupère un événement par son ID."
+          }
+        },
+        {
+          "name": "Register to Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"company\": \"Acme Corp\",\n  \"phone\": \"0612345678\",\n  \"comments\": \"Je viendrai avec mon associé\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/events/:id/register",
+              "host": ["{{apiUrl}}"],
+              "path": ["events", ":id", "register"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              ]
+            },
+            "description": "S'inscrire à un événement."
+          }
+        },
+        {
+          "name": "Unregister from Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/events/:id/unregister",
+              "host": ["{{apiUrl}}"],
+              "path": ["events", ":id", "unregister"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              ]
+            },
+            "description": "Se désinscrire d'un événement."
+          }
+        },
+        {
+          "name": "Get Event Registrations (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/events/:id/registrations",
+              "host": ["{{apiUrl}}"],
+              "path": ["events", ":id", "registrations"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              ]
+            },
+            "description": "Récupère la liste des inscrits (admin uniquement)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Loans",
+      "item": [
+        {
+          "name": "List Loan Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/loans?status=available",
+              "host": ["{{apiUrl}}"],
+              "path": ["loans"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "available"
+                }
+              ]
+            },
+            "description": "Liste le matériel disponible en prêt."
+          }
+        },
+        {
+          "name": "Propose Loan Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Vidéoprojecteur\",\n  \"description\": \"Vidéoprojecteur Full HD avec câbles\",\n  \"lenderName\": \"John Doe\",\n  \"proposedBy\": \"John Doe\",\n  \"proposedByEmail\": \"john.doe@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/loans",
+              "host": ["{{apiUrl}}"],
+              "path": ["loans"]
+            },
+            "description": "Proposer du matériel en prêt."
+          }
+        },
+        {
+          "name": "Update Loan Status (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"available\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/loans/:id",
+              "host": ["{{apiUrl}}"],
+              "path": ["loans", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              ]
+            },
+            "description": "Mettre à jour le statut d'un item (admin uniquement)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Members (Admin)",
+      "item": [
+        {
+          "name": "List Members",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/members?status=active",
+              "host": ["{{apiUrl}}"],
+              "path": ["members"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            },
+            "description": "Liste tous les membres actifs (admin uniquement)."
+          }
+        },
+        {
+          "name": "Create Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"company\": \"Acme Corp\",\n  \"phone\": \"0612345678\",\n  \"role\": \"CEO\",\n  \"cjdRole\": \"president\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/members",
+              "host": ["{{apiUrl}}"],
+              "path": ["members"]
+            },
+            "description": "Créer un nouveau membre (admin uniquement)."
+          }
+        },
+        {
+          "name": "Get Member Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/members/:id/stats",
+              "host": ["{{apiUrl}}"],
+              "path": ["members", ":id", "stats"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              ]
+            },
+            "description": "Récupère les statistiques d'engagement d'un membre."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patrons (Admin)",
+      "item": [
+        {
+          "name": "List Patrons",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/patrons?status=active",
+              "host": ["{{apiUrl}}"],
+              "path": ["patrons"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            },
+            "description": "Liste tous les mécènes actifs (admin uniquement)."
+          }
+        },
+        {
+          "name": "Create Patron",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\",\n  \"email\": \"jane.smith@patron.com\",\n  \"company\": \"Smith & Co\",\n  \"phone\": \"0612345678\",\n  \"role\": \"CEO\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/patrons",
+              "host": ["{{apiUrl}}"],
+              "path": ["patrons"]
+            },
+            "description": "Créer un nouveau mécène (admin uniquement)."
+          }
+        },
+        {
+          "name": "Add Donation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"donatedAt\": \"2026-01-15T10:00:00Z\",\n  \"amount\": 50000,\n  \"occasion\": \"Soutien annuel 2026\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/patrons/:id/donations",
+              "host": ["{{apiUrl}}"],
+              "path": ["patrons", ":id", "donations"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              ]
+            },
+            "description": "Ajouter un don pour un mécène."
+          }
+        },
+        {
+          "name": "Add Update",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"meeting\",\n  \"subject\": \"Déjeuner de suivi\",\n  \"date\": \"2026-01-20\",\n  \"startTime\": \"12:00\",\n  \"duration\": 90,\n  \"description\": \"Déjeuner au restaurant pour discuter du partenariat\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/patrons/:id/updates",
+              "host": ["{{apiUrl}}"],
+              "path": ["patrons", ":id", "updates"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              ]
+            },
+            "description": "Ajouter une actualité pour un mécène."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Financial (Admin)",
+      "item": [
+        {
+          "name": "Get Budgets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/financial/budgets",
+              "host": ["{{apiUrl}}"],
+              "path": ["financial", "budgets"]
+            },
+            "description": "Liste tous les budgets (admin uniquement)."
+          }
+        },
+        {
+          "name": "Create Budget",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Événements\",\n  \"amount\": 1000000,\n  \"year\": 2026\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/financial/budgets",
+              "host": ["{{apiUrl}}"],
+              "path": ["financial", "budgets"]
+            },
+            "description": "Créer un nouveau budget (montant en centimes)."
+          }
+        },
+        {
+          "name": "Get Expenses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/financial/expenses",
+              "host": ["{{apiUrl}}"],
+              "path": ["financial", "expenses"]
+            },
+            "description": "Liste toutes les dépenses."
+          }
+        },
+        {
+          "name": "Get Financial Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/financial/stats?year=2026",
+              "host": ["{{apiUrl}}"],
+              "path": ["financial", "stats"],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "2026"
+                }
+              ]
+            },
+            "description": "Récupère les statistiques financières pour une année."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List Admin Users (Super Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/admin/users",
+              "host": ["{{apiUrl}}"],
+              "path": ["admin", "users"]
+            },
+            "description": "Liste tous les administrateurs (super admin uniquement)."
+          }
+        },
+        {
+          "name": "Create Admin User (Super Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"new.admin@example.com\",\n  \"firstName\": \"New\",\n  \"lastName\": \"Admin\",\n  \"role\": \"ideas_manager\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/admin/users",
+              "host": ["{{apiUrl}}"],
+              "path": ["admin", "users"]
+            },
+            "description": "Créer un nouvel administrateur (super admin uniquement)."
+          }
+        },
+        {
+          "name": "Get Global Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/admin/stats",
+              "host": ["{{apiUrl}}"],
+              "path": ["admin", "stats"]
+            },
+            "description": "Récupère les statistiques globales de l'application."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/health",
+              "host": ["{{apiUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Health check global de l'application."
+          }
+        },
+        {
+          "name": "Database Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/health/db",
+              "host": ["{{apiUrl}}"],
+              "path": ["health", "db"]
+            },
+            "description": "Health check de la base de données."
+          }
+        }
+      ]
+    }
+  ]
+}

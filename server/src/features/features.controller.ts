@@ -8,6 +8,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
 import { FeaturesService } from './features.service';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { PermissionGuard } from '../auth/guards/permission.guard';
@@ -19,6 +20,7 @@ import { User } from '../auth/decorators/user.decorator';
  * GET /api/features - Public (returns feature flags for all users)
  * PUT /api/features/:key - Admin only (update feature flag)
  */
+@ApiTags('features')
 @Controller('api/features')
 export class FeaturesController {
   constructor(private readonly featuresService: FeaturesService) {}
@@ -28,6 +30,8 @@ export class FeaturesController {
    * No authentication required so frontend can load features for all users
    */
   @Get()
+  @ApiOperation({ summary: 'Obtenir toutes les fonctionnalités (publique)' })
+  @ApiResponse({ status: 200, description: 'Liste des fonctionnalités' })
   async getAllFeatures() {
     try {
       const features = await this.featuresService.getAllFeatures();
@@ -50,6 +54,10 @@ export class FeaturesController {
    * Get a single feature by key - Public endpoint
    */
   @Get(':featureKey')
+  @ApiOperation({ summary: 'Obtenir une fonctionnalité par clé (publique)' })
+  @ApiParam({ name: 'featureKey', description: 'Clé de la fonctionnalité', example: 'chatbot' })
+  @ApiResponse({ status: 200, description: 'Détails de la fonctionnalité' })
+  @ApiResponse({ status: 404, description: 'Fonctionnalité non trouvée' })
   async getFeature(@Param('featureKey') featureKey: string) {
     const feature = await this.featuresService.getFeature(featureKey);
 
@@ -75,6 +83,23 @@ export class FeaturesController {
   @Put(':featureKey')
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @Permissions('admin.manage')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Activer/désactiver une fonctionnalité (admin)' })
+  @ApiParam({ name: 'featureKey', description: 'Clé de la fonctionnalité', example: 'chatbot' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        enabled: { type: 'boolean', example: true, description: 'Activer ou désactiver la fonctionnalité' }
+      },
+      required: ['enabled']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Fonctionnalité mise à jour' })
+  @ApiResponse({ status: 400, description: 'enabled doit être un booléen' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 500, description: 'Erreur lors de la mise à jour' })
   async updateFeature(
     @Param('featureKey') featureKey: string,
     @Body() body: { enabled: boolean },

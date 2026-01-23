@@ -1,15 +1,15 @@
 {
   "include": ["server/**/*", "shared/**/*"],
-  "exclude": ["node_modules", "dist", "client", "**/*.test.ts", "server/firebase-import.ts", "server/storage.ts"],
+  "exclude": ["node_modules", "dist", "client", "**/*.test.ts", "server/firebase-import.ts", "server/storage.ts", "server/import-firebase-data.ts"],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo.server",
     "noEmit": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "module": "ESNext",
+    "module": "commonjs",
     "moduleResolution": "node",
-    "target": "ESNext",
+    "target": "ES2021",
     "strict": false,
     "lib": ["esnext"],
     "esModuleInterop": true,

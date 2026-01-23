@@ -694,15 +694,8 @@ const sanitizeText = (text: string) => text
   .trim()
   .slice(0, 5000); // Limit length
 
-// Ultra-secure insert schemas with validation
-export const insertAdminSchema = createInsertSchema(admins).pick({
-  email: true,
-  firstName: true,
-  lastName: true,
-  password: true,
-  addedBy: true,
-  role: true,
-} as any).extend({
+// Ultra-secure insert schemas with validation - Pure Zod v4 schema (avoiding drizzle-zod type recursion)
+export const insertAdminSchema = z.object({
   email: z.string()
     .email("Email invalide")
     .min(5, "Email trop court")
@@ -761,13 +754,8 @@ export const updateAdminPasswordSchema = z.object({
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Le mot de passe doit contenir au moins : 1 majuscule (A-Z), 1 minuscule (a-z) et 1 chiffre (0-9)"),
 });
 
-export const insertIdeaSchema = createInsertSchema(ideas).pick({
-  title: true,
-  description: true,
-  proposedBy: true,
-  proposedByEmail: true,
-  deadline: true,
-} as any).extend({
+// Pure Zod v4 schema (avoiding drizzle-zod type recursion)
+export const insertIdeaSchema = z.object({
   title: z.string()
     .min(3, "Le titre doit contenir au moins 3 caractères")
     .max(200, "Le titre est trop long (maximum 200 caractères). Raccourcissez votre titre ou utilisez la description pour plus de détails.")
@@ -820,11 +808,8 @@ export const updateIdeaSchema = z.object({
   createdAt: z.string().datetime("La date de publication n'est pas valide").optional(),
 });
 
-export const insertVoteSchema = createInsertSchema(votes).pick({
-  ideaId: true,
-  voterName: true,
-  voterEmail: true,
-} as any).extend({
+// Pure Zod v4 schema
+export const insertVoteSchema = z.object({
   ideaId: z.string()
     .min(1, "ID d'idée requis")
     .refine(
@@ -846,18 +831,8 @@ export const insertVoteSchema = createInsertSchema(votes).pick({
     .transform(sanitizeText),
 });
 
-export const insertEventSchema = createInsertSchema(events).pick({
-  title: true,
-  description: true,
-  date: true,
-  location: true,
-  maxParticipants: true,
-  helloAssoLink: true,
-  enableExternalRedirect: true,
-  externalRedirectUrl: true,
-  showInscriptionsCount: true,
-  showAvailableSeats: true,
-} as any).extend({
+// Pure Zod v4 schema
+export const insertEventSchema = z.object({
   title: z.string()
     .min(3, "Le titre doit contenir au moins 3 caractères")
     .max(200, "Le titre est trop long (maximum 200 caractères). Raccourcissez votre titre ou utilisez la description pour plus de détails.")
@@ -894,16 +869,11 @@ export const insertEventSchema = createInsertSchema(events).pick({
     .max(50, "Le texte du bouton personnalisé est trop long (maximum 50 caractères)")
     .optional()
     .transform(val => val ? sanitizeText(val) : undefined),
+  status: z.enum(["draft", "published", "cancelled", "archived", "postponed", "completed"]).optional(),
 });
 
-export const insertInscriptionSchema = createInsertSchema(inscriptions).pick({
-  eventId: true,
-  name: true,
-  email: true,
-  company: true,
-  phone: true,
-  comments: true,
-} as any).extend({
+// Pure Zod v4 schema
+export const insertInscriptionSchema = z.object({
   eventId: z.string()
     .uuid("L'identifiant de l'événement n'est pas valide")
     .transform(sanitizeText),
@@ -959,12 +929,8 @@ export const createEventWithInscriptionsSchema = z.object({
   initialInscriptions: z.array(initialInscriptionSchema).default([])
 });
 
-export const insertUnsubscriptionSchema = createInsertSchema(unsubscriptions).pick({
-  eventId: true,
-  name: true,
-  email: true,
-  comments: true,
-} as any).extend({
+// Pure Zod v4 schema
+export const insertUnsubscriptionSchema = z.object({
   eventId: z.string()
     .uuid("L'identifiant de l'événement n'est pas valide")
     .transform(sanitizeText),
@@ -982,15 +948,8 @@ export const insertUnsubscriptionSchema = createInsertSchema(unsubscriptions).pi
     .transform(val => val ? sanitizeText(val) : undefined),
 });
 
-// Loan items schemas
-export const insertLoanItemSchema = createInsertSchema(loanItems).pick({
-  title: true,
-  description: true,
-  lenderName: true,
-  photoUrl: true,
-  proposedBy: true,
-  proposedByEmail: true,
-} as any).extend({
+// Loan items schemas - Pure Zod v4 schema
+export const insertLoanItemSchema = z.object({
   title: z.string()
     .min(3, "Le titre doit contenir au moins 3 caractères")
     .max(200, "Le titre est trop long (maximum 200 caractères)")
@@ -1014,6 +973,7 @@ export const insertLoanItemSchema = createInsertSchema(loanItems).pick({
   proposedByEmail: z.string()
     .email("Adresse email invalide. Veuillez saisir une adresse email valide (ex: nom@domaine.fr)")
     .transform(sanitizeText),
+  status: z.enum(["available", "borrowed", "reserved", "unavailable"]).optional(),
 });
 
 export const updateLoanItemSchema = z.object({
@@ -1044,17 +1004,8 @@ export const updateLoanItemStatusSchema = z.object({
   ]),
 });
 
-export const insertPatronSchema = createInsertSchema(patrons).pick({
-  firstName: true,
-  lastName: true,
-  role: true,
-  company: true,
-  phone: true,
-  email: true,
-  notes: true,
-  referrerId: true,
-  createdBy: true,
-} as any).extend({
+// Pure Zod v4 schema
+export const insertPatronSchema = z.object({
   firstName: z.string()
     .min(2, "Le prénom doit contenir au moins 2 caractères")
     .max(100, "Le prénom ne peut pas dépasser 100 caractères")
@@ -1097,13 +1048,8 @@ export const insertPatronSchema = createInsertSchema(patrons).pick({
     .transform(val => val ? sanitizeText(val) : undefined),
 });
 
-export const insertPatronDonationSchema = createInsertSchema(patronDonations).pick({
-  patronId: true,
-  donatedAt: true,
-  amount: true,
-  occasion: true,
-  recordedBy: true,
-} as any).extend({
+// Pure Zod v4 schema
+export const insertPatronDonationSchema = z.object({
   patronId: z.string()
     .uuid("L'identifiant du mécène n'est pas valide")
     .transform(sanitizeText),
@@ -1122,22 +1068,13 @@ export const insertPatronDonationSchema = createInsertSchema(patronDonations).pi
     .transform(sanitizeText),
 });
 
-export const insertPatronUpdateSchema = createInsertSchema(patronUpdates).pick({
-  patronId: true,
-  type: true,
-  subject: true,
-  date: true,
-  startTime: true,
-  duration: true,
-  description: true,
-  notes: true,
-  createdBy: true,
-} as any).extend({
+// Pure Zod v4 schema
+export const insertPatronUpdateSchema = z.object({
   patronId: z.string()
     .uuid("L'identifiant du mécène n'est pas valide")
     .transform(sanitizeText),
   type: z.enum(["meeting", "email", "call", "lunch", "event"], {
-    errorMap: () => ({ message: "Le type doit être 'meeting', 'email', 'call', 'lunch' ou 'event'" })
+    message: "Le type doit être 'meeting', 'email', 'call', 'lunch' ou 'event'"
   }),
   subject: z.string()
     .min(3, "Le sujet doit contenir au moins 3 caractères")
@@ -1193,13 +1130,8 @@ export const updatePatronUpdateSchema = z.object({
     .optional(),
 });
 
-export const insertIdeaPatronProposalSchema = createInsertSchema(ideaPatronProposals).pick({
-  ideaId: true,
-  patronId: true,
-  proposedByAdminEmail: true,
-  status: true,
-  comments: true,
-} as any).extend({
+// Pure Zod v4 schema
+export const insertIdeaPatronProposalSchema = z.object({
   ideaId: z.string()
     .uuid("L'identifiant de l'idée n'est pas valide")
     .transform(sanitizeText),
@@ -1267,19 +1199,8 @@ export const updateIdeaPatronProposalSchema = z.object({
     .optional(),
 });
 
-export const insertEventSponsorshipSchema = createInsertSchema(eventSponsorships).pick({
-  eventId: true,
-  patronId: true,
-  level: true,
-  amount: true,
-  benefits: true,
-  isPubliclyVisible: true,
-  status: true,
-  logoUrl: true,
-  websiteUrl: true,
-  proposedByAdminEmail: true,
-  confirmedAt: true,
-} as any).extend({
+// Pure Zod v4 schema
+export const insertEventSponsorshipSchema = z.object({
   eventId: z.string()
     .uuid("L'identifiant de l'événement n'est pas valide")
     .transform(sanitizeText),
@@ -1287,7 +1208,7 @@ export const insertEventSponsorshipSchema = createInsertSchema(eventSponsorships
     .uuid("L'identifiant du mécène n'est pas valide")
     .transform(sanitizeText),
   level: z.enum(["platinum", "gold", "silver", "bronze", "partner"], {
-    errorMap: () => ({ message: "Niveau de sponsoring invalide" })
+    message: "Niveau de sponsoring invalide"
   }),
   amount: z.number()
     .int("Le montant doit être un nombre entier")
@@ -1342,17 +1263,8 @@ export const updateEventSponsorshipSchema = z.object({
   confirmedAt: z.string().optional().nullable(),
 });
 
-export const insertMemberSchema = createInsertSchema(members).pick({
-  email: true,
-  firstName: true,
-  lastName: true,
-  company: true,
-  phone: true,
-  role: true,
-  notes: true,
-  status: true,
-  proposedBy: true,
-} as any).extend({
+// Pure Zod v4 schema
+export const insertMemberSchema = z.object({
   email: z.string().email().transform(sanitizeText),
   firstName: z.string().min(2).max(100).transform(sanitizeText),
   lastName: z.string().min(2).max(100).transform(sanitizeText),
@@ -1364,15 +1276,8 @@ export const insertMemberSchema = createInsertSchema(members).pick({
   proposedBy: z.string().email().optional().transform(val => val ? sanitizeText(val) : undefined),
 });
 
-export const insertMemberActivitySchema = createInsertSchema(memberActivities).pick({
-  memberEmail: true,
-  activityType: true,
-  entityType: true,
-  entityId: true,
-  entityTitle: true,
-  metadata: true,
-  scoreImpact: true,
-} as any).extend({
+// Pure Zod v4 schema
+export const insertMemberActivitySchema = z.object({
   memberEmail: z.string().email().transform(sanitizeText),
   activityType: z.enum(['idea_proposed', 'vote_cast', 'event_registered', 'event_unregistered', 'patron_suggested']),
   entityType: z.enum(['idea', 'vote', 'event', 'patron']),
@@ -1696,7 +1601,7 @@ export const insertDevelopmentRequestSchema = createInsertSchema(developmentRequ
     .max(3000, "La description ne peut pas dépasser 3000 caractères")
     .transform(sanitizeText),
   type: z.enum(["bug", "feature"], {
-    errorMap: () => ({ message: "Le type doit être 'bug' ou 'feature'" })
+    message: "Le type doit être 'bug' ou 'feature'"
   }),
   priority: z.enum(["low", "medium", "high", "critical"]).default("medium"),
   requestedBy: z.string().email("Email invalide").transform(sanitizeText),
@@ -1892,8 +1797,9 @@ export const financialForecastsRelations = relations(financialForecasts, ({ one 
   }),
 }));
 
-// Branding configuration schemas
-export const insertBrandingConfigSchema = createInsertSchema(brandingConfig, {
+// Branding configuration schemas - Pure Zod v4 schema
+export const insertBrandingConfigSchema = z.object({
+  key: z.string().min(1, "Key requis"),
   config: z.string().refine((val) => {
     try {
       JSON.parse(val);
@@ -1901,100 +1807,107 @@ export const insertBrandingConfigSchema = createInsertSchema(brandingConfig, {
     } catch {
       return false;
     }
-  }, { message: "Config must be valid JSON" })
-}).omit({ id: true, updatedAt: true } as any);
+  }, { message: "Config must be valid JSON" }),
+  createdAt: z.date().optional(),
+});
 
 export type InsertBrandingConfig = z.infer<typeof insertBrandingConfigSchema>;
 export type BrandingConfig = typeof brandingConfig.$inferSelect;
 
-// Email config schemas
-// Note: Utilisation de 'as any' pour contourner les limitations de drizzle-zod avec les refinements personnalisés
-export const insertEmailConfigSchema = (createInsertSchema(emailConfig, {
-  host: z.string().min(1, "Host requis") as any,
-  port: z.number().min(1).max(65535, "Port invalide") as any,
-  secure: z.boolean() as any,
-  fromEmail: z.string().email("Email invalide") as any,
-  fromName: z.string().optional() as any,
-  provider: z.enum(['ovh', 'gmail', 'outlook', 'smtp', 'other']).default('ovh') as any,
-}) as any).omit({ id: true, updatedAt: true } as any);
+// Email config schemas - Pure Zod v4 schema
+export const insertEmailConfigSchema = z.object({
+  host: z.string().min(1, "Host requis"),
+  port: z.number().min(1).max(65535, "Port invalide"),
+  secure: z.boolean(),
+  username: z.string().optional(),
+  password: z.string().optional(),
+  fromEmail: z.string().email("Email invalide"),
+  fromName: z.string().optional(),
+  provider: z.enum(['ovh', 'gmail', 'outlook', 'smtp', 'other']).optional().default('smtp'),
+  createdAt: z.date().optional(),
+});
 
 export type InsertEmailConfig = z.infer<typeof insertEmailConfigSchema>;
 export type EmailConfig = typeof emailConfig.$inferSelect;
 
-// Feature configuration schemas
-export const insertFeatureConfigSchema = createInsertSchema(featureConfig, {
+// Feature configuration schemas - Pure Zod v4 schema
+export const insertFeatureConfigSchema = z.object({
   featureKey: z.string().min(1).max(50),
-}).omit({
-  id: true,
-  updatedAt: true,
-} as any);
+  enabled: z.boolean().default(true),
+  createdAt: z.date().optional(),
+});
 
 export type InsertFeatureConfig = z.infer<typeof insertFeatureConfigSchema>;
 export type FeatureConfig = typeof featureConfig.$inferSelect;
 
-// Financial categories schemas
-export const insertFinancialCategorySchema = createInsertSchema(financialCategories).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-} as any);
+// Financial categories schemas - Manual Zod v4 schemas
+export const insertFinancialCategorySchema = z.object({
+  name: z.string().min(1, "Le nom est requis"),
+  type: z.enum(["income", "expense"]),
+  parentId: z.string().uuid().optional().nullable(),
+  description: z.string().optional().nullable(),
+  isActive: z.boolean().default(true),
+});
 
-export const updateFinancialCategorySchema = createInsertSchema(financialCategories).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-} as any).partial();
+export const updateFinancialCategorySchema = insertFinancialCategorySchema.partial();
 
 export type InsertFinancialCategory = z.infer<typeof insertFinancialCategorySchema>;
 export type UpdateFinancialCategory = z.infer<typeof updateFinancialCategorySchema>;
 export type FinancialCategory = typeof financialCategories.$inferSelect;
 
-// Financial budgets schemas
-export const insertFinancialBudgetSchema = createInsertSchema(financialBudgets).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-} as any);
+// Financial budgets schemas - Manual Zod v4 schemas
+export const insertFinancialBudgetSchema = z.object({
+  name: z.string().min(1, "Le nom est requis"),
+  category: z.string().uuid("L'identifiant de la catégorie n'est pas valide"),
+  period: z.enum(["month", "quarter", "year"]),
+  year: z.number().int().min(2000).max(2100),
+  month: z.number().int().min(1).max(12).optional().nullable(),
+  quarter: z.number().int().min(1).max(4).optional().nullable(),
+  amountInCents: z.number().int().min(0, "Le montant doit être positif"),
+  description: z.string().optional().nullable(),
+  createdBy: z.string().email("Email de l'administrateur invalide"),
+});
 
-export const updateFinancialBudgetSchema = createInsertSchema(financialBudgets).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-} as any).partial();
+export const updateFinancialBudgetSchema = insertFinancialBudgetSchema.partial();
 
 export type InsertFinancialBudget = z.infer<typeof insertFinancialBudgetSchema>;
 export type UpdateFinancialBudget = z.infer<typeof updateFinancialBudgetSchema>;
 export type FinancialBudget = typeof financialBudgets.$inferSelect;
 
-// Financial expenses schemas
-export const insertFinancialExpenseSchema = createInsertSchema(financialExpenses).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-} as any);
+// Financial expenses schemas - Manual Zod v4 schemas
+export const insertFinancialExpenseSchema = z.object({
+  category: z.string().uuid("L'identifiant de la catégorie n'est pas valide"),
+  description: z.string().min(1, "La description est requise"),
+  amountInCents: z.number().int().min(0, "Le montant doit être positif"),
+  expenseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "La date doit être au format YYYY-MM-DD"),
+  paymentMethod: z.string().optional().nullable(),
+  vendor: z.string().optional().nullable(),
+  budgetId: z.string().uuid().optional().nullable(),
+  receiptUrl: z.string().url().optional().nullable(),
+  createdBy: z.string().email("Email de l'administrateur invalide"),
+});
 
-export const updateFinancialExpenseSchema = createInsertSchema(financialExpenses).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-} as any).partial();
+export const updateFinancialExpenseSchema = insertFinancialExpenseSchema.partial();
 
 export type InsertFinancialExpense = z.infer<typeof insertFinancialExpenseSchema>;
 export type UpdateFinancialExpense = z.infer<typeof updateFinancialExpenseSchema>;
 export type FinancialExpense = typeof financialExpenses.$inferSelect;
 
-// Financial forecasts schemas
-export const insertFinancialForecastSchema = createInsertSchema(financialForecasts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-} as any);
+// Financial forecasts schemas - Manual Zod v4 schemas
+export const insertFinancialForecastSchema = z.object({
+  category: z.string().uuid("L'identifiant de la catégorie n'est pas valide"),
+  period: z.enum(["month", "quarter", "year"]),
+  year: z.number().int().min(2000).max(2100),
+  month: z.number().int().min(1).max(12).optional().nullable(),
+  quarter: z.number().int().min(1).max(4).optional().nullable(),
+  forecastedAmountInCents: z.number().int(),
+  confidence: z.enum(["low", "medium", "high"]).default("medium"),
+  basedOn: z.enum(["historical", "estimate"]).default("estimate"),
+  notes: z.string().optional().nullable(),
+  createdBy: z.string().email("Email de l'administrateur invalide"),
+});
 
-export const updateFinancialForecastSchema = createInsertSchema(financialForecasts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-} as any).partial();
+export const updateFinancialForecastSchema = insertFinancialForecastSchema.partial();
 
 export type InsertFinancialForecast = z.infer<typeof insertFinancialForecastSchema>;
 export type UpdateFinancialForecast = z.infer<typeof updateFinancialForecastSchema>;
@@ -2020,7 +1933,7 @@ export const statusCheckSchema = z.object({
   status: z.enum(['healthy', 'warning', 'unhealthy', 'unknown']),
   message: z.string(),
   responseTime: z.number().optional(),
-  details: z.record(z.any()).optional(),
+  details: z.record(z.string(), z.any()).optional(),
   error: z.string().optional(),
 });
 

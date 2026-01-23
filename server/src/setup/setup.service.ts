@@ -1,9 +1,3 @@
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { StorageService } from '../common/storage/storage.service';
 import { emailService } from '../../email-service';
@@ -25,7 +19,7 @@ export class SetupService {
     if (brandingResult.success && brandingResult.data) {
       try {
         const config = JSON.parse(brandingResult.data.config);
-        const { brandingCore } = await import('../../../client/src/config/branding-core');
+        const { brandingCore } = await import('../../../lib/config/branding-core');
         hasBranding = config.organization?.name !== brandingCore.organization.name ||
                      config.organization?.email !== brandingCore.organization.email ||
                      config.colors?.primary !== brandingCore.colors.primary;
@@ -140,11 +134,11 @@ export class SetupService {
       try {
         brandingConfig = JSON.parse(brandingResult.data.config);
       } catch {
-        const { brandingCore } = await import('../../../client/src/config/branding-core');
+        const { brandingCore } = await import('../../../lib/config/branding-core');
         brandingConfig = brandingCore;
       }
     } else {
-      const { brandingCore } = await import('../../../client/src/config/branding-core');
+      const { brandingCore } = await import('../../../lib/config/branding-core');
       brandingConfig = brandingCore;
     }
 

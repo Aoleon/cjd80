@@ -1,5 +1,5 @@
 import type { Idea, Event, User, LoanItem } from '@shared/schema';
-import { brandingCore, getShortAppName } from '../client/src/config/branding-core';
+import { brandingCore, getShortAppName } from '../lib/config/branding-core';
 
 export interface NotificationContext {
   baseUrl: string;

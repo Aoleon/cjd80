@@ -1,4 +1,6 @@
 import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus, Req, BadRequestException, UsePipes } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { PermissionGuard } from '../auth/guards/permission.guard';
@@ -46,6 +48,8 @@ import {
 /**
  * Controller Admin - Routes d'administration
  */
+@ApiTags('admin')
+@ApiBearerAuth()
 @Controller('api/admin')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class AdminController {
@@ -55,6 +59,12 @@ export class AdminController {
 
   @Get('ideas')
   @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir toutes les idées (admin) avec pagination' })
+  @ApiQuery({ name: 'page', required: false, description: 'Numéro de page', example: 1 })
+  @ApiQuery({ name: 'limit', required: false, description: 'Nombre d\'idées par page', example: 20 })
+  @ApiResponse({ status: 200, description: 'Liste des idées avec pagination' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getAllIdeas(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -68,6 +78,22 @@ export class AdminController {
   @Permissions('admin.edit')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(updateIdeaStatusDto))
+  @ApiOperation({ summary: 'Mettre à jour le statut d\'une idée' })
+  @ApiParam({ name: 'id', description: 'ID de l\'idée', example: 'uuid-123' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['pending', 'approved', 'rejected', 'under_review', 'postponed', 'completed'], example: 'approved' }
+      },
+      required: ['status']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Statut mis à jour avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Idée non trouvée' })
   async updateIdeaStatus(
     @Param('id') id: string,
     @Body() body: UpdateIdeaStatusDto,
@@ -80,18 +106,48 @@ export class AdminController {
 
   @Patch('ideas/:id/featured')
   @Permissions('admin.edit')
+  @ApiOperation({ summary: 'Basculer le statut "mise en avant" d\'une idée' })
+  @ApiParam({ name: 'id', description: 'ID de l\'idée', example: 'uuid-123' })
+  @ApiResponse({ status: 200, description: 'Statut featured mis à jour' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Idée non trouvée' })
   async toggleIdeaFeatured(@Param('id') id: string) {
     return await this.adminService.toggleIdeaFeatured(id);
   }
 
   @Post('ideas/:id/transform-to-event')
   @Permissions('admin.edit')
+  @ApiOperation({ summary: 'Transformer une idée approuvée en événement' })
+  @ApiParam({ name: 'id', description: 'ID de l\'idée', example: 'uuid-123' })
+  @ApiResponse({ status: 201, description: 'Événement créé à partir de l\'idée' })
+  @ApiResponse({ status: 400, description: 'L\'idée doit être approuvée' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Idée non trouvée' })
   async transformIdeaToEvent(@Param('id') id: string) {
     return await this.adminService.transformIdeaToEvent(id);
   }
 
   @Put('ideas/:id')
   @Permissions('admin.edit')
+  @ApiOperation({ summary: 'Mettre à jour une idée' })
+  @ApiParam({ name: 'id', description: 'ID de l\'idée', example: 'uuid-123' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', example: 'Titre modifié' },
+        description: { type: 'string', example: 'Description modifiée' },
+        deadline: { type: 'string', format: 'date-time', example: '2026-06-30T23:59:59Z' }
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Idée mise à jour avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Idée non trouvée' })
   async updateIdea(
     @Param('id') id: string,
     @Body() body: unknown,
@@ -101,6 +157,12 @@ export class AdminController {
 
   @Get('ideas/:ideaId/votes')
   @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir les votes d\'une idée' })
+  @ApiParam({ name: 'ideaId', description: 'ID de l\'idée', example: 'uuid-123' })
+  @ApiResponse({ status: 200, description: 'Liste des votes de l\'idée' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Idée non trouvée' })
   async getIdeaVotes(@Param('ideaId') ideaId: string) {
     return await this.adminService.getVotesByIdea(ideaId);
   }
@@ -109,6 +171,12 @@ export class AdminController {
 
   @Get('events')
   @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir tous les événements (admin) avec pagination' })
+  @ApiQuery({ name: 'page', required: false, description: 'Numéro de page', example: 1 })
+  @ApiQuery({ name: 'limit', required: false, description: 'Nombre d\'événements par page', example: 20 })
+  @ApiResponse({ status: 200, description: 'Liste des événements avec pagination' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getAllEvents(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -120,12 +188,37 @@ export class AdminController {
 
   @Get('events/:eventId/inscriptions')
   @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir les inscriptions d\'un événement' })
+  @ApiParam({ name: 'eventId', description: 'ID de l\'événement', example: 'uuid-123' })
+  @ApiResponse({ status: 200, description: 'Liste des inscriptions' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Événement non trouvé' })
   async getEventInscriptions(@Param('eventId') eventId: string) {
     return await this.adminService.getEventInscriptions(eventId);
   }
 
   @Put('events/:id')
   @Permissions('admin.edit')
+  @ApiOperation({ summary: 'Mettre à jour un événement' })
+  @ApiParam({ name: 'id', description: 'ID de l\'événement', example: 'uuid-123' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        description: { type: 'string' },
+        date: { type: 'string', format: 'date-time' },
+        location: { type: 'string' },
+        maxParticipants: { type: 'number' }
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Événement mis à jour avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Événement non trouvé' })
   async updateEvent(
     @Param('id') id: string,
     @Body() body: unknown,
@@ -137,6 +230,22 @@ export class AdminController {
   @Permissions('admin.edit')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(updateEventStatusDto))
+  @ApiOperation({ summary: 'Mettre à jour le statut d\'un événement' })
+  @ApiParam({ name: 'id', description: 'ID de l\'événement', example: 'uuid-123' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['draft', 'published', 'cancelled', 'postponed', 'completed'], example: 'published' }
+      },
+      required: ['status']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Statut mis à jour avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Événement non trouvé' })
   async updateEventStatus(
     @Param('id') id: string,
     @Body() body: UpdateEventStatusDto,
@@ -148,6 +257,11 @@ export class AdminController {
 
   @Get('inscriptions/:eventId')
   @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir les inscriptions par événement' })
+  @ApiParam({ name: 'eventId', description: 'ID de l\'événement', example: 'uuid-123' })
+  @ApiResponse({ status: 200, description: 'Liste des inscriptions' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getInscriptionsByEvent(@Param('eventId') eventId: string) {
     return await this.adminService.getEventInscriptions(eventId);
   }
@@ -155,12 +269,37 @@ export class AdminController {
   @Post('inscriptions')
   @Permissions('admin.edit')
   @UsePipes(new ZodValidationPipe(createInscriptionDto))
+  @ApiOperation({ summary: 'Créer une inscription manuellement' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        eventId: { type: 'string', example: 'uuid-event-123' },
+        name: { type: 'string', example: 'Jean Dupont' },
+        email: { type: 'string', format: 'email', example: 'jean@example.com' },
+        company: { type: 'string', example: 'Entreprise SAS' },
+        phone: { type: 'string', example: '+33612345678' },
+        comments: { type: 'string', example: 'Commentaires optionnels' }
+      },
+      required: ['eventId', 'name', 'email']
+    }
+  })
+  @ApiResponse({ status: 201, description: 'Inscription créée avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async createInscription(@Body() body: CreateInscriptionDto) {
     return await this.adminService.createInscription(body);
   }
 
   @Delete('inscriptions/:inscriptionId')
   @Permissions('admin.edit')
+  @ApiOperation({ summary: 'Supprimer une inscription' })
+  @ApiParam({ name: 'inscriptionId', description: 'ID de l\'inscription', example: 'uuid-123' })
+  @ApiResponse({ status: 200, description: 'Inscription supprimée avec succès' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Inscription non trouvée' })
   async deleteInscription(@Param('inscriptionId') inscriptionId: string) {
     return await this.adminService.deleteInscription(inscriptionId);
   }
@@ -168,6 +307,30 @@ export class AdminController {
   @Post('inscriptions/bulk')
   @Permissions('admin.edit')
   @UsePipes(new ZodValidationPipe(bulkCreateInscriptionsDto))
+  @ApiOperation({ summary: 'Créer plusieurs inscriptions en masse' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        eventId: { type: 'string', example: 'uuid-event-123' },
+        inscriptions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              email: { type: 'string', format: 'email' }
+            }
+          }
+        }
+      },
+      required: ['eventId', 'inscriptions']
+    }
+  })
+  @ApiResponse({ status: 201, description: 'Inscriptions créées avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async bulkCreateInscriptions(
     @Body() body: BulkCreateInscriptionsDto,
   ) {
@@ -178,6 +341,11 @@ export class AdminController {
 
   @Get('votes/:ideaId')
   @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir les votes d\'une idée' })
+  @ApiParam({ name: 'ideaId', description: 'ID de l\'idée', example: 'uuid-123' })
+  @ApiResponse({ status: 200, description: 'Liste des votes' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getVotes(@Param('ideaId') ideaId: string) {
     return await this.adminService.getVotesByIdea(ideaId);
   }
@@ -185,12 +353,34 @@ export class AdminController {
   @Post('votes')
   @Permissions('admin.edit')
   @UsePipes(new ZodValidationPipe(createVoteDto))
+  @ApiOperation({ summary: 'Créer un vote manuellement (admin)' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        ideaId: { type: 'string', example: 'uuid-idea-123' },
+        voterName: { type: 'string', example: 'Jean Dupont' },
+        voterEmail: { type: 'string', format: 'email', example: 'jean@example.com' }
+      },
+      required: ['ideaId', 'voterName', 'voterEmail']
+    }
+  })
+  @ApiResponse({ status: 201, description: 'Vote créé avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides ou vote déjà existant' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async createVote(@Body() body: CreateVoteDto) {
     return await this.adminService.createVote(body);
   }
 
   @Delete('votes/:voteId')
   @Permissions('admin.edit')
+  @ApiOperation({ summary: 'Supprimer un vote' })
+  @ApiParam({ name: 'voteId', description: 'ID du vote', example: 'uuid-123' })
+  @ApiResponse({ status: 200, description: 'Vote supprimé avec succès' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Vote non trouvé' })
   async deleteVote(@Param('voteId') voteId: string) {
     return await this.adminService.deleteVote(voteId);
   }
@@ -199,12 +389,20 @@ export class AdminController {
 
   @Get('administrators')
   @Permissions('admin.manage')
+  @ApiOperation({ summary: 'Obtenir tous les administrateurs' })
+  @ApiResponse({ status: 200, description: 'Liste des administrateurs' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getAllAdministrators() {
     return await this.adminService.getAllAdministrators();
   }
 
   @Get('pending-admins')
   @Permissions('admin.manage')
+  @ApiOperation({ summary: 'Obtenir les administrateurs en attente de validation' })
+  @ApiResponse({ status: 200, description: 'Liste des administrateurs en attente' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getPendingAdministrators() {
     return await this.adminService.getPendingAdministrators();
   }
@@ -212,6 +410,23 @@ export class AdminController {
   @Post('administrators')
   @Permissions('admin.manage')
   @UsePipes(new ZodValidationPipe(createAdministratorDto))
+  @ApiOperation({ summary: 'Créer un nouvel administrateur' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', format: 'email', example: 'nouveau@admin.com' },
+        firstName: { type: 'string', example: 'Nouveau' },
+        lastName: { type: 'string', example: 'Admin' },
+        role: { type: 'string', enum: ['super_admin', 'ideas_reader', 'ideas_manager', 'events_reader', 'events_manager'], example: 'ideas_reader' }
+      },
+      required: ['email', 'firstName', 'lastName', 'role']
+    }
+  })
+  @ApiResponse({ status: 201, description: 'Administrateur créé avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides ou email déjà utilisé' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async createAdministrator(
     @Body() body: CreateAdministratorDto,
     @User() user: { email: string },
@@ -222,6 +437,22 @@ export class AdminController {
   @Patch('administrators/:email/role')
   @Permissions('admin.manage')
   @UsePipes(new ZodValidationPipe(updateAdministratorRoleDto))
+  @ApiOperation({ summary: 'Mettre à jour le rôle d\'un administrateur' })
+  @ApiParam({ name: 'email', description: 'Email de l\'administrateur', example: 'admin@example.com' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        role: { type: 'string', enum: ['super_admin', 'ideas_reader', 'ideas_manager', 'events_reader', 'events_manager'], example: 'ideas_manager' }
+      },
+      required: ['role']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Rôle mis à jour avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Administrateur non trouvé' })
   async updateAdministratorRole(
     @Param('email') email: string,
     @Body() body: UpdateAdministratorRoleDto,
@@ -233,6 +464,22 @@ export class AdminController {
   @Patch('administrators/:email/status')
   @Permissions('admin.manage')
   @UsePipes(new ZodValidationPipe(updateAdministratorStatusDto))
+  @ApiOperation({ summary: 'Activer/désactiver un administrateur' })
+  @ApiParam({ name: 'email', description: 'Email de l\'administrateur', example: 'admin@example.com' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        isActive: { type: 'boolean', example: false }
+      },
+      required: ['isActive']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Statut mis à jour avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Administrateur non trouvé' })
   async updateAdministratorStatus(
     @Param('email') email: string,
     @Body() body: UpdateAdministratorStatusDto,
@@ -244,6 +491,22 @@ export class AdminController {
   @Patch('administrators/:email/info')
   @Permissions('admin.manage')
   @UsePipes(new ZodValidationPipe(updateAdministratorInfoDto))
+  @ApiOperation({ summary: 'Mettre à jour les informations d\'un administrateur' })
+  @ApiParam({ name: 'email', description: 'Email de l\'administrateur', example: 'admin@example.com' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        firstName: { type: 'string', example: 'Nouveau Prénom' },
+        lastName: { type: 'string', example: 'Nouveau Nom' }
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Informations mises à jour avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Administrateur non trouvé' })
   async updateAdministratorInfo(
     @Param('email') email: string,
     @Body() body: UpdateAdministratorInfoDto,
@@ -255,6 +518,9 @@ export class AdminController {
   @Patch('administrators/:email/password')
   @Permissions('admin.manage')
   @HttpCode(HttpStatus.NOT_IMPLEMENTED)
+  @ApiOperation({ summary: 'Modifier le mot de passe (non disponible avec Authentik)' })
+  @ApiParam({ name: 'email', description: 'Email de l\'administrateur' })
+  @ApiResponse({ status: 501, description: 'Fonctionnalité non disponible avec Authentik' })
   async updateAdministratorPassword() {
     // NOTE: Cette route n'est plus utilisée avec Authentik
     return {
@@ -264,6 +530,12 @@ export class AdminController {
 
   @Delete('administrators/:email')
   @Permissions('admin.manage')
+  @ApiOperation({ summary: 'Supprimer un administrateur' })
+  @ApiParam({ name: 'email', description: 'Email de l\'administrateur', example: 'admin@example.com' })
+  @ApiResponse({ status: 200, description: 'Administrateur supprimé avec succès' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Administrateur non trouvé' })
   async deleteAdministrator(
     @Param('email') email: string,
     @User() user: { email: string },
@@ -274,6 +546,22 @@ export class AdminController {
   @Patch('administrators/:email/approve')
   @Permissions('admin.manage')
   @UsePipes(new ZodValidationPipe(approveAdministratorDto))
+  @ApiOperation({ summary: 'Approuver un administrateur en attente' })
+  @ApiParam({ name: 'email', description: 'Email de l\'administrateur', example: 'nouveau@admin.com' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        role: { type: 'string', enum: ['super_admin', 'ideas_reader', 'ideas_manager', 'events_reader', 'events_manager'], example: 'ideas_reader' }
+      },
+      required: ['role']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Administrateur approuvé avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Administrateur non trouvé' })
   async approveAdministrator(
     @Param('email') email: string,
     @Body() body: ApproveAdministratorDto,
@@ -283,6 +571,12 @@ export class AdminController {
 
   @Delete('administrators/:email/reject')
   @Permissions('admin.manage')
+  @ApiOperation({ summary: 'Rejeter un administrateur en attente' })
+  @ApiParam({ name: 'email', description: 'Email de l\'administrateur', example: 'nouveau@admin.com' })
+  @ApiResponse({ status: 200, description: 'Administrateur rejeté avec succès' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Administrateur non trouvé' })
   async rejectAdministrator(@Param('email') email: string) {
     return await this.adminService.rejectAdministrator(email);
   }
@@ -291,18 +585,30 @@ export class AdminController {
 
   @Get('stats')
   @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir les statistiques globales du tableau de bord' })
+  @ApiResponse({ status: 200, description: 'Statistiques du tableau de bord admin' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getAdminStats() {
     return await this.adminService.getAdminStats();
   }
 
   @Get('db-health')
   @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir le statut de santé de la base de données' })
+  @ApiResponse({ status: 200, description: 'État de la connexion à la base de données' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getDatabaseHealth() {
     return await this.adminService.getDatabaseHealth();
   }
 
   @Get('pool-stats')
   @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir les statistiques du pool de connexions' })
+  @ApiResponse({ status: 200, description: 'Statistiques du pool de connexions' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getPoolStats() {
     return await this.adminService.getPoolStats();
   }
@@ -311,12 +617,23 @@ export class AdminController {
 
   @Get('events/:id/unsubscriptions')
   @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir les désinscriptions d\'un événement' })
+  @ApiParam({ name: 'id', description: 'ID de l\'événement', example: 'uuid-123' })
+  @ApiResponse({ status: 200, description: 'Liste des désinscriptions' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getEventUnsubscriptions(@Param('id') id: string) {
     return await this.adminService.getEventUnsubscriptions(id);
   }
 
   @Delete('unsubscriptions/:id')
   @Permissions('admin.edit')
+  @ApiOperation({ summary: 'Supprimer une désinscription' })
+  @ApiParam({ name: 'id', description: 'ID de la désinscription', example: 'uuid-123' })
+  @ApiResponse({ status: 200, description: 'Désinscription supprimée avec succès' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Désinscription non trouvée' })
   async deleteUnsubscription(@Param('id') id: string) {
     return await this.adminService.deleteUnsubscription(id);
   }
@@ -324,6 +641,23 @@ export class AdminController {
   @Put('unsubscriptions/:id')
   @Permissions('admin.edit')
   @UsePipes(new ZodValidationPipe(updateUnsubscriptionDto))
+  @ApiOperation({ summary: 'Mettre à jour une désinscription' })
+  @ApiParam({ name: 'id', description: 'ID de la désinscription', example: 'uuid-123' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'Jean Dupont' },
+        email: { type: 'string', format: 'email', example: 'jean@example.com' },
+        comments: { type: 'string', example: 'Raison de l\'absence' }
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Désinscription mise à jour avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Désinscription non trouvée' })
   async updateUnsubscription(
     @Param('id') id: string,
     @Body() body: UpdateUnsubscriptionDto,
@@ -335,6 +669,10 @@ export class AdminController {
 
   @Get('development-requests')
   @Permissions('admin.manage')
+  @ApiOperation({ summary: 'Obtenir toutes les demandes de développement' })
+  @ApiResponse({ status: 200, description: 'Liste des demandes de développement' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getDevelopmentRequests() {
     return await this.adminService.getDevelopmentRequests();
   }
@@ -342,6 +680,23 @@ export class AdminController {
   @Post('development-requests')
   @Permissions('admin.edit')
   @UsePipes(new ZodValidationPipe(createDevelopmentRequestDto))
+  @ApiOperation({ summary: 'Créer une demande de développement (bug/feature)' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', example: 'Ajouter export CSV' },
+        description: { type: 'string', example: 'Permettre l\'export des données en CSV' },
+        type: { type: 'string', enum: ['bug', 'feature'], example: 'feature' },
+        priority: { type: 'string', enum: ['low', 'medium', 'high', 'critical'], example: 'medium' }
+      },
+      required: ['title', 'description', 'type']
+    }
+  })
+  @ApiResponse({ status: 201, description: 'Demande créée avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async createDevelopmentRequest(
     @Body() body: CreateDevelopmentRequestDto,
     @User() user: { email: string; firstName?: string; lastName?: string },
@@ -352,6 +707,25 @@ export class AdminController {
   @Put('development-requests/:id')
   @Permissions('admin.manage')
   @UsePipes(new ZodValidationPipe(updateDevelopmentRequestDto))
+  @ApiOperation({ summary: 'Mettre à jour une demande de développement' })
+  @ApiParam({ name: 'id', description: 'ID de la demande', example: 'uuid-123' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        description: { type: 'string' },
+        type: { type: 'string', enum: ['bug', 'feature'] },
+        priority: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
+        adminComment: { type: 'string' }
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Demande mise à jour avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Demande non trouvée' })
   async updateDevelopmentRequest(
     @Param('id') id: string,
     @Body() body: UpdateDevelopmentRequestDto,
@@ -361,6 +735,12 @@ export class AdminController {
 
   @Post('development-requests/:id/sync')
   @Permissions('admin.manage')
+  @ApiOperation({ summary: 'Synchroniser une demande avec GitHub' })
+  @ApiParam({ name: 'id', description: 'ID de la demande', example: 'uuid-123' })
+  @ApiResponse({ status: 200, description: 'Synchronisation effectuée avec succès' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Demande non trouvée' })
   async syncDevelopmentRequestWithGitHub(@Param('id') id: string) {
     return await this.adminService.syncDevelopmentRequestWithGitHub(id);
   }
@@ -368,6 +748,22 @@ export class AdminController {
   @Patch('development-requests/:id/status')
   @Permissions('admin.manage')
   @UsePipes(new ZodValidationPipe(updateDevelopmentRequestStatusDto))
+  @ApiOperation({ summary: 'Mettre à jour le statut d\'une demande de développement' })
+  @ApiParam({ name: 'id', description: 'ID de la demande', example: 'uuid-123' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['open', 'in_progress', 'closed', 'cancelled'], example: 'in_progress' }
+      },
+      required: ['status']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Statut mis à jour avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Demande non trouvée' })
   async updateDevelopmentRequestStatus(
     @Param('id') id: string,
     @Body() body: UpdateDevelopmentRequestStatusDto,
@@ -378,6 +774,12 @@ export class AdminController {
 
   @Delete('development-requests/:id')
   @Permissions('admin.manage')
+  @ApiOperation({ summary: 'Supprimer une demande de développement' })
+  @ApiParam({ name: 'id', description: 'ID de la demande', example: 'uuid-123' })
+  @ApiResponse({ status: 200, description: 'Demande supprimée avec succès' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Demande non trouvée' })
   async deleteDevelopmentRequest(@Param('id') id: string) {
     return await this.adminService.deleteDevelopmentRequest(id);
   }
@@ -386,6 +788,11 @@ export class AdminController {
 
   @Get('errors')
   @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir les logs d\'erreurs récents' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Nombre de logs à récupérer', example: 100 })
+  @ApiResponse({ status: 200, description: 'Liste des logs d\'erreurs' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getErrorLogs(@Query('limit') limit?: string) {
     const limitNum = parseInt(limit || '100', 10);
     return await this.adminService.getErrorLogs(limitNum);
@@ -393,12 +800,22 @@ export class AdminController {
 
   @Get('test-email')
   @Permissions('admin.manage')
+  @ApiOperation({ summary: 'Tester la configuration email complète' })
+  @ApiResponse({ status: 200, description: 'Configuration email testée avec succès' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 500, description: 'Erreur de configuration email' })
   async testEmailConfiguration() {
     return await this.adminService.testEmailConfiguration();
   }
 
   @Get('test-email-simple')
   @Permissions('admin.manage')
+  @ApiOperation({ summary: 'Tester l\'envoi d\'email simple' })
+  @ApiResponse({ status: 200, description: 'Email de test envoyé' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 500, description: 'Erreur d\'envoi email' })
   async testEmailSimple() {
     return await this.adminService.testEmailSimple();
   }
@@ -406,6 +823,10 @@ export class AdminController {
   // ===== Routes Admin Feature Configuration =====
 
   @Get('features')
+  @ApiOperation({ summary: 'Obtenir la configuration des fonctionnalités' })
+  @ApiResponse({ status: 200, description: 'Liste des fonctionnalités et leur statut' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getFeatureConfig() {
     return await this.adminService.getFeatureConfig();
   }
@@ -413,6 +834,21 @@ export class AdminController {
   @Put('features/:featureKey')
   @Permissions('admin.manage')
   @UsePipes(new ZodValidationPipe(updateFeatureConfigDto))
+  @ApiOperation({ summary: 'Activer/désactiver une fonctionnalité' })
+  @ApiParam({ name: 'featureKey', description: 'Clé de la fonctionnalité', example: 'chatbot' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        enabled: { type: 'boolean', example: true }
+      },
+      required: ['enabled']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Fonctionnalité mise à jour avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async updateFeatureConfig(
     @Param('featureKey') featureKey: string,
     @Body() body: UpdateFeatureConfigDto,
@@ -425,6 +861,10 @@ export class AdminController {
 
   @Get('email-config')
   @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir la configuration email' })
+  @ApiResponse({ status: 200, description: 'Configuration email actuelle' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getEmailConfig() {
     return await this.adminService.getEmailConfig();
   }
@@ -432,6 +872,24 @@ export class AdminController {
   @Put('email-config')
   @Permissions('admin.manage')
   @UsePipes(new ZodValidationPipe(updateEmailConfigDto))
+  @ApiOperation({ summary: 'Mettre à jour la configuration email' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        smtpHost: { type: 'string', example: 'smtp.example.com' },
+        smtpPort: { type: 'number', example: 587 },
+        smtpUser: { type: 'string', example: 'user@example.com' },
+        smtpPassword: { type: 'string', example: 'password' },
+        fromEmail: { type: 'string', example: 'noreply@cjd-amiens.fr' },
+        fromName: { type: 'string', example: 'CJD Amiens' }
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Configuration email mise à jour avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
   async updateEmailConfig(
     @Body() body: UpdateEmailConfigDto,
     @User() user: { email: string },
@@ -443,10 +901,28 @@ export class AdminController {
 /**
  * Controller Logs - Routes pour les logs frontend
  */
+@ApiTags('admin')
 @Controller('api/logs')
 export class LogsController {
   @Post('frontend-error')
-  async logFrontendError(@Body() body: unknown, @Req() req: any) {
+  @ApiOperation({ summary: 'Logger une erreur frontend' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Uncaught TypeError: Cannot read property of undefined' },
+        stack: { type: 'string', example: 'at Component.render (app.js:123)' },
+        componentStack: { type: 'string', example: 'in MyComponent' },
+        url: { type: 'string', example: 'https://cjd80.rbw.ovh/admin' },
+        userAgent: { type: 'string', example: 'Mozilla/5.0...' },
+        timestamp: { type: 'string', format: 'date-time' }
+      },
+      required: ['message']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Erreur loggée avec succès' })
+  @ApiResponse({ status: 400, description: 'Format d\'erreur invalide' })
+  async logFrontendError(@Body() body: unknown, @Req() req: Request) {
     try {
       const validatedData = frontendErrorSchema.parse(body);
 

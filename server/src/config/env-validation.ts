@@ -8,7 +8,7 @@ import { logger } from '../../lib/logger';
 const envSchema = z.object({
   // Application
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.string().regex(/^\d+$/).transform(Number).default('5000'),
+  PORT: z.string().regex(/^\d+$/).default('5000').transform(Number),
   
   // Base de données (CRITIQUE)
   DATABASE_URL: z.string().url().min(1, 'DATABASE_URL est requis'),
@@ -31,8 +31,8 @@ const envSchema = z.object({
   
   // MinIO (OPTIONNEL mais recommandé)
   MINIO_ENDPOINT: z.string().default('localhost'),
-  MINIO_PORT: z.string().regex(/^\d+$/).transform(Number).default('9000'),
-  MINIO_USE_SSL: z.string().transform(val => val === 'true').default('false'),
+  MINIO_PORT: z.string().regex(/^\d+$/).default('9000').transform(Number),
+  MINIO_USE_SSL: z.string().default('false').transform(val => val === 'true'),
   MINIO_ACCESS_KEY: z.string().default('minioadmin'),
   MINIO_SECRET_KEY: z.string().default('minioadmin'),
   MINIO_BUCKET_LOAN_ITEMS: z.string().default('loan-items'),
@@ -72,7 +72,7 @@ export function validateEnvironment(): ValidatedEnv {
     
     if (!result.success) {
       logger.error('[Env Validation] Variables d\'environnement invalides', {
-        errors: result.error.errors.map(err => ({
+        errors: result.error.issues.map(err => ({
           path: err.path.join('.'),
           message: err.message,
           code: err.code,

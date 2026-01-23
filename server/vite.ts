@@ -16,10 +16,8 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
-  // Import dynamique de Vite et de la config pour éviter de charger les devDependencies en production
+  // Import dynamique de Vite pour éviter de charger les devDependencies en production
   const { createServer: createViteServer, createLogger } = await import("vite");
-  const viteConfigModule = await import("../vite.config.js");
-  const viteConfig = viteConfigModule.default;
   const viteLogger = createLogger();
 
   const serverOptions = {
@@ -29,7 +27,6 @@ export async function setupVite(app: Express, server: Server) {
   };
 
   const vite = await createViteServer({
-    ...viteConfig,
     configFile: false,
     customLogger: {
       ...viteLogger,
@@ -48,7 +45,7 @@ export async function setupVite(app: Express, server: Server) {
 
     try {
       const clientTemplate = path.resolve(
-        import.meta.dirname,
+        __dirname,
         "..",
         "client",
         "index.html",
@@ -70,7 +67,7 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+  const distPath = path.resolve(__dirname, "public");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(

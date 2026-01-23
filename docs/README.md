@@ -4,6 +4,14 @@ Bienvenue dans la documentation du projet **CJD Amiens** - Plateforme web intern
 
 ## 📖 Guide de Navigation
 
+### 🔌 API & Intégration
+
+- **[Documentation API tRPC](../TRPC_API_DOCUMENTATION.md)** - Documentation complète de l'API tRPC (74 endpoints, 9 routers)
+- **[API JSON Documentation](./trpc-api-documentation.json)** - Structure JSON pour intégration programmatique
+- **[API REST Complete](./API_COMPLETE_DOCUMENTATION.md)** - Documentation des endpoints REST NestJS
+- **[API Quick Start](./API_QUICK_START.md)** - Guide de démarrage rapide API
+- **[API Changelog](./API_CHANGELOG.md)** - Historique des changements API
+
 ### 🚀 Déploiement & Infrastructure
 
 - **[Guide de Déploiement](./deployment/DEPLOYMENT.md)** - Instructions complètes pour déployer l'application en production

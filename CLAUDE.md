@@ -8,7 +8,7 @@ CJD Amiens "Boîte à Kiffs" - Modern internal web application for collaborative
 
 **Tech Stack:**
 - **Backend:** NestJS 11 (migrated from Express.js) + TypeScript + Drizzle ORM
-- **Frontend:** React 18 + TypeScript + Vite + TanStack Query + Wouter routing
+- **Frontend:** Next.js 15 App Router + React 19 + TypeScript + tRPC + TanStack Query
 - **Database:** PostgreSQL (Neon) with connection pooling
 - **Auth:** Authentik (OAuth2/OIDC) via Docker Compose
 - **Storage:** MinIO (S3-compatible)
@@ -88,39 +88,44 @@ The `shared/` directory contains types used by **both frontend and backend**:
 3. Run `npm run db:push` to apply changes
 4. Use types in both backend (controllers/services) and frontend (components/hooks)
 
-### Frontend State Management
+### Frontend Architecture (Next.js 15)
 
-**TanStack Query** for server state:
-- **Hooks pattern:** `client/src/hooks/use-*.ts` - Custom hooks for data fetching
-- **Queries:** `useQuery` for GET operations (auto-cached, auto-revalidated)
-- **Mutations:** `useMutation` for POST/PUT/DELETE with optimistic updates
-- **Query invalidation:** Mutations automatically invalidate related queries
+**Next.js 15 App Router** with tRPC:
+- **Structure:** `app/` directory for pages and routes
+- **Server Components:** Default rendering mode (faster, SEO-friendly)
+- **Client Components:** Use `"use client"` directive when needed (interactivity, hooks)
+- **tRPC integration:** Type-safe API calls with full TypeScript inference
+- **TanStack Query:** Server state management via tRPC React Query
 
 **Example Pattern:**
 ```typescript
-// Hook: client/src/hooks/use-ideas.ts
-export function useIdeas() {
-  return useQuery({
-    queryKey: ["/api/ideas"],
-    queryFn: async () => {
-      const res = await fetch("/api/ideas");
-      return res.json();
-    }
-  });
+// Server Component (app/page.tsx)
+export default async function HomePage() {
+  // Can fetch data directly in Server Component
+  return <IdeasSection />;
 }
 
-// Component usage:
-const { data: ideas, isLoading } = useIdeas();
+// Client Component (components/ideas/ideas-section.tsx)
+"use client";
+
+export function IdeasSection() {
+  // Use tRPC hooks
+  const { data: ideas, isLoading } = trpc.ideas.list.useQuery();
+  const createIdea = trpc.ideas.create.useMutation();
+
+  return <div>...</div>;
+}
 ```
 
 ### Branding System
 
 **Centralized configuration** for multi-tenant-ready customization:
-- **Core config:** `client/src/config/branding-core.ts` - All text, colors, logos (JS object)
-- **Generation script:** `npm run generate:config` creates `index.html` and `manifest.json`
+- **Core config:** `lib/config/branding-core.ts` - All text, colors, logos (JS object)
+- **Next.js config:** `lib/config/branding.ts` - Extends core with Next.js public asset paths
+- **Generation script:** `npm run generate:config` creates static config files (if needed)
 - **Admin interface:** `/admin/branding` route allows SUPER_ADMIN to modify branding
-- **Semantic colors:** 17 configurable colors (success, warning, error, info families) in `client/src/index.css`
-- **Helper functions:** `client/src/lib/branding.ts` for accessing branding values
+- **Semantic colors:** 17 configurable colors (success, warning, error, info families) in global CSS
+- **Helper functions:** `lib/config/branding.ts` for accessing branding values
 
 **Pattern:** Use semantic color classes (`bg-success`, `text-error`) instead of hardcoded Tailwind colors.
 
@@ -132,11 +137,14 @@ const { data: ideas, isLoading } = useIdeas();
 # Start full dev environment (Docker services + DB migration + dev servers)
 npm run start:dev
 
-# Start frontend only (Vite dev server on :5173)
-npm run dev:client
-
-# Start backend only (NestJS on :5000)
+# Start frontend + backend (Next.js on :3000 + NestJS on :5000)
 npm run dev
+
+# Start Next.js only
+npm run dev:next
+
+# Start NestJS backend only
+npm run dev:nest
 
 # Type checking
 npm run check
@@ -187,16 +195,16 @@ npm run clean:all
 ### Building and Deployment
 
 ```bash
-# Build for production (compiles backend + frontend)
+# Build for production (Next.js build + backend compilation)
 npm run build
 
-# Start production server
+# Start production server (Next.js + NestJS)
 npm start
 
 # Validate application health
 npm run validate
 
-# Generate branding config files
+# Generate branding config files (if needed for legacy PWA)
 npm run generate:config
 ```
 
@@ -332,25 +340,44 @@ async getProfile(@User() user: Admin) {  // Use @User() decorator
 }
 ```
 
-### Frontend Component Patterns
+### Frontend Component Patterns (Next.js)
 
-**Standard component structure:**
+**Server Component (default):**
 ```typescript
-export function MyComponent() {
+// app/ideas/page.tsx
+export default async function IdeasPage() {
+  // Can fetch data directly in Server Component
+  // No "use client" needed - SSR by default
+  return (
+    <div>
+      <IdeasList />
+    </div>
+  );
+}
+```
+
+**Client Component (interactive):**
+```typescript
+// components/ideas/ideas-list.tsx
+"use client";
+
+export function IdeasList() {
   // 1. State hooks
   const [localState, setLocalState] = useState();
 
-  // 2. Data fetching hooks (TanStack Query)
-  const { data, isLoading } = useQuery(...);
+  // 2. tRPC data fetching
+  const { data, isLoading } = trpc.ideas.list.useQuery();
 
-  // 3. Mutation hooks
-  const mutation = useMutation({
-    mutationFn: async (data) => { ... },
-    onSuccess: () => queryClient.invalidateQueries(["/api/resource"])
+  // 3. tRPC mutations
+  const createIdea = trpc.ideas.create.useMutation({
+    onSuccess: () => {
+      // Auto-invalidate via tRPC
+      utils.ideas.list.invalidate();
+    }
   });
 
   // 4. Event handlers
-  const handleSubmit = () => mutation.mutate(data);
+  const handleSubmit = (data) => createIdea.mutate(data);
 
   // 5. Early returns for loading/error states
   if (isLoading) return <Spinner />;
@@ -367,11 +394,12 @@ export function MyComponent() {
 - Use global exception filter (`HttpExceptionFilter`) for consistent error responses
 - Log errors with structured logging: `logger.error('message', { context: { ... } })`
 
-**Frontend:**
-- Use TanStack Query's `isError` state
+**Frontend (Next.js + tRPC):**
+- Use tRPC's built-in error handling
 - Display user-friendly error messages from `error.message`
 - Use toast notifications for transient errors
 - ErrorBoundary component catches React errors
+- Server Components can throw errors for Next.js error boundaries
 
 ### PWA Service Worker
 
@@ -379,19 +407,28 @@ export function MyComponent() {
 - Actions saved to IndexedDB when offline
 - Auto-sync every hour or when online returns
 - Banner shows offline status
-- Located in `client/public/sw.js` and `client/public/sw-register.js`
+- Located in `public/sw.js` and `public/sw-register.js` (legacy PWA)
+- **Note:** Consider migrating to Next.js PWA plugin in the future
 
 ## Project-Specific Conventions
 
 ### File Naming
 
 - **Backend:** `kebab-case.ts` for files, `PascalCase` for classes
-- **Frontend:** `PascalCase.tsx` for components, `kebab-case.tsx` for pages
+- **Frontend (Next.js):**
+  - `page.tsx` for routes (app directory)
+  - `layout.tsx` for layouts
+  - `kebab-case.tsx` for components (lowercase)
+  - `PascalCase.tsx` for React components (when needed)
 - **Shared:** `kebab-case.ts` for schemas and utilities
 
 ### Import Aliases
 
-- `@/` → `client/src/` (frontend code)
+- `@/` → Project root (Next.js convention)
+  - `@/app/` → Next.js pages
+  - `@/components/` → React components
+  - `@/lib/` → Utilities and helpers
+  - `@/hooks/` → Custom React hooks
 - `@shared/` → `shared/` (shared types/schemas)
 
 ### Semantic Colors
@@ -511,15 +548,22 @@ MINIO_SECRET_KEY=minioadmin
 - `server/src/auth/strategies/authentik.strategy.ts` - OAuth2 strategy
 - `server/src/auth/guards/auth.guard.ts` - Session auth guard
 
-**Frontend:**
-- `client/src/App.tsx` - Main app component and routing
-- `client/src/hooks/` - TanStack Query hooks
-- `client/src/lib/branding.ts` - Branding helpers
+**Frontend (Next.js):**
+- `app/layout.tsx` - Root layout with providers
+- `app/page.tsx` - Home page
+- `app/providers.tsx` - tRPC and TanStack Query setup
+- `lib/trpc/client.ts` - tRPC client configuration
+- `hooks/` - Custom React hooks
+- `components/` - React components
 
 **Configuration:**
-- `client/src/config/branding-core.ts` - Branding configuration
+- `lib/config/branding-core.ts` - Branding configuration
+- `lib/config/branding.ts` - Next.js branding with assets
 - `docker-compose.services.yml` - Docker services
 - `.env.example` - Environment variable template
+
+**Migration:**
+- `MIGRATION_REPORT.md` - Complete Next.js migration report
 
 **Scripts:**
 - `scripts/start-dev.sh` - Automated dev environment setup

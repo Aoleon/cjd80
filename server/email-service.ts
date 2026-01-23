@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import type { Result, EmailConfig } from '@shared/schema';
 import { DatabaseError } from '@shared/schema';
-import { getShortAppName } from '../client/src/config/branding-core';
+import { getShortAppName } from '../lib/config/branding-core';
 import type { IStorage } from './storage';
 
 interface TransporterConfig {
