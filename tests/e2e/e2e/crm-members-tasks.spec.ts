@@ -15,10 +15,10 @@ import { test, expect } from '@playwright/test';
  * 7. Filtrage multi-critères
  *
  * Endpoints testés:
- * - GET /api/admin/member-tasks
- * - POST /api/admin/member-tasks
- * - PATCH /api/admin/member-tasks/:id
- * - DELETE /api/admin/member-tasks/:id
+ * - GET /api/admin/tasks
+ * - POST /api/admin/tasks
+ * - PATCH /api/admin/tasks/:id
+ * - DELETE /api/admin/tasks/:id
  *
  * URL de test: https://cjd80.rbw.ovh
  */
@@ -91,10 +91,10 @@ test.describe('CRM Members: Tasks Management', () => {
     console.log('[TEST 1] ✅ Bouton créer tâche visible');
   });
 
-  test('2. API GET /api/admin/member-tasks retourne la liste', async ({ request }) => {
+  test('2. API GET /api/admin/tasks retourne la liste', async ({ request }) => {
     console.log('[TEST 2] Test API GET tasks');
 
-    const response = await request.get(`${BASE_URL}/api/admin/member-tasks`);
+    const response = await request.get(`${BASE_URL}/api/admin/tasks`);
 
     expect(response.ok()).toBeTruthy();
     expect(response.status()).toBe(200);
@@ -344,7 +344,7 @@ test.describe('CRM Members: Tasks Management', () => {
     console.log('[TEST 8] ✅ Tâche créée et visible');
   });
 
-  test('9. API POST /api/admin/member-tasks crée une tâche', async ({ request }) => {
+  test('9. API POST /api/admin/tasks crée une tâche', async ({ request }) => {
     console.log('[TEST 9] Test API POST task');
 
     // D'abord récupérer un membre existant
@@ -368,7 +368,7 @@ test.describe('CRM Members: Tasks Management', () => {
       dueDate: new Date(Date.now() + 86400000).toISOString() // +1 jour
     };
 
-    const response = await request.post(`${BASE_URL}/api/admin/member-tasks`, {
+    const response = await request.post(`${BASE_URL}/api/admin/tasks`, {
       data: newTask
     });
 

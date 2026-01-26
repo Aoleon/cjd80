@@ -22,14 +22,14 @@ import { test, expect } from '@playwright/test';
  * 14. Vérifier affichage bidirectionnel relation
  * 15. Badges color-codés par type
  * 16. Supprimer relation avec confirmation
- * 17. API DELETE /api/admin/member-relations/:id supprime
+ * 17. API DELETE /api/admin/relations/:id supprime
  * 18. Validation: deux membres obligatoires
  * 19. Workflow complet: Créer et Supprimer
  *
  * Endpoints testés:
  * - GET /api/admin/members/relations
  * - POST /api/admin/members/relations
- * - DELETE /api/admin/member-relations/:id
+ * - DELETE /api/admin/relations/:id
  *
  * URL de test: https://cjd80.rbw.ovh
  */
@@ -621,7 +621,7 @@ test.describe('CRM Members: Relations Management', () => {
     console.log('[TEST 16] ✅ Suppression effectuée');
   });
 
-  test('17. API DELETE /api/admin/member-relations/:id supprime', async ({ request }) => {
+  test('17. API DELETE /api/admin/relations/:id supprime', async ({ request }) => {
     console.log('[TEST 17] Test API DELETE relation');
 
     // D'abord créer une relation à supprimer
@@ -658,7 +658,7 @@ test.describe('CRM Members: Relations Management', () => {
     console.log('[TEST 17] Relation créée avec ID:', relationId);
 
     // Supprimer la relation
-    const deleteResponse = await request.delete(`${BASE_URL}/api/admin/member-relations/${relationId}`);
+    const deleteResponse = await request.delete(`${BASE_URL}/api/admin/relations/${relationId}`);
 
     expect([200, 204]).toContain(deleteResponse.status());
     console.log('[TEST 17] ✅ Relation supprimée via API, status:', deleteResponse.status());

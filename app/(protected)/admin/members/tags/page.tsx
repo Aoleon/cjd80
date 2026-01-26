@@ -91,13 +91,13 @@ export default function AdminMembersTagsPage() {
   // Query pour lister tous les tags
   const { data: tags = [], isLoading, error } = useQuery({
     queryKey: queryKeys.members.tags.all,
-    queryFn: () => api.get<MemberTag[]>('/api/admin/members/tags'),
+    queryFn: () => api.get<MemberTag[]>('/api/admin/tags'),
   });
 
   // Mutation pour créer un tag
   const createMutation = useMutation({
     mutationFn: (data: TagFormData) =>
-      api.post('/api/admin/members/tags', {
+      api.post('/api/admin/tags', {
         name: data.name.trim(),
         color: data.color,
         description: data.description?.trim() || undefined,
@@ -123,7 +123,7 @@ export default function AdminMembersTagsPage() {
   // Mutation pour mettre à jour un tag
   const updateMutation = useMutation({
     mutationFn: (data: { id: string; updates: Partial<TagFormData> }) =>
-      api.patch(`/api/admin/members/tags/${data.id}`, {
+      api.patch(`/api/admin/tags/${data.id}`, {
         name: data.updates.name?.trim(),
         color: data.updates.color,
         description: data.updates.description?.trim() || undefined,
@@ -149,7 +149,7 @@ export default function AdminMembersTagsPage() {
 
   // Mutation pour supprimer un tag
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/api/admin/members/tags/${id}`),
+    mutationFn: (id: string) => api.delete(`/api/admin/tags/${id}`),
     onSuccess: () => {
       toast({
         title: 'Tag supprimé',

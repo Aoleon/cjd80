@@ -387,7 +387,7 @@ export class AdminMembersController {
  */
 @ApiTags('members')
 @ApiBearerAuth()
-@Controller('api/admin/members/tags')
+@Controller('api/admin/tags')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class AdminMemberTagsController {
   constructor(private readonly membersService: MembersService) {}
@@ -466,7 +466,7 @@ export class AdminMemberTagsController {
  */
 @ApiTags('members')
 @ApiBearerAuth()
-@Controller('api/admin/members/tasks')
+@Controller('api/admin/tasks')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class AdminMemberTasksController {
   constructor(private readonly membersService: MembersService) {}
@@ -519,7 +519,7 @@ export class AdminMemberTasksController {
  */
 @ApiTags('members')
 @ApiBearerAuth()
-@Controller('api/admin/members/relations')
+@Controller('api/admin/relations')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class AdminMemberRelationsController {
   constructor(private readonly membersService: MembersService) {}

@@ -226,7 +226,7 @@ export default function AdminMembersRelationsPage() {
   // Mutation pour supprimer une relation
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      api.delete(`/api/admin/member-relations/${id}`),
+      api.delete(`/api/admin/relations/${id}`),
     onSuccess: () => {
       toast({
         title: 'Relation supprimée',

@@ -222,7 +222,7 @@ export default function AdminMemberTasksPage() {
   // Mutation pour mettre à jour une tâche
   const updateMutation = useMutation({
     mutationFn: (data: { id: string; formData: EditTaskFormData }) =>
-      api.patch(`/api/admin/member-tasks/${data.id}`, {
+      api.patch(`/api/admin/tasks/${data.id}`, {
         title: data.formData.title || undefined,
         description: data.formData.description || undefined,
         taskType: data.formData.taskType || undefined,
@@ -251,7 +251,7 @@ export default function AdminMemberTasksPage() {
 
   // Mutation pour supprimer une tâche
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/api/admin/member-tasks/${id}`),
+    mutationFn: (id: string) => api.delete(`/api/admin/tasks/${id}`),
     onSuccess: () => {
       toast({
         title: 'Tâche supprimée',
@@ -271,7 +271,7 @@ export default function AdminMemberTasksPage() {
   // Mutation pour marquer comme complété
   const completeMutation = useMutation({
     mutationFn: (id: string) =>
-      api.patch(`/api/admin/member-tasks/${id}`, { status: 'completed' }),
+      api.patch(`/api/admin/tasks/${id}`, { status: 'completed' }),
     onSuccess: () => {
       toast({
         title: 'Tâche complétée',
