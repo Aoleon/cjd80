@@ -151,11 +151,11 @@ export default function AdminMemberTasksPage() {
       const tasks: MemberTask[] = [];
       for (const member of allMembers) {
         try {
-          const memberTasks = await api.get<MemberTask[]>(
+          const response = await api.get<{ success: boolean; data: MemberTask[] }>(
             `/api/admin/members/${encodeURIComponent(member.email)}/tasks`
           );
-          if (Array.isArray(memberTasks)) {
-            tasks.push(...memberTasks);
+          if (response && response.data && Array.isArray(response.data)) {
+            tasks.push(...response.data);
           }
         } catch (error) {
           console.error(`Erreur lors du chargement des tâches de ${member.email}:`, error);
