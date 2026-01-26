@@ -54,8 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials?: { email: string; password: string }) => {
       if (authMode === 'oauth' || !credentials) {
-        // Rediriger vers le flow OAuth2 Authentik
-        window.location.href = "/api/auth/authentik";
+        // Rediriger vers la page de login
+        window.location.href = "/login";
         return;
       }
 
