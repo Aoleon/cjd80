@@ -15,7 +15,8 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Pencil, Trash2, Search, UserCheck, UserPlus, Eye, Download } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Search, UserCheck, UserPlus, Eye, Download, BarChart3 } from 'lucide-react';
+import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -325,6 +326,12 @@ export default function AdminMembersPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Link href="/admin/members/stats">
+            <Button variant="outline">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Statistiques
+            </Button>
+          </Link>
           <Button variant="outline" onClick={handleExportCSV}>
             <Download className="h-4 w-4 mr-2" />
             Exporter CSV
