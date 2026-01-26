@@ -254,7 +254,7 @@ export class AdminMembersController {
   }
 
   @Post(':email/tags')
-  @Permissions('admin.view')
+  @Permissions('admin.edit')
   @ApiOperation({ summary: 'Assigner un tag à un membre' })
   @ApiParam({ name: 'email', description: 'Email du membre', example: 'jean.dupont@example.com' })
   @ApiBody({
@@ -280,7 +280,7 @@ export class AdminMembersController {
   }
 
   @Delete(':email/tags/:tagId')
-  @Permissions('admin.view')
+  @Permissions('admin.edit')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Retirer un tag d\'un membre' })
   @ApiParam({ name: 'email', description: 'Email du membre', example: 'jean.dupont@example.com' })
@@ -311,7 +311,7 @@ export class AdminMembersController {
   }
 
   @Post(':email/tasks')
-  @Permissions('admin.view')
+  @Permissions('admin.edit')
   @ApiOperation({ summary: 'Créer une tâche pour un membre' })
   @ApiParam({ name: 'email', description: 'Email du membre', example: 'jean.dupont@example.com' })
   @ApiBody({
@@ -354,7 +354,7 @@ export class AdminMembersController {
   }
 
   @Post(':email/relations')
-  @Permissions('admin.view')
+  @Permissions('admin.edit')
   @ApiOperation({ summary: 'Créer une relation pour un membre' })
   @ApiParam({ name: 'email', description: 'Email du membre', example: 'jean.dupont@example.com' })
   @ApiBody({
@@ -403,7 +403,7 @@ export class AdminMemberTagsController {
   }
 
   @Post()
-  @Permissions('admin.view')
+  @Permissions('admin.edit')
   @ApiOperation({ summary: 'Créer un nouveau tag' })
   @ApiBody({
     schema: {
@@ -425,7 +425,7 @@ export class AdminMemberTagsController {
   }
 
   @Patch(':id')
-  @Permissions('admin.view')
+  @Permissions('admin.edit')
   @ApiOperation({ summary: 'Mettre à jour un tag' })
   @ApiParam({ name: 'id', description: 'ID du tag', example: 'uuid-tag-123' })
   @ApiBody({
@@ -448,7 +448,7 @@ export class AdminMemberTagsController {
   }
 
   @Delete(':id')
-  @Permissions('admin.view')
+  @Permissions('admin.edit')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Supprimer un tag' })
   @ApiParam({ name: 'id', description: 'ID du tag', example: 'uuid-tag-123' })
@@ -472,7 +472,7 @@ export class AdminMemberTasksController {
   constructor(private readonly membersService: MembersService) {}
 
   @Patch(':id')
-  @Permissions('admin.view')
+  @Permissions('admin.edit')
   @ApiOperation({ summary: 'Mettre à jour une tâche' })
   @ApiParam({ name: 'id', description: 'ID de la tâche', example: 'uuid-task-123' })
   @ApiBody({
@@ -501,7 +501,7 @@ export class AdminMemberTasksController {
   }
 
   @Delete(':id')
-  @Permissions('admin.view')
+  @Permissions('admin.edit')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Supprimer une tâche' })
   @ApiParam({ name: 'id', description: 'ID de la tâche', example: 'uuid-task-123' })
@@ -525,7 +525,7 @@ export class AdminMemberRelationsController {
   constructor(private readonly membersService: MembersService) {}
 
   @Delete(':id')
-  @Permissions('admin.view')
+  @Permissions('admin.edit')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Supprimer une relation entre membres' })
   @ApiParam({ name: 'id', description: 'ID de la relation', example: 'uuid-relation-123' })
