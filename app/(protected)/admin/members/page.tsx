@@ -15,7 +15,7 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Pencil, Trash2, Search, UserCheck, UserPlus } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Search, UserCheck, UserPlus, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { AddMemberDialog } from './add-member-dialog';
+import { MemberDetailsSheet } from './member-details-sheet';
 
 interface Member {
   email: string;
@@ -65,6 +66,8 @@ export default function AdminMembersPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
+  const [detailsEmail, setDetailsEmail] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<EditMemberFormData>({
     firstName: '',
     lastName: '',
@@ -339,6 +342,17 @@ export default function AdminMembersPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setDetailsEmail(member.email);
+                            setDetailsSheetOpen(true);
+                          }}
+                          title="Voir les détails"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         {member.status === 'proposed' ? (
                           <>
                             <Button
@@ -572,6 +586,16 @@ export default function AdminMembersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Sheet détails membre */}
+      <MemberDetailsSheet
+        email={detailsEmail}
+        open={detailsSheetOpen}
+        onClose={() => {
+          setDetailsSheetOpen(false);
+          setDetailsEmail(null);
+        }}
+      />
     </div>
   );
 }
