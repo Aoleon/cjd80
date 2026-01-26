@@ -15,14 +15,17 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Check, X, Eye, Trash2, Filter } from 'lucide-react';
+import { Loader2, Check, X, Eye, Trash2, Filter, Plus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -55,6 +58,13 @@ export default function AdminIdeasPage() {
   const [statusFilter, setStatusFilter] = useState<IdeaStatus | 'all'>('all');
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createFormData, setCreateFormData] = useState({
+    title: '',
+    description: '',
+    proposedBy: '',
+    proposedByEmail: '',
+  });
 
   // Query pour lister les idées
   const { data, isLoading, error } = useQuery({
@@ -93,6 +103,32 @@ export default function AdminIdeasPage() {
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.ideas.all });
       setShowDetailsModal(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutation pour créer une idée
+  const createMutation = useMutation({
+    mutationFn: (data: typeof createFormData) => api.post('/api/ideas', data),
+    onSuccess: () => {
+      toast({
+        title: 'Idée créée',
+        description: 'L\'idée a été créée avec succès',
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ideas.all });
+      setShowCreateModal(false);
+      setCreateFormData({
+        title: '',
+        description: '',
+        proposedBy: '',
+        proposedByEmail: '',
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -201,6 +237,10 @@ export default function AdminIdeasPage() {
             Modérez et gérez les idées proposées par les membres
           </p>
         </div>
+        <Button onClick={() => setShowCreateModal(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nouvelle idée
+        </Button>
       </div>
 
       {/* Statistiques */}
@@ -455,6 +495,96 @@ export default function AdminIdeasPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de création */}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Créer une nouvelle idée</DialogTitle>
+            <DialogDescription>
+              Ajoutez une nouvelle idée à la boîte à kiffs
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Titre *</Label>
+              <Input
+                id="title"
+                placeholder="Ex: Organiser un afterwork mensuel"
+                value={createFormData.title}
+                onChange={(e) => setCreateFormData({ ...createFormData, title: e.target.value })}
+                maxLength={200}
+              />
+              <p className="text-xs text-muted-foreground">
+                {createFormData.title.length}/200 caractères
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description (optionnelle)</Label>
+              <textarea
+                id="description"
+                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Décrivez votre idée en détail..."
+                value={createFormData.description}
+                onChange={(e) => setCreateFormData({ ...createFormData, description: e.target.value })}
+                maxLength={5000}
+              />
+              <p className="text-xs text-muted-foreground">
+                {createFormData.description.length}/5000 caractères
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="proposedBy">Nom du proposant *</Label>
+                <Input
+                  id="proposedBy"
+                  placeholder="Ex: Jean Dupont"
+                  value={createFormData.proposedBy}
+                  onChange={(e) => setCreateFormData({ ...createFormData, proposedBy: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="proposedByEmail">Email du proposant *</Label>
+                <Input
+                  id="proposedByEmail"
+                  type="email"
+                  placeholder="Ex: jean.dupont@exemple.fr"
+                  value={createFormData.proposedByEmail}
+                  onChange={(e) => setCreateFormData({ ...createFormData, proposedByEmail: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateModal(false);
+                setCreateFormData({
+                  title: '',
+                  description: '',
+                  proposedBy: '',
+                  proposedByEmail: '',
+                });
+              }}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={() => createMutation.mutate(createFormData)}
+              disabled={
+                createMutation.isPending ||
+                !createFormData.title.trim() ||
+                !createFormData.proposedBy.trim() ||
+                !createFormData.proposedByEmail.trim()
+              }
+            >
+              {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Créer l'idée
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
