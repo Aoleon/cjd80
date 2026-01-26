@@ -35,7 +35,6 @@ interface MemberFormData {
   email: string;
   company: string;
   status: 'active' | 'inactive';
-  engagementScore: string;
 }
 
 export function AddMemberDialog({ open, onOpenChange }: AddMemberDialogProps) {
@@ -49,7 +48,6 @@ export function AddMemberDialog({ open, onOpenChange }: AddMemberDialogProps) {
     email: '',
     company: '',
     status: 'active',
-    engagementScore: '0',
   });
 
   const [errors, setErrors] = useState<Partial<MemberFormData>>({});
@@ -82,7 +80,6 @@ export function AddMemberDialog({ open, onOpenChange }: AddMemberDialogProps) {
       email: '',
       company: '',
       status: 'active',
-      engagementScore: '0',
     });
     setErrors({});
   };
@@ -100,11 +97,6 @@ export function AddMemberDialog({ open, onOpenChange }: AddMemberDialogProps) {
       newErrors.email = 'L\'email est requis';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'L\'email n\'est pas valide';
-    }
-
-    const score = parseInt(formData.engagementScore, 10);
-    if (isNaN(score) || score < 0 || score > 100) {
-      newErrors.engagementScore = 'Le score doit être entre 0 et 100';
     }
 
     setErrors(newErrors);
@@ -132,7 +124,6 @@ export function AddMemberDialog({ open, onOpenChange }: AddMemberDialogProps) {
         email: formData.email.trim(),
         company: formData.company.trim() || undefined,
         status: formData.status,
-        engagementScore: parseInt(formData.engagementScore, 10),
       });
     }
   };
@@ -243,28 +234,6 @@ export function AddMemberDialog({ open, onOpenChange }: AddMemberDialogProps) {
                   <SelectItem value="inactive">Inactif</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-
-          {/* Score d'engagement */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="engagementScore" className="text-right">
-              Score (0-100)
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id="engagementScore"
-                type="number"
-                min="0"
-                max="100"
-                placeholder="0"
-                value={formData.engagementScore}
-                onChange={(e) => handleInputChange('engagementScore', e.target.value)}
-                disabled={createMutation.isPending}
-              />
-              {errors.engagementScore && (
-                <p className="text-xs text-destructive mt-1">{errors.engagementScore}</p>
-              )}
             </div>
           </div>
         </div>

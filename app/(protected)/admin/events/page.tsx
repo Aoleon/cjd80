@@ -47,6 +47,8 @@ interface Event {
   helloAssoLink?: string;
   status: EventStatus;
   inscriptionCount?: number;
+  showInscriptionsCount?: boolean;
+  showAvailableSeats?: boolean;
 }
 
 interface Inscription {
@@ -80,6 +82,8 @@ export default function AdminEventsPage() {
     maxParticipants: '',
     helloAssoLink: '',
     status: 'published' as EventStatus,
+    showInscriptionsCount: true,
+    showAvailableSeats: true,
   });
 
   // Query pour lister les événements
@@ -105,6 +109,8 @@ export default function AdminEventsPage() {
       maxParticipants?: number;
       helloAssoLink?: string;
       status: EventStatus;
+      showInscriptionsCount?: boolean;
+      showAvailableSeats?: boolean;
     }) => api.post('/api/events', data),
     onSuccess: () => {
       toast({
@@ -175,6 +181,8 @@ export default function AdminEventsPage() {
       maxParticipants: '',
       helloAssoLink: '',
       status: 'published',
+      showInscriptionsCount: true,
+      showAvailableSeats: true,
     });
   };
 
@@ -196,6 +204,8 @@ export default function AdminEventsPage() {
       maxParticipants: formData.maxParticipants ? parseInt(formData.maxParticipants) : undefined,
       helloAssoLink: formData.helloAssoLink || undefined,
       status: formData.status,
+      showInscriptionsCount: formData.showInscriptionsCount,
+      showAvailableSeats: formData.showAvailableSeats,
     });
   };
 
@@ -212,6 +222,8 @@ export default function AdminEventsPage() {
         maxParticipants: formData.maxParticipants ? parseInt(formData.maxParticipants) : undefined,
         helloAssoLink: formData.helloAssoLink || undefined,
         status: formData.status,
+        showInscriptionsCount: formData.showInscriptionsCount,
+        showAvailableSeats: formData.showAvailableSeats,
       },
     });
   };
@@ -232,6 +244,8 @@ export default function AdminEventsPage() {
       maxParticipants: event.maxParticipants?.toString() || '',
       helloAssoLink: event.helloAssoLink || '',
       status: event.status,
+      showInscriptionsCount: event.showInscriptionsCount ?? true,
+      showAvailableSeats: event.showAvailableSeats ?? true,
     });
     setShowEditModal(true);
   };
@@ -575,6 +589,33 @@ export default function AdminEventsPage() {
                 placeholder="https://..."
               />
             </div>
+            <div className="space-y-3 border-t pt-4">
+              <Label className="font-semibold">Affichage public</Label>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="showInscriptionsCount"
+                  checked={formData.showInscriptionsCount ?? true}
+                  onChange={(e) => setFormData({ ...formData, showInscriptionsCount: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <label htmlFor="showInscriptionsCount" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Afficher le nombre d'inscrits publiquement
+                </label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="showAvailableSeats"
+                  checked={formData.showAvailableSeats ?? true}
+                  onChange={(e) => setFormData({ ...formData, showAvailableSeats: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <label htmlFor="showAvailableSeats" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Afficher le nombre de places disponibles
+                </label>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateModal(false)}>
@@ -675,6 +716,33 @@ export default function AdminEventsPage() {
                 onChange={(e) => setFormData({ ...formData, helloAssoLink: e.target.value })}
                 placeholder="https://..."
               />
+            </div>
+            <div className="space-y-3 border-t pt-4">
+              <Label className="font-semibold">Affichage public</Label>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="edit-showInscriptionsCount"
+                  checked={formData.showInscriptionsCount ?? true}
+                  onChange={(e) => setFormData({ ...formData, showInscriptionsCount: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <label htmlFor="edit-showInscriptionsCount" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Afficher le nombre d'inscrits publiquement
+                </label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="edit-showAvailableSeats"
+                  checked={formData.showAvailableSeats ?? true}
+                  onChange={(e) => setFormData({ ...formData, showAvailableSeats: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <label htmlFor="edit-showAvailableSeats" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Afficher le nombre de places disponibles
+                </label>
+              </div>
             </div>
           </div>
           <DialogFooter>

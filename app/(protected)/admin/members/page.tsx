@@ -15,7 +15,7 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Search, UserCheck, UserPlus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -39,6 +39,7 @@ interface Member {
   role?: string;
   cjdRole?: string;
   notes?: string;
+  proposedBy?: string;
 }
 
 interface EditMemberFormData {
@@ -60,6 +61,7 @@ export default function AdminMembersPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'proposed'>('all');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -171,15 +173,31 @@ export default function AdminMembersPage() {
     }
   };
 
-  // Note: Status toggle is not implemented in updateMemberSchema
-  // If needed, add 'status' field to updateMemberSchema in shared/schema.ts
-  const handleStatusToggle = (_email: string, _currentStatus: string) => {
-    toast({
-      title: 'Non implémenté',
-      description: 'La modification du statut n\'est pas encore disponible',
-      variant: 'destructive',
-    });
-  };
+  // Mutation pour convertir un prospect en membre actif
+  const convertToActiveMutation = useMutation({
+    mutationFn: (email: string) =>
+      api.patch(`/api/admin/members/${encodeURIComponent(email)}`, { status: 'active' }),
+    onSuccess: () => {
+      toast({
+        title: 'Prospect converti',
+        description: 'Le prospect a été converti en membre actif',
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.members.all });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Filtrés les membres selon le statut sélectionné
+  const filteredMembers = data?.data?.filter(member => {
+    if (statusFilter === 'all') return true;
+    return member.status === statusFilter;
+  });
 
   if (isLoading) {
     return (
@@ -226,7 +244,37 @@ export default function AdminMembersPage() {
           <CardDescription>
             {data?.total || 0} membres au total
           </CardDescription>
-          <div className="flex items-center gap-2 mt-4">
+
+          {/* Filtres par statut */}
+          <div className="flex flex-col gap-4 mt-6">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium text-muted-foreground">Filtrer par statut :</span>
+              <Button
+                variant={statusFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('all')}
+              >
+                Tous
+              </Button>
+              <Button
+                variant={statusFilter === 'active' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('active')}
+              >
+                <UserCheck className="h-4 w-4 mr-2" />
+                Membres actifs
+              </Button>
+              <Button
+                variant={statusFilter === 'proposed' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('proposed')}
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Prospects
+              </Button>
+            </div>
+
+            {/* Recherche */}
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -251,45 +299,83 @@ export default function AdminMembersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.data && data.data.length > 0 ? (
-                data.data.map((member: Member) => (
+              {filteredMembers && filteredMembers.length > 0 ? (
+                filteredMembers.map((member: Member) => (
                   <TableRow key={member.email}>
                     <TableCell className="font-medium">
-                      {member.firstName} {member.lastName}
+                      <div className="flex items-center gap-2">
+                        <span>{member.firstName} {member.lastName}</span>
+                        {member.status === 'proposed' && member.proposedBy && (
+                          <span className="text-xs text-muted-foreground">(proposé par {member.proposedBy})</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{member.email}</TableCell>
                     <TableCell>{member.company || '-'}</TableCell>
                     <TableCell>
                       <Badge
-                        variant={member.status === 'active' ? 'default' : 'secondary'}
-                        className="cursor-pointer"
-                        onClick={() => handleStatusToggle(member.email, member.status)}
+                        variant={member.status === 'active' ? 'default' : 'outline'}
+                        className={member.status === 'active' ? 'bg-green-50 text-green-900 border-green-200' : 'bg-orange-50 text-orange-900 border-orange-200'}
                       >
-                        {member.status}
+                        {member.status === 'active' ? '✓ Actif' : '○ Prospect'}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary"
-                            style={{ width: `${member.engagementScore || 0}%` }}
-                          />
+                      {member.status === 'active' ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary"
+                              style={{ width: `${member.engagementScore || 0}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {member.engagementScore || 0}
+                          </span>
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {member.engagementScore || 0}
-                        </span>
-                      </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenEditDialog(member)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        {member.status === 'proposed' ? (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => convertToActiveMutation.mutate(member.email)}
+                              disabled={convertToActiveMutation.isPending}
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            >
+                              {convertToActiveMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <UserCheck className="h-4 w-4 mr-1" />
+                                  Convertir
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEditDialog(member)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEditDialog(member)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -304,8 +390,11 @@ export default function AdminMembersPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    Aucun membre trouvé
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    {data?.data && data.data.length > 0
+                      ? 'Aucun membre ne correspond à ce statut'
+                      : 'Aucun membre trouvé'
+                    }
                   </TableCell>
                 </TableRow>
               )}

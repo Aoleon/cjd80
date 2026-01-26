@@ -373,6 +373,28 @@ export const memberActivities = pgTable("member_activities", {
   activityTypeIdx: index("member_activities_activity_type_idx").on(table.activityType),
 }));
 
+// Constantes pour les types d'abonnement
+export const SUBSCRIPTION_TYPES = {
+  MONTHLY: "monthly",
+  QUARTERLY: "quarterly",
+  YEARLY: "yearly",
+} as const;
+
+// Constantes pour le statut des abonnements
+export const SUBSCRIPTION_STATUS = {
+  ACTIVE: "active",
+  EXPIRED: "expired",
+  CANCELLED: "cancelled",
+} as const;
+
+// Constantes pour les méthodes de paiement
+export const PAYMENT_METHODS = {
+  CASH: "cash",
+  CHECK: "check",
+  BANK_TRANSFER: "bank_transfer",
+  CARD: "card",
+} as const;
+
 // Member subscriptions table - Historique des souscriptions des membres
 export const memberSubscriptions = pgTable("member_subscriptions", {
   id: serial("id").primaryKey(),
@@ -380,10 +402,14 @@ export const memberSubscriptions = pgTable("member_subscriptions", {
   amountInCents: integer("amount_in_cents").notNull(), // Stocké en centimes comme pour les donations
   startDate: date("start_date").notNull(), // Format YYYY-MM-DD
   endDate: date("end_date").notNull(), // Format YYYY-MM-DD
+  subscriptionType: text("subscription_type").notNull(), // "monthly", "quarterly", "yearly"
+  status: text("status").default("active").notNull(), // "active", "expired", "cancelled"
+  paymentMethod: text("payment_method"), // "cash", "check", "bank_transfer", "card" (optionnel)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   memberEmailIdx: index("member_subscriptions_member_email_idx").on(table.memberEmail),
   startDateIdx: index("member_subscriptions_start_date_idx").on(table.startDate.desc()),
+  statusIdx: index("member_subscriptions_status_idx").on(table.status),
 }));
 
 // Member tags table - Tags personnalisables pour les membres
@@ -1294,6 +1320,7 @@ export const updateMemberSchema = z.object({
   phone: z.string().max(20).transform(sanitizeText).optional(),
   role: z.string().max(100).transform(sanitizeText).optional(),
   notes: z.string().max(2000).transform(sanitizeText).optional(),
+  status: z.enum(['active', 'proposed']).optional(),
 });
 
 export const proposeMemberSchema = z.object({
@@ -1634,10 +1661,29 @@ export type DevelopmentRequest = typeof developmentRequests.$inferSelect;
 export type InsertDevelopmentRequest = z.infer<typeof insertDevelopmentRequestSchema>;
 
 // Member subscriptions schemas
-export const insertMemberSubscriptionSchema = createInsertSchema(memberSubscriptions).omit({
-  id: true,
-  createdAt: true,
-} as any);
+export const insertMemberSubscriptionSchema = createInsertSchema(memberSubscriptions)
+  .omit({
+    id: true,
+    createdAt: true,
+  } as any)
+  .extend({
+    subscriptionType: z.enum([
+      SUBSCRIPTION_TYPES.MONTHLY,
+      SUBSCRIPTION_TYPES.QUARTERLY,
+      SUBSCRIPTION_TYPES.YEARLY,
+    ]),
+    status: z.enum([
+      SUBSCRIPTION_STATUS.ACTIVE,
+      SUBSCRIPTION_STATUS.EXPIRED,
+      SUBSCRIPTION_STATUS.CANCELLED,
+    ]).optional().default(SUBSCRIPTION_STATUS.ACTIVE),
+    paymentMethod: z.enum([
+      PAYMENT_METHODS.CASH,
+      PAYMENT_METHODS.CHECK,
+      PAYMENT_METHODS.BANK_TRANSFER,
+      PAYMENT_METHODS.CARD,
+    ]).optional().nullable(),
+  });
 
 export type InsertMemberSubscription = z.infer<typeof insertMemberSubscriptionSchema>;
 export type MemberSubscription = typeof memberSubscriptions.$inferSelect;
