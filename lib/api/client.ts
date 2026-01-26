@@ -128,6 +128,11 @@ export const queryKeys = {
     all: ['members'] as const,
     list: (params?: Record<string, unknown>) => ['members', 'list', params] as const,
     detail: (email: string) => ['members', 'detail', email] as const,
+    tags: {
+      all: ['members', 'tags'] as const,
+      list: (params?: Record<string, unknown>) => ['members', 'tags', 'list', params] as const,
+      detail: (id: string) => ['members', 'tags', 'detail', id] as const,
+    },
   },
 
   // Patrons
