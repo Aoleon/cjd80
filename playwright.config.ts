@@ -15,7 +15,7 @@ export default defineConfig({
     ['./tests/playwright-reporter.ts']
   ],
   use: {
-    baseURL: 'http://localhost:5001',
+    baseURL: 'https://cjd80.rbw.ovh',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     actionTimeout: 10000, // 10 seconds timeout for actions
@@ -30,10 +30,11 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: 'npm run dev:next -- -p 5001',
-    url: 'http://localhost:5001',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  // webServer disabled - tests run against live deployment at https://cjd80.rbw.ovh
+  // webServer: {
+  //   command: 'npm run dev:next -- -p 5001',
+  //   url: 'http://localhost:5001',
+  //   reuseExistingServer: !process.env.CI,
+  //   timeout: 120000,
+  // },
 });
