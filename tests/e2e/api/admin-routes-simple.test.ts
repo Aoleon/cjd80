@@ -145,13 +145,14 @@ describe('API Routes Logic Tests - Admin Inscriptions/Votes', () => {
         'GET /api/admin/inscriptions/:eventId',
         'POST /api/admin/inscriptions',
         'DELETE /api/admin/inscriptions/:id',
-        'GET /api/admin/votes/:ideaId',
+        'GET /api/admin/ideas/:ideaId/votes',
+        'GET /api/admin/votes/:ideaId (alias)',
         'POST /api/admin/votes',
         'DELETE /api/admin/votes/:id'
       ];
 
       // Chaque route doit être protégée
-      expect(adminRoutes.length).toBe(6);
+      expect(adminRoutes.length).toBe(7);
       adminRoutes.forEach(route => {
         expect(route).toContain('/api/admin/');
       });

@@ -94,7 +94,7 @@ export class MembersService {
     try {
       const validatedData = insertMemberSchema.parse(data);
 
-      const result = await this.storageService.instance.createMember({
+      const result = await this.storageService.instance.createOrUpdateMember({
         email: validatedData.email,
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,

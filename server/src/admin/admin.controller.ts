@@ -62,16 +62,20 @@ export class AdminController {
   @ApiOperation({ summary: 'Obtenir toutes les idées (admin) avec pagination' })
   @ApiQuery({ name: 'page', required: false, description: 'Numéro de page', example: 1 })
   @ApiQuery({ name: 'limit', required: false, description: 'Nombre d\'idées par page', example: 20 })
+  @ApiQuery({ name: 'status', required: false, description: 'Filtrer par statut (pending, approved, rejected, under_review, postponed, completed)', example: 'pending' })
+  @ApiQuery({ name: 'featured', required: false, description: 'Filtrer par mise en avant (true, false)', example: 'true' })
   @ApiResponse({ status: 200, description: 'Liste des idées avec pagination' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Permission refusée' })
   async getAllIdeas(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('status') status?: string,
+    @Query('featured') featured?: string,
   ) {
     const pageNum = parseInt(page || '1', 10);
     const limitNum = parseInt(limit || '20', 10);
-    return await this.adminService.getAllIdeas(pageNum, limitNum);
+    return await this.adminService.getAllIdeas(pageNum, limitNum, status, featured);
   }
 
   @Patch('ideas/:id/status')
@@ -157,13 +161,25 @@ export class AdminController {
 
   @Get('ideas/:ideaId/votes')
   @Permissions('admin.view')
-  @ApiOperation({ summary: 'Obtenir les votes d\'une idée' })
+  @ApiOperation({ summary: 'Obtenir les votes d\'une idée (format RESTful imbriqué)' })
   @ApiParam({ name: 'ideaId', description: 'ID de l\'idée', example: 'uuid-123' })
   @ApiResponse({ status: 200, description: 'Liste des votes de l\'idée' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Permission refusée' })
   @ApiResponse({ status: 404, description: 'Idée non trouvée' })
   async getIdeaVotes(@Param('ideaId') ideaId: string) {
+    return await this.adminService.getVotesByIdea(ideaId);
+  }
+
+  @Get('votes/:ideaId')
+  @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir les votes d\'une idée (alias, déprécié)' })
+  @ApiParam({ name: 'ideaId', description: 'ID de l\'idée', example: 'uuid-123' })
+  @ApiResponse({ status: 200, description: 'Liste des votes de l\'idée' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 404, description: 'Idée non trouvée' })
+  async getVotesByIdeaAlias(@Param('ideaId') ideaId: string) {
     return await this.adminService.getVotesByIdea(ideaId);
   }
 
@@ -338,17 +354,6 @@ export class AdminController {
   }
 
   // ===== Routes Admin Votes =====
-
-  @Get('votes/:ideaId')
-  @Permissions('admin.view')
-  @ApiOperation({ summary: 'Obtenir les votes d\'une idée' })
-  @ApiParam({ name: 'ideaId', description: 'ID de l\'idée', example: 'uuid-123' })
-  @ApiResponse({ status: 200, description: 'Liste des votes' })
-  @ApiResponse({ status: 401, description: 'Non authentifié' })
-  @ApiResponse({ status: 403, description: 'Permission refusée' })
-  async getVotes(@Param('ideaId') ideaId: string) {
-    return await this.adminService.getVotesByIdea(ideaId);
-  }
 
   @Post('votes')
   @Permissions('admin.edit')

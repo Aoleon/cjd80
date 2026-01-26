@@ -60,6 +60,19 @@ function createTestApp() {
     }
   });
 
+  app.get('/api/admin/ideas/:ideaId/votes', mockRequireAuth, async (req, res) => {
+    try {
+      const result = await mockStorage.getIdeaVotes(req.params.ideaId);
+      if (!result.success) {
+        return res.status(500).json({ message: result.error.message });
+      }
+      res.json(result.data);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal error' });
+    }
+  });
+
+  // Alias route for backward compatibility
   app.get('/api/admin/votes/:ideaId', mockRequireAuth, async (req, res) => {
     try {
       const result = await mockStorage.getIdeaVotes(req.params.ideaId);
@@ -233,7 +246,7 @@ describe('API Routes Tests - Admin Inscriptions/Votes', () => {
     });
   });
 
-  describe('GET /api/admin/votes/:ideaId', () => {
+  describe('GET /api/admin/ideas/:ideaId/votes', () => {
     it('should return idea votes for admin', async () => {
       const mockVotes = [
         { id: '1', ideaId: 'idea-1', voterEmail: 'voter1@test.com', createdAt: new Date().toISOString() },
@@ -246,7 +259,7 @@ describe('API Routes Tests - Admin Inscriptions/Votes', () => {
       });
 
       const response = await request(app)
-        .get('/api/admin/votes/idea-1')
+        .get('/api/admin/ideas/idea-1/votes')
         .expect(200);
 
       expect(response.body).toEqual(mockVotes);

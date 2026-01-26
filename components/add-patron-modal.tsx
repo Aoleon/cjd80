@@ -6,13 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Loader2, Plus, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { api, queryKeys } from '@/lib/api/client';
@@ -22,38 +15,39 @@ interface AddPatronModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const STATUS_OPTIONS = ['active', 'inactive', 'pending'];
-
 export default function AddPatronModal({ open, onOpenChange }: AddPatronModalProps) {
-  const [name, setName] = useState('');
-  const [type, setType] = useState('');
-  const [amount, setAmount] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [status, setStatus] = useState('active');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [company, setCompany] = useState('');
+  const [phone, setPhone] = useState('');
+  const [role, setRole] = useState('');
+  const [notes, setNotes] = useState('');
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   // Reset form when modal opens/closes
   useEffect(() => {
     if (!open) {
-      setName('');
-      setType('');
-      setAmount('');
-      setStartDate('');
-      setEndDate('');
-      setStatus('active');
+      setFirstName('');
+      setLastName('');
+      setEmail('');
+      setCompany('');
+      setPhone('');
+      setRole('');
+      setNotes('');
     }
   }, [open]);
 
   const addPatronMutation = useMutation({
     mutationFn: async (data: {
-      name: string;
-      type?: string;
-      amount?: number;
-      startDate?: string;
-      endDate?: string;
-      status: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      company?: string;
+      phone?: string;
+      role?: string;
+      notes?: string;
     }) => {
       return api.post('/api/patrons', data);
     },
@@ -77,32 +71,52 @@ export default function AddPatronModal({ open, onOpenChange }: AddPatronModalPro
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim()) {
+    if (!firstName.trim()) {
       toast({
         title: 'Erreur de validation',
-        description: 'Le nom du sponsor est requis',
+        description: 'Le prenom est requis',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!lastName.trim()) {
+      toast({
+        title: 'Erreur de validation',
+        description: 'Le nom est requis',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!email.trim()) {
+      toast({
+        title: 'Erreur de validation',
+        description: 'L\'email est requis',
         variant: 'destructive',
       });
       return;
     }
 
     addPatronMutation.mutate({
-      name: name.trim(),
-      type: type.trim() || undefined,
-      amount: amount ? parseFloat(amount) : undefined,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
-      status,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      company: company.trim() || undefined,
+      phone: phone.trim() || undefined,
+      role: role.trim() || undefined,
+      notes: notes.trim() || undefined,
     });
   };
 
   const handleCancel = () => {
-    setName('');
-    setType('');
-    setAmount('');
-    setStartDate('');
-    setEndDate('');
-    setStatus('active');
+    setFirstName('');
+    setLastName('');
+    setEmail('');
+    setCompany('');
+    setPhone('');
+    setRole('');
+    setNotes('');
     onOpenChange(false);
   };
 
@@ -120,102 +134,123 @@ export default function AddPatronModal({ open, onOpenChange }: AddPatronModalPro
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Name Field */}
-          <div className="space-y-2">
-            <Label htmlFor="add-name" className="text-sm font-medium text-gray-700">
-              Nom *
-            </Label>
-            <Input
-              id="add-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Entrez le nom du sponsor..."
-              className="w-full"
-              required
-              maxLength={255}
-            />
-          </div>
-
-          {/* Type Field */}
-          <div className="space-y-2">
-            <Label htmlFor="add-type" className="text-sm font-medium text-gray-700">
-              Type
-            </Label>
-            <Input
-              id="add-type"
-              type="text"
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              placeholder="Ex: Entreprise, Particulier, Association..."
-              className="w-full"
-              maxLength={100}
-            />
-          </div>
-
-          {/* Amount Field */}
-          <div className="space-y-2">
-            <Label htmlFor="add-amount" className="text-sm font-medium text-gray-700">
-              Montant (EUR)
-            </Label>
-            <Input
-              id="add-amount"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              className="w-full"
-              step="0.01"
-              min="0"
-            />
-          </div>
-
-          {/* Date Range */}
+          {/* FirstName and LastName Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="add-start-date" className="text-sm font-medium text-gray-700">
-                Date debut
+              <Label htmlFor="add-first-name" className="text-sm font-medium text-gray-700">
+                Prenom *
               </Label>
               <Input
-                id="add-start-date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                id="add-first-name"
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Entrez le prenom..."
                 className="w-full"
+                required
+                maxLength={100}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="add-end-date" className="text-sm font-medium text-gray-700">
-                Date fin
+              <Label htmlFor="add-last-name" className="text-sm font-medium text-gray-700">
+                Nom *
               </Label>
               <Input
-                id="add-end-date"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                id="add-last-name"
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Entrez le nom..."
                 className="w-full"
+                required
+                maxLength={100}
               />
             </div>
           </div>
 
-          {/* Status Field */}
+          {/* Email Field */}
           <div className="space-y-2">
-            <Label htmlFor="add-status" className="text-sm font-medium text-gray-700">
-              Statut *
+            <Label htmlFor="add-email" className="text-sm font-medium text-gray-700">
+              Email *
             </Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger id="add-status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option.charAt(0).toUpperCase() + option.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              id="add-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="exemple@email.com"
+              className="w-full"
+              required
+            />
+          </div>
+
+          {/* Company and Role Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="add-company" className="text-sm font-medium text-gray-700">
+                Societe
+              </Label>
+              <Input
+                id="add-company"
+                type="text"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="Nom de la societe..."
+                className="w-full"
+                maxLength={200}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="add-role" className="text-sm font-medium text-gray-700">
+                Fonction
+              </Label>
+              <Input
+                id="add-role"
+                type="text"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                placeholder="Ex: Directeur, President..."
+                className="w-full"
+                maxLength={100}
+              />
+            </div>
+          </div>
+
+          {/* Phone Field */}
+          <div className="space-y-2">
+            <Label htmlFor="add-phone" className="text-sm font-medium text-gray-700">
+              Telephone
+            </Label>
+            <Input
+              id="add-phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+33 6 12 34 56 78"
+              className="w-full"
+              maxLength={20}
+            />
+          </div>
+
+          {/* Notes Field */}
+          <div className="space-y-2">
+            <Label htmlFor="add-notes" className="text-sm font-medium text-gray-700">
+              Notes
+            </Label>
+            <textarea
+              id="add-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Ajouter des notes ou commentaires..."
+              className="w-full px-3 py-2 border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              rows={3}
+              maxLength={2000}
+            />
+            <p className="text-xs text-gray-500">
+              {notes.length}/2000 caracteres
+            </p>
           </div>
 
           {/* Action Buttons */}
@@ -232,7 +267,7 @@ export default function AddPatronModal({ open, onOpenChange }: AddPatronModalPro
             </Button>
             <Button
               type="submit"
-              disabled={addPatronMutation.isPending || !name.trim()}
+              disabled={addPatronMutation.isPending || !firstName.trim() || !lastName.trim() || !email.trim()}
               className="bg-green-600 hover:bg-green-700 px-6"
             >
               {addPatronMutation.isPending ? (

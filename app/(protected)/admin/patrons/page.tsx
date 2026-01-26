@@ -22,12 +22,14 @@ import EditPatronModal from '@/components/edit-patron-modal';
 
 interface Patron {
   id: string;
-  name: string;
-  type?: string;
-  amount?: number;
-  startDate?: string;
-  endDate?: string;
-  status: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  company?: string;
+  phone?: string;
+  role?: string;
+  notes?: string;
+  status?: string;
 }
 
 /**
@@ -155,10 +157,10 @@ export default function AdminPatronsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nom</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Montant</TableHead>
-                <TableHead>Periode</TableHead>
-                <TableHead>Statut</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Societe</TableHead>
+                <TableHead>Fonction</TableHead>
+                <TableHead>Telephone</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -169,35 +171,30 @@ export default function AdminPatronsPage() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
-                        {patron.name}
+                        {patron.firstName} {patron.lastName}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{patron.type || 'Standard'}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-semibold">
-                        {patron.amount ? `${patron.amount}EUR` : '-'}
+                      <span className="text-sm text-muted-foreground">
+                        {patron.email}
                       </span>
                     </TableCell>
                     <TableCell>
-                      {patron.startDate && patron.endDate ? (
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(patron.startDate).toLocaleDateString()} -{' '}
-                          {new Date(patron.endDate).toLocaleDateString()}
-                        </span>
+                      {patron.company ? (
+                        <Badge variant="outline">{patron.company}</Badge>
                       ) : (
                         '-'
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={patron.status === 'active' ? 'default' : 'secondary'}
-                        className="cursor-pointer"
-                        onClick={() => handleStatusToggle(patron.id, patron.status)}
-                      >
-                        {patron.status}
-                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {patron.role || '-'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {patron.phone || '-'}
+                      </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -222,7 +219,7 @@ export default function AdminPatronsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
                     Aucun sponsor trouve
                   </TableCell>
                 </TableRow>

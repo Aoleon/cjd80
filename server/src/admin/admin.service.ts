@@ -42,8 +42,8 @@ export class AdminService {
 
   // ===== Routes Admin Ideas =====
 
-  async getAllIdeas(page: number = 1, limit: number = 20) {
-    const result = await this.storageService.instance.getAllIdeas({ page, limit });
+  async getAllIdeas(page: number = 1, limit: number = 20, status?: string, featured?: string) {
+    const result = await this.storageService.instance.getAllIdeas({ page, limit, status, featured });
     if (!result.success) {
       throw new BadRequestException(('error' in result ? result.error : new Error('Unknown error')).message);
     }

@@ -164,13 +164,13 @@ export interface IStorage {
   transformIdeaToEvent(ideaId: string): Promise<Result<Event>>;
   toggleIdeaFeatured(id: string): Promise<Result<boolean>>;
   isDuplicateIdea(title: string): Promise<boolean>;
-  getAllIdeas(options?: { page?: number; limit?: number }): Promise<Result<{
+  getAllIdeas(options?: { page?: number; limit?: number; status?: string; featured?: string }): Promise<Result<{
     data: (Idea & { voteCount: number })[];
     total: number;
     page: number;
     limit: number;
   }>>;
-  
+
   // Votes - Ultra-robust with duplicate protection
   getVotesByIdea(ideaId: string): Promise<Result<Vote[]>>;
   getIdeaVotes(ideaId: string): Promise<Result<Vote[]>>;
@@ -1496,7 +1496,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Admin-only methods for complete data access and moderation
-  async getAllIdeas(options?: { page?: number; limit?: number }): Promise<Result<{
+  async getAllIdeas(options?: { page?: number; limit?: number; status?: string; featured?: string }): Promise<Result<{
     data: (Idea & { voteCount: number })[];
     total: number;
     page: number;
@@ -1507,12 +1507,24 @@ export class DatabaseStorage implements IStorage {
       const limit = Math.min(100, Math.max(1, options?.limit || 20));
       const offset = (page - 1) * limit;
 
-      // Count total
+      // Build WHERE conditions
+      const whereConditions = [];
+      if (options?.status) {
+        whereConditions.push(eq(ideas.status, options.status));
+      }
+      if (options?.featured !== undefined) {
+        const featuredBool = options.featured === 'true' || options.featured === true;
+        whereConditions.push(eq(ideas.featured, featuredBool));
+      }
+      const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+      // Count total with filters
       const [countResult] = await db
         .select({ count: sql<number>`count(*)::int` })
-        .from(ideas);
+        .from(ideas)
+        .where(whereClause);
 
-      // Get paginated results
+      // Get paginated results with filters
       const result = await db
         .select({
           id: ideas.id,
@@ -1530,18 +1542,19 @@ export class DatabaseStorage implements IStorage {
         })
         .from(ideas)
         .leftJoin(votes, eq(ideas.id, votes.ideaId))
+        .where(whereClause)
         .groupBy(ideas.id)
         .orderBy(desc(ideas.featured), desc(ideas.createdAt))
         .limit(limit)
         .offset(offset);
-      
+
       const formattedResult = result.map(row => ({
         ...row,
         voteCount: Number(row.voteCount),
       }));
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         data: {
           data: formattedResult,
           total: countResult.count,
