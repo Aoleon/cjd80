@@ -244,15 +244,15 @@ export default function AdminEventsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'published':
-        return 'bg-green-500/10 text-green-700 border-green-500/20';
+        return 'bg-success-light text-success-dark border-success/20';
       case 'draft':
         return 'bg-gray-500/10 text-gray-700 border-gray-500/20';
       case 'cancelled':
-        return 'bg-red-500/10 text-red-700 border-red-500/20';
+        return 'bg-error-light text-error-dark border-error/20';
       case 'postponed':
-        return 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20';
+        return 'bg-warning-light text-warning-dark border-warning/20';
       case 'completed':
-        return 'bg-blue-500/10 text-blue-700 border-blue-500/20';
+        return 'bg-info-light text-info-dark border-info/20';
       default:
         return 'bg-gray-500/10 text-gray-700 border-gray-500/20';
     }
@@ -334,7 +334,7 @@ export default function AdminEventsPage() {
             <CardTitle className="text-sm font-medium">Publiés</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-success-dark">
               {events.filter((e: Event) => e.status === 'published').length}
             </div>
           </CardContent>
@@ -354,7 +354,7 @@ export default function AdminEventsPage() {
             <CardTitle className="text-sm font-medium">À venir</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-info-dark">
               {events.filter((e: Event) => new Date(e.date) > new Date()).length}
             </div>
           </CardContent>

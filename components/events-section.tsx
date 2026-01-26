@@ -407,7 +407,7 @@ export default function EventsSection() {
                               <Button
                                 variant="outline"
                                 size="lg"
-                                className="text-sm font-semibold px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl border-info text-info hover:bg-info-light hover:border-info"
+                                className="border-info text-info hover:bg-info-light"
                                 data-testid="button-custom-event"
                               >
                                 <MessageCircle className="w-4 h-4 mr-2" />
@@ -418,13 +418,13 @@ export default function EventsSection() {
                             {/* Share Button */}
                             <Button
                               onClick={() => handleShare(event)}
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              className="h-10 w-10 p-0 transition-all duration-200 shadow-lg hover:shadow-xl border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400"
+                              className="text-gray-600 hover:text-cjd-green"
                               data-testid={`button-share-event-${event.id}`}
                               title="Partager cet événement"
                             >
-                              <Share2 className="w-5 h-5" />
+                              <Share2 className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
@@ -445,8 +445,8 @@ export default function EventsSection() {
           <p className="text-gray-500 text-lg max-w-md mx-auto">
             Restez connecté ! De nouveaux événements seront bientôt disponibles pour enrichir vos échanges professionnels.
           </p>
-          <div className="mt-6 p-4 bg-info-light rounded-lg inline-block">
-            <p className="text-info-dark text-sm font-medium">💡 En attendant, n'hésitez pas à proposer vos propres idées d'événements !</p>
+          <div className="mt-6 p-4 bg-success-light rounded-lg inline-block border border-success/20">
+            <p className="text-success-dark text-sm font-medium">💡 En attendant, n'hésitez pas à proposer vos propres idées d'événements !</p>
           </div>
         </div>
       )}

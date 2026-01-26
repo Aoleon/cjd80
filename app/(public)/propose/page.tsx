@@ -138,10 +138,10 @@ export default function ProposePage() {
                   value={formData.title}
                   onChange={(e) => handleChange('title', e.target.value)}
                   placeholder="Ex: Organiser un afterwork mensuel"
-                  className={errors.title ? 'border-red-500' : ''}
+                  className={errors.title ? 'border-error' : ''}
                 />
                 {errors.title && (
-                  <span className="text-red-500 text-sm mt-1 block">{errors.title}</span>
+                  <span className="text-error text-sm mt-1 block">{errors.title}</span>
                 )}
               </div>
 
@@ -166,10 +166,10 @@ export default function ProposePage() {
                     value={formData.proposedBy}
                     onChange={(e) => handleChange('proposedBy', e.target.value)}
                     placeholder="Jean Dupont"
-                    className={errors.proposedBy ? 'border-red-500' : ''}
+                    className={errors.proposedBy ? 'border-error' : ''}
                   />
                   {errors.proposedBy && (
-                    <span className="text-red-500 text-sm mt-1 block">{errors.proposedBy}</span>
+                    <span className="text-error text-sm mt-1 block">{errors.proposedBy}</span>
                   )}
                 </div>
 
@@ -182,10 +182,10 @@ export default function ProposePage() {
                     onChange={(e) => handleChange('proposedByEmail', e.target.value)}
                     type="email"
                     placeholder="jean@example.com"
-                    className={errors.proposedByEmail ? 'border-red-500' : ''}
+                    className={errors.proposedByEmail ? 'border-error' : ''}
                   />
                   {errors.proposedByEmail && (
-                    <span className="text-red-500 text-sm mt-1 block">{errors.proposedByEmail}</span>
+                    <span className="text-error text-sm mt-1 block">{errors.proposedByEmail}</span>
                   )}
                 </div>
               </div>

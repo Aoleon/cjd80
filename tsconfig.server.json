@@ -1,6 +1,6 @@
 {
   "include": ["server/**/*", "shared/**/*"],
-  "exclude": ["node_modules", "dist", "client", "**/*.test.ts", "server/firebase-import.ts", "server/storage.ts", "server/import-firebase-data.ts"],
+  "exclude": ["node_modules", "dist", "client", "**/*.test.ts", "**/*.spec.ts", "**/*.example.ts", "server/firebase-import.ts", "server/storage.ts", "server/import-firebase-data.ts"],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo.server",
@@ -10,7 +10,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "target": "ES2021",
-    "strict": false,
+    "strict": true,
     "lib": ["esnext"],
     "esModuleInterop": true,
     "skipLibCheck": true,

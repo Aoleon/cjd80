@@ -71,6 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           title: "Connexion réussie",
           description: "Bienvenue !",
         });
+
+        // Redirection vers le dashboard admin ou l'accueil
+        const user = data as SelectUser;
+        const isAdmin = user.role === 'super_admin' || user.role.includes('admin') || user.role.includes('manager');
+        window.location.href = isAdmin ? '/admin' : '/';
       }
     },
     onError: (error: Error) => {

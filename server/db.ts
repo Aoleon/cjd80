@@ -45,21 +45,68 @@ if (dbProvider === 'neon') {
 
 // ========================================
 // CONFIGURATION DU POOL DE CONNEXIONS
+// OPTIMISÉE POUR PRODUCTION HAUTE-CHARGE
 // ========================================
+
+/**
+ * Configuration du pool adaptée à l'environnement
+ * - Production: Min 5, Max 20 connexions (haute charge)
+ * - Development: Min 2, Max 5 connexions (économe)
+ * - Testing: Min 1, Max 2 connexions (isolation)
+ */
+const getPoolConfig = () => {
+  const env = process.env.NODE_ENV || 'development';
+  const isProduction = env === 'production';
+
+  if (isProduction) {
+    return {
+      min: 5,
+      max: 20,
+      connectionTimeoutMillis: 30000,  // 30s pour acquérir une connexion
+      idleTimeoutMillis: 600000,       // 10min avant fermeture idle
+      statementTimeout: 30000,         // 30s par requête
+      maxUses: 10000,                  // Recycle après 10k uses (Neon)
+    };
+  }
+
+  if (env === 'testing') {
+    return {
+      min: 1,
+      max: 2,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 30000,
+      statementTimeout: 10000,
+      maxUses: 1000,
+    };
+  }
+
+  // Development
+  return {
+    min: 2,
+    max: 5,
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 60000,
+    statementTimeout: 10000,
+    maxUses: 1000,
+  };
+};
+
+const poolConfig = getPoolConfig();
 
 let pool: NeonPool | PgPool;
 let dbResilience: DatabaseResilience;
 
 if (dbProvider === 'neon') {
   // Pool Neon (serverless avec WebSocket)
+  // Documentation: https://neon.tech/docs/connect/connection-pooling
   const neonPool = new NeonPool({
     connectionString: process.env.DATABASE_URL!,
-    max: 20,
-    min: 2,
-    idleTimeoutMillis: 60000,
-    connectionTimeoutMillis: 3000,
-    maxUses: 10000,
-    allowExitOnIdle: false,
+    max: poolConfig.max,
+    min: poolConfig.min,
+    idleTimeoutMillis: poolConfig.idleTimeoutMillis,
+    connectionTimeoutMillis: poolConfig.connectionTimeoutMillis,
+    maxUses: poolConfig.maxUses,
+    allowExitOnIdle: false, // Important pour serverless
   });
   pool = neonPool;
   dbResilience = new DatabaseResilience(neonPool as any, 'neon-database');
@@ -67,10 +114,10 @@ if (dbProvider === 'neon') {
   // Pool PostgreSQL standard (Supabase ou autre)
   const pgPool = new PgPool({
     connectionString: process.env.DATABASE_URL!,
-    max: 20,
-    min: 2,
-    idleTimeoutMillis: 60000,
-    connectionTimeoutMillis: 3000,
+    max: poolConfig.max,
+    min: poolConfig.min,
+    idleTimeoutMillis: poolConfig.idleTimeoutMillis,
+    connectionTimeoutMillis: poolConfig.connectionTimeoutMillis,
     application_name: 'cjd-amiens-app',
   });
   pool = pgPool;
@@ -217,8 +264,13 @@ export async function runDbQuery<T>(
   });
 }
 
-// Fonction utilitaire pour obtenir les statistiques du pool
+/**
+ * Obtient les statistiques complètes du pool
+ * Inclut: total, idle, waiting, utilization, saturation alerts
+ */
 export const getPoolStats = () => {
+  const poolCfg = getPoolConfig();
+
   const stats = dbProvider === 'neon'
     ? {
         totalCount: (pool as NeonPool).totalCount,
@@ -230,12 +282,52 @@ export const getPoolStats = () => {
         idleCount: (pool as PgPool).idleCount,
         waitingCount: (pool as PgPool).waitingCount,
       };
-  
+
+  // Calcul du taux d'utilisation
+  const activeConnections = stats.totalCount - stats.idleCount;
+  const utilizationPercent = (activeConnections / poolCfg.max) * 100;
+
+  // Déterminer le statut
+  let poolStatus = 'healthy';
+  if (utilizationPercent > 90) {
+    poolStatus = 'critical';
+  } else if (utilizationPercent > 70) {
+    poolStatus = 'warning';
+  }
+
   return {
-    ...stats,
+    // Stats brutes
+    totalCount: stats.totalCount,
+    idleCount: stats.idleCount,
+    activeCount: activeConnections,
+    waitingCount: stats.waitingCount,
+
+    // Configuration
     provider: dbProvider,
-    maxConnections: 20,
-    minConnections: 2
+    minConnections: poolCfg.min,
+    maxConnections: poolCfg.max,
+
+    // Métriques calculées
+    utilization: {
+      percent: Math.round(utilizationPercent * 10) / 10, // 1 décimale
+      status: poolStatus,
+    },
+
+    // Capacité disponible
+    availableConnections: poolCfg.max - stats.totalCount,
+    availableFromIdle: stats.idleCount,
+
+    // Thresholds
+    warning: {
+      threshold: Math.round(poolCfg.max * 0.7),
+      current: activeConnections,
+      breached: activeConnections > Math.round(poolCfg.max * 0.7),
+    },
+    critical: {
+      threshold: Math.round(poolCfg.max * 0.9),
+      current: activeConnections,
+      breached: activeConnections > Math.round(poolCfg.max * 0.9),
+    },
   };
 };
 

@@ -42,7 +42,7 @@ export default function Header() {
   ];
 
   return (
-    <header className="bg-green-600 text-white shadow-lg">
+    <header className="bg-primary text-white shadow-lg">
       <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
@@ -80,7 +80,7 @@ export default function Header() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-white hover:text-white/90 hover:bg-green-700 flex-shrink-0"
+              className="text-white hover:text-white/90 hover:bg-cjd-green-dark flex-shrink-0"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? (
@@ -95,15 +95,15 @@ export default function Header() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-green-700 border-t border-green-800">
+        <div className="lg:hidden bg-cjd-green-dark border-t border-cjd-green-dark/80">
           <div className="container mx-auto px-3 sm:px-4 py-3 space-y-1">
             {menuItems.map((item) => (
               <Link
                 key={item.id}
                 href={item.route}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`block w-full text-left py-3 px-2 rounded hover:bg-green-800 transition-colors duration-200 ${
-                  activeSection === item.id ? 'bg-green-800 font-medium' : ''
+                className={`block w-full text-left py-3 px-2 rounded hover:bg-cjd-green-dark/80 transition-colors duration-200 ${
+                  activeSection === item.id ? 'bg-cjd-green-dark/80 font-medium' : ''
                 }`}
               >
                 {item.label}

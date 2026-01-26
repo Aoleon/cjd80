@@ -131,11 +131,11 @@ export default function AdminFeaturesPage() {
   };
 
   const categories = [
-    { id: 'core', name: 'Fonctionnalités principales', color: 'bg-blue-500' },
-    { id: 'crm', name: 'CRM & Gestion', color: 'bg-green-500' },
+    { id: 'core', name: 'Fonctionnalités principales', color: 'bg-info' },
+    { id: 'crm', name: 'CRM & Gestion', color: 'bg-success' },
     { id: 'engagement', name: 'Engagement', color: 'bg-purple-500' },
-    { id: 'security', name: 'Sécurité', color: 'bg-red-500' },
-    { id: 'customization', name: 'Personnalisation', color: 'bg-orange-500' },
+    { id: 'security', name: 'Sécurité', color: 'bg-error' },
+    { id: 'customization', name: 'Personnalisation', color: 'bg-warning' },
     { id: 'ai', name: 'Intelligence Artificielle', color: 'bg-pink-500' },
   ];
 
@@ -227,7 +227,7 @@ export default function AdminFeaturesPage() {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Actives</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-success-dark">
                 {features.filter((f) => f.enabled).length}
               </p>
             </div>

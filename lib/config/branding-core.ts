@@ -27,6 +27,7 @@ export const brandingCore = {
     primaryDark: "#008835",  // Variante sombre
     primaryLight: "#00c94f", // Variante claire
     secondary: "#1a1a1a",    // Couleur secondaire
+    accent: "#2196f3",       // Couleur d'accent (bleu)
     background: "#f9fafb",   // Fond de l'application
     
     // États et feedback

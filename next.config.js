@@ -62,23 +62,13 @@ const nextConfig = {
     // minimumCacheTTL: 60,
   },
 
-  // Rewrites pour backend NestJS
+  // Rewrites pour backend NestJS (port 5000)
   async rewrites() {
     return [
-      // tRPC endpoint - proxifié vers NestJS
+      // Toutes les routes API vers backend NestJS
       {
-        source: '/api/trpc/:path*',
-        destination: 'http://localhost:5001/api/trpc/:path*',
-      },
-      // OAuth callback géré par NestJS
-      {
-        source: '/api/auth/authentik/callback',
-        destination: 'http://localhost:5001/api/auth/authentik/callback',
-      },
-      // Autres routes API NestJS si besoin
-      {
-        source: '/api/webhooks/:path*',
-        destination: 'http://localhost:5001/api/webhooks/:path*',
+        source: '/api/:path*',
+        destination: 'http://localhost:5000/api/:path*',
       },
     ];
   },

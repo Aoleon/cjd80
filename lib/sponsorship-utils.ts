@@ -22,9 +22,9 @@ export function getSponsorshipLevelBadgeClass(level: SponsorshipLevel): string {
     case 'silver':
       return `${baseClasses} bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200`;
     case 'bronze':
-      return `${baseClasses} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200`;
+      return `${baseClasses} bg-warning-light text-warning-dark dark:bg-warning-dark dark:text-warning-light`;
     case 'partner':
-      return `${baseClasses} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200`;
+      return `${baseClasses} bg-info-light text-info-dark dark:bg-info-dark dark:text-info-light`;
     default:
       return `${baseClasses} bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200`;
   }

@@ -17,6 +17,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Pencil, Trash2, Search, Building2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import AddPatronModal from '@/components/add-patron-modal';
+import EditPatronModal from '@/components/edit-patron-modal';
 
 interface Patron {
   id: string;
@@ -37,6 +39,9 @@ export default function AdminPatronsPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedPatron, setSelectedPatron] = useState<Patron | null>(null);
 
   // Query pour lister les sponsors
   const { data, isLoading, error } = useQuery({
@@ -71,6 +76,11 @@ export default function AdminPatronsPage() {
     if (confirm('Etes-vous sur de vouloir supprimer ce sponsor ?')) {
       deleteMutation.mutate(id);
     }
+  };
+
+  const handleEdit = (patron: Patron) => {
+    setSelectedPatron(patron);
+    setEditModalOpen(true);
   };
 
   // Note: Status toggle is not currently supported for patrons
@@ -116,7 +126,7 @@ export default function AdminPatronsPage() {
             Gestion des sponsors et mecenes de l'association
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setAddModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Ajouter un sponsor
         </Button>
@@ -191,7 +201,11 @@ export default function AdminPatronsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(patron)}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
@@ -242,6 +256,10 @@ export default function AdminPatronsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      <AddPatronModal open={addModalOpen} onOpenChange={setAddModalOpen} />
+      <EditPatronModal open={editModalOpen} onOpenChange={setEditModalOpen} patron={selectedPatron} />
     </div>
   );
 }

@@ -17,7 +17,7 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, TrendingUp, TrendingDown, DollarSign, PieChart, Plus, Download } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, DollarSign, PieChart, Plus, Download, Pencil, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -84,6 +84,12 @@ export default function AdminFinancialPage() {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [showEditBudgetModal, setShowEditBudgetModal] = useState(false);
+  const [showEditExpenseModal, setShowEditExpenseModal] = useState(false);
+  const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
+  const [showBudgetDeleteConfirmDialog, setShowBudgetDeleteConfirmDialog] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
 
   // Form states
   const [budgetForm, setBudgetForm] = useState({
@@ -99,6 +105,20 @@ export default function AdminFinancialPage() {
     amount: '',
     category: '',
     date: new Date().toISOString().split('T')[0],
+  });
+
+  const [editExpenseForm, setEditExpenseForm] = useState({
+    description: '',
+    amount: '',
+    category: '',
+    date: new Date().toISOString().split('T')[0],
+  });
+
+  const [editBudgetForm, setEditBudgetForm] = useState({
+    name: '',
+    category: '',
+    amount: '',
+    period: 'year' as 'month' | 'quarter' | 'year',
   });
 
   // Queries
@@ -181,6 +201,110 @@ export default function AdminFinancialPage() {
     },
   });
 
+  const updateExpenseMutation = useMutation({
+    mutationFn: (data: {
+      id: string;
+      description: string;
+      amountInCents: number;
+      category: string;
+      expenseDate: string;
+    }) => api.put(`/api/admin/finance/expenses/${data.id}`, {
+      description: data.description,
+      amountInCents: data.amountInCents,
+      category: data.category,
+      expenseDate: data.expenseDate,
+    }),
+    onSuccess: () => {
+      toast({
+        title: 'Depense modifiee',
+        description: 'La depense a ete mise a jour avec succes',
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financial.all });
+      setShowEditExpenseModal(false);
+      setSelectedExpense(null);
+      resetEditExpenseForm();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/api/admin/finance/expenses/${id}`),
+    onSuccess: () => {
+      toast({
+        title: 'Depense supprimee',
+        description: 'La depense a ete supprimee avec succes',
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financial.all });
+      setShowDeleteConfirmDialog(false);
+      setSelectedExpense(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateBudgetMutation = useMutation({
+    mutationFn: (data: {
+      id: string;
+      name: string;
+      category: string;
+      amountInCents: number;
+      period: 'month' | 'quarter' | 'year';
+    }) => api.put(`/api/admin/finance/budgets/${data.id}`, {
+      name: data.name,
+      category: data.category,
+      amountInCents: data.amountInCents,
+      period: data.period,
+    }),
+    onSuccess: () => {
+      toast({
+        title: 'Budget modifie',
+        description: 'Le budget a ete mis a jour avec succes',
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financial.all });
+      setShowEditBudgetModal(false);
+      setSelectedBudget(null);
+      resetEditBudgetForm();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteBudgetMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/api/admin/finance/budgets/${id}`),
+    onSuccess: () => {
+      toast({
+        title: 'Budget supprime',
+        description: 'Le budget a ete supprime avec succes',
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financial.all });
+      setShowBudgetDeleteConfirmDialog(false);
+      setSelectedBudget(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const resetBudgetForm = () => {
     setBudgetForm({
       name: '',
@@ -197,6 +321,24 @@ export default function AdminFinancialPage() {
       amount: '',
       category: '',
       date: new Date().toISOString().split('T')[0],
+    });
+  };
+
+  const resetEditExpenseForm = () => {
+    setEditExpenseForm({
+      description: '',
+      amount: '',
+      category: '',
+      date: new Date().toISOString().split('T')[0],
+    });
+  };
+
+  const resetEditBudgetForm = () => {
+    setEditBudgetForm({
+      name: '',
+      category: '',
+      amount: '',
+      period: 'year',
     });
   };
 
@@ -237,6 +379,88 @@ export default function AdminFinancialPage() {
       expenseDate: expenseForm.date,
       createdBy: 'admin@cjd-amiens.fr', // TODO: get from session
     });
+  };
+
+  const handleEditExpense = (expense: Expense) => {
+    setSelectedExpense(expense);
+    setEditExpenseForm({
+      description: expense.description,
+      amount: (expense.amount / 100).toString(),
+      category: expense.category || '',
+      date: expense.date.split('T')[0],
+    });
+    setShowEditExpenseModal(true);
+  };
+
+  const handleSaveEditExpense = () => {
+    if (!editExpenseForm.description || !editExpenseForm.amount || !selectedExpense) {
+      toast({
+        title: 'Erreur',
+        description: 'La description et le montant sont obligatoires',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateExpenseMutation.mutate({
+      id: selectedExpense.id,
+      description: editExpenseForm.description,
+      amountInCents: Math.round(parseFloat(editExpenseForm.amount) * 100),
+      category: editExpenseForm.category,
+      expenseDate: editExpenseForm.date,
+    });
+  };
+
+  const handleDeleteExpense = (expense: Expense) => {
+    setSelectedExpense(expense);
+    setShowDeleteConfirmDialog(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedExpense) {
+      deleteExpenseMutation.mutate(selectedExpense.id);
+    }
+  };
+
+  const handleEditBudget = (budget: Budget) => {
+    setSelectedBudget(budget);
+    setEditBudgetForm({
+      name: budget.name,
+      category: budget.category || '',
+      amount: (budget.amount / 100).toString(),
+      period: (budget.period as 'month' | 'quarter' | 'year') || 'year',
+    });
+    setShowEditBudgetModal(true);
+  };
+
+  const handleSaveEditBudget = () => {
+    if (!editBudgetForm.name || !editBudgetForm.amount || !selectedBudget) {
+      toast({
+        title: 'Erreur',
+        description: 'Le nom et le montant sont obligatoires',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateBudgetMutation.mutate({
+      id: selectedBudget.id,
+      name: editBudgetForm.name,
+      category: editBudgetForm.category,
+      amountInCents: Math.round(parseFloat(editBudgetForm.amount) * 100),
+      period: editBudgetForm.period,
+    });
+  };
+
+  const handleDeleteBudget = (budget: Budget) => {
+    setSelectedBudget(budget);
+    setShowBudgetDeleteConfirmDialog(true);
+  };
+
+  const handleConfirmBudgetDelete = () => {
+    if (selectedBudget) {
+      deleteBudgetMutation.mutate(selectedBudget.id);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -332,11 +556,11 @@ export default function AdminFinancialPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium">Depenses</CardTitle>
-              <TrendingDown className="h-4 w-4 text-red-500" />
+              <TrendingDown className="h-4 w-4 text-error" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-error-dark">
               {formatCurrency(kpiData.totalExpenses)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -349,11 +573,11 @@ export default function AdminFinancialPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium">Solde</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-500" />
+              <TrendingUp className="h-4 w-4 text-success" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${kpiData.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-2xl font-bold ${kpiData.balance >= 0 ? 'text-success-dark' : 'text-error-dark'}`}>
               {formatCurrency(kpiData.balance)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -419,6 +643,7 @@ export default function AdminFinancialPage() {
                       <TableHead className="text-right">Montant</TableHead>
                       <TableHead className="text-right">Depense</TableHead>
                       <TableHead className="text-right">Restant</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -435,17 +660,39 @@ export default function AdminFinancialPage() {
                           </TableCell>
                           <TableCell>{budget.period}</TableCell>
                           <TableCell className="text-right">{formatCurrency(budget.amount)}</TableCell>
-                          <TableCell className="text-right text-red-600">
+                          <TableCell className="text-right text-error-dark">
                             {formatCurrency(budget.spent || 0)}
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             {formatCurrency(budget.amount - (budget.spent || 0))}
                           </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Modifier"
+                                onClick={() => handleEditBudget(budget)}
+                                className="h-8 w-8"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Supprimer"
+                                onClick={() => handleDeleteBudget(budget)}
+                                className="h-8 w-8 text-error hover:text-error-dark hover:bg-error/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        <TableCell colSpan={7} className="text-center text-muted-foreground">
                           Aucun budget trouve
                         </TableCell>
                       </TableRow>
@@ -486,6 +733,7 @@ export default function AdminFinancialPage() {
                       <TableHead>Categorie</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead className="text-right">Montant</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -503,14 +751,36 @@ export default function AdminFinancialPage() {
                           <TableCell>
                             {new Date(expense.date).toLocaleDateString('fr-FR')}
                           </TableCell>
-                          <TableCell className="text-right text-red-600 font-medium">
+                          <TableCell className="text-right text-error-dark font-medium">
                             {formatCurrency(expense.amount)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Modifier"
+                                onClick={() => handleEditExpense(expense)}
+                                className="h-8 w-8"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Supprimer"
+                                onClick={() => handleDeleteExpense(expense)}
+                                className="h-8 w-8 text-error hover:text-error-dark hover:bg-error/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center text-muted-foreground">
                           Aucune depense trouvee
                         </TableCell>
                       </TableRow>
@@ -535,7 +805,7 @@ export default function AdminFinancialPage() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Total depense:</span>
-                  <span className="font-bold text-red-600">{formatCurrency(budgetStatsData.totalSpent)}</span>
+                  <span className="font-bold text-error-dark">{formatCurrency(budgetStatsData.totalSpent)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Nombre de budgets:</span>
@@ -543,7 +813,7 @@ export default function AdminFinancialPage() {
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t">
                   <span className="text-sm font-medium">Solde:</span>
-                  <span className={`font-bold text-lg ${budgetStatsData.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className={`font-bold text-lg ${budgetStatsData.balance >= 0 ? 'text-success-dark' : 'text-error-dark'}`}>
                     {formatCurrency(budgetStatsData.balance)}
                   </span>
                 </div>
@@ -557,7 +827,7 @@ export default function AdminFinancialPage() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Total depenses:</span>
-                  <span className="font-bold text-red-600">{formatCurrency(expenseStatsData.total)}</span>
+                  <span className="font-bold text-error-dark">{formatCurrency(expenseStatsData.total)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Moyenne par depense:</span>
@@ -665,6 +935,99 @@ export default function AdminFinancialPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Modal edition budget */}
+      <Dialog open={showEditBudgetModal} onOpenChange={setShowEditBudgetModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier le budget</DialogTitle>
+            <DialogDescription>
+              Mettez a jour les details du budget
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-budget-name">Nom du budget *</Label>
+              <Input
+                id="edit-budget-name"
+                value={editBudgetForm.name}
+                onChange={(e) => setEditBudgetForm({ ...editBudgetForm, name: e.target.value })}
+                placeholder="Ex: Evenements Q1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-budget-category">Categorie</Label>
+              <Input
+                id="edit-budget-category"
+                value={editBudgetForm.category}
+                onChange={(e) => setEditBudgetForm({ ...editBudgetForm, category: e.target.value })}
+                placeholder="Ex: Evenements"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-budget-amount">Montant *</Label>
+              <Input
+                id="edit-budget-amount"
+                type="number"
+                step="0.01"
+                value={editBudgetForm.amount}
+                onChange={(e) => setEditBudgetForm({ ...editBudgetForm, amount: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-budget-period">Periode</Label>
+              <Select
+                value={editBudgetForm.period}
+                onValueChange={(val) => setEditBudgetForm({ ...editBudgetForm, period: val as 'month' | 'quarter' | 'year' })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="year">Annuel</SelectItem>
+                  <SelectItem value="quarter">Trimestriel</SelectItem>
+                  <SelectItem value="month">Mensuel</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditBudgetModal(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleSaveEditBudget} disabled={updateBudgetMutation.isPending}>
+              {updateBudgetMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de confirmation de suppression de budget */}
+      <Dialog open={showBudgetDeleteConfirmDialog} onOpenChange={setShowBudgetDeleteConfirmDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogDescription>
+              Etes-vous sur de vouloir supprimer le budget "{selectedBudget?.name}" ? Cette action est irreversible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBudgetDeleteConfirmDialog(false)}>
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmBudgetDelete}
+              disabled={deleteBudgetMutation.isPending}
+            >
+              {deleteBudgetMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal creation depense */}
       <Dialog open={showExpenseModal} onOpenChange={setShowExpenseModal}>
         <DialogContent>
@@ -723,6 +1086,108 @@ export default function AdminFinancialPage() {
             <Button onClick={handleCreateExpense} disabled={createExpenseMutation.isPending}>
               {createExpenseMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal edition depense */}
+      <Dialog open={showEditExpenseModal} onOpenChange={setShowEditExpenseModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier la depense</DialogTitle>
+            <DialogDescription>
+              Mettez a jour les informations de la depense
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-expense-description">Description *</Label>
+              <Input
+                id="edit-expense-description"
+                value={editExpenseForm.description}
+                onChange={(e) => setEditExpenseForm({ ...editExpenseForm, description: e.target.value })}
+                placeholder="Ex: Location salle"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-expense-category">Categorie</Label>
+              <Input
+                id="edit-expense-category"
+                value={editExpenseForm.category}
+                onChange={(e) => setEditExpenseForm({ ...editExpenseForm, category: e.target.value })}
+                placeholder="Ex: Evenements"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-expense-amount">Montant *</Label>
+                <Input
+                  id="edit-expense-amount"
+                  type="number"
+                  step="0.01"
+                  value={editExpenseForm.amount}
+                  onChange={(e) => setEditExpenseForm({ ...editExpenseForm, amount: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-expense-date">Date</Label>
+                <Input
+                  id="edit-expense-date"
+                  type="date"
+                  value={editExpenseForm.date}
+                  onChange={(e) => setEditExpenseForm({ ...editExpenseForm, date: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowEditExpenseModal(false);
+              setSelectedExpense(null);
+              resetEditExpenseForm();
+            }}>
+              Annuler
+            </Button>
+            <Button onClick={handleSaveEditExpense} disabled={updateExpenseMutation.isPending}>
+              {updateExpenseMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Sauvegarder
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation dialog pour suppression */}
+      <Dialog open={showDeleteConfirmDialog} onOpenChange={setShowDeleteConfirmDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Supprimer la depense</DialogTitle>
+            <DialogDescription>
+              Etes-vous sur de vouloir supprimer cette depense ? Cette action ne peut pas etre annulee.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedExpense && (
+            <div className="bg-muted p-3 rounded-md space-y-2">
+              <p className="text-sm"><span className="font-medium">Description:</span> {selectedExpense.description}</p>
+              <p className="text-sm"><span className="font-medium">Montant:</span> {formatCurrency(selectedExpense.amount)}</p>
+              <p className="text-sm"><span className="font-medium">Date:</span> {new Date(selectedExpense.date).toLocaleDateString('fr-FR')}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowDeleteConfirmDialog(false);
+              setSelectedExpense(null);
+            }}>
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleteExpenseMutation.isPending}
+            >
+              {deleteExpenseMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Supprimer
             </Button>
           </DialogFooter>
         </DialogContent>

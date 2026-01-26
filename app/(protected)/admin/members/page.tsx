@@ -17,6 +17,16 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Pencil, Trash2, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { AddMemberDialog } from './add-member-dialog';
 
 interface Member {
   email: string;
@@ -25,6 +35,20 @@ interface Member {
   company?: string;
   status: string;
   engagementScore?: number;
+  phone?: string;
+  role?: string;
+  cjdRole?: string;
+  notes?: string;
+}
+
+interface EditMemberFormData {
+  firstName: string;
+  lastName: string;
+  company?: string;
+  phone?: string;
+  role?: string;
+  cjdRole?: string;
+  notes?: string;
 }
 
 /**
@@ -36,6 +60,18 @@ export default function AdminMembersPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [editFormData, setEditFormData] = useState<EditMemberFormData>({
+    firstName: '',
+    lastName: '',
+    company: '',
+    phone: '',
+    role: '',
+    cjdRole: '',
+    notes: '',
+  });
 
   // Query pour lister les membres
   const { data, isLoading, error } = useQuery({
@@ -45,6 +81,28 @@ export default function AdminMembersPage() {
       limit: 20,
       search: search || undefined,
     }),
+  });
+
+  // Mutation pour mettre à jour un membre
+  const updateMutation = useMutation({
+    mutationFn: (email: string) =>
+      api.patch(`/api/admin/members/${encodeURIComponent(email)}`, editFormData),
+    onSuccess: () => {
+      toast({
+        title: 'Membre modifié',
+        description: 'Le membre a été modifié avec succès',
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.members.all });
+      setEditDialogOpen(false);
+      setSelectedMember(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
   });
 
   // Mutation pour supprimer un membre
@@ -65,6 +123,47 @@ export default function AdminMembersPage() {
       });
     },
   });
+
+  const handleOpenEditDialog = (member: Member) => {
+    setSelectedMember(member);
+    setEditFormData({
+      firstName: member.firstName,
+      lastName: member.lastName,
+      company: member.company || '',
+      phone: member.phone || '',
+      role: member.role || '',
+      cjdRole: member.cjdRole || '',
+      notes: member.notes || '',
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleCloseEditDialog = () => {
+    setEditDialogOpen(false);
+    setSelectedMember(null);
+  };
+
+  const handleEditFormChange = (field: keyof EditMemberFormData, value: string) => {
+    setEditFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSaveEdit = () => {
+    if (!selectedMember) return;
+
+    if (!editFormData.firstName.trim() || !editFormData.lastName.trim()) {
+      toast({
+        title: 'Erreur',
+        description: 'Le prénom et le nom sont obligatoires',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateMutation.mutate(selectedMember.email);
+  };
 
   const handleDelete = (email: string) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce membre ?')) {
@@ -115,7 +214,7 @@ export default function AdminMembersPage() {
             CRM - Gestion des membres de l'association
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setAddDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Ajouter un membre
         </Button>
@@ -184,7 +283,11 @@ export default function AdminMembersPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleOpenEditDialog(member)}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
@@ -235,6 +338,151 @@ export default function AdminMembersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog Ajouter un membre */}
+      <AddMemberDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
+
+      {/* Dialog Modifier un membre */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Modifier le membre</DialogTitle>
+            <DialogDescription>
+              Mettez à jour les informations du membre
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedMember && (
+            <div className="space-y-4">
+              {/* Email (non modifiable) */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={selectedMember.email}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+
+              {/* Prénom */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-firstName">Prénom *</Label>
+                <Input
+                  id="edit-firstName"
+                  placeholder="Prénom"
+                  value={editFormData.firstName}
+                  onChange={(e) =>
+                    handleEditFormChange('firstName', e.target.value)
+                  }
+                />
+              </div>
+
+              {/* Nom */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-lastName">Nom *</Label>
+                <Input
+                  id="edit-lastName"
+                  placeholder="Nom"
+                  value={editFormData.lastName}
+                  onChange={(e) =>
+                    handleEditFormChange('lastName', e.target.value)
+                  }
+                />
+              </div>
+
+              {/* Entreprise */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-company">Entreprise</Label>
+                <Input
+                  id="edit-company"
+                  placeholder="Entreprise"
+                  value={editFormData.company}
+                  onChange={(e) =>
+                    handleEditFormChange('company', e.target.value)
+                  }
+                />
+              </div>
+
+              {/* Téléphone */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Téléphone</Label>
+                <Input
+                  id="edit-phone"
+                  placeholder="Téléphone"
+                  value={editFormData.phone}
+                  onChange={(e) =>
+                    handleEditFormChange('phone', e.target.value)
+                  }
+                />
+              </div>
+
+              {/* Poste */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-role">Poste</Label>
+                <Input
+                  id="edit-role"
+                  placeholder="Directeur, Développeur, etc."
+                  value={editFormData.role}
+                  onChange={(e) =>
+                    handleEditFormChange('role', e.target.value)
+                  }
+                />
+              </div>
+
+              {/* Rôle CJD */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-cjdRole">Rôle CJD</Label>
+                <Input
+                  id="edit-cjdRole"
+                  placeholder="Président, Trésorier, Membre, etc."
+                  value={editFormData.cjdRole}
+                  onChange={(e) =>
+                    handleEditFormChange('cjdRole', e.target.value)
+                  }
+                />
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-notes">Notes</Label>
+                <Input
+                  id="edit-notes"
+                  placeholder="Notes additionnelles"
+                  value={editFormData.notes}
+                  onChange={(e) =>
+                    handleEditFormChange('notes', e.target.value)
+                  }
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleCloseEditDialog}
+              disabled={updateMutation.isPending}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Enregistrement...
+                </>
+              ) : (
+                'Enregistrer'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

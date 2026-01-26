@@ -23,22 +23,17 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'chrome',
-      use: { 
-        ...devices['Desktop Chrome'],
-        channel: 'chrome', // Use Google Chrome instead of Chromium
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chromium'],
       },
     },
   ],
 
   webServer: {
-    command: 'NODE_ENV=test PORT=5001 nest start --watch',
+    command: 'npm run dev:next -- -p 5001',
     url: 'http://localhost:5001',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
-    env: {
-      ...process.env,
-      DATABASE_URL: process.env.DATABASE_URL || process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5432/test',
-    },
   },
 });

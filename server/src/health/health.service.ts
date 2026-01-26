@@ -82,6 +82,22 @@ export class HealthService {
       const dbResponseTime = Date.now() - dbStartTime;
       const poolStats = getPoolStats();
 
+      // Déterminer le statut global du pool
+      let poolStatus = 'healthy';
+      let poolWarnings: string[] = [];
+
+      if (poolStats.critical.breached) {
+        poolStatus = 'critical';
+        poolWarnings.push(`Pool SATURÉ: ${poolStats.utilization.percent}% utilisé (seuil critique: 90%)`);
+      } else if (poolStats.warning.breached) {
+        poolStatus = 'warning';
+        poolWarnings.push(`Pool CHARGÉ: ${poolStats.utilization.percent}% utilisé (seuil warning: 70%)`);
+      }
+
+      if (poolStats.waitingCount > 0) {
+        poolWarnings.push(`${poolStats.waitingCount} requête(s) en attente d'une connexion`);
+      }
+
       // Health check MinIO
       let minioHealth;
       try {
@@ -105,10 +121,16 @@ export class HealthService {
           connected: true,
           responseTime: `${dbResponseTime}ms`,
           pool: {
-            totalCount: poolStats.totalCount,
-            idleCount: poolStats.idleCount,
-            waitingCount: poolStats.waitingCount,
+            totalConnections: poolStats.totalCount,
+            activeConnections: poolStats.activeCount,
+            idleConnections: poolStats.idleCount,
+            waitingRequests: poolStats.waitingCount,
             maxConnections: poolStats.maxConnections,
+            minConnections: poolStats.minConnections,
+            utilization: `${poolStats.utilization.percent}%`,
+            status: poolStatus,
+            warnings: poolWarnings.length > 0 ? poolWarnings : undefined,
+            availableConnections: poolStats.availableConnections,
           },
         },
         minio: minioHealth,

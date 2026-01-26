@@ -24,8 +24,14 @@ export class SpaFallbackController {
     try {
       this.indexHtml = readFileSync(distPath, 'utf-8');
     } catch (error) {
-      console.error('❌ Failed to load index.html from', distPath, error);
-      this.indexHtml = '<html><body><h1>Error: index.html not found</h1></body></html>';
+      // En test/développement, créer un index.html minimal plutôt que de bloquer le démarrage
+      if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+        console.warn('⚠️  index.html not found, using minimal fallback for', process.env.NODE_ENV);
+        this.indexHtml = '<html><head><title>CJD80</title></head><body><div id="root"></div></body></html>';
+      } else {
+        console.error('❌ Failed to load index.html from', distPath, error);
+        this.indexHtml = '<html><body><h1>Error: index.html not found</h1></body></html>';
+      }
     }
   }
 

@@ -30,6 +30,22 @@ export class FinancialController {
 
   // ===== Routes Budgets =====
 
+  @Get('budgets/stats')
+  @Permissions('admin.view')
+  @ApiOperation({ summary: 'Obtenir les statistiques des budgets' })
+  @ApiQuery({ name: 'period', required: false, description: 'Période', example: 'Q1' })
+  @ApiQuery({ name: 'year', required: false, description: 'Année', example: '2026' })
+  @ApiResponse({ status: 200, description: 'Statistiques des budgets' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  async getBudgetStats(
+    @Query('period') period?: string,
+    @Query('year') year?: string,
+  ) {
+    const yearNum = year ? parseInt(year, 10) : undefined;
+    return await this.financialService.getBudgetStats(period, yearNum);
+  }
+
   @Get('budgets')
   @Permissions('admin.view')
   @ApiOperation({ summary: 'Obtenir la liste des budgets avec filtres' })
@@ -122,23 +138,23 @@ export class FinancialController {
     return await this.financialService.deleteBudget(id);
   }
 
-  @Get('budgets/stats')
+  // ===== Routes Expenses =====
+
+  @Get('expenses/stats')
   @Permissions('admin.view')
-  @ApiOperation({ summary: 'Obtenir les statistiques des budgets' })
+  @ApiOperation({ summary: 'Obtenir les statistiques des dépenses' })
   @ApiQuery({ name: 'period', required: false, description: 'Période', example: 'Q1' })
   @ApiQuery({ name: 'year', required: false, description: 'Année', example: '2026' })
-  @ApiResponse({ status: 200, description: 'Statistiques des budgets' })
+  @ApiResponse({ status: 200, description: 'Statistiques des dépenses' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Permission refusée' })
-  async getBudgetStats(
+  async getExpenseStats(
     @Query('period') period?: string,
     @Query('year') year?: string,
   ) {
     const yearNum = year ? parseInt(year, 10) : undefined;
-    return await this.financialService.getBudgetStats(period, yearNum);
+    return await this.financialService.getExpenseStats(period, yearNum);
   }
-
-  // ===== Routes Expenses =====
 
   @Get('expenses')
   @Permissions('admin.view')
@@ -242,22 +258,6 @@ export class FinancialController {
   @ApiResponse({ status: 404, description: 'Dépense non trouvée' })
   async deleteExpense(@Param('id') id: string) {
     return await this.financialService.deleteExpense(id);
-  }
-
-  @Get('expenses/stats')
-  @Permissions('admin.view')
-  @ApiOperation({ summary: 'Obtenir les statistiques des dépenses' })
-  @ApiQuery({ name: 'period', required: false, description: 'Période', example: 'Q1' })
-  @ApiQuery({ name: 'year', required: false, description: 'Année', example: '2026' })
-  @ApiResponse({ status: 200, description: 'Statistiques des dépenses' })
-  @ApiResponse({ status: 401, description: 'Non authentifié' })
-  @ApiResponse({ status: 403, description: 'Permission refusée' })
-  async getExpenseStats(
-    @Query('period') period?: string,
-    @Query('year') year?: string,
-  ) {
-    const yearNum = year ? parseInt(year, 10) : undefined;
-    return await this.financialService.getExpenseStats(period, yearNum);
   }
 
   // ===== Routes Categories =====

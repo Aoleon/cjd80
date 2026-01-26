@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Save, Palette, RotateCcw } from 'lucide-react';
+import { brandingCore } from '@/lib/config/branding-core';
 
 /**
  * Page Configuration Branding
@@ -189,7 +190,7 @@ export default function AdminBrandingPage() {
               <div className="flex gap-2">
                 <Input
                   type="color"
-                  value={config.colors?.primary || '#000000'}
+                  value={config.colors?.primary || brandingCore.colors.primary}
                   onChange={(e) =>
                     setConfig({
                       ...config,
@@ -206,7 +207,7 @@ export default function AdminBrandingPage() {
                       colors: { ...config.colors, primary: e.target.value },
                     })
                   }
-                  placeholder="#000000"
+                  placeholder={brandingCore.colors.primary}
                 />
               </div>
             </div>
@@ -215,7 +216,7 @@ export default function AdminBrandingPage() {
               <div className="flex gap-2">
                 <Input
                   type="color"
-                  value={config.colors?.secondary || '#666666'}
+                  value={config.colors?.secondary || brandingCore.colors.secondary}
                   onChange={(e) =>
                     setConfig({
                       ...config,
@@ -232,7 +233,7 @@ export default function AdminBrandingPage() {
                       colors: { ...config.colors, secondary: e.target.value },
                     })
                   }
-                  placeholder="#666666"
+                  placeholder={brandingCore.colors.secondary}
                 />
               </div>
             </div>
@@ -241,7 +242,7 @@ export default function AdminBrandingPage() {
               <div className="flex gap-2">
                 <Input
                   type="color"
-                  value={config.colors?.accent || '#0066cc'}
+                  value={config.colors?.accent || brandingCore.colors.accent}
                   onChange={(e) =>
                     setConfig({
                       ...config,
@@ -258,7 +259,7 @@ export default function AdminBrandingPage() {
                       colors: { ...config.colors, accent: e.target.value },
                     })
                   }
-                  placeholder="#0066cc"
+                  placeholder={brandingCore.colors.accent}
                 />
               </div>
             </div>

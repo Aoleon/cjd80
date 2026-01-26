@@ -123,13 +123,13 @@ export default function AdminIdeasPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-green-500/10 text-green-700 border-green-500/20';
+        return 'bg-success-light text-success-dark border-success/20';
       case 'rejected':
-        return 'bg-red-500/10 text-red-700 border-red-500/20';
+        return 'bg-error-light text-error-dark border-error/20';
       case 'pending':
-        return 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20';
+        return 'bg-warning-light text-warning-dark border-warning/20';
       case 'under_review':
-        return 'bg-blue-500/10 text-blue-700 border-blue-500/20';
+        return 'bg-info-light text-info-dark border-info/20';
       case 'postponed':
         return 'bg-gray-500/10 text-gray-700 border-gray-500/20';
       case 'completed':
@@ -228,7 +228,7 @@ export default function AdminIdeasPage() {
             <CardTitle className="text-sm font-medium">Approuvées</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-success-dark">
               {ideas.filter((i: Idea) => i.status === 'approved').length}
             </div>
           </CardContent>
@@ -238,7 +238,7 @@ export default function AdminIdeasPage() {
             <CardTitle className="text-sm font-medium">Rejetées</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-error-dark">
               {ideas.filter((i: Idea) => i.status === 'rejected').length}
             </div>
           </CardContent>
@@ -330,7 +330,7 @@ export default function AdminIdeasPage() {
                               disabled={updateStatusMutation.isPending}
                               title="Approuver"
                             >
-                              <Check className="h-4 w-4 text-green-600" />
+                              <Check className="h-4 w-4 text-success-dark" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -339,7 +339,7 @@ export default function AdminIdeasPage() {
                               disabled={updateStatusMutation.isPending}
                               title="Rejeter"
                             >
-                              <X className="h-4 w-4 text-red-600" />
+                              <X className="h-4 w-4 text-error-dark" />
                             </Button>
                           </>
                         )}

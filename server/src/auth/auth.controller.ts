@@ -42,11 +42,19 @@ const resetPasswordSchema = z.object({
 @ApiTags('auth')
 @Controller('api/auth')
 export class AuthController {
+  private readonly devLoginEnabled: boolean;
+
   constructor(
     private authService: AuthService,
     private passwordResetService: PasswordResetService,
     @Inject('AUTH_MODE') private authMode: string,
-  ) {}
+  ) {
+    // Dev login enabled only in non-production with explicit flag
+    this.devLoginEnabled = process.env.ENABLE_DEV_LOGIN === 'true' && process.env.NODE_ENV !== 'production';
+    if (this.devLoginEnabled) {
+      logger.warn('[AuthController] ⚠️  Dev login enabled - password checks bypassed');
+    }
+  }
 
   // ================================
   // ROUTES OAUTH2 (Authentik)
@@ -132,10 +140,13 @@ export class AuthController {
     // Mode Local : authentification par formulaire
     try {
       const validatedData = loginSchema.parse(body);
-      
-      // Utiliser la stratégie locale via Passport
+
+      // Choisir la stratégie : dev-login en priorité si activé, sinon local
+      const strategy = this.devLoginEnabled ? 'dev-login' : 'local';
+
+      // Utiliser la stratégie via Passport
       return new Promise<void>((resolve, reject) => {
-        passport.authenticate('local', (err: any, user: any, info: any) => {
+        passport.authenticate(strategy, (err: any, user: any, info: any) => {
           if (err) {
             // Gérer les UnauthorizedException de la stratégie Passport
             if (err.status === 401 || err.name === 'UnauthorizedException' || err.response?.statusCode === 401) {

@@ -3,7 +3,7 @@
   "collection": "@nestjs/schematics",
   "sourceRoot": "server/src",
   "compilerOptions": {
-    "tsConfigPath": "tsconfig.server.json",
+    "tsConfigPath": "tsconfig.nest.json",
     "webpack": false,
     "deleteOutDir": false,
     "assets": [
@@ -11,6 +11,16 @@
         "include": "../package-commonjs.json",
         "outDir": "./",
         "watchAssets": false
+      }
+    ],
+    "plugins": [
+      {
+        "name": "@nestjs/swagger",
+        "options": {
+          "classValidatorShim": true,
+          "introspectComments": true,
+          "dtoFileNameSuffix": [".dto.ts", ".schema.ts"]
+        }
       }
     ]
   }

@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException, ConflictException }
 import { StorageService } from '../common/storage/storage.service';
 import {
   proposeMemberSchema,
+  insertMemberSchema,
   updateMemberSchema,
   insertMemberSubscriptionSchema,
   insertMemberTagSchema,
@@ -88,6 +89,39 @@ export class MembersService {
   }
 
   // ===== Routes admin - Membres =====
+
+  async createMember(data: unknown) {
+    try {
+      const validatedData = insertMemberSchema.parse(data);
+
+      const result = await this.storageService.instance.createMember({
+        email: validatedData.email,
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+        company: validatedData.company,
+        phone: validatedData.phone,
+        role: validatedData.role,
+        notes: validatedData.notes,
+        status: validatedData.status,
+        proposedBy: validatedData.proposedBy,
+      });
+
+      if (!result.success) {
+        const error = 'error' in result ? result.error : new Error('Unknown error');
+        if (error instanceof DuplicateError) {
+          throw new ConflictException(error.message);
+        }
+        throw new BadRequestException(error.message);
+      }
+
+      return { success: true, data: result.data };
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new BadRequestException(fromZodError(error).toString());
+      }
+      throw error;
+    }
+  }
 
   async getMembers(
     page: number = 1,

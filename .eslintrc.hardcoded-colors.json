@@ -1,0 +1,19 @@
+{
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,6}/]",
+        "message": "❌ Couleur HEX hardcodée détectée! Utilisez getColor() ou colors de '@/lib/theme/colors' à la place."
+      },
+      {
+        "selector": "CallExpression[callee.name='rgb']",
+        "message": "❌ Fonction rgb() hardcodée détectée! Utilisez getColorRgb() de '@/lib/theme/colors' à la place."
+      },
+      {
+        "selector": "CallExpression[callee.name='rgba']",
+        "message": "❌ Fonction rgba() hardcodée détectée! Utilisez getColorRgba() de '@/lib/theme/colors' à la place."
+      }
+    ]
+  }
+}

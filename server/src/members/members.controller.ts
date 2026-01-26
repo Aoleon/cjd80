@@ -88,6 +88,35 @@ export class AdminMembersController {
     return await this.membersService.getMembers(pageNum, limitNum, status, search, score, activity);
   }
 
+  @Post()
+  @Permissions('admin.manage')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Créer un nouveau membre' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        firstName: { type: 'string', example: 'Jean' },
+        lastName: { type: 'string', example: 'Dupont' },
+        email: { type: 'string', format: 'email', example: 'jean.dupont@example.com' },
+        company: { type: 'string', example: 'Entreprise SAS' },
+        phone: { type: 'string', example: '+33612345678' },
+        role: { type: 'string', example: 'Directeur' },
+        notes: { type: 'string', example: 'Notes additionnelles' },
+        status: { type: 'string', enum: ['active', 'proposed'], default: 'active' }
+      },
+      required: ['firstName', 'lastName', 'email']
+    }
+  })
+  @ApiResponse({ status: 201, description: 'Membre créé avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Permission refusée' })
+  @ApiResponse({ status: 409, description: 'Le membre existe déjà' })
+  async createMember(@Body() body: unknown) {
+    return await this.membersService.createMember(body);
+  }
+
   @Get(':email')
   @Permissions('admin.view')
   @ApiOperation({ summary: 'Obtenir un membre par email' })

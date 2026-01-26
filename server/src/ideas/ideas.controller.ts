@@ -35,7 +35,21 @@ export class IdeasController {
   ) {
     const pageNum = parseInt(page || '1', 10);
     const limitNum = parseInt(limit || '20', 10);
-    return await this.ideasService.getIdeas(pageNum, limitNum);
+    const result = await this.ideasService.getIdeas(pageNum, limitNum);
+
+    // Unwrap Result to match PaginatedResponse type
+    if (!result.success) {
+      throw new Error('error' in result ? String(result.error) : 'Failed to fetch ideas');
+    }
+
+    return {
+      success: true,
+      data: result.data.data,
+      total: result.data.total,
+      page: result.data.page,
+      limit: result.data.limit,
+      totalPages: Math.ceil(result.data.total / result.data.limit),
+    };
   }
 
   // Création d'idée publique (throttled)

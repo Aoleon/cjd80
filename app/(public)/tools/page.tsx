@@ -37,8 +37,8 @@ export default function ToolsPage() {
       {/* Aperçu des outils à venir */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
-          <div className="bg-info-light rounded-full w-12 h-12 flex items-center justify-center mb-4">
-            <Calendar className="w-6 h-6 text-info-dark" />
+          <div className="bg-success-light rounded-full w-12 h-12 flex items-center justify-center mb-4">
+            <Calendar className="w-6 h-6 text-success-dark" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Planificateur stratégique</h3>
           <p className="text-gray-600">
@@ -77,8 +77,8 @@ export default function ToolsPage() {
         </div>
 
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-300 md:col-span-2 lg:col-span-2">
-          <div className="bg-info-light rounded-full w-12 h-12 flex items-center justify-center mb-4">
-            <Wrench className="w-6 h-6 text-info-dark" />
+          <div className="bg-gray-200 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+            <Wrench className="w-6 h-6 text-gray-700" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Boîte à outils complète</h3>
           <p className="text-gray-600">

@@ -247,13 +247,13 @@ export default function AdminLoansPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available':
-        return 'bg-green-500/10 text-green-700 border-green-500/20';
+        return 'bg-success-light text-success-dark border-success/20';
       case 'borrowed':
-        return 'bg-blue-500/10 text-blue-700 border-blue-500/20';
+        return 'bg-info-light text-info-dark border-info/20';
       case 'pending':
-        return 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20';
+        return 'bg-warning-light text-warning-dark border-warning/20';
       case 'unavailable':
-        return 'bg-red-500/10 text-red-700 border-red-500/20';
+        return 'bg-error-light text-error-dark border-error/20';
       default:
         return 'bg-gray-500/10 text-gray-700 border-gray-500/20';
     }
@@ -338,7 +338,7 @@ export default function AdminLoansPage() {
             <CardTitle className="text-sm font-medium">Disponibles</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-success-dark">
               {items.filter((i: LoanItem) => i.status === 'available').length}
             </div>
           </CardContent>
@@ -348,7 +348,7 @@ export default function AdminLoansPage() {
             <CardTitle className="text-sm font-medium">Empruntés</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-info-dark">
               {items.filter((i: LoanItem) => i.status === 'borrowed').length}
             </div>
           </CardContent>
@@ -358,7 +358,7 @@ export default function AdminLoansPage() {
             <CardTitle className="text-sm font-medium">En attente</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-2xl font-bold text-warning-dark">
               {items.filter((i: LoanItem) => i.status === 'pending').length}
             </div>
           </CardContent>
@@ -445,7 +445,7 @@ export default function AdminLoansPage() {
                             disabled={updateStatusMutation.isPending}
                             title="Approuver"
                           >
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <CheckCircle className="h-4 w-4 text-success-dark" />
                           </Button>
                         )}
                         {item.status === 'available' && (
@@ -456,7 +456,7 @@ export default function AdminLoansPage() {
                             disabled={updateStatusMutation.isPending}
                             title="Marquer comme emprunté"
                           >
-                            <XCircle className="h-4 w-4 text-blue-600" />
+                            <XCircle className="h-4 w-4 text-info-dark" />
                           </Button>
                         )}
                         {item.status === 'borrowed' && (
@@ -467,7 +467,7 @@ export default function AdminLoansPage() {
                             disabled={updateStatusMutation.isPending}
                             title="Marquer comme retourné"
                           >
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <CheckCircle className="h-4 w-4 text-success-dark" />
                           </Button>
                         )}
                         <Button

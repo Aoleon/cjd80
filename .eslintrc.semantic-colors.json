@@ -1,0 +1,117 @@
+{
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,6}/]",
+        "message": "❌ Couleur HEX hardcodée détectée! Utilisez getColor() ou colors de '@/lib/theme/colors' à la place."
+      },
+      {
+        "selector": "CallExpression[callee.name='rgb']",
+        "message": "❌ Fonction rgb() hardcodée détectée! Utilisez getColorRgb() de '@/lib/theme/colors' à la place."
+      },
+      {
+        "selector": "CallExpression[callee.name='rgba']",
+        "message": "❌ Fonction rgba() hardcodée détectée! Utilisez getColorRgba() de '@/lib/theme/colors' à la place."
+      },
+      {
+        "selector": "Literal[value=/bg-green-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'bg-green-*' détectée! Utilisez 'bg-success' ou 'bg-cjd-green' à la place."
+      },
+      {
+        "selector": "Literal[value=/text-green-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'text-green-*' détectée! Utilisez 'text-success' ou 'text-success-dark' à la place."
+      },
+      {
+        "selector": "Literal[value=/border-green-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'border-green-*' détectée! Utilisez 'border-success' à la place."
+      },
+      {
+        "selector": "Literal[value=/bg-red-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'bg-red-*' détectée! Utilisez 'bg-error' ou 'bg-destructive' à la place."
+      },
+      {
+        "selector": "Literal[value=/text-red-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'text-red-*' détectée! Utilisez 'text-error' ou 'text-error-dark' à la place."
+      },
+      {
+        "selector": "Literal[value=/border-red-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'border-red-*' détectée! Utilisez 'border-error' ou 'border-destructive' à la place."
+      },
+      {
+        "selector": "Literal[value=/bg-blue-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'bg-blue-*' détectée! Utilisez 'bg-info' ou 'bg-accent' à la place."
+      },
+      {
+        "selector": "Literal[value=/text-blue-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'text-blue-*' détectée! Utilisez 'text-info' ou 'text-info-dark' à la place."
+      },
+      {
+        "selector": "Literal[value=/border-blue-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'border-blue-*' détectée! Utilisez 'border-info' à la place."
+      },
+      {
+        "selector": "Literal[value=/bg-yellow-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'bg-yellow-*' détectée! Utilisez 'bg-warning' à la place."
+      },
+      {
+        "selector": "Literal[value=/text-yellow-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'text-yellow-*' détectée! Utilisez 'text-warning' ou 'text-warning-dark' à la place."
+      },
+      {
+        "selector": "Literal[value=/border-yellow-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'border-yellow-*' détectée! Utilisez 'border-warning' à la place."
+      },
+      {
+        "selector": "Literal[value=/bg-orange-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'bg-orange-*' détectée! Utilisez 'bg-warning' à la place."
+      },
+      {
+        "selector": "Literal[value=/text-orange-[0-9]/]",
+        "message": "❌ Couleur Tailwind hardcodée 'text-orange-*' détectée! Utilisez 'text-warning' à la place."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["*.tsx", "*.ts", "*.jsx", "*.js"],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "JSXAttribute[name.name='className'] > Literal[value=/bg-green-[0-9]/]",
+            "message": "❌ Couleur Tailwind hardcodée 'bg-green-*' dans className! Utilisez 'bg-success' ou 'bg-cjd-green'."
+          },
+          {
+            "selector": "JSXAttribute[name.name='className'] > Literal[value=/text-green-[0-9]/]",
+            "message": "❌ Couleur Tailwind hardcodée 'text-green-*' dans className! Utilisez 'text-success' ou 'text-success-dark'."
+          },
+          {
+            "selector": "JSXAttribute[name.name='className'] > Literal[value=/bg-red-[0-9]/]",
+            "message": "❌ Couleur Tailwind hardcodée 'bg-red-*' dans className! Utilisez 'bg-error'."
+          },
+          {
+            "selector": "JSXAttribute[name.name='className'] > Literal[value=/text-red-[0-9]/]",
+            "message": "❌ Couleur Tailwind hardcodée 'text-red-*' dans className! Utilisez 'text-error' ou 'text-error-dark'."
+          },
+          {
+            "selector": "JSXAttribute[name.name='className'] > Literal[value=/bg-blue-[0-9]/]",
+            "message": "❌ Couleur Tailwind hardcodée 'bg-blue-*' dans className! Utilisez 'bg-info'."
+          },
+          {
+            "selector": "JSXAttribute[name.name='className'] > Literal[value=/text-blue-[0-9]/]",
+            "message": "❌ Couleur Tailwind hardcodée 'text-blue-*' dans className! Utilisez 'text-info' ou 'text-info-dark'."
+          },
+          {
+            "selector": "JSXAttribute[name.name='className'] > Literal[value=/bg-yellow-[0-9]/]",
+            "message": "❌ Couleur Tailwind hardcodée 'bg-yellow-*' dans className! Utilisez 'bg-warning'."
+          },
+          {
+            "selector": "JSXAttribute[name.name='className'] > Literal[value=/text-yellow-[0-9]/]",
+            "message": "❌ Couleur Tailwind hardcodée 'text-yellow-*' dans className! Utilisez 'text-warning' ou 'text-warning-dark'."
+          }
+        ]
+      }
+    }
+  ]
+}
