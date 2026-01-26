@@ -8,6 +8,15 @@ import { test, expect } from '@playwright/test';
  * - US-IDEAS-001: Consulter les idées publiques
  * - US-EVENTS-001: Consulter les événements
  * - US-ADMIN-001: Accéder au dashboard admin
+ * - US-ADMIN-002: Gestion/modération des idées (admin-ideas-management.spec.ts)
+ * - US-EVENTS-002: Tests inscription événements (admin-events-inscriptions.spec.ts)
+ * - US-EVENTS-003: Tests gestion inscriptions admin (admin-events-inscriptions.spec.ts)
+ * - US-FINANCIAL-001: Dashboard finances budgets/dépenses (admin-financial.spec.ts)
+ * - US-MEMBERS-001: Tests CRM membres (crm-members.spec.ts)
+ * - US-PATRONS-001: Tests CRM mécènes (patron-related tests)
+ * - US-LOANS-001: Tests gestion prêts (loans-related tests)
+ * - US-TRACKING-001: Tests tracking métriques (tracking-related tests)
+ * - US-CHATBOT-001: Chatbot analytics SQL naturel (admin-chatbot.spec.ts)
  *
  * URL de test: https://cjd80.rbw.ovh
  */
