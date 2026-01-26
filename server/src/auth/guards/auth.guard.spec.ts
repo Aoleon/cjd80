@@ -244,7 +244,7 @@ describe('JwtAuthGuard', () => {
       mockRequest = {
         isAuthenticated: vi.fn(() => true),
         user: {
-          email: 'user@authentik.io',
+          email: 'user@example.com',
           firstName: 'John',
           lastName: 'Doe',
           role: 'ideas_manager',

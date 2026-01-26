@@ -255,14 +255,13 @@ export class AdminService {
       const { email, firstName, lastName, role } = validatedData;
 
       if (!email || !firstName || !lastName || !role) {
-        throw new BadRequestException('Tous les champs sont requis (sauf mot de passe - géré par Authentik)');
+        throw new BadRequestException('Tous les champs sont requis');
       }
 
-      // NOTE: Avec Authentik, les utilisateurs doivent être créés dans Authentik
-      // Cette route crée uniquement l'entrée dans la base de données locale
+      // Create user in database with hashed password via StorageService
       const result = await this.storageService.instance.createUser({
         email,
-        password: undefined, // Password géré par Authentik
+        password: 'temporary-password-must-be-changed', // User should reset password
         firstName,
         lastName,
         role,

@@ -22,15 +22,6 @@ export default registerAs('app', () => ({
   // Session
   sessionSecret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
 
-  // Authentik
-  authentikBaseUrl: process.env.AUTHENTIK_BASE_URL || 'http://localhost:9002',
-  authentikClientId: process.env.AUTHENTIK_CLIENT_ID || '',
-  authentikClientSecret: process.env.AUTHENTIK_CLIENT_SECRET || '',
-  authentikIssuer: process.env.AUTHENTIK_ISSUER || 'http://localhost:9002/application/o/cjd80/',
-  authentikRedirectUri: process.env.AUTHENTIK_REDIRECT_URI || 'http://localhost:5000/api/auth/authentik/callback',
-  authentikToken: process.env.AUTHENTIK_TOKEN || '',
-  authentikSecretKey: process.env.AUTHENTIK_SECRET_KEY || 'changeme-in-production',
-
   // MinIO
   minioEndpoint: process.env.MINIO_ENDPOINT || 'localhost',
   minioPort: parseInt(process.env.MINIO_PORT || '9000', 10),

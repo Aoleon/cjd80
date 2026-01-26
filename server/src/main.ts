@@ -83,7 +83,7 @@ async function bootstrap() {
     .setTitle('CJD Amiens API')
     .setDescription('API Boîte à Kiffs - Gestion collaborative idées, événements, prêts')
     .setVersion('2.0.0')
-    .addTag('auth', 'Authentification OAuth2 Authentik')
+    .addTag('auth', 'Authentification locale et gestion de session')
     .addTag('ideas', 'Gestion des idées collaboratives')
     .addTag('events', 'Gestion des événements')
     .addTag('loans', 'Gestion des prêts matériel')

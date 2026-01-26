@@ -57,62 +57,16 @@ export class AuthController {
   }
 
   // ================================
-  // ROUTES OAUTH2 (Authentik)
+  // ROUTES LOGIN LOCAL
   // ================================
 
   /**
-   * Route pour initier le flow OAuth2
-   * GET /api/auth/authentik
-   */
-  @Get('authentik')
-  @UseGuards(AuthGuard('authentik'))
-  @ApiOperation({ summary: 'Initier le flow OAuth2 avec Authentik' })
-  @ApiResponse({ status: 302, description: 'Redirection vers Authentik pour authentification' })
-  async authenticate() {
-    // Cette méthode ne sera jamais appelée car AuthGuard redirige vers Authentik
-  }
-
-  /**
-   * Route callback OAuth2
-   * GET /api/auth/authentik/callback
-   */
-  @Get('authentik/callback')
-  @UseGuards(AuthGuard('authentik'))
-  @ApiOperation({ summary: 'Callback OAuth2 après authentification Authentik' })
-  @ApiResponse({ status: 302, description: 'Redirection vers /admin après authentification réussie' })
-  @ApiResponse({ status: 302, description: 'Redirection vers /auth?error=authentication_failed en cas d\'échec' })
-  async callback(@Req() req: Request, @Res() res: Response, @User() user: any) {
-    if (!user) {
-      logger.warn('[Auth] Authentification OAuth2 échouée');
-      return res.redirect('/auth?error=authentication_failed');
-    }
-
-    return new Promise<void>((resolve) => {
-      (req as any).logIn(user, (loginErr: any) => {
-        if (loginErr) {
-          logger.error('[Auth] Erreur session OAuth2', { error: loginErr });
-          return res.redirect('/auth?error=session_failed');
-        }
-
-        const redirectTo = (req.session as any)?.returnTo || '/admin';
-        delete (req.session as any)?.returnTo;
-        res.redirect(redirectTo);
-        resolve();
-      });
-    });
-  }
-
-  // ================================
-  // ROUTES LOGIN LOCAL (Formulaire)
-  // ================================
-
-  /**
-   * Route login - formulaire ou redirection OAuth2
+   * Route login - authentification locale
    * POST /api/auth/login
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Connexion utilisateur (local ou OAuth2)' })
+  @ApiOperation({ summary: 'Connexion utilisateur (local)' })
   @ApiBody({
     schema: {
       type: 'object',
@@ -124,20 +78,10 @@ export class AuthController {
       required: ['email', 'password']
     }
   })
-  @ApiResponse({ status: 200, description: 'Connexion réussie (mode local)', schema: { type: 'object', properties: { email: { type: 'string' }, role: { type: 'string' } } } })
-  @ApiResponse({ status: 302, description: 'Redirection vers Authentik (mode OAuth2)' })
+  @ApiResponse({ status: 200, description: 'Connexion réussie', schema: { type: 'object', properties: { email: { type: 'string' }, role: { type: 'string' } } } })
   @ApiResponse({ status: 401, description: 'Identifiants invalides' })
   @ApiResponse({ status: 400, description: 'Données invalides' })
   async login(@Req() req: Request, @Res() res: Response, @Body() body: any) {
-    // Mode OAuth2 : redirection vers Authentik
-    if (this.authMode === 'oauth') {
-      if (body?.returnTo) {
-        (req.session as any).returnTo = body.returnTo;
-      }
-      return res.redirect('/api/auth/authentik');
-    }
-
-    // Mode Local : authentification par formulaire
     try {
       const validatedData = loginSchema.parse(body);
 

@@ -558,21 +558,21 @@ describe('AdminService', () => {
     });
   });
 
-  // ===== Tests de la Synchronisation Authentik =====
+  // ===== Tests de la Création d'Administrateur =====
 
-  describe('Authentik User Sync', () => {
-    it('should create administrator entry when Authentik user is created', async () => {
-      const authentikUserData = {
-        email: 'authentik@example.com',
-        firstName: 'Authentik',
-        lastName: 'User',
+  describe('Administrator Creation', () => {
+    it('should create administrator entry with hashed password', async () => {
+      const userData = {
+        email: 'newadmin@example.com',
+        firstName: 'New',
+        lastName: 'Admin',
         role: 'ideas_reader',
       };
 
       const mockCreatedAdmin = {
-        ...authentikUserData,
+        ...userData,
         isActive: false, // Pending approval
-        password: undefined, // Handled by Authentik
+        password: 'hashed-password', // StorageService handles hashing
       };
 
       vi.mocked(storageService.instance.createUser).mockResolvedValue({
@@ -581,16 +581,15 @@ describe('AdminService', () => {
       });
 
       const result = await adminService.createAdministrator(
-        authentikUserData,
+        userData,
         'admin@example.com',
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.password).toBeUndefined();
-      expect(result.data.email).toBe('authentik@example.com');
+      expect(result.data.email).toBe('newadmin@example.com');
     });
 
-    it('should handle concurrent Authentik sync requests', async () => {
+    it('should handle concurrent admin creation requests', async () => {
       const mockAdmin = {
         email: 'concurrent@example.com',
         firstName: 'Concurrent',

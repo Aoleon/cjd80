@@ -523,13 +523,13 @@ export class AdminController {
   @Patch('administrators/:email/password')
   @Permissions('admin.manage')
   @HttpCode(HttpStatus.NOT_IMPLEMENTED)
-  @ApiOperation({ summary: 'Modifier le mot de passe (non disponible avec Authentik)' })
+  @ApiOperation({ summary: 'Modifier le mot de passe (nécessite /forgot-password)' })
   @ApiParam({ name: 'email', description: 'Email de l\'administrateur' })
-  @ApiResponse({ status: 501, description: 'Fonctionnalité non disponible avec Authentik' })
+  @ApiResponse({ status: 501, description: 'Utilisez /api/auth/forgot-password pour réinitialiser' })
   async updateAdministratorPassword() {
-    // NOTE: Cette route n'est plus utilisée avec Authentik
+    // NOTE: Password reset is handled via /api/auth/forgot-password endpoint
     return {
-      message: "La modification de mot de passe n'est plus disponible. Les mots de passe sont maintenant gérés par Authentik.",
+      message: "Utilisez l'endpoint /api/auth/forgot-password pour réinitialiser le mot de passe.",
     };
   }
 

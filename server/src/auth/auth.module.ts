@@ -2,33 +2,22 @@ import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { AuthentikStrategy } from './strategies/authentik.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { DevLoginStrategy } from './strategies/dev-login.strategy';
-import { UserSyncService } from './user-sync.service';
 import { PasswordService } from './password.service';
 import { PasswordResetService } from './password-reset.service';
 import { StorageModule } from '../common/storage/storage.module';
-import { AuthentikModule } from '../integrations/authentik/authentik.module';
 import session from 'express-session';
 import { StorageService } from '../common/storage/storage.service';
 import { logger } from '../../lib/logger';
 
-// Déterminer le mode d'authentification
-const authMode = process.env.AUTH_MODE || 'oauth';
-const useLocalAuth = authMode === 'local';
-const authentikConfigured = process.env.AUTHENTIK_CLIENT_ID && process.env.AUTHENTIK_CLIENT_SECRET;
+// Déterminer le mode d'authentification (local uniquement)
+const authMode = 'local';
 const devLoginEnabled = process.env.ENABLE_DEV_LOGIN === 'true' && process.env.NODE_ENV !== 'production';
 
-if (useLocalAuth) {
-  logger.info('[AuthModule] Mode authentification: LOCAL (formulaire)');
-  if (devLoginEnabled) {
-    logger.warn('[AuthModule] ⚠️  DEV LOGIN ENABLED - Password bypass active for development');
-  }
-} else if (authentikConfigured) {
-  logger.info('[AuthModule] Mode authentification: AUTHENTIK (OAuth2)');
-} else {
-  logger.warn('[AuthModule] Aucune stratégie d\'authentification configurée');
+logger.info('[AuthModule] Mode authentification: LOCAL (@robinswood/auth-unified)');
+if (devLoginEnabled) {
+  logger.warn('[AuthModule] ⚠️  DEV LOGIN ENABLED - Password bypass active for development');
 }
 
 @Module({
@@ -37,20 +26,15 @@ if (useLocalAuth) {
       session: true,
     }),
     StorageModule,
-    AuthentikModule,
   ],
   controllers: [AuthController],
   providers: [
     AuthService,
     PasswordService,
     PasswordResetService,
-    UserSyncService,
+    LocalStrategy,
     // Charger DevLoginStrategy si activé (dev uniquement)
     ...(devLoginEnabled ? [DevLoginStrategy] : []),
-    // Charger LocalStrategy si mode local
-    ...(useLocalAuth ? [LocalStrategy] : []),
-    // Charger AuthentikStrategy si mode oauth et configuré
-    ...((!useLocalAuth && authentikConfigured) ? [AuthentikStrategy] : []),
     {
       provide: 'SESSION_CONFIG',
       useFactory: (storageService: StorageService) => {
@@ -73,7 +57,7 @@ if (useLocalAuth) {
     },
     {
       provide: 'AUTH_MODE',
-      useValue: useLocalAuth ? 'local' : 'oauth',
+      useValue: 'local',
     },
   ],
   exports: [AuthService, PasswordService, PasswordResetService, PassportModule, 'SESSION_CONFIG', 'AUTH_MODE'],

@@ -4,7 +4,7 @@ import { logger } from '../../../lib/logger';
 
 /**
  * Guard basé sur la session pour vérifier qu'un utilisateur est authentifié
- * Fonctionne avec Authentik (OAuth2) et l'auth par formulaire classique
+ * Fonctionne avec l'authentification locale via @robinswood/auth-unified
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {

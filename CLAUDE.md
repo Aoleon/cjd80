@@ -10,7 +10,7 @@ CJD Amiens "Boîte à Kiffs" - Modern internal web application for collaborative
 - **Backend:** NestJS 11 (migrated from Express.js) + TypeScript + Drizzle ORM
 - **Frontend:** Next.js 15 App Router + React 19 + TypeScript + tRPC + TanStack Query
 - **Database:** PostgreSQL (Neon) with connection pooling
-- **Auth:** Authentik (OAuth2/OIDC) via Docker Compose
+- **Auth:** @robinswood/auth-unified (Local auth + JWT + RBAC)
 - **Storage:** MinIO (S3-compatible)
 - **UI:** Tailwind CSS + shadcn/ui with semantic color system
 - **PWA:** Service workers, offline queue, push notifications
@@ -46,21 +46,29 @@ server/src/{feature}/
 └── {feature}.service.ts      # Business logic
 ```
 
-### Authentik Integration
+### Authentication (@robinswood/auth-unified)
 
-Authentication is handled by **Authentik** (external IdP) via OAuth2/OIDC:
+Authentication is handled by **@robinswood/auth-unified** package:
 
-- **Strategy:** `server/src/auth/strategies/authentik.strategy.ts` using Passport OAuth2
-- **Config:** Environment variables (`AUTHENTIK_CLIENT_ID`, `AUTHENTIK_CLIENT_SECRET`, etc.)
-- **User sync:** Automatic synchronization of users from Authentik to local `admins` table
-- **Group mapping:** Authentik groups → application roles (super_admin, ideas_manager, etc.)
-- **Session-based:** Express sessions stored in database (connect-pg-simple)
-- **Docker services:** PostgreSQL, Redis, Authentik server/worker in `docker-compose.services.yml`
+- **Package:** `@robinswood/auth@3.1.4` from https://verdaccio.robinswood.io/
+- **Strategies:** Local (email/password with bcrypt) + Dev Login (development bypass)
+- **Session Store:** PostgreSQL (connect-pg-simple)
+- **Password Reset:** Email-based token flow
+- **RBAC:** Role-based permissions (super_admin, ideas_manager, etc.)
+
+**Dev Mode:**
+- `ENABLE_DEV_LOGIN=true` + `NODE_ENV=development` → Password bypass
+- Auto-disabled in production
+
+**Production:**
+- Standard email/password authentication
+- Secure password hashing (bcrypt)
+- Session-based with secure cookies
 
 **Critical Files:**
 - `server/src/auth/auth.module.ts` - Passport configuration
-- `server/src/auth/user-sync.service.ts` - User synchronization logic
-- `server/src/integrations/authentik/authentik.service.ts` - Authentik API client
+- `server/src/auth/auth.controller.ts` - Local auth routes
+- `server/src/auth/strategies/local.strategy.ts` - Local strategy
 
 ### Database Architecture
 
@@ -169,22 +177,19 @@ npm run db:stats
 ### Docker Services
 
 ```bash
-# Start services (PostgreSQL, Redis, Authentik)
-docker compose -f docker-compose.services.yml up -d postgres redis authentik-server authentik-worker
+# Start services (PostgreSQL, Redis, MinIO)
+docker compose -f docker-compose.services.yml up -d postgres redis minio
 
 # Stop services
 docker compose -f docker-compose.services.yml down
 
 # View logs
-docker compose -f docker-compose.services.yml logs -f authentik-server
+docker compose -f docker-compose.services.yml logs -f postgres
 ```
 
-### Authentik Setup
+### Environment Setup
 
 ```bash
-# Automated Authentik configuration
-./scripts/setup-authentik.sh
-
 # Reset entire environment (WARNING: deletes all data)
 npm run reset:env
 
@@ -461,13 +466,9 @@ DATABASE_URL=postgresql://user:pass@host:port/database
 # Session
 SESSION_SECRET=generate-strong-secret-key
 
-# Authentik OAuth2
-AUTHENTIK_BASE_URL=http://localhost:9002
-AUTHENTIK_CLIENT_ID=your-client-id
-AUTHENTIK_CLIENT_SECRET=your-client-secret
-AUTHENTIK_ISSUER=http://localhost:9002/application/o/cjd80/
-AUTHENTIK_REDIRECT_URI=http://localhost:5000/api/auth/authentik/callback
-AUTHENTIK_TOKEN=your-authentik-api-token
+# Authentication (optional in dev)
+AUTH_MODE=local
+ENABLE_DEV_LOGIN=true
 
 # MinIO (optional)
 MINIO_ENDPOINT=localhost
@@ -478,10 +479,8 @@ MINIO_SECRET_KEY=minioadmin
 
 **Setup:**
 1. Copy `.env.example` to `.env`
-2. Start Docker services: `docker compose -f docker-compose.services.yml up -d`
-3. Configure Authentik via web UI at http://localhost:9002
-4. Fill in Authentik variables from UI
-5. Run `npm run start:dev`
+2. Start Docker services: `docker compose -f docker-compose.services.yml up -d postgres redis`
+3. Run `npm run start:dev`
 
 ## Testing
 
@@ -521,11 +520,11 @@ MINIO_SECRET_KEY=minioadmin
 - Check `DATABASE_URL` format and credentials
 - For Neon: use connection string from Neon dashboard
 
-**Authentik authentication fails:**
-- Verify Authentik services are running: `docker compose -f docker-compose.services.yml logs authentik-server`
-- Check callback URL matches in both `.env` and Authentik provider config
-- Ensure application is created in Authentik with correct OAuth2 settings
-- Verify groups exist in Authentik and are mapped to users
+**Local authentication fails:**
+- Verify PostgreSQL is running: `docker compose -f docker-compose.services.yml logs postgres`
+- Check database connection string in `.env`
+- Ensure user exists in `admins` table: `npm run db:connect`
+- Check password is correct (use dev login in development: `ENABLE_DEV_LOGIN=true`)
 
 **Build fails with heap out of memory:**
 - Use production Dockerfile: `docker build -f Dockerfile.production .`
@@ -545,7 +544,8 @@ MINIO_SECRET_KEY=minioadmin
 
 **Authentication:**
 - `server/src/auth/auth.module.ts` - Passport and session config
-- `server/src/auth/strategies/authentik.strategy.ts` - OAuth2 strategy
+- `server/src/auth/auth.controller.ts` - Local auth routes
+- `server/src/auth/strategies/local.strategy.ts` - Local strategy
 - `server/src/auth/guards/auth.guard.ts` - Session auth guard
 
 **Frontend (Next.js):**

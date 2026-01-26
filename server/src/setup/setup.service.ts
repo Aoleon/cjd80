@@ -65,7 +65,7 @@ export class SetupService {
     }
 
     if (!email || !firstName || !lastName) {
-      throw new BadRequestException("Tous les champs sont requis (email, firstName, lastName). Le mot de passe est géré par Authentik.");
+      throw new BadRequestException("Tous les champs sont requis (email, firstName, lastName)");
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
