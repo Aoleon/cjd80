@@ -15,7 +15,7 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Pencil, Trash2, Search, UserCheck, UserPlus, Eye } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Search, UserCheck, UserPlus, Eye, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -51,6 +51,78 @@ interface EditMemberFormData {
   role?: string;
   cjdRole?: string;
   notes?: string;
+}
+
+/**
+ * Fonction helper pour exporter les membres en CSV
+ * Génère un fichier CSV avec BOM UTF-8 et séparateur point-virgule
+ */
+function exportToCSV(members: Member[]): void {
+  if (!members || members.length === 0) {
+    return;
+  }
+
+  // En-têtes du CSV
+  const headers = [
+    'Prénom',
+    'Nom',
+    'Email',
+    'Entreprise',
+    'Téléphone',
+    'Fonction',
+    'Rôle CJD',
+    'Statut',
+    'Score d\'engagement',
+    'Proposé par'
+  ];
+
+  // Fonction pour échapper les valeurs CSV
+  const escapeCSV = (value: string | number | undefined | null): string => {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    const stringValue = String(value);
+    // Si la valeur contient des guillemets, des virgules ou des retours à la ligne, la mettre entre guillemets
+    if (stringValue.includes('"') || stringValue.includes(';') || stringValue.includes('\n')) {
+      return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+    return stringValue;
+  };
+
+  // Construire les lignes de données
+  const rows = members.map(member => [
+    escapeCSV(member.firstName),
+    escapeCSV(member.lastName),
+    escapeCSV(member.email),
+    escapeCSV(member.company),
+    escapeCSV(member.phone),
+    escapeCSV(member.role),
+    escapeCSV(member.cjdRole),
+    escapeCSV(member.status === 'active' ? 'Actif' : 'Prospect'),
+    escapeCSV(member.status === 'active' ? member.engagementScore : ''),
+    escapeCSV(member.proposedBy)
+  ]);
+
+  // Construire le contenu CSV avec BOM UTF-8 pour Excel
+  const csvContent = [
+    '\uFEFF' + headers.join(';'),
+    ...rows.map(row => row.join(';'))
+  ].join('\n');
+
+  // Créer un Blob et déclencher le téléchargement
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  link.setAttribute('href', url);
+  link.setAttribute('download', `membres-cjd-${dateStr}.csv`);
+  link.style.visibility = 'hidden';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 /**
@@ -176,6 +248,23 @@ export default function AdminMembersPage() {
     }
   };
 
+  const handleExportCSV = () => {
+    if (!filteredMembers || filteredMembers.length === 0) {
+      toast({
+        title: 'Aucun membre à exporter',
+        description: 'Aucun membre ne correspond aux filtres actuels',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    exportToCSV(filteredMembers);
+    toast({
+      title: 'Export CSV réussi',
+      description: `${filteredMembers.length} membre(s) exporté(s)`,
+    });
+  };
+
   // Mutation pour convertir un prospect en membre actif
   const convertToActiveMutation = useMutation({
     mutationFn: (email: string) =>
@@ -235,10 +324,16 @@ export default function AdminMembersPage() {
             CRM - Gestion des membres de l'association
           </p>
         </div>
-        <Button onClick={() => setAddDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Ajouter un membre
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportCSV}>
+            <Download className="h-4 w-4 mr-2" />
+            Exporter CSV
+          </Button>
+          <Button onClick={() => setAddDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Ajouter un membre
+          </Button>
+        </div>
       </div>
 
       <Card>
