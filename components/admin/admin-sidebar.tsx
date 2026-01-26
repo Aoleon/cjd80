@@ -16,6 +16,10 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Tag,
+  CheckSquare,
+  Link2,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -27,16 +31,46 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-const navItems: NavItem[] = [
+interface NavSection {
+  title?: string;
+  items: NavItem[];
+}
+
+const navItems: (NavItem | NavSection)[] = [
   {
     title: 'Dashboard',
     href: '/admin/dashboard',
     icon: LayoutDashboard,
   },
   {
-    title: 'Membres',
-    href: '/admin/members',
-    icon: Users,
+    title: 'CRM Membres',
+    items: [
+      {
+        title: 'Liste des membres',
+        href: '/admin/members',
+        icon: Users,
+      },
+      {
+        title: 'Tags',
+        href: '/admin/members/tags',
+        icon: Tag,
+      },
+      {
+        title: 'Tâches',
+        href: '/admin/members/tasks',
+        icon: CheckSquare,
+      },
+      {
+        title: 'Relations',
+        href: '/admin/members/relations',
+        icon: Link2,
+      },
+      {
+        title: 'Statistiques',
+        href: '/admin/members/stats',
+        icon: BarChart3,
+      },
+    ],
   },
   {
     title: 'Mécènes',
@@ -152,7 +186,52 @@ export function AdminSidebar() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-2">
-          {navItems.map((item) => {
+          {navItems.map((item, index) => {
+            const isSection = 'items' in item;
+
+            if (isSection) {
+              // Render section with nested items
+              return (
+                <div key={`section-${index}`}>
+                  {!isCollapsed && item.title && (
+                    <h3 className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider px-3 py-2 mt-4 mb-2 first:mt-0">
+                      {item.title}
+                    </h3>
+                  )}
+                  <ul className="space-y-1">
+                    {item.items.map((subItem) => {
+                      const Icon = subItem.icon;
+                      const isActive = pathname?.startsWith(subItem.href);
+
+                      return (
+                        <li key={subItem.href}>
+                          <Link
+                            href={subItem.href}
+                            className={cn(
+                              'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
+                              'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                              isActive
+                                ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                                : 'text-sidebar-foreground',
+                              isCollapsed && 'justify-center',
+                              !isCollapsed && 'ml-0'
+                            )}
+                            title={isCollapsed ? subItem.title : undefined}
+                          >
+                            <Icon className="h-5 w-5 flex-shrink-0" />
+                            {!isCollapsed && (
+                              <span className="text-sm font-medium">{subItem.title}</span>
+                            )}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            }
+
+            // Render regular item
             const Icon = item.icon;
             const isActive = pathname?.startsWith(item.href);
 

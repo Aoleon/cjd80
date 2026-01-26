@@ -25,6 +25,10 @@ export default function AdminLayout({
     const titles: Record<string, string> = {
       dashboard: 'Tableau de bord',
       members: 'Membres',
+      tags: 'Tags',
+      tasks: 'Tâches',
+      relations: 'Relations',
+      stats: 'Statistiques',
       patrons: 'Mécènes',
       ideas: 'Idées',
       events: 'Événements',
