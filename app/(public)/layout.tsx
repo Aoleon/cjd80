@@ -10,7 +10,7 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   return (
-    <MainLayout showHeader={true} showFooter={false}>
+    <MainLayout showHeader={true} showFooter={true}>
       {children}
     </MainLayout>
   );
