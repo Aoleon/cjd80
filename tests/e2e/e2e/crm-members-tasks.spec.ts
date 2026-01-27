@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdminQuick } from '../helpers/auth';
 
 /**
  * Tests E2E - CRM Members: Tasks Management
@@ -25,11 +26,6 @@ import { test, expect } from '@playwright/test';
 
 const BASE_URL = 'https://cjd80.rbw.ovh';
 
-const ADMIN_ACCOUNT = {
-  email: 'admin@test.local',
-  password: 'devmode'
-};
-
 // Types de tâches
 const TASK_TYPES = {
   CALL: 'call',
@@ -46,19 +42,6 @@ const TASK_STATUSES = {
   CANCELLED: 'cancelled'
 };
 
-// Helper: Se connecter en tant qu'admin
-async function loginAsAdmin(page: any) {
-  await page.goto(`${BASE_URL}/login`);
-  await page.waitForLoadState('networkidle');
-
-  await page.fill('input[type="email"]', ADMIN_ACCOUNT.email);
-  await page.fill('input[type="password"]', ADMIN_ACCOUNT.password);
-  await page.click('button[type="submit"]');
-
-  await page.waitForURL(/\/(admin)?/, { timeout: 10000 });
-  await page.waitForLoadState('networkidle');
-}
-
 // Helper: Naviguer vers la page tasks
 async function navigateToTasksPage(page: any) {
   await page.goto(`${BASE_URL}/admin/members/tasks`);
@@ -69,7 +52,7 @@ async function navigateToTasksPage(page: any) {
 test.describe('CRM Members: Tasks Management', () => {
 
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page, BASE_URL);
     await navigateToTasksPage(page);
   });
 

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdminQuick } from '../helpers/auth';
 
 /**
  * Tests E2E - CRM Members: Relations Management
@@ -7,7 +8,7 @@ import { test, expect } from '@playwright/test';
  *
  * Fonctionnalités testées:
  * 1. Afficher page gestion des relations
- * 2. API GET /api/admin/members/relations retourne liste
+ * 2. API GET /api/admin/relations retourne liste
  * 3. Afficher liste des relations
  * 4. Afficher filtres (Type, Member)
  * 5. Filtrer par type de relation (sponsor)
@@ -18,7 +19,7 @@ import { test, expect } from '@playwright/test';
  * 10. Filtrer par membre
  * 11. Ouvrir modal de création de relation
  * 12. Créer nouvelle relation avec sélection membre
- * 13. API POST /api/admin/members/relations crée une relation
+ * 13. API POST /api/admin/relations crée une relation
  * 14. Vérifier affichage bidirectionnel relation
  * 15. Badges color-codés par type
  * 16. Supprimer relation avec confirmation
@@ -27,19 +28,14 @@ import { test, expect } from '@playwright/test';
  * 19. Workflow complet: Créer et Supprimer
  *
  * Endpoints testés:
- * - GET /api/admin/members/relations
- * - POST /api/admin/members/relations
+ * - GET /api/admin/relations
+ * - POST /api/admin/relations
  * - DELETE /api/admin/relations/:id
  *
  * URL de test: https://cjd80.rbw.ovh
  */
 
 const BASE_URL = 'https://cjd80.rbw.ovh';
-
-const ADMIN_ACCOUNT = {
-  email: 'admin@test.local',
-  password: 'devmode'
-};
 
 // Types de relations
 const RELATION_TYPES = {
@@ -68,19 +64,6 @@ const RELATION_TYPE_LABELS: Record<string, string> = {
   business_partner: 'Partenaire d\'affaires'
 };
 
-// Helper: Se connecter en tant qu'admin
-async function loginAsAdmin(page: any) {
-  await page.goto(`${BASE_URL}/login`);
-  await page.waitForLoadState('networkidle');
-
-  await page.fill('input[type="email"]', ADMIN_ACCOUNT.email);
-  await page.fill('input[type="password"]', ADMIN_ACCOUNT.password);
-  await page.click('button[type="submit"]');
-
-  await page.waitForURL(/\/(admin)?/, { timeout: 10000 });
-  await page.waitForLoadState('networkidle');
-}
-
 // Helper: Naviguer vers la page relations
 async function navigateToRelationsPage(page: any) {
   await page.goto(`${BASE_URL}/admin/members/relations`);
@@ -91,7 +74,7 @@ async function navigateToRelationsPage(page: any) {
 test.describe('CRM Members: Relations Management', () => {
 
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page, BASE_URL);
     await navigateToRelationsPage(page);
   });
 
@@ -113,10 +96,10 @@ test.describe('CRM Members: Relations Management', () => {
     console.log('[TEST 1] ✅ Bouton créer relation visible');
   });
 
-  test('2. API GET /api/admin/members/relations retourne la liste', async ({ request }) => {
+  test('2. API GET /api/admin/relations retourne la liste', async ({ request }) => {
     console.log('[TEST 2] Test API GET relations');
 
-    const response = await request.get(`${BASE_URL}/api/admin/members/relations`);
+    const response = await request.get(`${BASE_URL}/api/admin/relations`);
 
     expect(response.ok()).toBeTruthy();
     expect(response.status()).toBe(200);
@@ -464,7 +447,7 @@ test.describe('CRM Members: Relations Management', () => {
     console.log('[TEST 12] ✅ Relation créée');
   });
 
-  test('13. API POST /api/admin/members/relations crée une relation', async ({ request }) => {
+  test('13. API POST /api/admin/relations crée une relation', async ({ request }) => {
     console.log('[TEST 13] Test API POST relation');
 
     // D'abord récupérer la liste des membres
@@ -489,7 +472,7 @@ test.describe('CRM Members: Relations Management', () => {
 
     console.log('[TEST 13] Création relation via API:', newRelation);
 
-    const response = await request.post(`${BASE_URL}/api/admin/members/relations`, {
+    const response = await request.post(`${BASE_URL}/api/admin/relations`, {
       data: newRelation
     });
 
@@ -641,7 +624,7 @@ test.describe('CRM Members: Relations Management', () => {
       description: `Relation to Delete ${Date.now()}`
     };
 
-    const createResponse = await request.post(`${BASE_URL}/api/admin/members/relations`, {
+    const createResponse = await request.post(`${BASE_URL}/api/admin/relations`, {
       data: newRelation
     });
 

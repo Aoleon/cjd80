@@ -19,7 +19,7 @@ import { test, expect } from '@playwright/test';
  * - GET /api/patrons/:id/proposals (propositions idées-mécène)
  *
  * URL de test: https://cjd80.rbw.ovh
- * Auth: admin@test.local
+ * Auth: admin@test.local / devmode
  *
  * Tests: 15+ tests couvrant tous les critères d'acceptation
  */
@@ -27,11 +27,23 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = 'https://cjd80.rbw.ovh';
 const API_BASE = `${BASE_URL}/api`;
 
-// Authentification admin pour les requêtes API
-const AUTH_HEADER = {
-  'Authorization': `Bearer admin@test.local`,
-  'Content-Type': 'application/json'
+const ADMIN_ACCOUNT = {
+  email: 'admin@test.local',
+  password: 'devmode'
 };
+
+// Helper: Se connecter en tant qu'admin
+async function loginAsAdmin(page: any) {
+  await page.goto(`${BASE_URL}/login`);
+  await page.waitForLoadState('networkidle');
+
+  await page.fill('input[type="email"]', ADMIN_ACCOUNT.email);
+  await page.fill('input[type="password"]', ADMIN_ACCOUNT.password);
+  await page.click('button[type="submit"]');
+
+  await page.waitForURL(/\/(admin)?/, { timeout: 10000 });
+  await page.waitForLoadState('networkidle');
+}
 
 // Données de test pour patron
 const TEST_PATRON = {
@@ -56,12 +68,15 @@ const TEST_PATRON_UPDATED = {
 
 test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
 
+  // Se connecter avant chaque test pour obtenir une session authentifiée
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
+  });
+
   // ===== TEST 1: Voir liste mécènes =====
   test('1. Voir liste mécènes avec pagination', async ({ request }) => {
     // Vérifier que l'API retourne une liste valide
-    const response = await request.get(`${API_BASE}/patrons?page=1&limit=20`, {
-      headers: AUTH_HEADER
-    });
+    const response = await request.get(`${API_BASE}/patrons?page=1&limit=20`);
 
     expect(response.ok()).toBeTruthy();
     expect(response.status()).toBe(200);
@@ -78,7 +93,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
   test('2. Créer mécène avec validations', async ({ request }) => {
     // Créer un mécène via l'API
     const createResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: TEST_PATRON
     });
 
@@ -98,9 +112,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
     const patronId = createdPatron.id;
 
     // Vérifier que le mécène apparaît dans la liste
-    const listResponse = await request.get(`${API_BASE}/patrons?search=${TEST_PATRON.firstName}`, {
-      headers: AUTH_HEADER
-    });
+    const listResponse = await request.get(`${API_BASE}/patrons?search=${TEST_PATRON.firstName}`);
 
     expect(listResponse.ok()).toBeTruthy();
     const listData = await listResponse.json();
@@ -112,7 +124,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
   test('3. Enregistrer don pour mécène', async ({ request }) => {
     // Créer un mécène d'abord
     const createResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: {
         ...TEST_PATRON,
         email: `donation-test-${Date.now()}@example.com`
@@ -133,8 +144,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
     const donationResponse = await request.post(
       `${API_BASE}/patrons/${patronId}/donations`,
       {
-        headers: AUTH_HEADER,
-        data: donationData
+          data: donationData
       }
     );
 
@@ -148,8 +158,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
 
     // Vérifier que le don apparaît dans l'historique
     const historyResponse = await request.get(
-      `${API_BASE}/patrons/${patronId}/donations`,
-      { headers: AUTH_HEADER }
+      `${API_BASE}/patrons/${patronId}/donations`
     );
 
     expect(historyResponse.ok()).toBeTruthy();
@@ -163,7 +172,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
   test('4. Créer sponsoring pour mécène', async ({ request }) => {
     // Créer un mécène d'abord
     const createResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: {
         ...TEST_PATRON,
         email: `sponsorship-test-${Date.now()}@example.com`
@@ -185,8 +193,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
     const sponsorshipResponse = await request.post(
       `${API_BASE}/patrons/${patronId}/sponsorships`,
       {
-        headers: AUTH_HEADER,
-        data: sponsorshipData
+          data: sponsorshipData
       }
     );
 
@@ -201,8 +208,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
 
     // Vérifier que le sponsoring apparaît dans la liste
     const listResponse = await request.get(
-      `${API_BASE}/patrons/${patronId}/sponsorships`,
-      { headers: AUTH_HEADER }
+      `${API_BASE}/patrons/${patronId}/sponsorships`
     );
 
     expect(listResponse.ok()).toBeTruthy();
@@ -216,7 +222,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
   test('5. Enregistrer interaction/meeting avec mécène', async ({ request }) => {
     // Créer un mécène d'abord
     const createResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: {
         ...TEST_PATRON,
         email: `update-test-${Date.now()}@example.com`
@@ -241,8 +246,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
     const updateResponse = await request.post(
       `${API_BASE}/patrons/${patronId}/updates`,
       {
-        headers: AUTH_HEADER,
-        data: updateData
+          data: updateData
       }
     );
 
@@ -258,8 +262,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
 
     // Vérifier que l'interaction apparaît dans l'historique
     const historyResponse = await request.get(
-      `${API_BASE}/patrons/${patronId}/updates`,
-      { headers: AUTH_HEADER }
+      `${API_BASE}/patrons/${patronId}/updates`
     );
 
     expect(historyResponse.ok()).toBeTruthy();
@@ -273,7 +276,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
   test('6. Voir historique dons avec montants', async ({ request }) => {
     // Créer un mécène d'abord
     const createResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: {
         ...TEST_PATRON,
         email: `history-test-${Date.now()}@example.com`
@@ -295,8 +297,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
       const response = await request.post(
         `${API_BASE}/patrons/${patronId}/donations`,
         {
-          headers: AUTH_HEADER,
-          data: donation
+              data: donation
         }
       );
       expect(response.ok()).toBeTruthy();
@@ -304,8 +305,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
 
     // Récupérer l'historique complet
     const historyResponse = await request.get(
-      `${API_BASE}/patrons/${patronId}/donations`,
-      { headers: AUTH_HEADER }
+      `${API_BASE}/patrons/${patronId}/donations`
     );
 
     expect(historyResponse.ok()).toBeTruthy();
@@ -328,7 +328,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
   test('7. Mettre à jour informations mécène', async ({ request }) => {
     // Créer un mécène d'abord
     const createResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: TEST_PATRON
     });
 
@@ -340,8 +339,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
     const updateResponse = await request.patch(
       `${API_BASE}/patrons/${patronId}`,
       {
-        headers: AUTH_HEADER,
-        data: TEST_PATRON_UPDATED
+          data: TEST_PATRON_UPDATED
       }
     );
 
@@ -357,8 +355,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
 
     // Vérifier les modifications via l'API
     const getResponse = await request.get(
-      `${API_BASE}/patrons/${patronId}`,
-      { headers: AUTH_HEADER }
+      `${API_BASE}/patrons/${patronId}`
     );
 
     expect(getResponse.ok()).toBeTruthy();
@@ -372,7 +369,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
     // Créer un mécène d'abord
     const testEmail = `search-test-${Date.now()}@example.com`;
     const createResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: {
         ...TEST_PATRON,
         email: testEmail
@@ -386,7 +382,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
     // Chercher par email
     const searchResponse = await request.get(
       `${API_BASE}/patrons/search/email?email=${encodeURIComponent(testEmail)}`,
-      { headers: AUTH_HEADER }
     );
 
     expect(searchResponse.ok()).toBeTruthy();
@@ -398,7 +393,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
   test('9. Filtrer mécènes par statut', async ({ request }) => {
     // Créer un mécène
     const createResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: {
         ...TEST_PATRON,
         email: `status-test-${Date.now()}@example.com`
@@ -410,7 +404,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
     // Récupérer les mécènes actifs
     const activeResponse = await request.get(
       `${API_BASE}/patrons?status=active&limit=50`,
-      { headers: AUTH_HEADER }
     );
 
     expect(activeResponse.ok()).toBeTruthy();
@@ -430,8 +423,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
     const emailPrefix = `pagination-test-${Date.now()}`;
     for (let i = 1; i <= 3; i++) {
       const response = await request.post(`${API_BASE}/patrons`, {
-        headers: AUTH_HEADER,
-        data: {
+          data: {
           firstName: `Patron${i}`,
           lastName: 'Test',
           email: `${emailPrefix}-${i}@example.com`
@@ -443,7 +435,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
     // Tester page 1
     const page1Response = await request.get(
       `${API_BASE}/patrons?page=1&limit=2`,
-      { headers: AUTH_HEADER }
     );
 
     expect(page1Response.ok()).toBeTruthy();
@@ -455,7 +446,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
     // Tester page 2
     const page2Response = await request.get(
       `${API_BASE}/patrons?page=2&limit=2`,
-      { headers: AUTH_HEADER }
     );
 
     expect(page2Response.ok()).toBeTruthy();
@@ -467,7 +457,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
   test('11. Supprimer mécène', async ({ request }) => {
     // Créer un mécène
     const createResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: {
         ...TEST_PATRON,
         email: `delete-test-${Date.now()}@example.com`
@@ -480,23 +469,20 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
 
     // Vérifier que le mécène existe
     const getResponse = await request.get(
-      `${API_BASE}/patrons/${patronId}`,
-      { headers: AUTH_HEADER }
+      `${API_BASE}/patrons/${patronId}`
     );
     expect(getResponse.ok()).toBeTruthy();
 
     // Supprimer le mécène
     const deleteResponse = await request.delete(
-      `${API_BASE}/patrons/${patronId}`,
-      { headers: AUTH_HEADER }
+      `${API_BASE}/patrons/${patronId}`
     );
 
     expect(deleteResponse.status()).toBe(204);
 
     // Vérifier que le mécène a été supprimé
     const verifyResponse = await request.get(
-      `${API_BASE}/patrons/${patronId}`,
-      { headers: AUTH_HEADER }
+      `${API_BASE}/patrons/${patronId}`
     );
     expect(verifyResponse.status()).toBe(404);
   });
@@ -505,7 +491,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
   test('12. Validation des données d\'entrée', async ({ request }) => {
     // Test: Email invalide
     const invalidEmailResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: {
         firstName: 'Test',
         lastName: 'User',
@@ -517,7 +502,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
 
     // Test: Prénom trop court
     const shortFirstNameResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: {
         firstName: 'a',
         lastName: 'Test',
@@ -529,7 +513,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
 
     // Test: Nom trop court
     const shortLastNameResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: {
         firstName: 'Test',
         lastName: 'a',
@@ -544,7 +527,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
   test('13. Enregistrer tous les types d\'interactions', async ({ request }) => {
     // Créer un mécène
     const createResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: {
         ...TEST_PATRON,
         email: `interactions-test-${Date.now()}@example.com`
@@ -562,8 +544,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
       const response = await request.post(
         `${API_BASE}/patrons/${patronId}/updates`,
         {
-          headers: AUTH_HEADER,
-          data: {
+              data: {
             type: type,
             subject: `Test interaction: ${type}`,
             date: '2026-01-20',
@@ -583,8 +564,7 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
 
     // Vérifier que toutes les interactions sont enregistrées
     const historyResponse = await request.get(
-      `${API_BASE}/patrons/${patronId}/updates`,
-      { headers: AUTH_HEADER }
+      `${API_BASE}/patrons/${patronId}/updates`
     );
 
     expect(historyResponse.ok()).toBeTruthy();
@@ -603,7 +583,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
 
     // Créer un mécène avec un nom unique
     const createResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: {
         firstName: uniqueFirstName,
         lastName: 'TestLastName',
@@ -616,7 +595,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
     // Chercher par prénom partiel
     const searchResponse = await request.get(
       `${API_BASE}/patrons?search=${uniqueFirstName.substring(0, 5)}`,
-      { headers: AUTH_HEADER }
     );
 
     expect(searchResponse.ok()).toBeTruthy();
@@ -632,7 +610,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
   test('15. Récupérer propositions idées pour mécène', async ({ request }) => {
     // Créer un mécène
     const createResponse = await request.post(`${API_BASE}/patrons`, {
-      headers: AUTH_HEADER,
       data: {
         ...TEST_PATRON,
         email: `proposals-test-${Date.now()}@example.com`
@@ -646,7 +623,6 @@ test.describe('US-PATRONS-001: Gestion CRM des mécènes', () => {
     // Récupérer les propositions
     const proposalsResponse = await request.get(
       `${API_BASE}/patrons/${patronId}/proposals`,
-      { headers: AUTH_HEADER }
     );
 
     expect(proposalsResponse.ok()).toBeTruthy();
