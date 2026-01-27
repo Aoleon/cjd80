@@ -180,7 +180,7 @@ export default function AdminMembersRelationsPage() {
   // Mutation pour créer une relation
   const createMutation = useMutation({
     mutationFn: (data: RelationFormData) =>
-      api.post('/api/admin/members/relations', {
+      api.post('/api/admin/relations', {
         memberEmail: data.memberEmail,
         relatedMemberEmail: data.relatedMemberEmail,
         relationType: data.relationType,
