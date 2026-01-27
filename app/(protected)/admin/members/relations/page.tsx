@@ -148,30 +148,11 @@ export default function AdminMembersRelationsPage() {
   const members = membersData || [];
 
   // Query pour lister toutes les relations
+  // Note: Utilise uniquement l'endpoint global /api/admin/relations
+  // Pas de fallback pour éviter les boucles infinies de requêtes
   const { data: relations = [], isLoading, error } = useQuery({
     queryKey: queryKeys.members.relations.all,
-    queryFn: async () => {
-      try {
-        // Essayer d'abord l'endpoint global s'il existe
-        const response = await api.get<MemberRelation[]>('/api/admin/relations');
-        return response;
-      } catch {
-        // Fallback: fetch toutes les relations de tous les membres
-        const allRelations: MemberRelation[] = [];
-        for (const member of members) {
-          try {
-            const memberRelations = await api.get<MemberRelation[]>(
-              `/api/admin/members/${encodeURIComponent(member.email)}/relations`
-            );
-            allRelations.push(...(Array.isArray(memberRelations) ? memberRelations : []));
-          } catch {
-            // Ignorer les erreurs pour un membre spécifique
-          }
-        }
-        return allRelations;
-      }
-    },
-    enabled: members.length > 0,
+    queryFn: () => api.get<MemberRelation[]>('/api/admin/relations'),
   });
 
   // Enrichir les relations avec les noms des membres
