@@ -148,19 +148,21 @@ export default function AdminMemberTasksPage() {
   const loadAllTasks = async () => {
     setTasksLoading(true);
     try {
-      const tasks: MemberTask[] = [];
-      for (const member of allMembers) {
-        try {
-          const response = await api.get<{ success: boolean; data: MemberTask[] }>(
+      // Fetch tasks in PARALLEL instead of sequential to prevent DB pool exhaustion
+      const taskResponses = await Promise.all(
+        allMembers.map(member =>
+          api.get<{ success: boolean; data: MemberTask[] }>(
             `/api/admin/members/${encodeURIComponent(member.email)}/tasks`
-          );
-          if (response && response.data && Array.isArray(response.data)) {
-            tasks.push(...response.data);
-          }
-        } catch (error) {
-          console.error(`Erreur lors du chargement des tâches de ${member.email}:`, error);
-        }
-      }
+          ).catch(error => {
+            console.error(`Erreur lors du chargement des tâches de ${member.email}:`, error);
+            return { data: [] };  // Graceful fallback
+          })
+        )
+      );
+
+      const tasks = taskResponses.flatMap(response =>
+        response?.data && Array.isArray(response.data) ? response.data : []
+      );
       setAllTasks(tasks);
     } catch (error) {
       console.error('Erreur lors du chargement des tâches:', error);
