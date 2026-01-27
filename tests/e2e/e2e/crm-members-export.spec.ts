@@ -1,6 +1,7 @@
 import { test, expect, Download } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
+import { loginAsAdminQuick } from '../helpers/auth';
 
 /**
  * Tests E2E - CRM Members CSV Export
@@ -23,14 +24,6 @@ import * as path from 'path';
 
 const BASE_URL = 'https://cjd80.rbw.ovh';
 
-// Comptes de test
-const TEST_ACCOUNTS = {
-  admin: {
-    email: 'admin@test.local',
-    password: 'devmode',
-    role: 'super_admin'
-  }
-};
 
 // Données de test - Membres Mock
 const TEST_MEMBERS = [
@@ -162,17 +155,8 @@ test.describe('CRM Members CSV Export - Fonctionnalité d\'export', () => {
       }
     });
 
-    // Mock admin authentication
-    await page.addInitScript(() => {
-      localStorage.setItem('auth_token', 'test-jwt-token-admin');
-      localStorage.setItem('user', JSON.stringify({
-        id: 'admin-user-123',
-        email: TEST_ACCOUNTS.admin.email,
-        name: 'Admin User',
-        role: 'super_admin',
-        permissions: ['manage_members', 'manage_tags', 'manage_tasks']
-      }));
-    });
+    // Perform real authentication with proper session handling
+    await loginAsAdminQuick(page, BASE_URL);
   });
 
   test.afterEach(async () => {
