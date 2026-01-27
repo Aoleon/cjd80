@@ -152,8 +152,8 @@ export async function loginAsAdmin(
 ): Promise<void> {
   const {
     baseUrl = 'https://cjd80.rbw.ovh',
-    timeout = 8000,
-    retries = 3,
+    timeout = 15000,  // Increased from 8000ms for Next.js hydration
+    retries = 5,      // Increased from 3 for better reliability
     verbose = false
   } = options;
 
@@ -177,6 +177,12 @@ export async function loginAsAdmin(
     // Wait for page to be ready (but don't wait for full 'networkidle')
     // This reduces timeout issues while still being safe
     await page.waitForLoadState('load');
+
+    // Wait for Next.js hydration to complete (React + client-side JS)
+    await page.waitForTimeout(2000);
+
+    // Wait for the form to be present before looking for inputs
+    await page.waitForSelector('form', { timeout: 10000, state: 'visible' });
 
     // Wait for email input to be visible and ready
     await waitForElementReady(page, 'input[type="email"]', {
