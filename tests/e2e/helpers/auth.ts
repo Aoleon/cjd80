@@ -286,6 +286,25 @@ export async function loginAsAdminQuick(
       verbose: false
     }
   );
+
+  // CRITICAL: Wait for session cookie to be set
+  // This ensures page.request shares the authentication context
+  await page.waitForTimeout(500);
+
+  // Verify session cookie exists
+  const cookies = await page.context().cookies();
+  const sessionCookie = cookies.find(c =>
+    c.name === 'connect.sid' ||
+    c.name.includes('session') ||
+    c.name.includes('sess')
+  );
+
+  if (!sessionCookie) {
+    throw new Error(
+      '[Auth Helper] Session cookie not found after login. ' +
+      `Available cookies: ${cookies.map(c => c.name).join(', ')}`
+    );
+  }
 }
 
 /**
