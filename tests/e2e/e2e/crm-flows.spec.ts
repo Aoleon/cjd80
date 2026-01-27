@@ -2,13 +2,23 @@ import { test, expect } from '@playwright/test';
 
 test.describe('CRM - Patron Management', () => {
   test.beforeEach(async ({ page }) => {
-    // Super admin required for patrons
-    await page.addInitScript(() => {
-      window.localStorage.setItem('admin-user', JSON.stringify({
-        id: 'superadmin',
-        email: 'superadmin@test.com',
-        role: 'super_admin'
-      }));
+    // Mock authentication API BEFORE page.goto()
+    // Must match backend User/Admin type structure
+    await page.route('/api/auth/user', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          email: 'superadmin@test.com',
+          firstName: 'Super',
+          lastName: 'Admin',
+          role: 'super_admin',
+          status: 'active',
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+      });
     });
     
     // Mock patrons API response
@@ -191,15 +201,21 @@ test.describe('CRM - Patron Management', () => {
 
 test.describe('CRM - Member Management', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock authentication API - this is what useAuth actually checks
+    // Mock authentication API BEFORE page.route() and page.goto()
+    // Must match backend User/Admin type structure with all required fields
     await page.route('/api/auth/user', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          id: 'admin',
           email: 'admin@test.com',
-          role: 'admin'
+          firstName: 'Admin',
+          lastName: 'User',
+          role: 'admin',
+          status: 'active',
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         })
       });
     });
@@ -312,8 +328,8 @@ test.describe('CRM - Member Management', () => {
     await page.waitForLoadState('networkidle');
     
     // Wait for the page to be authenticated and loaded
-    // Check that we're not on the login page
-    await expect(page.locator('text=Membres')).toBeVisible({ timeout: 10000 });
+    // Check that we're not on the login page using correct selector
+    await expect(page.locator('text=Gestion Membres')).toBeVisible({ timeout: 10000 });
   });
   
   test('should display members with engagement scores', async ({ page }) => {

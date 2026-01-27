@@ -275,6 +275,12 @@ export async function loginAsAdminQuick(
   page: Page,
   baseUrl: string = 'https://cjd80.rbw.ovh'
 ): Promise<void> {
+  const verbose = process.env.VERBOSE_AUTH === 'true';
+
+  if (verbose) {
+    console.log('[Auth Helper] Starting loginAsAdminQuick with verbose mode');
+  }
+
   await loginAsAdmin(
     page,
     {
@@ -283,15 +289,22 @@ export async function loginAsAdminQuick(
     },
     {
       baseUrl,
-      verbose: false
+      verbose
     }
   );
 
-  // CRITICAL: Wait for session cookie to be set
-  // This ensures page.request shares the authentication context
-  await page.waitForTimeout(500);
+  // CRITICAL: Wait for session cookie to be set and persisted
+  // Increased from 500ms to 1000ms to ensure cookie state is stable
+  if (verbose) {
+    console.log('[Auth Helper] Waiting 1000ms for session cookie persistence...');
+  }
+  await page.waitForTimeout(1000);
 
-  // Verify session cookie exists
+  // Verify session cookie exists and is properly configured
+  if (verbose) {
+    console.log('[Auth Helper] Verifying session cookie...');
+  }
+  
   const cookies = await page.context().cookies();
   const sessionCookie = cookies.find(c =>
     c.name === 'connect.sid' ||
@@ -300,10 +313,68 @@ export async function loginAsAdminQuick(
   );
 
   if (!sessionCookie) {
+    const cookieNames = cookies.map(c => c.name).join(', ');
     throw new Error(
       '[Auth Helper] Session cookie not found after login. ' +
-      `Available cookies: ${cookies.map(c => c.name).join(', ')}`
+      `Available cookies: ${cookieNames}`
     );
+  }
+
+  if (verbose) {
+    console.log(`[Auth Helper] OK Session cookie found: ${sessionCookie.name}`);
+    console.log(`  - Domain: ${sessionCookie.domain}`);
+    console.log(`  - Path: ${sessionCookie.path}`);
+    console.log(`  - HttpOnly: ${sessionCookie.httpOnly}`);
+    console.log(`  - Secure: ${sessionCookie.secure}`);
+    console.log(`  - SameSite: ${sessionCookie.sameSite}`);
+  }
+
+  // CRITICAL: Verify that /api/auth/user endpoint is accessible
+  // This catches 401 errors early before they happen in actual tests
+  if (verbose) {
+    console.log('[Auth Helper] Verifying /api/auth/user endpoint accessibility...');
+  }
+
+  try {
+    const response = await page.request.get(`${baseUrl}/api/auth/user`);
+
+    if (verbose) {
+      console.log(`[Auth Helper] GET /api/auth/user response: ${response.status()}`);
+    }
+
+    if (response.status() === 401) {
+      const text = await response.text();
+      throw new Error(
+        `[Auth Helper] /api/auth/user returned 401 Unauthorized. Response: ${text}`
+      );
+    }
+
+    if (!response.ok()) {
+      const text = await response.text();
+      throw new Error(
+        `[Auth Helper] /api/auth/user returned ${response.status()}. Response: ${text}`
+      );
+    }
+
+    if (verbose) {
+      const user = await response.json();
+      console.log(`[Auth Helper] OK Auth user endpoint verified. User: ${user.email}`);
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `[Auth Helper] Failed to verify /api/auth/user endpoint: ${errorMessage}`
+    );
+  }
+
+  // Final wait to ensure all state is flushed
+  if (verbose) {
+    console.log('[Auth Helper] Final stability wait (500ms)...');
+  }
+  await page.waitForTimeout(500);
+
+  if (verbose) {
+    console.log('[Auth Helper] OK loginAsAdminQuick completed successfully');
   }
 }
 
