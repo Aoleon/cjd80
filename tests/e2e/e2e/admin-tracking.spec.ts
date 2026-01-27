@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdminQuick } from '../helpers/auth';
 
 /**
  * Tests E2E pour US-TRACKING-001: Métriques et alertes engagement (admin)
@@ -27,32 +28,6 @@ import { test, expect } from '@playwright/test';
 
 const BASE_URL = 'https://cjd80.rbw.ovh';
 
-const ADMIN_ACCOUNT = {
-  email: 'admin@test.local',
-  password: 'devmode'
-};
-
-// Helper: Connecter en tant qu'admin
-async function loginAsAdmin(page: any) {
-  await page.goto(`${BASE_URL}/login`);
-
-  // Vérifier la page de login
-  await expect(page.locator('h1')).toContainText('Administration');
-
-  // Remplir le formulaire de connexion
-  await page.fill('input[type="email"]', ADMIN_ACCOUNT.email);
-  await page.fill('input[type="password"]', ADMIN_ACCOUNT.password);
-
-  // Soumettre
-  await page.click('button[type="submit"]');
-
-  // Attendre la redirection vers /admin
-  await page.waitForURL(/\/(admin)?/, { timeout: 10000 });
-
-  // Attendre le chargement du dashboard
-  await page.waitForLoadState('networkidle');
-}
-
 // Helper: Naviguer vers la section tracking
 async function navigateToTracking(page: any) {
   // Chercher l'onglet tracking ou un menu de navigation
@@ -76,7 +51,7 @@ async function navigateToTracking(page: any) {
 test.describe('US-TRACKING-001: Métriques et alertes engagement (admin)', () => {
   test.beforeEach(async ({ page }) => {
     // Se connecter avant chaque test
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
   });
 
   test('1. Dashboard tracking - métriques visibles', async ({ page }) => {

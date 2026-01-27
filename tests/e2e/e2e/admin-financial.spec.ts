@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdminQuick } from '../helpers/auth';
 
 /**
  * Tests E2E pour US-FINANCIAL-001: Dashboard finances budgets/dépenses
@@ -18,32 +19,6 @@ import { test, expect } from '@playwright/test';
  */
 
 const BASE_URL = 'https://cjd80.rbw.ovh';
-
-const ADMIN_ACCOUNT = {
-  email: 'admin@test.local',
-  password: 'devmode'
-};
-
-// Authentifier en tant qu'admin
-async function loginAsAdmin(page: any) {
-  await page.goto(`${BASE_URL}/login`);
-
-  // Vérifier que la page de login est affichée
-  await expect(page.locator('h1')).toContainText('Administration');
-
-  // Remplir le formulaire de login
-  await page.fill('input[type="email"]', ADMIN_ACCOUNT.email);
-  await page.fill('input[type="password"]', ADMIN_ACCOUNT.password);
-
-  // Soumettre
-  await page.click('button[type="submit"]');
-
-  // Attendre la redirection
-  await page.waitForURL(/\/(admin)?/, { timeout: 10000 });
-
-  // Attendre le chargement du tableau de bord
-  await page.waitForLoadState('networkidle');
-}
 
 // Naviguer vers le dashboard financier
 async function navigateToFinanceDashboard(page: any) {
@@ -80,7 +55,7 @@ async function navigateToFinanceDashboard(page: any) {
 test.describe('US-FINANCIAL-001: Dashboard finances budgets/dépenses', () => {
   test.beforeEach(async ({ page }) => {
     // Se connecter en tant qu'admin avant chaque test
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
   });
 
   test('1. Voir dashboard finances - Vue d\'ensemble budgets vs dépenses', async ({ page }) => {

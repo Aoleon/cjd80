@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdminQuick } from '../helpers/auth';
 
 /**
  * Tests E2E pour US-LOANS-001: Système prêt d'objets
@@ -16,33 +17,6 @@ import { test, expect } from '@playwright/test';
  */
 
 const BASE_URL = 'https://cjd80.rbw.ovh';
-
-const ADMIN_ACCOUNT = {
-  email: 'admin@test.local',
-  password: 'devmode'
-};
-
-// Helper: Se connecter en tant qu'admin
-async function loginAsAdmin(page: any) {
-  await page.goto(`${BASE_URL}/login`);
-
-  // Vérifier que la page de login est affichée
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(500);
-
-  // Remplir le formulaire
-  const emailInput = page.locator('input[type="email"]');
-  const passwordInput = page.locator('input[type="password"]');
-  const submitButton = page.locator('button[type="submit"]');
-
-  await emailInput.fill(ADMIN_ACCOUNT.email);
-  await passwordInput.fill(ADMIN_ACCOUNT.password);
-  await submitButton.click();
-
-  // Attendre la redirection vers /admin
-  await page.waitForURL(/\/(admin)?/, { timeout: 10000 });
-  await page.waitForLoadState('networkidle');
-}
 
 // Helper: Naviguer vers la section admin des prêts
 async function navigateToLoansAdmin(page: any) {
@@ -291,7 +265,7 @@ test.describe('US-LOANS-001: Système prêt d\'objets', () => {
     console.log(`✅ Item créé pour test: ${itemId}`);
 
     // Maintenant, se connecter en admin et valider
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     // Naviguer vers la section prêts
     await page.goto(`${BASE_URL}/admin`);

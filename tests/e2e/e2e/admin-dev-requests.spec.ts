@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { loginAsAdminQuick } from '../helpers/auth';
 
 /**
  * Tests E2E pour US-ADMIN-004: Système tickets développement (bug/feature)
@@ -19,31 +20,10 @@ import { test, expect, Page } from '@playwright/test';
  */
 
 const BASE_URL = 'https://cjd80.rbw.ovh';
-const ADMIN_EMAIL = 'admin@test.local';
-const ADMIN_PASSWORD = 'devmode'; // Dev login bypass
 
 // ============================================================================
 // HELPERS
 // ============================================================================
-
-/**
- * Login as admin
- */
-async function loginAsAdmin(page: Page) {
-  await page.goto(`${BASE_URL}/login`);
-
-  // Fill email
-  await page.fill('input[type="email"]', ADMIN_EMAIL);
-
-  // Fill password
-  await page.fill('input[type="password"]', ADMIN_PASSWORD);
-
-  // Click submit
-  await page.click('button[type="submit"]');
-
-  // Wait for redirect to admin
-  await page.waitForURL(/\/admin/, { timeout: 10000 });
-}
 
 /**
  * Navigate to development requests page
@@ -67,7 +47,7 @@ function getSessionCookie(cookies: any[]) {
 test.describe('Admin: Development Requests - Navigation & List', () => {
 
   test('1. devrait voir la page de gestion des development requests', async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
     await navigateToDevRequests(page);
 
     // Vérifier présence du titre
@@ -80,7 +60,7 @@ test.describe('Admin: Development Requests - Navigation & List', () => {
   });
 
   test('API GET /api/admin/development-requests devrait retourner la liste', async ({ request, page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     const cookies = await page.context().cookies();
     const sessionCookie = getSessionCookie(cookies);
@@ -104,7 +84,7 @@ test.describe('Admin: Development Requests - Navigation & List', () => {
 test.describe('Admin: Development Requests - CRUD Operations', () => {
 
   test('2. devrait créer un bug report', async ({ request, page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     const cookies = await page.context().cookies();
     const sessionCookie = getSessionCookie(cookies);
@@ -140,7 +120,7 @@ test.describe('Admin: Development Requests - CRUD Operations', () => {
   });
 
   test('3. devrait créer une feature request', async ({ request, page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     const cookies = await page.context().cookies();
     const sessionCookie = getSessionCookie(cookies);
@@ -177,7 +157,7 @@ test.describe('Admin: Development Requests - CRUD Operations', () => {
   });
 
   test('6. devrait modifier une demande développement', async ({ request, page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     const cookies = await page.context().cookies();
     const sessionCookie = getSessionCookie(cookies);
@@ -223,7 +203,7 @@ test.describe('Admin: Development Requests - CRUD Operations', () => {
   });
 
   test('8. devrait changer le statut d\'une demande', async ({ request, page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     const cookies = await page.context().cookies();
     const sessionCookie = getSessionCookie(cookies);
@@ -281,7 +261,7 @@ test.describe('Admin: Development Requests - CRUD Operations', () => {
   });
 
   test('9. devrait supprimer une demande développement', async ({ request, page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     const cookies = await page.context().cookies();
     const sessionCookie = getSessionCookie(cookies);
@@ -322,7 +302,7 @@ test.describe('Admin: Development Requests - CRUD Operations', () => {
 test.describe('Admin: Development Requests - Filtering', () => {
 
   test('4. devrait filtrer par type (bug/feature)', async ({ request, page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     const cookies = await page.context().cookies();
     const sessionCookie = getSessionCookie(cookies);
@@ -369,7 +349,7 @@ test.describe('Admin: Development Requests - Filtering', () => {
   });
 
   test('5. devrait filtrer par statut', async ({ request, page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     const cookies = await page.context().cookies();
     const sessionCookie = getSessionCookie(cookies);
@@ -404,7 +384,7 @@ test.describe('Admin: Development Requests - Filtering', () => {
 test.describe('Admin: Development Requests - GitHub Sync', () => {
 
   test('7. devrait synchroniser une demande avec GitHub', async ({ request, page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     const cookies = await page.context().cookies();
     const sessionCookie = getSessionCookie(cookies);
@@ -453,7 +433,7 @@ test.describe('Admin: Development Requests - GitHub Sync', () => {
 test.describe('Admin: Development Requests - UI Integration', () => {
 
   test('devrait afficher et interagir avec la page UI', async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
     await navigateToDevRequests(page);
 
     // Attendre le chargement complet
@@ -482,7 +462,7 @@ test.describe('Admin: Development Requests - UI Integration', () => {
   });
 
   test('devrait afficher la liste des demandes', async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
     await navigateToDevRequests(page);
 
     // Attendre le chargement
@@ -502,7 +482,7 @@ test.describe('Admin: Development Requests - UI Integration', () => {
 test.describe('Admin: Development Requests - Priority Levels', () => {
 
   test('devrait créer des demandes avec différentes priorités', async ({ request, page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     const cookies = await page.context().cookies();
     const sessionCookie = getSessionCookie(cookies);
@@ -535,7 +515,7 @@ test.describe('Admin: Development Requests - Priority Levels', () => {
 test.describe('Admin: Development Requests - Status Workflow', () => {
 
   test('devrait supporter le workflow complet des statuts', async ({ request, page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     const cookies = await page.context().cookies();
     const sessionCookie = getSessionCookie(cookies);
@@ -584,7 +564,7 @@ test.describe('Admin: Development Requests - Status Workflow', () => {
   });
 
   test('devrait permettre l\'annulation d\'une demande', async ({ request, page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     const cookies = await page.context().cookies();
     const sessionCookie = getSessionCookie(cookies);

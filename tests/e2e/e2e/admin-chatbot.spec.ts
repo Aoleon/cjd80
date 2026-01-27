@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdminQuick } from '../helpers/auth';
 
 /**
  * Tests E2E pour US-CHATBOT-001: Chatbot analytics SQL naturel
@@ -34,13 +35,6 @@ import { test, expect } from '@playwright/test';
  */
 
 const BASE_URL = 'https://cjd80.rbw.ovh';
-
-// Compte de test
-const TEST_ACCOUNT = {
-  email: 'admin@test.local',
-  password: 'devmode',
-  role: 'super_admin'
-};
 
 // Types pour les logs et assertions
 interface ConsoleMessage {
@@ -110,23 +104,6 @@ test.describe('US-CHATBOT-001: Chatbot analytics SQL naturel', () => {
     });
   });
 
-  /**
-   * Helper: Login as admin
-   */
-  async function loginAsAdmin(page: any) {
-    await page.goto(`${BASE_URL}/login`);
-    await page.waitForURL(/\/login/);
-
-    // Remplir les identifiants
-    await page.fill('input[type="email"]', TEST_ACCOUNT.email);
-    await page.fill('input[type="password"]', TEST_ACCOUNT.password);
-
-    // Soumettre le formulaire
-    await page.click('button[type="submit"]');
-
-    // Attendre la redirection vers /admin
-    await page.waitForURL(/\/admin/, { timeout: 10000 });
-  }
 
   /**
    * Helper: Naviguer vers le chatbot
@@ -214,7 +191,7 @@ test.describe('US-CHATBOT-001: Chatbot analytics SQL naturel', () => {
    * Test 1: Accéder l'interface chatbot
    */
   test('devrait accéder l\'interface chatbot admin', async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
     await navigateToChatbot(page);
 
     // Vérifier que la page s'est chargée
@@ -233,7 +210,7 @@ test.describe('US-CHATBOT-001: Chatbot analytics SQL naturel', () => {
    * Test 2: Poser une question simple
    */
   test('devrait poser une question simple et recevoir réponse', async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
     await navigateToChatbot(page);
 
     // Poser la question simple
@@ -262,7 +239,7 @@ test.describe('US-CHATBOT-001: Chatbot analytics SQL naturel', () => {
    * Test 3: Voir réponse + données retournées
    */
   test('devrait afficher réponse avec données', async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
     await navigateToChatbot(page);
 
     // Poser la question
@@ -296,7 +273,7 @@ test.describe('US-CHATBOT-001: Chatbot analytics SQL naturel', () => {
    * Test 4: Voir SQL généré
    */
   test('devrait afficher la requête SQL générée', async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
     await navigateToChatbot(page);
 
     // Poser la question
@@ -332,7 +309,7 @@ test.describe('US-CHATBOT-001: Chatbot analytics SQL naturel', () => {
    * Test 5: Historique des questions
    */
   test('devrait stocker historique des questions', async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
     await navigateToChatbot(page);
 
     // Poser une première question
@@ -364,7 +341,7 @@ test.describe('US-CHATBOT-001: Chatbot analytics SQL naturel', () => {
    * Test 6: Question complexe avec jointures
    */
   test('devrait gérer question complexe avec jointures', async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
     await navigateToChatbot(page);
 
     // Question complexe demandant jointure
@@ -396,7 +373,7 @@ test.describe('US-CHATBOT-001: Chatbot analytics SQL naturel', () => {
    * Test 7: Gestion des erreurs (question invalide)
    */
   test('devrait gérer question invalide avec message d\'erreur', async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
     await navigateToChatbot(page);
 
     // Poser une question invalide
@@ -428,7 +405,7 @@ test.describe('US-CHATBOT-001: Chatbot analytics SQL naturel', () => {
    */
   test('API /api/admin/chatbot/query devrait retourner réponse valide', async ({ request, page }) => {
     // D'abord login pour avoir une session
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     // Extraire les cookies
     const cookies = await page.context().cookies();
@@ -477,7 +454,7 @@ test.describe('US-CHATBOT-001: Chatbot analytics SQL naturel', () => {
    */
   test('devrait accepter paramètre context et contextualiser réponse', async ({ request, page }) => {
     // Login
-    await loginAsAdmin(page);
+    await loginAsAdminQuick(page);
 
     // Extraire les cookies
     const cookies = await page.context().cookies();
