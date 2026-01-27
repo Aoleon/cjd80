@@ -73,10 +73,10 @@ test.describe('CRM Members: Tags Management', () => {
     console.log('[TEST 1] ✅ Bouton créer tag visible');
   });
 
-  test('2. API GET /api/admin/tags retourne la liste', async ({ request }) => {
+  test('2. API GET /api/admin/tags retourne la liste', async ({ page }) => {
     console.log('[TEST 2] Test API GET tags');
 
-    const response = await request.get(`${BASE_URL}/api/admin/tags`);
+    const response = await page.request.get(`${BASE_URL}/api/admin/tags`);
 
     expect(response.ok()).toBeTruthy();
     expect(response.status()).toBe(200);
@@ -199,7 +199,7 @@ test.describe('CRM Members: Tags Management', () => {
     console.log('[TEST 5] ✅ Tag créé et visible dans la liste');
   });
 
-  test('6. API POST /api/admin/tags crée un tag', async ({ request }) => {
+  test('6. API POST /api/admin/tags crée un tag', async ({ page }) => {
     console.log('[TEST 6] Test API POST tag');
 
     const newTag = {
@@ -207,7 +207,7 @@ test.describe('CRM Members: Tags Management', () => {
       color: PRESET_COLORS[0] // Bleu
     };
 
-    const response = await request.post(`${BASE_URL}/api/admin/tags`, {
+    const response = await page.request.post(`${BASE_URL}/api/admin/tags`, {
       data: newTag
     });
 
@@ -359,7 +359,7 @@ test.describe('CRM Members: Tags Management', () => {
     console.log('[TEST 9] ✅ Suppression effectuée sans erreur');
   });
 
-  test('10. API DELETE /api/admin/tags/:id supprime un tag', async ({ request }) => {
+  test('10. API DELETE /api/admin/tags/:id supprime un tag', async ({ page }) => {
     console.log('[TEST 10] Test API DELETE tag');
 
     // D'abord créer un tag à supprimer
@@ -368,7 +368,7 @@ test.describe('CRM Members: Tags Management', () => {
       color: PRESET_COLORS[2]
     };
 
-    const createResponse = await request.post(`${BASE_URL}/api/admin/tags`, {
+    const createResponse = await page.request.post(`${BASE_URL}/api/admin/tags`, {
       data: newTag
     });
 
@@ -385,7 +385,7 @@ test.describe('CRM Members: Tags Management', () => {
     console.log('[TEST 10] Tag créé avec ID:', tagId);
 
     // Supprimer le tag
-    const deleteResponse = await request.delete(`${BASE_URL}/api/admin/tags/${tagId}`);
+    const deleteResponse = await page.request.delete(`${BASE_URL}/api/admin/tags/${tagId}`);
 
     expect([200, 204]).toContain(deleteResponse.status());
     console.log('[TEST 10] ✅ Tag supprimé via API, status:', deleteResponse.status());

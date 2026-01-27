@@ -438,8 +438,7 @@ test.describe('US-MEMBERS-001: CRM - Gestion des membres', () => {
     console.log('[TEST 6] Cherchant le profil du membre...');
 
     // Chercher et cliquer sur le membre
-    const memberLink = page.locator('a:has-text("' + TEST_MEMBER.firstName + '"), button:has-text("' + TEST_MEMBER.firstName + '"), text=' + TEST_MEMBER.firstName).first();
-    const memberCount = await memberLink.count();
+    const memberLink = page.getByText(TEST_MEMBER.firstName).first();
     console.log('[TEST 6] Membre trouvé: ' + (memberCount > 0));
 
     if (memberCount > 0) {

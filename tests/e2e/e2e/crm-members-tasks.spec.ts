@@ -49,6 +49,37 @@ async function navigateToTasksPage(page: any) {
   await page.waitForTimeout(1000);
 }
 
+// Helper: Attendre que le modal soit visible et prêt
+async function waitForModalReady(page: any) {
+  const modal = page.locator('[role="dialog"]').first();
+  await expect(modal).toBeVisible({ timeout: 5000 });
+  // Attendre que le modal soit complètement rendu
+  await page.waitForTimeout(300);
+}
+
+// Helper: Cliquer sur le bouton submit du modal
+async function clickModalSubmit(page: any, buttonText: string | RegExp = /créer|enregistrer|save|mettre à jour/i) {
+  // Attendre que le modal soit visible
+  const modal = page.locator('[role="dialog"]').first();
+  await expect(modal).toBeVisible();
+  
+  // Trouver le bouton submit dans le modal avec sélection plus précise
+  const submitButton = modal.locator('button').filter({ hasText: buttonText }).last();
+  
+  // S'assurer que le bouton est visible et activé
+  await expect(submitButton).toBeVisible({ timeout: 5000 });
+  await expect(submitButton).toBeEnabled({ timeout: 5000 });
+  
+  // Scroll si nécessaire
+  await submitButton.scrollIntoViewIfNeeded();
+  
+  // Attendre que les autres éléments ne le bloquent pas
+  await page.waitForTimeout(200);
+  
+  // Cliquer
+  await submitButton.click();
+}
+
 test.describe('CRM Members: Tasks Management', () => {
 
   test.beforeEach(async ({ page }) => {
@@ -274,7 +305,7 @@ test.describe('CRM Members: Tasks Management', () => {
     // Ouvrir modal
     const createButton = page.locator('button').filter({ hasText: /nouvelle|créer|ajouter/i }).first();
     await createButton.click();
-    await page.waitForTimeout(500);
+    await waitForModalReady(page);
 
     // Remplir le formulaire
     const taskTitle = `Test Task ${Date.now()}`;
@@ -315,9 +346,8 @@ test.describe('CRM Members: Tasks Management', () => {
       console.log('[TEST 8] ✅ Date échéance définie');
     }
 
-    // Soumettre
-    const submitButton = page.locator('button[type="submit"], button').filter({ hasText: /créer|enregistrer|save/i }).first();
-    await submitButton.click();
+    // Soumettre avec helper
+    await clickModalSubmit(page);
     await page.waitForTimeout(2000);
 
     // Vérifier que la tâche apparaît dans la liste
@@ -415,11 +445,7 @@ test.describe('CRM Members: Tasks Management', () => {
 
     // Cliquer sur modifier
     await editButtons.first().click();
-    await page.waitForTimeout(500);
-
-    // Vérifier que le modal d'édition est ouvert
-    const modal = page.locator('[role="dialog"]').first();
-    await expect(modal).toBeVisible();
+    await waitForModalReady(page);
 
     // Modifier le titre
     const titleInput = page.locator('input[name="title"], input[placeholder*="titre" i]').first();
@@ -428,9 +454,8 @@ test.describe('CRM Members: Tasks Management', () => {
     await titleInput.fill(newValue);
     console.log('[TEST 11] Titre modifié:', newValue);
 
-    // Sauvegarder
-    const saveButton = page.locator('button').filter({ hasText: /enregistrer|save|mettre à jour/i }).first();
-    await saveButton.click();
+    // Sauvegarder avec helper
+    await clickModalSubmit(page, /enregistrer|save|mettre à jour/i);
     await page.waitForTimeout(2000);
 
     // Vérifier que la modification apparaît
@@ -541,7 +566,7 @@ test.describe('CRM Members: Tasks Management', () => {
     console.log('[TEST 15] Étape 1: Création');
     const createButton = page.locator('button').filter({ hasText: /nouvelle|créer/i }).first();
     await createButton.click();
-    await page.waitForTimeout(500);
+    await waitForModalReady(page);
 
     const titleInput = page.locator('input[name="title"], input[placeholder*="titre" i]').first();
     await titleInput.fill(uniqueTitle);
@@ -551,8 +576,7 @@ test.describe('CRM Members: Tasks Management', () => {
       await typeSelect.selectOption('meeting');
     }
 
-    const submitButton = page.locator('button[type="submit"]').first();
-    await submitButton.click();
+    await clickModalSubmit(page);
     await page.waitForTimeout(2000);
 
     const createdTask = page.locator(`text="${uniqueTitle}"`);
@@ -566,14 +590,13 @@ test.describe('CRM Members: Tasks Management', () => {
 
     if (await editButton.count() > 0) {
       await editButton.click();
-      await page.waitForTimeout(500);
+      await waitForModalReady(page);
 
       const titleInputEdit = page.locator('input[name="title"]').first();
       const modifiedTitle = uniqueTitle + ' (modifié)';
       await titleInputEdit.fill(modifiedTitle);
 
-      const saveButton = page.locator('button').filter({ hasText: /enregistrer|save/i }).first();
-      await saveButton.click();
+      await clickModalSubmit(page, /enregistrer|save|mettre à jour/i);
       await page.waitForTimeout(2000);
 
       const modifiedTask = page.locator(`text="${modifiedTitle}"`);
